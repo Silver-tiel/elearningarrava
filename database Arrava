@@ -1,0 +1,129 @@
+-- 1. Tabel Master/Referensi (Tanpa FK ke tabel lain)
+
+CREATE TABLE TipeUser (
+    id_tipeUser INT AUTO_INCREMENT PRIMARY KEY,
+    nama_tipe VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Jenjang (
+    id_jenjang INT AUTO_INCREMENT PRIMARY KEY,
+    nama_tipe VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE TipeModul (
+    id_tipemodul INT AUTO_INCREMENT PRIMARY KEY,
+    nama_tipe VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE TipeQuiz (
+    id_tipequiz INT AUTO_INCREMENT PRIMARY KEY,
+    nama_tipe VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE TingkatQuiz (
+    id_tingkatquiz INT AUTO_INCREMENT PRIMARY KEY,
+    nama_tingkat VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE jenis_soal (
+    id_jenis_soal INT AUTO_INCREMENT PRIMARY KEY,
+    nama_jenis_soal VARCHAR(255) NOT NULL
+);
+
+
+-- 2. Tabel Quiz & Modul
+
+CREATE TABLE Quiz (
+    id_quiz INT AUTO_INCREMENT PRIMARY KEY,
+    judul VARCHAR(255) NOT NULL,
+    id_tipequiz INT NOT NULL,
+    id_tingkatquiz INT NOT NULL,
+    hasil_quiz VARCHAR(255),
+    proggressQuiz VARCHAR(255),
+    FOREIGN KEY (id_tipequiz) REFERENCES TipeQuiz(id_tipequiz),
+    FOREIGN KEY (id_tingkatquiz) REFERENCES TingkatQuiz(id_tingkatquiz)
+);
+
+CREATE TABLE Modul (
+    id_modul INT AUTO_INCREMENT PRIMARY KEY,
+    judul_modul VARCHAR(255) NOT NULL,
+    file_materi VARCHAR(255),
+    tipe_file VARCHAR(50),
+    id_tipemodul INT NOT NULL,
+    id_jenjang INT NOT NULL,
+    id_quiz INT NOT NULL,
+    progressModul VARCHAR(255),
+    FOREIGN KEY (id_tipemodul) REFERENCES TipeModul(id_tipemodul),
+    FOREIGN KEY (id_jenjang) REFERENCES Jenjang(id_jenjang),
+    FOREIGN KEY (id_quiz) REFERENCES Quiz(id_quiz)
+);
+
+CREATE TABLE Soal (
+    id_soal INT AUTO_INCREMENT PRIMARY KEY,
+    id_quiz INT NOT NULL,
+    jenis_soal VARCHAR(100),
+    pertanyaan TEXT NOT NULL,
+    jawaban_benar TEXT NOT NULL,
+    FOREIGN KEY (id_quiz) REFERENCES Quiz(id_quiz)
+);
+
+
+-- 3. Tabel User (Memiliki relasi melingkar ke Absensi & Modul)
+
+CREATE TABLE User (
+    id_user INT AUTO_INCREMENT PRIMARY KEY,
+    nama VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    id_tipeuser INT NOT NULL,
+    id_jenjang INT NOT NULL,
+    total_poin INT DEFAULT 0,
+    status_akun VARCHAR(50) NOT NULL,
+    id_modul INT NOT NULL,
+    id_absensi INT,
+    FOREIGN KEY (id_tipeuser) REFERENCES TipeUser(id_tipeUser),
+    FOREIGN KEY (id_jenjang) REFERENCES Jenjang(id_jenjang),
+    FOREIGN KEY (id_modul) REFERENCES Modul(id_modul)
+);
+
+
+-- 4. Tabel Aktivitas, Transaksi, & Pencapaian User
+
+CREATE TABLE Absensi (
+    id_absensi INT AUTO_INCREMENT PRIMARY KEY,
+    id_user INT NOT NULL,
+    waktu_absensi DATETIME NOT NULL,
+    FOREIGN KEY (id_user) REFERENCES User(id_user)
+);
+
+-- Tambahkan FK id_absensi ke tabel User setelah tabel Absensi terbuat
+ALTER TABLE User 
+ADD CONSTRAINT fk_user_absensi 
+FOREIGN KEY (id_absensi) REFERENCES Absensi(id_absensi);
+
+CREATE TABLE LogAktivitas (
+    id_logaktivitas INT AUTO_INCREMENT PRIMARY KEY,
+    waktu_kegiataan DATETIME NOT NULL,
+    id_user INT NOT NULL,
+    kegiatan TEXT NOT NULL,
+    FOREIGN KEY (id_user) REFERENCES User(id_user)
+);
+
+CREATE TABLE PencapaianUser (
+    id_pencapaian INT AUTO_INCREMENT PRIMARY KEY,
+    id_user INT NOT NULL,
+    nama VARCHAR(255) NOT NULL,
+    waktu_pencapaian DATETIME NOT NULL,
+    FOREIGN KEY (id_user) REFERENCES User(id_user)
+);
+
+CREATE TABLE HasilQuizModul (
+    id_hasil INT AUTO_INCREMENT PRIMARY KEY,
+    id_user INT NOT NULL,
+    id_quiz INT NOT NULL,
+    total_poin INT DEFAULT 0,
+    poin_didapat INT DEFAULT 0,
+    waktu_dapat DATETIME NOT NULL,
+    FOREIGN KEY (id_user) REFERENCES User(id_user),
+    FOREIGN KEY (id_quiz) REFERENCES Quiz(id_quiz)
+);
