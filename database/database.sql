@@ -66,8 +66,6 @@ CREATE TABLE Soal (
     jawaban_benar TEXT NOT NULL,
     FOREIGN KEY (id_quiz) REFERENCES Quiz(id_quiz)
 );
-
-
 -- 3. Tabel User (Memiliki relasi melingkar ke Absensi & Modul)
 
 CREATE TABLE User (
