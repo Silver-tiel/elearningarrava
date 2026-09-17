@@ -20,6 +20,13 @@ Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])->name('p
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 
+Route::get('/admin', function () {
+    $users = App\Models\User::all();
+    return view('admin', ['users' => $users]);
+})->middleware('auth')->name('admin');
+
+
+
 Route::get('/dashboard', function () {
     return view('index');
 })->middleware('auth');
