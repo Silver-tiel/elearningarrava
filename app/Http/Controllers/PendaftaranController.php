@@ -16,8 +16,8 @@ class PendaftaranController extends Controller
     public function UserBaru(Request $request)
     {
         $request->validate([
-            'nama' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'nama' => 'required|string|max:255|unique:user,nama',
+            'email' => 'required|email|unique:user,email',
             'password' => 'required|min:8',
             'id_jenjang' => 'required|exists:jenjang,id_jenjang',
         ]);
@@ -27,7 +27,7 @@ class PendaftaranController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'id_jenjang' => $request->id_jenjang,
-            'id_tipeuser' => 3, // Set id_tipeuser sesuai kebutuhan
+            'id_tipeuser' => 3,
         ]);
 
         return redirect('/login')->with('success', 'Pendaftaran berhasil! Silakan login.');
