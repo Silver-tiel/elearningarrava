@@ -16,9 +16,9 @@ class PendaftaranController extends Controller
     public function UserBaru(Request $request)
     {
         $request->validate([
-            'nama' => 'required|string|max:255|unique:user,nama',
-            'email' => 'required|email|unique:user,email',
-            'password' => 'required|min:8',
+            'nama' => ['required|string|min:2|max:255|unique:user,nama', 'regex:/^[a-zA-Z\s]+$/'],
+            'email' => ['required|email|unique:user,email', 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', 'max:255'],
+            'password' => 'required|min:8|max:255',
             'id_jenjang' => 'required|exists:jenjang,id_jenjang',
         ]);
 
