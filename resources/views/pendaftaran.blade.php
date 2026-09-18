@@ -133,6 +133,34 @@
             color: #b0bec5;
         }
 
+        .error-message {
+            color: #d32f2f;
+            font-size: 12px;
+            margin-top: 6px;
+            display: block;
+            font-weight: 600;
+        }
+
+        .input-error {
+            border-color: #d32f2f !important;
+            background: #fff5f5;
+        }
+
+        .alert-error {
+            background: #fff1f1;
+            border: 1px solid #f5c2c7;
+            color: #b42318;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .alert-error ul {
+            margin: 8px 0 0 18px;
+        }
+
         /* BUTTON */
 
         .register-btn {
@@ -251,6 +279,17 @@
             Lengkapi data berikut untuk mendaftar.
         </p>
 
+        @if ($errors->any())
+            <div class="alert-error">
+                <div>Silakan perbaiki data berikut:</div>
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <form action="{{ route('pendaftaranBaru') }}" method="POST">
 
             @csrf
@@ -264,8 +303,12 @@
                     name="nama"
                     value="{{ old('nama') }}"
                     placeholder="Masukkan nama kamu"
+                    class="{{ $errors->has('nama') ? 'input-error' : '' }}"
                     required
                 >
+                @error('nama')
+                    <span class="error-message">{{ $message }}</span>
+                @enderror
             </div>
 
 
@@ -275,6 +318,7 @@
                 <select
                     id="id_jenjang"
                     name="id_jenjang"
+                    class="{{ $errors->has('id_jenjang') ? 'input-error' : '' }}"
                     required
                 >
                     <option value="">Pilih Jenjang</option>
@@ -291,6 +335,9 @@
                     @endforeach
 
                 </select>
+                @error('id_jenjang')
+                    <span class="error-message">{{ $message }}</span>
+                @enderror
             </div>
 
 
@@ -303,8 +350,12 @@
                     name="email"
                     value="{{ old('email') }}"
                     placeholder="contoh@email.com"
+                    class="{{ $errors->has('email') ? 'input-error' : '' }}"
                     required
                 >
+                @error('email')
+                    <span class="error-message">{{ $message }}</span>
+                @enderror
             </div>
 
 
@@ -316,8 +367,12 @@
                     id="password"
                     name="password"
                     placeholder="Buat password"
+                    class="{{ $errors->has('password') ? 'input-error' : '' }}"
                     required
                 >
+                @error('password')
+                    <span class="error-message">{{ $message }}</span>
+                @enderror
             </div>
 
 
