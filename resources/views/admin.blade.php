@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
+
+    <!-- CSS KUSTOM UNTUK HALAMAN ADMIN -->
     <style>
         * {
             box-sizing: border-box;
@@ -150,6 +152,7 @@
     </style>
 </head>
 <body>
+    <!-- HALAMAN ADMIN: tampilan ringkasan pengguna dan daftar data -->
     <div class="page">
         <div class="topbar">
             <div>
@@ -159,6 +162,7 @@
             <span class="badge">ONLINE</span>
         </div>
 
+        <!-- KARTU STATISTIK RINGKAS UNTUK ADMIN -->
         <div class="stats">
             <div class="card">
                 <h3>Total Pengguna</h3>
@@ -176,6 +180,7 @@
             </div>
         </div>
 
+        <!-- TABEL DAFTAR PENGGUNA YANG DIAMBIL DARI DATABASE -->
         <div class="table-card">
             <div class="table-header">Daftar Pengguna</div>
             <table>

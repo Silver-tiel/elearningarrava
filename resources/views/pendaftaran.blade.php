@@ -6,6 +6,7 @@
 
     <title>Pendaftaran</title>
 
+    <!-- CSS KUSTOM UNTUK HALAMAN PENDAFTARAN -->
     <style>
         * {
             box-sizing: border-box;
@@ -226,9 +227,10 @@
 
 <body>
 
+<!-- WRAPPER UTAMA HALAMAN PENDAFTARAN -->
 <div class="container">
 
-    <!-- BAGIAN INFORMASI -->
+    <!-- BAGIAN INFORMASI DI SEBELAH KIRI -->
     <div class="info">
 
         <span class="badge">
@@ -270,7 +272,7 @@
     </div>
 
 
-    <!-- FORM PENDAFTARAN -->
+    <!-- FORM PENDAFTARAN: input nama, jenjang, email, dan password -->
     <div class="form-section">
 
         <h2>Buat Akun Baru 🚀</h2>

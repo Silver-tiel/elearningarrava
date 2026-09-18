@@ -6,6 +6,7 @@
 
     <title>Login</title>
 
+    <!-- CSS KUSTOM UNTUK HALAMAN LOGIN -->
     <style>
         * {
             box-sizing: border-box;
@@ -202,12 +203,10 @@
 
 <body>
 
+<!-- WRAPPER UTAMA HALAMAN LOGIN -->
 <div class="container">
 
-    <!-- =========================
-         BAGIAN INFORMASI
-    ========================= -->
-
+    <!-- BAGIAN INFORMASI DI SEBELAH KIRI -->
     <div class="info">
 
         <span class="badge">
@@ -247,10 +246,7 @@
     </div>
 
 
-    <!-- =========================
-         FORM LOGIN
-    ========================= -->
-
+    <!-- FORM LOGIN: tempat email dan password user masuk ke sistem -->
     <div class="form-section">
 
         <h2>Login ke Akun 🔐</h2>
