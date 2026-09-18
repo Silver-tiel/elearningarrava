@@ -159,7 +159,11 @@
                 <h1>Admin Panel</h1>
                 <p>Selamat datang, Admin! Kelola pengguna dan aktivitas sistem.</p>
             </div>
-            <span class="badge">ONLINE</span>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <a href="{{ route('admin.modul') }}" style="display:inline-block; background:#e3f2fd; color:#1565c0; text-decoration:none; padding:10px 16px; border-radius:999px; font-weight:bold;">Modul</a>
+                <a href="{{ route('admin.quiz') }}" style="display:inline-block; background:#e8f5e9; color:#2e7d32; text-decoration:none; padding:10px 16px; border-radius:999px; font-weight:bold;">Quiz</a>
+                <span class="badge">ONLINE</span>
+            </div>
         </div>
 
         <!-- KARTU STATISTIK RINGKAS UNTUK ADMIN -->

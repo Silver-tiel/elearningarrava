@@ -232,6 +232,7 @@ CREATE TABLE `absensi` (
 CREATE TABLE `soal` (
   `id_soal` int NOT NULL,
   `id_quiz` int NOT NULL,
+  `id_jenjang` int NOT NULL,
   `id_jenis_soal` int DEFAULT NULL,
   `pertanyaan` text NOT NULL,
   `jawaban_benar` text NOT NULL,
@@ -316,6 +317,7 @@ ALTER TABLE `absensi`
 ALTER TABLE `soal`
   ADD PRIMARY KEY (`id_soal`),
   ADD KEY `id_quiz` (`id_quiz`),
+  ADD KEY `id_jenjang` (`id_jenjang`),
   ADD KEY `id_jenis_soal` (`id_jenis_soal`);
 
 ALTER TABLE `hasilquizmodul`
@@ -374,7 +376,8 @@ ALTER TABLE `absensi`
 
 ALTER TABLE `soal`
   ADD CONSTRAINT `soal_ibfk_1` FOREIGN KEY (`id_quiz`) REFERENCES `quiz` (`id_quiz`) ON DELETE CASCADE,
-  ADD CONSTRAINT `soal_ibfk_2` FOREIGN KEY (`id_jenis_soal`) REFERENCES `jenis_soal` (`id_jenis_soal`);
+  ADD CONSTRAINT `soal_ibfk_2` FOREIGN KEY (`id_jenjang`) REFERENCES `jenjang` (`id_jenjang`),
+  ADD CONSTRAINT `soal_ibfk_3` FOREIGN KEY (`id_jenis_soal`) REFERENCES `jenis_soal` (`id_jenis_soal`);
 
 ALTER TABLE `hasilquizmodul`
   ADD CONSTRAINT `hasilquizmodul_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `user` (`id_user`) ON DELETE CASCADE,
