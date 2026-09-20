@@ -4,10 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Jenjang extends Model
+class TipeQuiz extends Model
 {
-    protected $table = 'jenjang';
-    protected $primaryKey = 'id_jenjang';
+    protected $table = 'tipequiz';
+    protected $primaryKey = 'id_tipequiz';
     public $timestamps = true;
 
     protected $fillable = [

@@ -4,19 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-// Model custom untuk tabel quiz yang berisi daftar kuis pembelajaran.
 class Quiz extends Model
 {
-    // Nama tabel database sesuai struktur project.
     protected $table = 'quiz';
-
-    // Primary key tabel quiz.
     protected $primaryKey = 'id_quiz';
-
-    // Laravel akan mengelola created_at dan updated_at secara otomatis.
     public $timestamps = true;
 
-    // Kolom yang bisa diisi saat input kuis baru.
     protected $fillable = [
         'judul',
         'id_tipequiz',
@@ -25,4 +18,19 @@ class Quiz extends Model
         'proggressQuiz',
         'foto_quiz',
     ];
+
+    public function tipeQuiz()
+    {
+        return $this->belongsTo(TipeQuiz::class, 'id_tipequiz', 'id_tipequiz');
+    }
+
+    public function tingkatQuiz()
+    {
+        return $this->belongsTo(TingkatQuiz::class, 'id_tingkatquiz', 'id_tingkatquiz');
+    }
+
+    public function soal()
+    {
+        return $this->hasMany(Soal::class, 'id_quiz', 'id_quiz');
+    }
 }
