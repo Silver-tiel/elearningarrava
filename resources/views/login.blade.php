@@ -1,315 +1,95 @@
-<!doctype html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+@extends('layouts.auth')
 
-    <title>Login</title>
+@section('title', 'Masuk - eBooks')
 
-    <!-- CSS KUSTOM UNTUK HALAMAN LOGIN -->
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #e3f2fd, #f5f9ff);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 30px;
-        }
-
-        .container {
-            width: 900px;
-            max-width: 100%;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            display: grid;
-            grid-template-columns: 40% 60%;
-        }
-
-        /* =========================
-           BAGIAN KIRI
-        ========================= */
-
-        .info {
-            background: linear-gradient(160deg, #1565c0, #42a5f5);
-            color: white;
-            padding: 45px 35px;
-        }
-
-        .badge {
-            display: inline-block;
-            background: #ffd54f;
-            color: #37474f;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 25px;
-        }
-
-        .info h1 {
-            font-size: 30px;
-            margin-bottom: 15px;
-        }
-
-        .info > p {
-            line-height: 1.6;
-            margin-bottom: 30px;
-            font-size: 15px;
-        }
-
-        /* GAMIFICATION CARD */
-
-        .reward {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 15px;
-            padding: 18px;
-            margin-top: 15px;
-        }
-
-        .reward h3 {
-            font-size: 16px;
-            margin-bottom: 7px;
-        }
-
-        .reward p {
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        /* =========================
-           BAGIAN LOGIN
-        ========================= */
-
-        .form-section {
-            padding: 45px;
-        }
-
-        .form-section h2 {
-            color: #263238;
-            font-size: 26px;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            color: #78909c;
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            color: #37474f;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 7px;
-        }
-
-        input {
-            width: 100%;
-            padding: 13px 14px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            outline: none;
-            background: white;
-            color: #37474f;
-            transition: 0.2s;
-        }
-
-        input:focus {
-            border-color: #42a5f5;
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-        }
-
-        input::placeholder {
-            color: #b0bec5;
-        }
-
-        /* BUTTON */
-
-        .login-btn {
-            width: 100%;
-            padding: 13px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(90deg, #1565c0, #42a5f5);
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 5px;
-            transition: 0.2s;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 7px 15px rgba(21, 101, 192, 0.25);
-        }
-
-        /* PENDAFTARAN */
-
-        .register-link {
-            text-align: center;
-            margin-top: 22px;
-            font-size: 14px;
-            color: #78909c;
-        }
-
-        .register-link a {
-            color: #1565c0;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .register-link a:hover {
-            text-decoration: underline;
-        }
-
-        /* RESPONSIVE */
-
-        @media (max-width: 700px) {
-
-            .container {
-                grid-template-columns: 1fr;
-            }
-
-            .info {
-                padding: 30px;
-            }
-
-            .form-section {
-                padding: 30px;
-            }
-
-            .info h1 {
-                font-size: 25px;
-            }
-        }
-    </style>
-</head>
-
-<body>
-
-<!-- WRAPPER UTAMA HALAMAN LOGIN -->
-<div class="container">
-
-    <!-- BAGIAN INFORMASI DI SEBELAH KIRI -->
-    <div class="info">
-
-        <span class="badge">
-            🏆 WELCOME BACK
-        </span>
-
-        <h1>Selamat Datang Kembali!</h1>
-
-        <p>
-            Masuk ke akunmu dan lanjutkan perjalananmu.
-            Berbagai aktivitas dan pencapaian menunggumu.
+@section('auth_form')
+    <div>
+        <h1 class="mb-2 text-[26px] font-extrabold leading-tight tracking-[-0.8px] sm:text-[28px]">Selamat Datang!</h1>
+        <p class="mb-7 text-[14px] leading-6 text-[#53647D]">
+            Silakan masuk ke akun Anda untuk memulai proses belajar terbaik bersama eBooks.
         </p>
 
-        <div class="reward">
-            <h3>⭐ Lanjutkan Perjalanan</h3>
-            <p>
-                Masuk kembali untuk melanjutkan aktivitas
-                dan mengembangkan progres akunmu.
-            </p>
-        </div>
+        @if (session('success'))
+            <div class="mb-5 rounded-[10px] border border-[#C8F3E0] bg-[#EDFCF6] px-3.5 py-3 text-xs leading-5 text-[#08764F]">
+                {{ session('success') }}
+            </div>
+        @endif
 
-        <div class="reward">
-            <h3>🎯 Raih Pencapaian</h3>
-            <p>
-                Selesaikan berbagai aktivitas untuk mendapatkan
-                pengalaman dan pencapaian baru.
-            </p>
-        </div>
+        @if ($errors->any())
+            <div class="mb-5 rounded-[10px] border border-[#FFD4D4] bg-[#FFF2F2] px-3.5 py-3 text-xs leading-5 text-[#A32929]">
+                {{ $errors->first() }}
+            </div>
+        @endif
 
-        <div class="reward">
-            <h3>🚀 Siap Melanjutkan?</h3>
-            <p>
-                Login sekarang dan kembali ke dalam sistem.
-            </p>
-        </div>
-
-    </div>
-
-
-    <!-- FORM LOGIN: tempat email dan password user masuk ke sistem -->
-    <div class="form-section">
-
-        <h2>Login ke Akun 🔐</h2>
-
-        <p class="subtitle">
-            Masukkan email dan password untuk melanjutkan.
-        </p>
-
-        <form action="{{ route('login') }}" method="POST">
-
+        <form action="{{ route('login.submit') }}" method="POST" class="space-y-4">
             @csrf
 
-            <div class="form-group">
-
-                <label for="email">
-                    Email
-                </label>
-
+            <div>
+                <label for="email" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Email</label>
                 <input
-                    type="email"
                     id="email"
                     name="email"
-                    placeholder="contoh@email.com"
+                    type="email"
+                    value="{{ old('email') }}"
+                    autocomplete="email"
+                    placeholder="nama@email.com"
                     required
+                    class="h-11 w-full rounded-[10px] border border-[#DCE5F1] bg-white px-3.5 text-[13px] text-[#172036] outline-none transition placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10"
                 >
-
+                @error('email')
+                    <p class="mt-1.5 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>
+                @enderror
             </div>
 
+            <div>
+                <label for="password" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Kata Sandi</label>
+                <div class="relative">
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        autocomplete="current-password"
+                        placeholder="Masukkan kata sandi"
+                        required
+                        class="h-11 w-full rounded-[10px] border border-[#DCE5F1] bg-white px-3.5 pr-11 text-[13px] text-[#172036] outline-none transition placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10"
+                    >
+                    <button type="button" data-toggle-password="password" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-[#92A3BB]" aria-label="Tampilkan kata sandi">
+                        <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M2.5 12s3.5-5 9.5-5 9.5 5 9.5 5-3.5 5-9.5 5-9.5-5-9.5-5Z" />
+                            <circle cx="12" cy="12" r="2.5" />
+                        </svg>
+                    </button>
+                </div>
+                @error('password')
+                    <p class="mt-1.5 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>
+                @enderror
+            </div>
 
-            <div class="form-group">
-
-                <label for="password">
-                    Password
+            <div class="flex items-center justify-between pt-1 text-xs text-[#52647E]">
+                <label class="inline-flex cursor-pointer items-center gap-2 font-normal">
+                    <input type="checkbox" name="remember" value="1" class="h-[17px] w-[17px] accent-[#3F82F6]">
+                    <span>Ingat Saya</span>
                 </label>
-
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    placeholder="Masukkan password"
-                    required
-                >
-
+                <a href="{{ route('password.request') }}" class="font-bold text-[#3F82F6] hover:underline">Lupa Password?</a>
             </div>
 
-
-            <button type="submit" class="login-btn">
-                🚀 Login
+            <button type="submit" class="mt-1 flex h-[46px] w-full items-center justify-center rounded-[11px] bg-[#3F82F6] text-[13px] font-bold text-white shadow-[0_8px_16px_rgba(63,130,246,0.18)] transition hover:-translate-y-px hover:bg-[#3274E9] hover:shadow-[0_10px_20px_rgba(63,130,246,0.22)]">
+                Masuk Sekarang
             </button>
-
         </form>
 
 
-        <div class="register-link">
+        <p class="mt-6 text-center text-xs text-[#53647D]">
             Belum punya akun?
-            <a href="{{ route('pendaftaran') }}">
-                Daftar di sini
-            </a>
-        </div>
-
+            <a href="{{ route('pendaftaran') }}" class="font-bold text-[#3F82F6] hover:underline">Daftar sekarang</a>
+        </p>
     </div>
+@endsection
 
-</div>
-
-</body>
-</html>
+@section('illustration')
+    <img src="{{ asset('images/auth/login-illustration.png') }}" alt="Siswa sedang belajar" class="mx-auto mb-[31px] block h-[280px] w-full max-w-[380px] rounded-[22px] object-cover">
+    <h2 class="mb-2.5 text-[22px] font-extrabold leading-tight tracking-[-0.6px]">Belajar Lebih Seru &amp; Terarah</h2>
+    <p class="mx-auto max-w-[430px] text-[13px] leading-6 text-[#53647D]">
+        Dapatkan materi bimbel eksklusif, ribuan soal latihan interaktif, dan tutor pendamping terbaik di kelasnya.
+    </p>
+@endsection
