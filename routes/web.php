@@ -55,3 +55,4 @@ Route::get('/dashboard', function () {
     return view('index');
 })->middleware('auth');
 
+Route::view('/admin/dashboard', 'admin.dashboard')->name('admin.dashboard');

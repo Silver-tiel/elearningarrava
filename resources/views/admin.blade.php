@@ -152,6 +152,9 @@
     </style>
 </head>
 <body>
+
+@include('header_admin.sidebar_admin')
+
     <!-- HALAMAN ADMIN: tampilan ringkasan pengguna dan daftar data -->
     <div class="page">
         <div class="topbar">
