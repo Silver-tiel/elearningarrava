@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('user', function (Blueprint $table) {
@@ -13,8 +12,8 @@ return new class extends Migration
             $table->string('nama');
             $table->string('email')->unique();
             $table->string('password');
-            $table->unsignedInteger('id_tipeuser');
-            $table->unsignedInteger('id_jenjang');
+            $table->unsignedInteger('id_tipeuser')->default(1);
+            $table->unsignedInteger('id_jenjang')->nullable();
             $table->integer('total_poin')->default(0);
             $table->string('status_akun', 50)->nullable();
             $table->unsignedInteger('id_modul')->nullable();

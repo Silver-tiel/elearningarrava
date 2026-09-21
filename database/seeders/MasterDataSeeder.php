@@ -13,8 +13,6 @@ class MasterDataSeeder extends Seeder
             ['id_jenjang' => 1, 'nama_tipe' => 'SD'],
             ['id_jenjang' => 2, 'nama_tipe' => 'SMP'],
             ['id_jenjang' => 3, 'nama_tipe' => 'SMA'],
-            ['id_jenjang' => 4, 'nama_tipe' => 'guru'],
-            ['id_jenjang' => 5, 'nama_tipe' => 'admin'],
         ]);
 
         DB::table('tipeuser')->insert([
