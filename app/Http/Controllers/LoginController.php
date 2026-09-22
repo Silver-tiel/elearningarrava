@@ -5,34 +5,38 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-// Controller khusus untuk menangani proses autentikasi pengguna.
 class LoginController extends Controller
 {
-    // Menampilkan halaman form login kepada user.
-    public function showLoginForm()
+    public function showLogin()
     {
         return view('login');
     }
 
-    // Memvalidasi kredensial user lalu login jika data benar.
     public function login(Request $request)
     {
         $validated = $request->validate([
             'email' => ['required', 'email'],
-            'password' => ['required'],
+            'password' => ['required', 'string'],
         ]);
 
-        // Coba autentikasi dengan email dan password yang dimasukkan.
         if (Auth::attempt($validated)) {
             $request->session()->regenerate();
 
-            // Redirect ke halaman yang dituju setelah login berhasil.
-            return redirect()->intended('/dashboard');
+            return redirect()->route('dashboard');
         }
 
-        // Jika gagal, tampilkan pesan error dan tetap mempertahankan input email.
         return back()->withErrors([
-            'email' => 'Email atau password salah.',
+            'email' => 'Email atau password yang dimasukkan salah.',
         ])->onlyInput('email');
+    }
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('login');
     }
 }
