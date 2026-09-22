@@ -64,8 +64,19 @@ Route::middleware('auth')->group(function () {
 
     // Siswa.
     Route::prefix('siswa')->name('siswa.')->middleware('role:siswa')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'siswa'])->name('dashboard');
-        Route::get('/modul', [DashboardController::class, 'siswaModul'])->name('modul');
-        Route::get('/quiz', [DashboardController::class, 'siswaQuiz'])->name('quiz');
+        Route::get('/dashboard', [\App\Http\Controllers\SiswaController::class, 'dashboard'])->name('dashboard');
+        
+        Route::get('/belajar', [\App\Http\Controllers\SiswaController::class, 'belajar'])->name('modul');
+        
+        Route::get('/materi-video', [\App\Http\Controllers\SiswaController::class, 'materiVideo'])->name('materi-video');
+        Route::get('/materi-video/{modul}', [\App\Http\Controllers\SiswaController::class, 'materiVideoDetail'])->name('materi-video.detail');
+        
+        Route::get('/latihan-soal', [\App\Http\Controllers\SiswaController::class, 'latihanSoal'])->name('latihan-soal');
+        Route::get('/latihan-soal/{quiz}', [\App\Http\Controllers\SiswaController::class, 'kerjakanLatihan'])->name('latihan-soal.kerjakan');
+        
+        Route::get('/quiz', [\App\Http\Controllers\SiswaController::class, 'quiz'])->name('quiz');
+        Route::get('/quiz/{quiz}', [\App\Http\Controllers\SiswaController::class, 'kerjakanQuiz'])->name('quiz.kerjakan');
+        Route::post('/quiz/{quiz}/submit', [\App\Http\Controllers\SiswaController::class, 'submitQuiz'])->name('quiz.submit');
+        Route::get('/quiz/{quiz}/result/{hasil}', [\App\Http\Controllers\SiswaController::class, 'hasilQuiz'])->name('quiz.result');
     });
 });
