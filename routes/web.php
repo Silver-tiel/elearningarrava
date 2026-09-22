@@ -27,11 +27,8 @@ Route::get('/', function () {
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-
 // Logout
 Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
-
 
 // Lupa password - UI dan endpoint awal. Pengiriman email reset dapat disambungkan
 // ke Laravel Password Broker ketika konfigurasi mail sudah tersedia.
@@ -68,7 +65,7 @@ Route::get('/admin', function () {
     }
 
     $users = App\Models\User::all();
-    return view('admin', ['users' => $users]);
+    return view('admin.admin', ['users' => $users]);
 })->middleware('auth')->name('admin');
 
 // Siswa.
