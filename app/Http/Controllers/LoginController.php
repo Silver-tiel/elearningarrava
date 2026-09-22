@@ -35,4 +35,17 @@ class LoginController extends Controller
             'email' => 'Email atau password salah.',
         ])->onlyInput('email');
     }
+    
+    //Logout
+    public function logout(Request $request)
+    {
+        Auth::logout();
+
+        // Hapus session & regenerate CSRF token demi keamanan
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        // Arahkan kembali ke halaman login
+        return redirect()->route('login');
+    }
 }
