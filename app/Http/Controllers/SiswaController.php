@@ -88,9 +88,9 @@ class SiswaController extends Controller
                 $jawab = $jawabanSiswa[$soal->id_soal];
                 // Cek apakah jawaban teks cocok atau id pilihan cocok
                 $pilihanBenar = $soal->pilihanSoal->where('is_correct', true)->first();
-                if ($pilihanBenar && $pilihanBenar->label === $jawab) {
+                if ($pilihanBenar && strtolower(trim($pilihanBenar->label)) === strtolower(trim($jawab))) {
                     $benar++;
-                } elseif ($soal->jawaban_benar === $jawab) {
+                } elseif (strtolower(trim($soal->jawaban_benar)) === strtolower(trim($jawab))) {
                     $benar++;
                 }
             }

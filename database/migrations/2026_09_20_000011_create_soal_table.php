@@ -10,7 +10,7 @@ return new class extends Migration {
         Schema::create('soal', function (Blueprint $table) {
             $table->increments('id_soal');
             $table->unsignedInteger('id_quiz');
-            $table->unsignedInteger('id_jenjang');
+            $table->unsignedInteger('id_jenjang')->nullable();
             $table->unsignedInteger('id_jenis_soal')->nullable();
             $table->text('pertanyaan');
             $table->text('jawaban_benar');

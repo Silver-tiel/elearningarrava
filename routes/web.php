@@ -103,7 +103,9 @@ Route::prefix('admin')->middleware('auth')->group(function () {
 
     Route::get('/quiz',         [QuizController::class, 'index'])->name('admin.quiz');
     Route::get('/quiz/create',  [QuizController::class, 'create'])->name('quiz.create');
+    Route::get('/quiz/create',  [QuizController::class, 'create'])->name('admin.quiz.create');
     Route::post('/quiz/store',  [QuizController::class, 'store'])->name('quiz.store');
+    Route::post('/quiz/store',  [QuizController::class, 'store'])->name('admin.quiz.store');
 
     Route::get('/soal',         [SoalController::class, 'index'])->name('admin.soal');
     Route::get('/soal/create',  [SoalController::class, 'create'])->name('soal.create');

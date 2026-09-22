@@ -1,75 +1,142 @@
 @extends('layouts.siswa')
 @php($active = 'quiz')
 @section('header-left')
-    <h1 class="text-[20px] font-bold">
-        Ruang Quiz Interaktif</h1>
+    <h1 class="text-[20px] font-bold text-slate-800">Ruang Quiz Interaktif</h1>
 @endsection
+
 @section('content')
-    <div class="px-8 py-8">
-        <div class="grid grid-cols-[minmax(0,1fr)_320px] gap-6">
-            <form method="POST" action="{{ route('siswa.quiz.submit', $quiz->id_quiz) }}" class="space-y-5">
+    <div class="px-6 py-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6">
+            
+            {{-- Main Form Kuis --}}
+            <form method="POST" action="{{ route('siswa.quiz.submit', $quiz->id_quiz) }}" class="space-y-6">
                 @csrf
-                <div class="flex items-center justify-between rounded-2xl border border-[#dfe6ef] bg-white px-5 py-4">
+                
+                {{-- Quiz Header Card --}}
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between">
                     <div>
-                        <h1 class="text-[17px] font-bold">{{ $quiz->judul }}</h1>
-                        <p class="mt-1 text-[13px] text-[#8b9ab0]">{{ $quiz->tipeQuiz->nama_tipe ?? '' }} • {{ $quiz->tingkatQuiz->nama_tingkat ?? '' }}</p>
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 mb-2">
+                            <span>🎮 Mode Kahoot! Interaktif</span>
+                        </div>
+                        <h1 class="text-xl font-extrabold text-slate-800">{{ $quiz->judul }}</h1>
+                        <p class="text-xs text-slate-500 mt-1">Total: {{ $quiz->soal->count() }} Pertanyaan</p>
                     </div>
                 </div>
 
+                {{-- Loop Soal --}}
                 @forelse($quiz->soal as $index => $soal)
-                <section class="rounded-2xl border border-[#dfe6ef] bg-white p-7" id="soal-{{ $index + 1 }}">
-                    <div class="flex items-center justify-between text-[13px] mb-4">
-                        <span class="font-semibold text-[#3f82f6]">Soal No. {{ $index + 1 }} dari {{ $quiz->soal->count() }}</span>
-                    </div>
-                    <h2 class="text-[16px] font-medium leading-7">{{ $soal->pertanyaan }}</h2>
-                    <div class="mt-6 space-y-3">
-                        @foreach ($soal->pilihanSoal as $pilihan)
-                            <label class="flex cursor-pointer items-center gap-4 rounded-xl border border-[#dfe6ef] hover:bg-[#edf4ff] hover:border-[#3f82f6] px-4 py-3.5 text-[13px] font-medium transition">
-                                <input type="radio" name="jawaban[{{ $soal->id_soal }}]" value="{{ $pilihan->label }}" class="h-4 w-4 text-[#3f82f6]">
-                                <span class="flex h-6 w-6 items-center justify-center rounded-full border border-[#9eb0c8] text-[#70819a]">{{ $pilihan->label }}</span>
-                                <span class="flex-1">{{ $pilihan->teks_pilihan }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                </section>
+                    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-hidden" id="soal-{{ $index + 1 }}">
+                        {{-- Top badge --}}
+                        <div class="flex items-center justify-between text-xs font-bold mb-3">
+                            <span class="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                                Pertanyaan No. {{ $index + 1 }} / {{ $quiz->soal->count() }}
+                            </span>
+                            <span class="text-slate-400">⏱️ Batas Waktu 20s</span>
+                        </div>
+
+                        {{-- Pertanyaan --}}
+                        <div class="my-4 bg-slate-900 text-white rounded-xl p-5 text-center text-lg font-bold shadow-inner">
+                            "{{ $soal->pertanyaan }}"
+                        </div>
+
+                        @if($soal->pilihanSoal->count() > 0)
+                            {{-- Kahoot Colorful Answer Grid (Pilihan Ganda) --}}
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
+                                @php
+                                    $kahootStyles = [
+                                        'A' => ['bg' => 'bg-[#E21B3C]', 'hover' => 'hover:border-[#E21B3C]', 'icon' => '▲'],
+                                        'B' => ['bg' => 'bg-[#1368CE]', 'hover' => 'hover:border-[#1368CE]', 'icon' => '◆'],
+                                        'C' => ['bg' => 'bg-[#D89E00]', 'hover' => 'hover:border-[#D89E00]', 'icon' => '●'],
+                                        'D' => ['bg' => 'bg-[#26890C]', 'hover' => 'hover:border-[#26890C]', 'icon' => '■'],
+                                    ];
+                                @endphp
+
+                                @foreach ($soal->pilihanSoal as $pIndex => $pilihan)
+                                    @php
+                                        $label = strtoupper($pilihan->label);
+                                        $style = $kahootStyles[$label] ?? ['bg' => 'bg-indigo-600', 'hover' => 'hover:border-indigo-600', 'icon' => '●'];
+                                    @endphp
+                                    <label class="group relative flex items-center rounded-xl border-2 border-slate-200 bg-white hover:shadow-md cursor-pointer transition overflow-hidden p-2">
+                                        <input type="radio" name="jawaban[{{ $soal->id_soal }}]" value="{{ $pilihan->label }}" class="peer sr-only">
+                                        
+                                        {{-- Shape Badge --}}
+                                        <div class="w-10 h-10 {{ $style['bg'] }} text-white rounded-lg flex items-center justify-center font-bold text-base shrink-0 shadow-sm">
+                                            {{ $style['icon'] }}
+                                        </div>
+                                        
+                                        {{-- Teks Jawaban --}}
+                                        <span class="flex-1 px-3 text-sm font-bold text-slate-800 peer-checked:text-indigo-700">
+                                            {{ $pilihan->teks_pilihan }}
+                                        </span>
+
+                                        {{-- Selection Indicator --}}
+                                        <div class="w-6 h-6 rounded-full border-2 border-slate-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 flex items-center justify-center transition mr-2">
+                                            <svg class="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
+                        @else
+                            {{-- Input Isian Singkat --}}
+                            <div class="mt-5 bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+                                <label class="block text-xs font-bold text-indigo-900 mb-2 uppercase tracking-wider">
+                                    ✍️ Ketikkan Jawaban Isian Singkat Anda:
+                                </label>
+                                <input type="text" name="jawaban[{{ $soal->id_soal }}]" placeholder="Ketikkan jawaban Anda di sini..."
+                                    class="w-full bg-white text-slate-800 font-bold text-sm px-4 py-3 rounded-lg border border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        @endif
+                    </section>
                 @empty
-                    <div class="rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-12 text-center text-sm text-[#7c899c]">Belum ada soal untuk quiz ini.</div>
+                    <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500 font-semibold">
+                        Belum ada soal untuk quiz ini.
+                    </div>
                 @endforelse
 
                 @if($quiz->soal->count() > 0)
-                <div class="flex justify-end pt-4">
-                    <button type="submit" class="rounded-lg bg-[#3f82f6] px-8 py-3 text-[14px] font-semibold text-white transition hover:bg-[#3172e2]">Kumpulkan Jawaban</button>
-                </div>
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-sm px-8 py-3.5 shadow-lg shadow-emerald-600/20 transition transform hover:scale-105">
+                            🚀 Kumpulkan Jawaban Saya
+                        </button>
+                    </div>
                 @endif
             </form>
-            <aside class="space-y-5">
-                <div class="rounded-2xl border border-[#dfe6ef] bg-white p-5">
-                    <h2 class="text-[15px] font-bold">Informasi Quiz</h2>
-                    <dl class="mt-4 space-y-3 text-[13px]">
-                        <div class="flex justify-between gap-4">
-                            <dt class="text-[#9aabc0]">Jumlah Soal</dt>
-                            <dd class="font-semibold">{{ $quiz->soal->count() }} Butir</dd>
+
+            {{-- Sidebar Informasional --}}
+            <aside class="space-y-6">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 class="text-sm font-bold text-slate-800">Informasi Quiz</h2>
+                    <dl class="mt-3 space-y-2 text-xs">
+                        <div class="flex justify-between text-slate-600">
+                            <dt>Jumlah Soal</dt>
+                            <dd class="font-bold text-slate-800">{{ $quiz->soal->count() }} Pertanyaan</dd>
                         </div>
                     </dl>
                     
-                    <h2 class="mt-6 text-[15px] font-bold">Navigasi Soal</h2>
-                    <div class="mt-4 grid grid-cols-5 gap-2">
+                    <h2 class="mt-6 text-xs font-bold uppercase tracking-wider text-slate-400">Navigasi Soal</h2>
+                    <div class="mt-3 grid grid-cols-5 gap-2">
                         @foreach ($quiz->soal as $index => $s)
-                            <a href="#soal-{{ $index + 1 }}" class="flex h-10 items-center justify-center rounded-lg bg-[#f3f7fb] text-[13px] font-medium text-[#6f7e95] hover:bg-[#e2eaf4]">{{ $index + 1 }}</a>
+                            <a href="#soal-{{ $index + 1 }}" class="flex h-9 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
+                                {{ $index + 1 }}
+                            </a>
                         @endforeach
                     </div>
                 </div>
-                <div class="rounded-2xl border border-[#dfe6ef] bg-white p-5">
-                    <h2 class="text-[15px] font-bold">Potensi Penghargaan</h2>
-                    <div class="mt-4 flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff1bf] text-xl">🏅</div>
+
+                <div class="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-5 shadow-sm">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-amber-800">Pencapaian Interaktif 🏆</h2>
+                    <div class="mt-3 flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-white text-xl shadow-md">🏅</div>
                         <div>
-                            <div class="text-[13px] font-semibold">Master Kuadrat 🏆</div>
-                            <div class="text-[11px] text-[#9aa8bb]">Selesaikan nilai 100 berturut-turut</div>
+                            <div class="text-xs font-bold text-amber-900">Kahoot Champion</div>
+                            <div class="text-[11px] text-amber-700">Raih skor sempurna untuk mendapatkan poin lebih</div>
                         </div>
                     </div>
                 </div>
             </aside>
+
         </div>
     </div>
 @endsection

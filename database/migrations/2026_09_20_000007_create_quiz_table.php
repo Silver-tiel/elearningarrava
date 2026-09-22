@@ -13,6 +13,8 @@ return new class extends Migration
             $table->string('judul');
             $table->unsignedInteger('id_tipequiz');
             $table->unsignedInteger('id_tingkatquiz');
+            $table->unsignedInteger('id_jenjang')->nullable();
+            $table->dateTime('waktu_kadaluarsa')->nullable();
             $table->string('hasil_quiz')->nullable();
             $table->string('proggressQuiz')->nullable();
             $table->string('foto_quiz')->nullable();
@@ -20,6 +22,7 @@ return new class extends Migration
 
             $table->foreign('id_tipequiz')->references('id_tipequiz')->on('tipequiz');
             $table->foreign('id_tingkatquiz')->references('id_tingkatquiz')->on('tingkatquiz');
+            $table->foreign('id_jenjang')->references('id_jenjang')->on('jenjang');
         });
     }
 
