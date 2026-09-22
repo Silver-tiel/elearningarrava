@@ -5,7 +5,9 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ModulController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SoalController;
+use App\Http\Controllers\SiswaController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // Halaman pendaftaran.
@@ -60,7 +62,6 @@ Route::get('/admin', function () {
     return view('admin', ['users' => $users]);
 })->middleware('auth')->name('admin');
 
-<<<<<<< HEAD
     // Siswa.
     Route::prefix('siswa')->name('siswa.')->middleware('role:siswa')->group(function () {
         Route::get('/dashboard', [\App\Http\Controllers\SiswaController::class, 'dashboard'])->name('dashboard');
@@ -78,8 +79,7 @@ Route::get('/admin', function () {
         Route::post('/quiz/{quiz}/submit', [\App\Http\Controllers\SiswaController::class, 'submitQuiz'])->name('quiz.submit');
         Route::get('/quiz/{quiz}/result/{hasil}', [\App\Http\Controllers\SiswaController::class, 'hasilQuiz'])->name('quiz.result');
     });
-});
-=======
+
 Route::get('/admin/modul', [ModulController::class, 'index'])->middleware('auth')->name('admin.modul');
 Route::get('/admin/modul/create', [ModulController::class, 'create'])->middleware('auth')->name('modul.create');
 Route::post('/admin/modul/store', [ModulController::class, 'store'])->middleware('auth')->name('modul.store');
@@ -91,4 +91,3 @@ Route::post('/admin/quiz/store', [QuizController::class, 'store'])->middleware('
 Route::get('/admin/soal', [SoalController::class, 'index'])->middleware('auth')->name('admin.soal');
 Route::get('/admin/soal/create', [SoalController::class, 'create'])->middleware('auth')->name('soal.create');
 Route::post('/admin/soal/store', [SoalController::class, 'store'])->middleware('auth')->name('soal.store');
->>>>>>> 7877a60552d5db3a2a46dbebeaebfa6e882ae319
