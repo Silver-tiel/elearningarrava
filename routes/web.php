@@ -7,6 +7,9 @@ use App\Http\Controllers\ModulController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SoalController;
 use App\Http\Controllers\SiswaController;
+use App\Models\Modul;
+use App\Models\Quiz;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -56,16 +59,22 @@ Route::get('/dashboard', function () {
     return redirect()->route('siswa.dashboard');
 })->middleware('auth');
 
-// Admin.
+// Admin dashboard.
 Route::get('/admin', function () {
-
     $user = Auth::user();
+    // Siswa tidak boleh akses halaman admin
     if ($user && $user->id_tipeuser == 3) {
-        return redirect('/siswa/dashboard');
+        return redirect()->route('siswa.dashboard');
     }
 
-    $users = App\Models\User::all();
-    return view('admin.admin', ['users' => $users]);
+    return view('admin.admin', [
+        'siswaCount'   => User::where('id_tipeuser', 3)->count(),
+        'guruCount'    => User::where('id_tipeuser', 2)->count(),
+        'modulCount'   => Modul::count(),
+        'quizCount'    => Quiz::count(),
+        'siswaTerbaru' => User::where('id_tipeuser', 3)->latest()->take(5)->get(),
+        'modulTerbaru' => Modul::with(['jenjang'])->latest()->take(5)->get(),
+    ]);
 })->middleware('auth')->name('admin');
 
 // Siswa.
@@ -75,7 +84,7 @@ Route::prefix('siswa')->name('siswa.')->middleware('auth')->group(function () {
     Route::get('/belajar', [SiswaController::class, 'belajar'])->name('modul');
 
     Route::get('/materi-video', [SiswaController::class, 'materiVideo'])->name('materi-video');
-    Route::get('/materi-video/{modul}', [SiswaController::class, 'materiVideoDetail'])->name('materi-video.detail');
+    Route::get('/materi-video/{id_modul}', [SiswaController::class, 'materiVideoDetail'])->name('materi-video.detail');
 
     Route::get('/latihan-soal', [SiswaController::class, 'latihanSoal'])->name('latihan-soal');
     Route::get('/latihan-soal/{quiz}', [SiswaController::class, 'kerjakanLatihan'])->name('latihan-soal.kerjakan');
@@ -86,14 +95,17 @@ Route::prefix('siswa')->name('siswa.')->middleware('auth')->group(function () {
     Route::get('/quiz/{quiz}/result/{hasil}', [SiswaController::class, 'hasilQuiz'])->name('quiz.result');
 });
 
-Route::get('/admin/modul', [ModulController::class, 'index'])->middleware('auth')->name('admin.modul');
-Route::get('/admin/modul/create', [ModulController::class, 'create'])->middleware('auth')->name('modul.create');
-Route::post('/admin/modul/store', [ModulController::class, 'store'])->middleware('auth')->name('modul.store');
+// Admin resource routes (dikelompokkan dengan prefix & middleware)
+Route::prefix('admin')->middleware('auth')->group(function () {
+    Route::get('/modul',        [ModulController::class, 'index'])->name('admin.modul');
+    Route::get('/modul/create', [ModulController::class, 'create'])->name('modul.create');
+    Route::post('/modul/store', [ModulController::class, 'store'])->name('modul.store');
 
-Route::get('/admin/quiz', [QuizController::class, 'index'])->middleware('auth')->name('admin.quiz');
-Route::get('/admin/quiz/create', [QuizController::class, 'create'])->middleware('auth')->name('quiz.create');
-Route::post('/admin/quiz/store', [QuizController::class, 'store'])->middleware('auth')->name('quiz.store');
+    Route::get('/quiz',         [QuizController::class, 'index'])->name('admin.quiz');
+    Route::get('/quiz/create',  [QuizController::class, 'create'])->name('quiz.create');
+    Route::post('/quiz/store',  [QuizController::class, 'store'])->name('quiz.store');
 
-Route::get('/admin/soal', [SoalController::class, 'index'])->middleware('auth')->name('admin.soal');
-Route::get('/admin/soal/create', [SoalController::class, 'create'])->middleware('auth')->name('soal.create');
-Route::post('/admin/soal/store', [SoalController::class, 'store'])->middleware('auth')->name('soal.store');
+    Route::get('/soal',         [SoalController::class, 'index'])->name('admin.soal');
+    Route::get('/soal/create',  [SoalController::class, 'create'])->name('soal.create');
+    Route::post('/soal/store',  [SoalController::class, 'store'])->name('soal.store');
+});

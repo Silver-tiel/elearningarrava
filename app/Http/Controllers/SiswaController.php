@@ -35,11 +35,9 @@ class SiswaController extends Controller
     public function materiVideo()
     {
         // Menampilkan daftar modul yang ada videonya
-        $moduls = Modul::with(['tipeModul', 'jenjang'])->whereHas('tipeModul', function($q) {
-            $q->where('nama_tipe', 'like', '%video%');
-        })->orWhereHas('materiVideo')->latest()->get();
-        
-        return view('siswa.materi-video-index', compact('moduls'));
+        $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->get();
+
+        return view('siswa.materi-video-list', compact('moduls'));
     }
 
     public function materiVideoDetail($id_modul)
@@ -61,7 +59,7 @@ class SiswaController extends Controller
     public function kerjakanLatihan($id_quiz)
     {
         $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
-        return view('siswa.mengerjakan-latihan', compact('quiz'));
+        return view('siswa.mengerjakan-quiz', compact('quiz'));
     }
 
     public function quiz()

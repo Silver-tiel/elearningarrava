@@ -1,6 +1,9 @@
 @php
     $user = Auth::user();
-    $role = $user->role ?? 'siswa'; // Default ke siswa jika null
+    // id_tipeuser: 1 = admin, 2 = guru, 3 = siswa
+    $idTipe = $user->id_tipeuser ?? 3;
+    $isAdmin = in_array($idTipe, [1, 2]);
+    $role = $isAdmin ? 'admin' : 'siswa';
 @endphp
 
 <aside class="w-64 h-screen sticky top-0 bg-white border-r border-gray-100 flex flex-col justify-between p-4 shrink-0">
@@ -16,7 +19,7 @@
 
         <!-- Navigation Links -->
         <nav class="space-y-1">
-            @if ($role === 'admin')
+            @if ($isAdmin)
                 {{-- ================= MENU ADMIN ================= --}}
                 <!-- Dashboard -->
                 <a href="{{ route('admin') }}" 
