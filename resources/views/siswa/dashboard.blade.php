@@ -1,4 +1,4 @@
-@extends('layouts.siswa')
+@extends('layouts.app')
 
 @section('header')
 <div class="relative w-full max-w-[420px]">
