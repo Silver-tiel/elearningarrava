@@ -97,9 +97,12 @@ Route::prefix('siswa')->name('siswa.')->middleware('auth')->group(function () {
 
 // Admin resource routes (dikelompokkan dengan prefix & middleware)
 Route::prefix('admin')->middleware('auth')->group(function () {
-    Route::get('/modul',        [ModulController::class, 'index'])->name('admin.modul');
-    Route::get('/modul/create', [ModulController::class, 'create'])->name('modul.create');
-    Route::post('/modul/store', [ModulController::class, 'store'])->name('modul.store');
+    Route::get('/modul', [ModulController::class, 'index'])->name('admin.modul');
+    Route::get('/modul/create', [ModulController::class, 'create'])->name('modul.create'); // Bisa juga diberi name('admin.modul.create')
+    Route::post('/modul/store', [ModulController::class, 'store'])->name('modul.store'); // Tambahkan atau sesuaikan name ini
+    Route::get('/modul/{id}/edit', [ModulController::class, 'edit'])->name('admin.modul.edit');
+    Route::put('/modul/{id}', [ModulController::class, 'update'])->name('admin.modul.update');
+    Route::delete('/modul/{id}', [ModulController::class, 'destroy'])->name('admin.modul.destroy');
 
     Route::get('/quiz',         [QuizController::class, 'index'])->name('admin.quiz');
     Route::get('/quiz/create',  [QuizController::class, 'create'])->name('quiz.create');
@@ -111,3 +114,4 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::get('/soal/create',  [SoalController::class, 'create'])->name('soal.create');
     Route::post('/soal/store',  [SoalController::class, 'store'])->name('soal.store');
 });
+
