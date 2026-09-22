@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @extends('layouts.siswa')
 
 @section('header')
@@ -14,6 +15,27 @@
     <div class="mb-6">
         <h1 class="text-[24px] font-bold tracking-tight text-[#172033]">Belajar Asikk</h1>
         <p class="mt-1 text-sm text-[#687892]">Pilih modul pembelajaran yang ingin kamu pelajari.</p>
+=======
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBooks - Modul</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+<div class="mx-auto max-w-7xl p-6 md:p-8">
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <p class="text-sm font-medium text-blue-600">Pembelajaran</p>
+            <h1 class="text-3xl font-bold text-slate-900">Modul Pembelajaran</h1>
+            <p class="mt-1 text-slate-500">Pilih materi yang ingin kamu pelajari.</p>
+        </div>
+        <a href="{{ route('siswa.dashboard') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">← Dashboard</a>
+>>>>>>> 7877a60552d5db3a2a46dbebeaebfa6e882ae319
     </div>
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
