@@ -61,7 +61,7 @@
     <div class="container">
         <h1>Tambah Quiz</h1>
 
-        <form action="{{ route('quiz.store') }}" method="POST">
+        <form action="{{ route('admin.quiz') }}" method="POST">
             @csrf
 
             <div class="form-group">
