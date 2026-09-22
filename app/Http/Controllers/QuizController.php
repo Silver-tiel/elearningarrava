@@ -13,13 +13,13 @@ class QuizController extends Controller
     {
         $quizzes = Quiz::all();
 
-        return view('quiz_admin.index', ['quizzes' => $quizzes]);
+        return view('admin.quiz.index', ['quizzes' => $quizzes]);
     }
 
     // Menampilkan form untuk menambah kuis baru.
     public function create()
     {
-        return view('quiz_admin.admin_create');
+        return view('admin.quiz.create');
     }
 
     // Menyimpan kuis baru ke database.

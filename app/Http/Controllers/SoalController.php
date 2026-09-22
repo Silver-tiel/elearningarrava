@@ -13,13 +13,13 @@ class SoalController extends Controller
     {
         $soals = Soal::all();
 
-        return view('soal.index', ['soals' => $soals]);
+        return view('admin.soal.index', ['soals' => $soals]);
     }
 
     // Menampilkan form untuk menambah soal baru.
     public function create()
     {
-        return view('soal.create');
+        return view('admin.soal.create');
     }
 
     // Menyimpan soal baru ke database.

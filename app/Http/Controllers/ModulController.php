@@ -17,7 +17,7 @@ class ModulController extends Controller
         // Mengambil data modul beserta relasi tipeModul dan jenjang
         $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->get();
 
-        return view('modul.index', compact('moduls'));
+        return view('admin.modul.index', compact('moduls'));
     }
 
     // Menampilkan form tambah modul baru
@@ -29,7 +29,7 @@ class ModulController extends Controller
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::all();
 
-        return view('modul.create', compact('tipeModul', 'jenjang', 'quizzes'));
+        return view('admin.modul.create', compact('tipeModul', 'jenjang', 'quizzes'));
     }
 
     // Menyimpan data modul baru & memproses upload file fisik
@@ -87,7 +87,7 @@ class ModulController extends Controller
     public function show($id)
     {
         $modul = Modul::with(['tipeModul', 'jenjang', 'quiz'])->findOrFail($id);
-        return view('modul.show', compact('modul'));
+        return view('admin.modul.show', compact('modul'));
     }
 
     // Menghapus data modul dan file fisik terkait dari storage
