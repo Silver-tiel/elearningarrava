@@ -14,10 +14,17 @@ class Quiz extends Model
         'judul',
         'id_tipequiz',
         'id_tingkatquiz',
+        'id_jenjang',
+        'waktu_kadaluarsa',
         'hasil_quiz',
         'proggressQuiz',
         'foto_quiz',
     ];
+
+    public function jenjang()
+    {
+        return $this->belongsTo(Jenjang::class, 'id_jenjang', 'id_jenjang');
+    }
 
     public function tipeQuiz()
     {
