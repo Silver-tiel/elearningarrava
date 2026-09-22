@@ -106,7 +106,11 @@ class SiswaController extends Controller
             'waktu_dapat' => now(),
         ]);
 
-        return redirect()->route('siswa.quiz.result', ['quiz' => $quiz->id_quiz, 'hasil' => $hasil->id_hasil]);
+        return redirect()->back()->with('quiz_result', [
+            'poin_didapat' => $poinDidapat,
+            'benar' => $benar,
+            'total_soal' => $totalSoal
+        ]);
     }
 
     public function hasilQuiz($id_quiz, $id_hasil)
