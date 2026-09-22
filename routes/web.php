@@ -2,10 +2,13 @@
 
 use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\ModulController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SoalController;
+use App\Http\Controllers\SiswaController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 // Halaman pendaftaran.
@@ -23,6 +26,8 @@ Route::get('/', function () {
 // Login.
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+// Logout
+Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
 
 // Lupa password - UI dan endpoint awal. Pengiriman email reset dapat disambungkan
 // ke Laravel Password Broker ketika konfigurasi mail sudah tersedia.
@@ -43,14 +48,40 @@ Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])->name('p
 
 // Dashboard.
 Route::get('/dashboard', function () {
+    $user = Auth::user();
+    if ($user && ($user->id_tipeuser == 1 || $user->id_tipeuser == 2)) {
+        return redirect()->route('admin');
+    }
     return view('index');
 })->middleware('auth');
 
 // Admin.
 Route::get('/admin', function () {
+    $user = Auth::user();
+    if ($user && $user->id_tipeuser == 3) {
+        return redirect('/dashboard');
+    }
     $users = App\Models\User::all();
     return view('admin', ['users' => $users]);
 })->middleware('auth')->name('admin');
+
+    // Siswa.
+    Route::prefix('siswa')->name('siswa.')->middleware('role:siswa')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\SiswaController::class, 'dashboard'])->name('dashboard');
+        
+        Route::get('/belajar', [\App\Http\Controllers\SiswaController::class, 'belajar'])->name('modul');
+        
+        Route::get('/materi-video', [\App\Http\Controllers\SiswaController::class, 'materiVideo'])->name('materi-video');
+        Route::get('/materi-video/{modul}', [\App\Http\Controllers\SiswaController::class, 'materiVideoDetail'])->name('materi-video.detail');
+        
+        Route::get('/latihan-soal', [\App\Http\Controllers\SiswaController::class, 'latihanSoal'])->name('latihan-soal');
+        Route::get('/latihan-soal/{quiz}', [\App\Http\Controllers\SiswaController::class, 'kerjakanLatihan'])->name('latihan-soal.kerjakan');
+        
+        Route::get('/quiz', [\App\Http\Controllers\SiswaController::class, 'quiz'])->name('quiz');
+        Route::get('/quiz/{quiz}', [\App\Http\Controllers\SiswaController::class, 'kerjakanQuiz'])->name('quiz.kerjakan');
+        Route::post('/quiz/{quiz}/submit', [\App\Http\Controllers\SiswaController::class, 'submitQuiz'])->name('quiz.submit');
+        Route::get('/quiz/{quiz}/result/{hasil}', [\App\Http\Controllers\SiswaController::class, 'hasilQuiz'])->name('quiz.result');
+    });
 
 Route::get('/admin/modul', [ModulController::class, 'index'])->middleware('auth')->name('admin.modul');
 Route::get('/admin/modul/create', [ModulController::class, 'create'])->middleware('auth')->name('modul.create');

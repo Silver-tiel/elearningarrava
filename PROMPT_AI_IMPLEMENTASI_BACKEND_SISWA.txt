@@ -1,0 +1,999 @@
+# PROMPT UNTUK AI CODING AGENT — IMPLEMENTASI BACKEND SISWA EBOOKS
+
+## 1. KONTEKS PROJECT
+
+Saya memiliki project Laravel e-learning bernama `eLearningArrava`.
+
+Project sudah memiliki:
+- Laravel
+- Blade
+- Tailwind CSS
+- Vite
+- Authentication
+- Role user: Admin, Guru, Siswa
+- Database SQL yang sudah dibuat
+- Controller, Model, Migration, dan View untuk beberapa fitur Admin/Guru
+- Frontend siswa yang sudah didesain berdasarkan screenshot dan sudah dibuat dalam Blade.
+
+JANGAN membuat project Laravel baru.
+JANGAN mengganti framework.
+JANGAN menghapus database/tabel yang sudah ada.
+JANGAN merombak struktur yang sudah berjalan tanpa alasan.
+Gunakan struktur project yang sudah ada dan lakukan perubahan secara incremental.
+
+Jika ada perbedaan antara prompt ini dengan struktur kode aktual project, PRIORITASKAN struktur kode aktual setelah diperiksa terlebih dahulu. Jangan menebak nama kolom atau relasi.
+
+---
+
+# 2. TUJUAN UTAMA
+
+Sambungkan frontend siswa yang sudah dibuat dengan:
+1. Route Laravel
+2. Controller
+3. Model/Eloquent
+4. Database
+5. CRUD Admin
+6. CRUD Guru
+7. Pengerjaan Latihan Soal
+8. Pengerjaan Quiz
+9. Penyimpanan hasil Quiz
+10. Progress siswa
+
+Frontend harus tetap mengikuti desain yang sudah diberikan. Backend harus menyesuaikan desain tersebut, bukan sebaliknya.
+
+---
+
+# 3. SIDEBAR SISWA
+
+Sidebar siswa harus berisi:
+
+- Dashboard
+- Belajar
+- Materi Video
+- Latihan Soal
+- Quiz
+- Keluar
+
+Jangan menambahkan:
+- Try Out sebagai menu utama
+- Achievement sebagai menu utama
+- Profil sebagai menu utama
+
+Profil siswa tetap boleh muncul di header kanan.
+
+---
+
+# 4. STRUKTUR HALAMAN SISWA
+
+Frontend siswa yang sudah ada terdiri dari:
+
+```text
+resources/views/
+├── layouts/
+│   └── siswa.blade.php
+│
+└── siswa/
+    ├── dashboard.blade.php
+    ├── modul.blade.php
+    ├── materi-video.blade.php
+    ├── latihan-soal.blade.php
+    ├── mengerjakan-latihan.blade.php
+    ├── quiz.blade.php
+    ├── mengerjakan-quiz.blade.php
+    └── quiz-result.blade.php
+```
+
+Pertahankan nama/struktur tersebut jika memang sudah ada.
+
+---
+
+# 5. ROUTE SISWA
+
+Buat atau sesuaikan route siswa dengan pola berikut.
+
+Gunakan middleware authentication dan middleware role siswa yang SUDAH ADA di project.
+
+Contoh struktur:
+
+```php
+Route::middleware(['auth', 'role:siswa'])
+    ->prefix('siswa')
+    ->name('siswa.')
+    ->group(function () {
+
+        Route::get('/dashboard', [SiswaController::class, 'dashboard'])
+            ->name('dashboard');
+
+        Route::get('/belajar', [SiswaController::class, 'belajar'])
+            ->name('belajar');
+
+        Route::get('/belajar/{modul}', [SiswaController::class, 'modul'])
+            ->name('belajar.detail');
+
+        Route::get('/materi-video', [SiswaController::class, 'materiVideo'])
+            ->name('materi-video');
+
+        Route::get('/materi-video/{modul}', [SiswaController::class, 'materiVideoDetail'])
+            ->name('materi-video.detail');
+
+        Route::get('/latihan-soal', [SiswaController::class, 'latihanSoal'])
+            ->name('latihan-soal');
+
+        Route::get('/latihan-soal/{quiz}', [SiswaController::class, 'kerjakanLatihan'])
+            ->name('latihan-soal.kerjakan');
+
+        Route::post('/latihan-soal/{quiz}/submit', [SiswaController::class, 'submitLatihan'])
+            ->name('latihan-soal.submit');
+
+        Route::get('/quiz', [SiswaController::class, 'quiz'])
+            ->name('quiz');
+
+        Route::get('/quiz/{quiz}', [SiswaController::class, 'kerjakanQuiz'])
+            ->name('quiz.kerjakan');
+
+        Route::post('/quiz/{quiz}/submit', [SiswaController::class, 'submitQuiz'])
+            ->name('quiz.submit');
+
+        Route::get('/quiz/{quiz}/result', [SiswaController::class, 'hasilQuiz'])
+            ->name('quiz.result');
+    });
+```
+
+CATATAN:
+- Jangan menyalin route ini secara buta.
+- Periksa route yang sudah ada terlebih dahulu.
+- Hindari duplicate route name.
+- Jika controller sudah memiliki method dengan nama lain, sesuaikan dengan struktur project.
+- Jangan menghapus route Admin/Guru yang sudah berfungsi.
+
+---
+
+# 6. HALAMAN BELAJAR SISWA
+
+Halaman:
+
+```text
+/siswa/belajar
+```
+
+Menampilkan daftar modul dari database.
+
+Sumber data utama:
+- tabel `modul`
+- relasi `jenjang`
+- relasi `tipemodul`
+- relasi guru/user jika memang tersedia
+
+Card mengikuti desain frontend yang sudah ada.
+
+Setiap card minimal menampilkan:
+- cover/foto modul
+- kategori/tipemodul
+- judul modul
+- deskripsi
+- kelas/jenjang
+- jumlah bab/materi jika tersedia
+- guru/pembuat
+- tombol/link untuk membuka modul
+
+Jangan menggunakan data dummy jika data database sudah tersedia.
+
+---
+
+# 7. DETAIL BELAJAR
+
+Ketika siswa membuka:
+
+```text
+/siswa/belajar/{modul}
+```
+
+tampilkan detail modul.
+
+Gunakan route model binding jika sesuai dengan struktur model.
+
+Pastikan:
+- modul benar-benar ada
+- siswa yang belum login tidak dapat mengakses
+- role non-siswa tidak menggunakan halaman siswa
+- tampilkan informasi modul dari database
+
+---
+
+# 8. MATERI VIDEO
+
+Halaman:
+
+```text
+/siswa/materi-video
+```
+
+dan:
+
+```text
+/siswa/materi-video/{modul}
+```
+
+harus mengikuti desain yang sudah diberikan.
+
+Desain detail memiliki:
+
+Kiri:
+```text
+Daftar Materi
+01. Pendahuluan
+02. Konsep Akar-akar Kuadrat
+03. Rumus ABC
+04. Sifat Diskriminan
+05. Latihan
+06. Quiz
+```
+
+Kanan:
+```text
+Video Player
+Judul materi
+Sebelumnya
+Selanjutnya
+Overview
+Catatan
+Bookmark
+```
+
+PENTING:
+Database saat ini memiliki konsep `modul`, tetapi periksa apakah project sudah mempunyai tabel/model khusus materi video.
+
+Jika BELUM ADA relasi satu modul memiliki banyak materi/video, buat struktur yang paling aman dan konsisten dengan database yang ada.
+
+Jangan mengubah tabel `modul` secara sembarangan.
+
+Rekomendasi struktur jika memang belum tersedia:
+
+```text
+materi_video
+- id_materi
+- id_modul
+- judul
+- deskripsi
+- file_video
+- durasi
+- urutan
+- status
+- created_at
+- updated_at
+```
+
+Namun sebelum membuat migration:
+1. cek migration yang ada;
+2. cek SQL/database;
+3. cek apakah tabel serupa sudah ada;
+4. jika sudah ada, gunakan tabel tersebut;
+5. jika belum ada, buat migration baru.
+
+---
+
+# 9. CRUD MATERI VIDEO
+
+Admin dan Guru harus dapat:
+
+```text
+Index
+Create
+Store
+Show
+Edit
+Update
+Destroy
+```
+
+Guru hanya boleh mengelola materi yang menjadi kewenangannya jika project memang memiliki relasi kepemilikan guru.
+
+Admin dapat mengelola seluruh data.
+
+Field minimal:
+- modul
+- judul materi
+- deskripsi
+- video/file
+- durasi
+- urutan
+- status
+
+Validasi upload:
+- gunakan validation Laravel
+- batasi extension/type
+- gunakan storage Laravel
+- jangan menyimpan file upload mentah sembarangan
+
+---
+
+# 10. LATIHAN SOAL
+
+Halaman:
+
+```text
+/siswa/latihan-soal
+```
+
+menampilkan daftar latihan dalam bentuk card seperti desain.
+
+Card minimal:
+- cover
+- kategori
+- judul
+- jumlah materi
+- jumlah soal
+- tombol mulai
+
+Saat siswa memilih latihan:
+
+```text
+/siswa/latihan-soal/{quiz}
+```
+
+tampilkan halaman pengerjaan sesuai desain.
+
+Desain pengerjaan:
+- judul latihan
+- soal nomor X dari Y
+- timer jika memang diperlukan
+- pertanyaan
+- pilihan jawaban
+- navigasi nomor soal
+- sebelumnya
+- soal berikutnya
+
+---
+
+# 11. QUIZ SISWA
+
+Halaman:
+
+```text
+/siswa/quiz
+```
+
+menampilkan daftar quiz.
+
+Filter UI:
+- Semua
+- Matematika
+- Bahasa Inggris
+- IPA
+- IPS
+
+Jika filter belum menggunakan AJAX, boleh gunakan query parameter:
+
+```text
+/siswa/quiz?mapel=matematika
+```
+
+Jangan membuat data filter hardcoded jika kategori/mapel dapat diambil dari database.
+
+Card quiz minimal:
+- tipe/paket quiz
+- mata pelajaran
+- judul
+- jumlah soal
+- jumlah peserta jika data tersedia
+- tombol Mulai
+
+---
+
+# 12. MENGERJAKAN QUIZ
+
+Halaman:
+
+```text
+/siswa/quiz/{quiz}
+```
+
+harus mengikuti desain screenshot.
+
+Elemen:
+- nama quiz
+- bab/topik
+- timer
+- nomor soal
+- progress
+- pertanyaan
+- pilihan jawaban
+- navigasi
+- informasi quiz
+- jumlah soal
+- durasi
+- batas lulus
+- potensi penghargaan jika data tersedia
+
+Timer boleh berjalan di frontend dengan JavaScript, tetapi hasil akhir/durasi harus divalidasi di server.
+
+JANGAN hanya mengandalkan timer JavaScript untuk keamanan.
+
+---
+
+# 13. PILIHAN JAWABAN SOAL
+
+PERIKSA DATABASE SAAT INI.
+
+Tabel `soal` yang sudah ada memiliki informasi pertanyaan dan jawaban benar, tetapi desain siswa membutuhkan pilihan:
+
+```text
+A
+B
+C
+D
+```
+
+Jika database belum mempunyai struktur pilihan jawaban, jangan menyimpan pilihan A/B/C/D sebagai string acak di controller.
+
+Buat struktur relasional yang benar.
+
+Rekomendasi:
+
+```text
+pilihan_soal
+- id_pilihan
+- id_soal
+- label
+- teks_pilihan
+- is_correct
+- created_at
+- updated_at
+```
+
+Contoh:
+
+```text
+Soal:
+id_soal = 1
+
+Pilihan:
+A | x = 2 atau x = 3
+B | x = -2 atau x = -3
+C | x = 1 atau x = 6
+D | x = -1 atau x = -6
+```
+
+Atau gunakan struktur yang sudah tersedia jika ternyata project memang sudah memiliki tabel pilihan.
+
+Jangan membuat tabel baru jika ternyata struktur tersebut sudah tersedia.
+
+---
+
+# 14. CRUD SOAL
+
+Admin/Guru dapat:
+
+```text
+Index
+Create
+Store
+Show
+Edit
+Update
+Destroy
+```
+
+Soal harus terkait dengan quiz.
+
+Form soal minimal:
+- quiz
+- jenis soal
+- pertanyaan
+- pilihan jawaban jika pilihan ganda
+- jawaban benar
+- bobot/nilai jika struktur project mendukung
+
+Untuk jenis soal:
+- Pilihan Ganda
+- Essay
+- Benar/Salah
+
+Ikuti tabel `jenis_soal` yang sudah ada.
+
+Jangan memaksa semua tipe soal menggunakan pilihan A/B/C/D.
+
+---
+
+# 15. SUBMIT QUIZ
+
+Saat siswa submit:
+
+```text
+POST /siswa/quiz/{quiz}/submit
+```
+
+Server harus:
+1. validasi quiz
+2. validasi siswa
+3. validasi jawaban
+4. mengambil soal dari database
+5. menghitung jawaban benar
+6. menghitung total poin
+7. menentukan lulus/tidak jika ada batas lulus
+8. menyimpan hasil ke tabel hasil yang sudah tersedia
+9. mengembalikan siswa ke halaman hasil
+
+Jangan percaya nilai yang dikirim dari frontend.
+
+Nilai harus dihitung ulang di server.
+
+---
+
+# 16. HASIL QUIZ
+
+Gunakan tabel yang sudah ada jika memang cocok:
+
+```text
+hasilquizmodul
+```
+
+Field yang sudah tersedia menurut database project:
+- id_user
+- id_quiz
+- total_poin
+- poin_didapat
+- waktu_dapat
+
+Jangan membuat tabel hasil baru jika tabel ini sudah dapat digunakan.
+
+Jika membutuhkan field tambahan yang benar-benar diperlukan, buat migration tambahan secara aman.
+
+Halaman hasil minimal:
+- nama quiz
+- nilai
+- total poin
+- status lulus/tidak
+- waktu pengerjaan
+- jumlah benar
+- jumlah salah
+- tombol kembali ke quiz
+- tombol ulangi jika diizinkan
+
+---
+
+# 17. PROGRESS SISWA
+
+Database saat ini memiliki `progressModul` dan `proggressQuiz`.
+
+PERIKSA apakah progress tersebut memang dimaksudkan sebagai progress global atau per siswa.
+
+Jika progress saat ini tersimpan langsung pada `modul`/`quiz`, JANGAN menggunakannya sebagai progress personal siswa apabila hal itu menyebabkan semua siswa memiliki progress yang sama.
+
+Rekomendasi:
+
+```text
+progress_materi
+- id
+- id_user
+- id_materi
+- progress
+- selesai
+- last_position
+- completed_at
+- created_at
+- updated_at
+```
+
+Jika diperlukan untuk quiz:
+
+```text
+progress_quiz
+- id
+- id_user
+- id_quiz
+- progress
+- status
+- started_at
+- completed_at
+```
+
+Tetapi sebelum membuat tabel:
+- periksa apakah project sudah memiliki tabel progress;
+- gunakan tabel existing jika cocok;
+- jangan membuat duplicate.
+
+---
+
+# 18. RELASI MODEL
+
+Periksa dan lengkapi relasi Eloquent.
+
+Minimal konsep:
+
+```text
+Modul
+  hasMany MateriVideo
+
+MateriVideo
+  belongsTo Modul
+
+Quiz
+  hasMany Soal
+
+Soal
+  belongsTo Quiz
+
+Soal
+  hasMany PilihanSoal
+
+PilihanSoal
+  belongsTo Soal
+
+User
+  hasMany HasilQuiz
+
+HasilQuiz
+  belongsTo User
+  belongsTo Quiz
+```
+
+Gunakan nama model dan primary key yang SESUAI DENGAN PROJECT AKTUAL.
+
+Jangan mengasumsikan primary key selalu `id` jika project menggunakan nama seperti:
+- `id_modul`
+- `id_quiz`
+- `id_soal`
+- dll.
+
+---
+
+# 19. CRUD ADMIN/GURU
+
+Pastikan Admin dan Guru dapat mengelola data yang dibutuhkan siswa.
+
+Minimal:
+
+```text
+Admin
+├── Modul
+├── Materi Video
+├── Quiz
+├── Soal
+└── Hasil Quiz
+
+Guru
+├── Modul
+├── Materi Video
+├── Quiz
+├── Soal
+└── Hasil Quiz milik/terkait pembelajarannya
+```
+
+Periksa controller existing terlebih dahulu.
+
+Jika controller sudah ada:
+- perbaiki
+- lengkapi
+- jangan membuat duplicate controller.
+
+---
+
+# 20. SECURITY
+
+Wajib:
+- auth middleware
+- role middleware
+- authorization
+- validation
+- CSRF
+- route model binding jika cocok
+- Policy/Gate jika project sudah menggunakannya
+
+Siswa tidak boleh:
+- membuat modul
+- mengedit modul
+- menghapus modul
+- membuat quiz
+- mengedit quiz
+- menghapus soal
+- mengubah nilai
+- mengirim hasil palsu
+
+Guru tidak boleh mengelola data di luar kewenangannya jika ada hubungan ownership.
+
+Admin memiliki akses penuh.
+
+---
+
+# 21. FRONTEND JANGAN DIUBAH SEMBARANGAN
+
+Frontend sudah dibuat berdasarkan screenshot.
+
+Pertahankan:
+- sidebar
+- header
+- warna
+- typography
+- spacing
+- card
+- button
+- layout
+- responsivitas
+- nama halaman
+
+Backend harus mengisi data ke Blade yang sudah ada.
+
+Jangan mengganti desain hanya karena backend lebih mudah dibuat.
+
+Jika ada bagian Blade yang masih menggunakan dummy data:
+- ganti dengan data database
+- pertahankan markup/style semaksimal mungkin.
+
+---
+
+# 22. JAVASCRIPT
+
+Gunakan JavaScript hanya jika dibutuhkan untuk:
+- timer
+- pilihan soal
+- navigasi soal
+- progress visual
+- filter
+- interaksi video
+- bookmark/catatan jika fitur tersebut memang sudah disiapkan
+
+Tetap validasi data penting di server.
+
+Jangan mengandalkan localStorage untuk data penting yang harus tersimpan di database.
+
+---
+
+# 23. FILE YANG HARUS DIPERIKSA SEBELUM CODING
+
+Sebelum melakukan perubahan, baca:
+
+```text
+routes/web.php
+
+app/Models/
+app/Http/Controllers/
+app/Http/Middleware/
+
+database/migrations/
+database/database.sql
+
+resources/views/
+resources/css/
+resources/js/
+```
+
+Khususnya:
+- Modul.php
+- Quiz.php
+- Soal.php
+- User.php
+- model Jenjang
+- model TipeModul
+- model TipeQuiz
+- model TingkatQuiz
+- model JenisSoal
+- controller Modul
+- controller Quiz
+- controller Soal
+- controller Login/Auth
+- RoleMiddleware
+
+Jangan menebak struktur sebelum file tersebut dibaca.
+
+---
+
+# 24. URUTAN IMPLEMENTASI
+
+Kerjakan dengan urutan berikut:
+
+### STEP 1
+Audit project.
+
+Buat ringkasan:
+- tabel existing
+- model existing
+- relasi existing
+- controller existing
+- route existing
+- bagian yang sudah berjalan
+- bagian yang belum ada
+
+### STEP 2
+Implementasikan route siswa.
+
+### STEP 3
+Hubungkan:
+```text
+Belajar → Modul
+```
+
+### STEP 4
+Implementasikan:
+```text
+Modul → Materi Video
+```
+
+### STEP 5
+Implementasikan:
+```text
+Quiz → Soal → Pilihan
+```
+
+### STEP 6
+Hubungkan:
+```text
+Latihan Soal siswa
+```
+
+### STEP 7
+Hubungkan:
+```text
+Quiz siswa
+```
+
+### STEP 8
+Implementasikan:
+```text
+Submit → Hitung Nilai → Hasil Quiz
+```
+
+### STEP 9
+Implementasikan progress siswa.
+
+### STEP 10
+Periksa authorization Admin/Guru/Siswa.
+
+### STEP 11
+Testing semua route.
+
+---
+
+# 25. TESTING YANG WAJIB
+
+Setelah selesai, test minimal:
+
+## Siswa
+
+```text
+GET /siswa/dashboard
+GET /siswa/belajar
+GET /siswa/materi-video
+GET /siswa/latihan-soal
+GET /siswa/quiz
+```
+
+Pastikan tidak error.
+
+Test:
+- buka modul
+- buka video
+- buka latihan
+- buka quiz
+- jawab soal
+- pindah soal
+- submit
+- lihat hasil
+
+## Admin
+
+Test:
+- create modul
+- edit modul
+- delete modul
+- create quiz
+- edit quiz
+- delete quiz
+- create soal
+- edit soal
+- delete soal
+
+## Guru
+
+Test:
+- create/edit/delete sesuai kewenangan
+- lihat hasil siswa
+
+---
+
+# 26. MIGRATION
+
+Jika harus membuat migration baru:
+- jangan mengubah SQL secara manual saja;
+- buat migration Laravel;
+- jalankan migration;
+- update `database.sql` jika project memang menyimpan dump SQL sebagai bagian project.
+
+Jangan menghapus data existing.
+
+Jika perubahan database berisiko merusak data:
+- jelaskan terlebih dahulu file yang akan berubah;
+- gunakan migration yang aman.
+
+---
+
+# 27. JANGAN LAKUKAN
+
+Jangan:
+- membuat project baru
+- mengganti framework
+- mengganti Tailwind dengan Bootstrap
+- menghapus database existing
+- menghapus controller existing tanpa alasan
+- membuat duplicate route
+- membuat duplicate model
+- hardcode data database di Blade
+- menghitung nilai hanya di JavaScript
+- mempercayai nilai dari request siswa
+- menggunakan progress global untuk progress personal siswa
+- mengubah desain frontend secara besar-besaran
+- menambahkan menu sidebar yang tidak diminta
+
+---
+
+# 28. HASIL AKHIR YANG DIHARAPKAN
+
+Sistem harus memiliki alur:
+
+```text
+ADMIN/GURU
+    │
+    ├── CRUD MODUL
+    │       ↓
+    │   BELAJAR SISWA
+    │
+    ├── CRUD MATERI VIDEO
+    │       ↓
+    │   MATERI VIDEO SISWA
+    │
+    ├── CRUD QUIZ
+    │       ↓
+    │   QUIZ SISWA
+    │
+    └── CRUD SOAL
+            ↓
+       PENGERJAAN SISWA
+            ↓
+       HITUNG NILAI
+            ↓
+       HASIL QUIZ
+            ↓
+       PROGRESS SISWA
+```
+
+Semua harus benar-benar menggunakan database.
+
+---
+
+# 29. OUTPUT YANG SAYA MAU DARI AI
+
+Setelah coding selesai, berikan:
+
+1. Daftar file yang dibuat.
+2. Daftar file yang diubah.
+3. Daftar migration baru.
+4. Daftar route baru.
+5. Daftar controller yang diperbaiki.
+6. Daftar model/relasi yang diperbaiki.
+7. Penjelasan alur database.
+8. Cara menjalankan migration.
+9. Cara menjalankan project.
+10. Hasil testing.
+11. Jika ada error yang tidak dapat diperbaiki, jelaskan error dan file/baris yang terkait.
+
+Jangan hanya memberikan potongan kode.
+Jika environment memungkinkan, langsung edit file project.
+
+---
+
+# 30. PRIORITAS
+
+Prioritas implementasi:
+
+1. Jangan merusak project existing.
+2. Gunakan database existing.
+3. Gunakan frontend siswa yang sudah dibuat.
+4. Route harus konsisten.
+5. CRUD harus benar-benar tersimpan ke database.
+6. Quiz harus dapat dikerjakan.
+7. Nilai harus dihitung server-side.
+8. Progress harus per siswa.
+9. Authorization harus benar.
+10. UI tetap sesuai desain.
+
+MULAI DENGAN AUDIT PROJECT TERLEBIH DAHULU. JANGAN LANGSUNG MEMBUAT MIGRATION ATAU MENGUBAH DATABASE SEBELUM MEMBACA MODEL, MIGRATION, CONTROLLER, ROUTE, DAN DATABASE SQL YANG SUDAH ADA.

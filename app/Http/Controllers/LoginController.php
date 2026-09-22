@@ -26,7 +26,14 @@ class LoginController extends Controller
         if (Auth::attempt($validated)) {
             $request->session()->regenerate();
 
-            // Redirect ke halaman yang dituju setelah login berhasil.
+            $user = Auth::user();
+
+            // Jika tipe akun admin (1) atau guru (2), arahkan langsung ke halaman admin
+            if ($user && ($user->id_tipeuser == 1 || $user->id_tipeuser == 2)) {
+                return redirect()->intended('/admin');
+            }
+
+            // Redirect ke halaman dashboard untuk siswa/user biasa.
             return redirect()->intended('/dashboard');
         }
 
