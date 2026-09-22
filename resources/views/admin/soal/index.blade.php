@@ -31,6 +31,22 @@
             border-radius: 10px;
             text-decoration: none;
             margin-bottom: 20px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-edit {
+            background: #ffa000;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        .btn-delete {
+            background: #d32f2f;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
         }
         table {
             width: 100%;
@@ -63,6 +79,7 @@
                     <th>Jenis Soal</th>
                     <th>Pertanyaan</th>
                     <th>Jawaban Benar</th>
+                    <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -73,6 +90,16 @@
                         <td>{{ $soal->id_jenis_soal }}</td>
                         <td>{{ $soal->pertanyaan }}</td>
                         <td>{{ $soal->jawaban_benar }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ route('soal.edit', $soal->id_soal) }}" class="btn btn-edit">Edit</a>
+                                <form action="{{ route('soal.destroy', $soal->id_soal) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus soal ini?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-delete">Hapus</button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
