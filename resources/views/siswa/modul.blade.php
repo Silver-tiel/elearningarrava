@@ -1,50 +1,48 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>eBooks - Modul</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-800">
-<div class="mx-auto max-w-7xl p-6 md:p-8">
-    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <p class="text-sm font-medium text-blue-600">Pembelajaran</p>
-            <h1 class="text-3xl font-bold text-slate-900">Modul Pembelajaran</h1>
-            <p class="mt-1 text-slate-500">Pilih materi yang ingin kamu pelajari.</p>
-        </div>
-        <a href="{{ route('siswa.dashboard') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">← Dashboard</a>
+@extends('layouts.siswa')
+
+@section('header')
+<div class="relative w-full max-w-[420px]">
+    <svg class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a98ad]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
+    </svg>
+    <input type="text" placeholder="Cari modul, soal, tutor, atau siswa..." class="h-10 w-full rounded-lg bg-[#f5f8fc] pl-11 pr-4 text-sm outline-none placeholder:text-[#9aa7b9] focus:ring-2 focus:ring-blue-100">
+</div>
+@endsection
+
+@section('content')
+<div class="px-8 py-8">
+    <div class="mb-6">
+        <h1 class="text-[24px] font-bold tracking-tight text-[#172033]">Belajar Asikk</h1>
     </div>
-    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
         @forelse($moduls as $modul)
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                @if($modul->foto_modul)
-                    <img src="{{ asset('storage/'.$modul->foto_modul) }}" alt="{{ $modul->judul_modul }}" class="h-40 w-full object-cover">
-                @else
-                    <div class="flex h-40 items-center justify-center bg-blue-50 text-4xl">📚</div>
-                @endif
-                <div class="p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-blue-600">{{ $modul->tipeModul->nama_tipe ?? 'Materi' }}</p>
-                    <h2 class="mt-2 text-lg font-bold text-slate-900">{{ $modul->judul_modul }}</h2>
-                    <p class="mt-1 text-sm text-slate-500">{{ $modul->jenjang->nama_jenjang ?? 'Semua jenjang' }}</p>
-                    @if($modul->file_materi)
-                        @if($modul->tipe_file === 'link')
-                            <a href="{{ $modul->file_materi }}" target="_blank" rel="noopener" class="mt-4 inline-block text-sm font-semibold text-blue-600">Buka materi →</a>
+            <div class="group overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+                <div class="flex gap-4">
+                    <div class="h-[200px] w-[160px] shrink-0 overflow-hidden rounded-xl bg-[#eef2f7]">
+                        @if($modul->foto_modul)
+                            <img src="{{ asset('storage/'.$modul->foto_modul) }}" alt="{{ $modul->judul_modul }}" class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
                         @else
-                            <a href="{{ asset('storage/'.$modul->file_materi) }}" target="_blank" class="mt-4 inline-block text-sm font-semibold text-blue-600">Buka materi →</a>
+                            <div class="flex h-full items-center justify-center text-4xl">📚</div>
                         @endif
-                    @else
-                        <span class="mt-4 inline-block text-sm text-slate-400">Materi belum tersedia</span>
-                    @endif
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <span class="inline-flex rounded-md bg-[#eaf9f2] px-2 py-1 text-[11px] font-semibold text-[#20a978]">{{ $modul->tipeModul->nama_tipe ?? 'Pelajaran' }}</span>
+                        <h2 class="mt-3 text-[16px] font-bold leading-snug text-[#172033]">{{ $modul->judul_modul }}</h2>
+                        <p class="mt-1.5 line-clamp-2 text-[13px] leading-5 text-[#687892]">Materi pembelajaran digital untuk siswa {{ $modul->jenjang->nama_jenjang ?? '' }}.</p>
+                        <div class="mt-4 flex items-center gap-5 text-xs text-[#65748b]">
+                            <span class="flex items-center gap-1.5">▣ {{ $modul->jenjang->nama_jenjang ?? 'Semua kelas' }}</span>
+                            <span class="flex items-center gap-1.5">▤ Materi</span>
+                        </div>
+                        <div class="mt-4 border-t border-[#e4e8ef] pt-3">
+                            <p class="text-xs text-[#718098]">Materi tersedia untuk dipelajari</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         @empty
-            <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">Belum ada modul yang tersedia.</div>
+            <div class="col-span-full rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-12 text-center text-sm text-[#7c899c]">Belum ada modul yang tersedia.</div>
         @endforelse
     </div>
 </div>
-</body>
-</html>
+@endsection

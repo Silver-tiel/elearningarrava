@@ -38,6 +38,12 @@ class Modul extends Model
     {
         return $this->belongsTo(Quiz::class, 'id_quiz', 'id_quiz');
     }
+
+    // Relasi ke materi video
+    public function materiVideo()
+    {
+        return $this->hasMany(MateriVideo::class, 'id_modul', 'id_modul');
+    }
     // Helper accessor untuk mendapatkan URL lengkap file materi
     public function getFileUrlAttribute()
     {
