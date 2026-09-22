@@ -10,7 +10,7 @@ class UserAwalSeeder extends Seeder
 {
     public function run(): void
     {
-        User::firstOrCreate(
+        User::updateOrCreate(
             ['email' => 'a@gmail.com'],
             [
                 'nama' => 'amru',
@@ -24,7 +24,7 @@ class UserAwalSeeder extends Seeder
             ]
         );
 
-        User::firstOrCreate(
+        User::updateOrCreate(
             ['email' => 'dd@gmail.com'],
             [
                 'nama' => 'dd',
