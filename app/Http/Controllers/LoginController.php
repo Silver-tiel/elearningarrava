@@ -34,7 +34,7 @@ class LoginController extends Controller
             }
 
             // Redirect ke halaman dashboard untuk siswa/user biasa.
-            return redirect()->intended('/dashboard');
+            return redirect()->intended('/siswa/dashboard');
         }
 
         // Jika gagal, tampilkan pesan error dan tetap mempertahankan input email.
