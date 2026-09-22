@@ -16,6 +16,7 @@ class Soal extends Model
         'id_jenis_soal',
         'pertanyaan',
         'jawaban_benar',
+        'poin',
     ];
 
     public function quiz()

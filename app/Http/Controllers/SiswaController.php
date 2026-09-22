@@ -82,26 +82,44 @@ class SiswaController extends Controller
 
         $benar = 0;
         $totalSoal = $quiz->soal->count();
+        
+        $totalPoinQuiz = 0;
+        $poinDidapat = 0;
 
         foreach ($quiz->soal as $soal) {
+            $poinSoal = $soal->poin ?? 10;
+            $totalPoinQuiz += $poinSoal;
+
             if (isset($jawabanSiswa[$soal->id_soal])) {
                 $jawab = $jawabanSiswa[$soal->id_soal];
-                // Cek apakah jawaban teks cocok atau id pilihan cocok
                 $pilihanBenar = $soal->pilihanSoal->where('is_correct', true)->first();
+                
+                $isCorrect = false;
                 if ($pilihanBenar && strtolower(trim($pilihanBenar->label)) === strtolower(trim($jawab))) {
-                    $benar++;
+                    $isCorrect = true;
                 } elseif (strtolower(trim($soal->jawaban_benar)) === strtolower(trim($jawab))) {
+                    $isCorrect = true;
+                }
+
+                if ($isCorrect) {
                     $benar++;
+                    $poinDidapat += $poinSoal;
                 }
             }
         }
 
-        $poinDidapat = $totalSoal > 0 ? round(($benar / $totalSoal) * 100) : 0;
+        // Syarat lulus minimal 70% benar
+        $isLulus = $totalSoal > 0 && ($benar / $totalSoal) >= 0.70;
+
+        if ($isLulus) {
+            $user->total_poin += $poinDidapat;
+            $user->save();
+        }
 
         $hasil = HasilQuizModul::create([
             'id_user' => $user->id_user,
             'id_quiz' => $quiz->id_quiz,
-            'total_poin' => 100,
+            'total_poin' => $totalPoinQuiz,
             'poin_didapat' => $poinDidapat,
             'waktu_dapat' => now(),
         ]);
@@ -109,7 +127,8 @@ class SiswaController extends Controller
         return redirect()->back()->with('quiz_result', [
             'poin_didapat' => $poinDidapat,
             'benar' => $benar,
-            'total_soal' => $totalSoal
+            'total_soal' => $totalSoal,
+            'is_lulus' => $isLulus
         ]);
     }
 

@@ -84,7 +84,6 @@
 
         {{-- Hidden fields for form submissions --}}
         <input type="hidden" name="id_tipequiz" value="1">
-        <input type="hidden" name="id_tingkatquiz" value="1">
 
         {{-- ==================== TOP BAR ==================== --}}
         <header
@@ -341,6 +340,25 @@
                             </select>
                         </div>
 
+                        {{-- 1.5 TINGKAT QUIZ --}}
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
+                            <label class="block text-xs font-bold text-blue-900 mb-1.5 flex items-center gap-1.5">
+                                <span>📈</span> Tingkat Quiz
+                            </label>
+                            <select name="id_tingkatquiz" id="select-tingkat" required
+                                class="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500">
+                                @if(isset($tingkatQuizList) && count($tingkatQuizList) > 0)
+                                    @foreach($tingkatQuizList as $t)
+                                        <option value="{{ $t->id_tingkatquiz }}">{{ $t->nama_tingkat }}</option>
+                                    @endforeach
+                                @else
+                                    <option value="1">Mudah</option>
+                                    <option value="2">Sedang</option>
+                                    <option value="3">Sulit</option>
+                                @endif
+                            </select>
+                        </div>
+
                         {{-- 2. WAKTU KADALUARSA (BISA TIDAK PERNAH) --}}
                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
                             <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
@@ -394,12 +412,8 @@
                             <label class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
                                 <span>🎖️</span> Poin
                             </label>
-                            <select
+                            <input type="number" id="input-poin" value="10" min="0" required
                                 class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs font-semibold text-gray-800">
-                                <option value="standard">Standar</option>
-                                <option value="double">Ganda</option>
-                                <option value="zero">Tanpa Poin</option>
-                            </select>
                         </div>
 
                     </div>
@@ -432,6 +446,7 @@
                 jenis_soal: "kuis",
                 pertanyaan: "",
                 timer: "20",
+                poin: 10,
                 jawaban_singkat: "",
                 pilihan: [
                     { label: "A", teks: "", is_correct: 0 },
@@ -448,6 +463,7 @@
         const inputPertanyaan = document.getElementById('input-pertanyaan');
         const selectJenisSoal = document.getElementById('select-jenis-soal');
         const selectTimer = document.getElementById('select-timer');
+        const inputPoin = document.getElementById('input-poin');
         const countBadge = document.getElementById('total-soal-count');
         const hiddenInputs = document.getElementById('hidden-inputs-container');
 
@@ -518,6 +534,7 @@
 
             soalList[currentIndex].pertanyaan = inputPertanyaan.value;
             soalList[currentIndex].timer = selectTimer.value;
+            soalList[currentIndex].poin = parseInt(inputPoin.value) || 0;
             soalList[currentIndex].jenis_soal = selectJenisSoal.value;
             soalList[currentIndex].jawaban_singkat = inputJawabanSingkat.value;
 
@@ -536,6 +553,7 @@
 
             inputPertanyaan.value = currentSoal.pertanyaan || '';
             selectTimer.value = currentSoal.timer || '20';
+            inputPoin.value = currentSoal.poin !== undefined ? currentSoal.poin : 10;
             selectJenisSoal.value = currentSoal.jenis_soal || 'kuis';
             inputJawabanSingkat.value = currentSoal.jawaban_singkat || '';
 
@@ -618,6 +636,10 @@
             renderThumbnails();
         });
 
+        inputPoin.addEventListener('input', () => {
+            soalList[currentIndex].poin = parseInt(inputPoin.value) || 0;
+        });
+
         inputJawabanSingkat.addEventListener('input', () => {
             soalList[currentIndex].jawaban_singkat = inputJawabanSingkat.value;
         });
@@ -638,6 +660,7 @@
                 jenis_soal: "kuis",
                 pertanyaan: "",
                 timer: "20",
+                poin: 10,
                 jawaban_singkat: "",
                 pilihan: [
                     { label: "A", teks: "", is_correct: 0 },
@@ -740,6 +763,13 @@
                 inputP.name = `soal[${sIdx}][pertanyaan]`;
                 inputP.value = soal.pertanyaan;
                 hiddenInputs.appendChild(inputP);
+
+                // Input Poin
+                const inputPoinHidden = document.createElement('input');
+                inputPoinHidden.type = 'hidden';
+                inputPoinHidden.name = `soal[${sIdx}][poin]`;
+                inputPoinHidden.value = soal.poin;
+                hiddenInputs.appendChild(inputPoinHidden);
 
                 if (soal.jenis_soal === 'isian_singkat') {
                     const inputSingkat = document.createElement('input');

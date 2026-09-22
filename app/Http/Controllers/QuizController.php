@@ -24,7 +24,8 @@ class QuizController extends Controller
     public function create()
     {
         $jenjangList = Jenjang::all();
-        return view('admin.quiz.create', compact('jenjangList'));
+        $tingkatQuizList = \App\Models\TingkatQuiz::all();
+        return view('admin.quiz.create', compact('jenjangList', 'tingkatQuizList'));
     }
 
     // Menyimpan kuis baru beserta soal dan pilihan jawaban ke database.
@@ -68,6 +69,7 @@ class QuizController extends Controller
                     'id_jenjang'    => $request->id_jenjang,
                     'pertanyaan'    => $soalData['pertanyaan'],
                     'jawaban_benar' => $jawabanBenar,
+                    'poin'          => $soalData['poin'] ?? 10,
                 ]);
 
                 // 3. Simpan pilihan jawaban (jika bukan isian singkat)
