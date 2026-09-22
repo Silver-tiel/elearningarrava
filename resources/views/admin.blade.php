@@ -188,7 +188,7 @@
                             <span>Kam</span>
                             <span>Jum</span>
                             <span>Sab</span>
-                            <span>Ahd</span>
+                            <span>Min</span>
                         </div>
                     </div>
 
