@@ -40,7 +40,7 @@ public function store(Request $request)
         'judul_modul' => 'required|string|max:255',
         'id_tipemodul' => 'required|integer',
         'id_jenjang' => 'required|integer',
-        'file_upload' => 'nullable|file|mimes:pdf,docx,doc,ppt,pptx,mp4,mkv|max:51200',
+        'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
         'file_link' => 'nullable|url',
         'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
     ]);
@@ -108,7 +108,7 @@ public function store(Request $request)
             'judul_modul' => 'required|string|max:255',
             'id_tipemodul' => 'required|integer',
             'id_jenjang' => 'required|integer',
-            'file_upload' => 'nullable|file|mimes:pdf,docx,doc,ppt,pptx,mp4,mkv|max:51200',
+            'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);

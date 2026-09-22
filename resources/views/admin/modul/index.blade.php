@@ -121,7 +121,7 @@
             STATISTICS
         ====================================================== --}}
         @php
-            $moduleCollection = isset($modules) ? collect($modules) : collect();
+            $moduleCollection = isset($moduls) ? collect($moduls) : collect();
 
             $totalModul = $moduleCollection->count();
 

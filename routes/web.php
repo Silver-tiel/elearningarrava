@@ -98,8 +98,8 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'role:siswa'])->grou
 // Admin resource routes (dikelompokkan dengan prefix & middleware)
 Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function () {
     Route::get('/modul', [ModulController::class, 'index'])->name('admin.modul');
-    Route::get('/modul/create', [ModulController::class, 'create'])->name('modul.create'); 
-    Route::post('/modul/store', [ModulController::class, 'store'])->name('modul.store'); 
+    Route::get('/modul/create', [ModulController::class, 'create'])->name('admin.modul.create'); 
+    Route::post('/modul/store', [ModulController::class, 'store'])->name('admin.modul.store'); 
     Route::get('/modul/{id}/edit', [ModulController::class, 'edit'])->name('admin.modul.edit');
     Route::put('/modul/{id}', [ModulController::class, 'update'])->name('admin.modul.update');
     Route::delete('/modul/{id}', [ModulController::class, 'destroy'])->name('admin.modul.destroy');
