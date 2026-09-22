@@ -32,4 +32,10 @@ class Soal extends Model
     {
         return $this->belongsTo(JenisSoal::class, 'id_jenis_soal', 'id_jenis_soal');
     }
+
+    // Relasi ke pilihan soal (untuk pilihan ganda)
+    public function pilihanSoal()
+    {
+        return $this->hasMany(PilihanSoal::class, 'id_soal', 'id_soal');
+    }
 }
