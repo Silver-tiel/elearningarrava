@@ -39,7 +39,17 @@ class LoginController extends Controller
 
         // Jika gagal, tampilkan pesan error dan tetap mempertahankan input email.
         return back()->withErrors([
-            'email' => 'Email atau password salah.',
-        ])->onlyInput('email');
-    }
+    'email' => 'Email atau password salah.',
+])->onlyInput('email');
+}
+
+public function logout(Request $request)
+{
+    Auth::logout();
+
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return redirect()->route('login');
+}
 }
