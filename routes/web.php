@@ -23,6 +23,7 @@ Route::get('/', function () {
 // Login.
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+Route::post('/logout', [LoginController::class, 'login'])->name('logout');
 
 // Lupa password - UI dan endpoint awal. Pengiriman email reset dapat disambungkan
 // ke Laravel Password Broker ketika konfigurasi mail sudah tersedia.
@@ -43,19 +44,11 @@ Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])->name('p
 
 // Dashboard.
 Route::get('/dashboard', function () {
-    $user = Auth::user();
-    if ($user && ($user->id_tipeuser == 1 || $user->id_tipeuser == 2)) {
-        return redirect()->route('admin');
-    }
     return view('index');
 })->middleware('auth');
 
 // Admin.
 Route::get('/admin', function () {
-    $user = Auth::user();
-    if ($user && $user->id_tipeuser == 3) {
-        return redirect('/dashboard');
-    }
     $users = App\Models\User::all();
     return view('admin', ['users' => $users]);
 })->middleware('auth')->name('admin');
