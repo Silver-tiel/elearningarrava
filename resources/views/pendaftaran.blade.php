@@ -1,400 +1,101 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+@extends('layouts.auth')
 
-    <title>Pendaftaran</title>
+@section('title', 'Buat Akun - eBooks')
 
-    <!-- CSS KUSTOM UNTUK HALAMAN PENDAFTARAN -->
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        body {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #e3f2fd, #f5f9ff);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 30px;
-        }
-
-        .container {
-            width: 900px;
-            max-width: 100%;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            display: grid;
-            grid-template-columns: 40% 60%;
-        }
-
-        /* BAGIAN KIRI */
-
-        .info {
-            background: linear-gradient(160deg, #1565c0, #42a5f5);
-            color: white;
-            padding: 45px 35px;
-        }
-
-        .badge {
-            display: inline-block;
-            background: #ffd54f;
-            color: #37474f;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 25px;
-        }
-
-        .info h1 {
-            font-size: 30px;
-            margin-bottom: 15px;
-        }
-
-        .info > p {
-            line-height: 1.6;
-            margin-bottom: 30px;
-            font-size: 15px;
-        }
-
-        .reward {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 15px;
-            padding: 18px;
-            margin-top: 15px;
-        }
-
-        .reward h3 {
-            font-size: 16px;
-            margin-bottom: 7px;
-        }
-
-        .reward p {
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        /* BAGIAN FORM */
-
-        .form-section {
-            padding: 45px;
-        }
-
-        .form-section h2 {
-            color: #263238;
-            font-size: 26px;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            color: #78909c;
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        label {
-            display: block;
-            color: #37474f;
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 7px;
-        }
-
-        input,
-        select {
-            width: 100%;
-            padding: 12px 14px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            outline: none;
-            background: white;
-            color: #37474f;
-            transition: 0.2s;
-        }
-
-        input:focus,
-        select:focus {
-            border-color: #42a5f5;
-            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-        }
-
-        input::placeholder {
-            color: #b0bec5;
-        }
-
-        .error-message {
-            color: #d32f2f;
-            font-size: 12px;
-            margin-top: 6px;
-            display: block;
-            font-weight: 600;
-        }
-
-        .input-error {
-            border-color: #d32f2f !important;
-            background: #fff5f5;
-        }
-
-        .alert-error {
-            background: #fff1f1;
-            border: 1px solid #f5c2c7;
-            color: #b42318;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .alert-error ul {
-            margin: 8px 0 0 18px;
-        }
-
-        /* BUTTON */
-
-        .register-btn {
-            width: 100%;
-            padding: 13px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(90deg, #1565c0, #42a5f5);
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 5px;
-            transition: 0.2s;
-        }
-
-        .register-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 7px 15px rgba(21, 101, 192, 0.25);
-        }
-
-        /* LOGIN */
-
-        .login-link {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #78909c;
-        }
-
-        .login-link a {
-            color: #1565c0;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .login-link a:hover {
-            text-decoration: underline;
-        }
-
-        /* RESPONSIVE */
-
-        @media (max-width: 700px) {
-
-            .container {
-                grid-template-columns: 1fr;
-            }
-
-            .info {
-                padding: 30px;
-            }
-
-            .form-section {
-                padding: 30px;
-            }
-
-            .info h1 {
-                font-size: 25px;
-            }
-        }
-    </style>
-</head>
-
-<body>
-
-<!-- WRAPPER UTAMA HALAMAN PENDAFTARAN -->
-<div class="container">
-
-    <!-- BAGIAN INFORMASI DI SEBELAH KIRI -->
-    <div class="info">
-
-        <span class="badge">
-            🏆 LEVEL 1
-        </span>
-
-        <h1>Mulai Perjalananmu!</h1>
-
-        <p>
-            Buat akun baru dan mulai perjalananmu.
-            Lengkapi data pendaftaran untuk mendapatkan
-            akses ke sistem.
-        </p>
-
-        <div class="reward">
-            <h3>⭐ Dapatkan XP</h3>
-            <p>
-                Selesaikan pendaftaran dan dapatkan
-                <strong>+100 XP</strong> sebagai langkah pertama.
-            </p>
+@section('auth_form')
+    <div>
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h1 class="mb-1 text-[25px] font-extrabold leading-tight tracking-[-0.8px] sm:text-[26px]">Buat Akun Baru</h1>
+                <p class="mb-4 text-[13px] leading-5 text-[#53647D]">Gabunglah bersama jutaan siswa lainnya di platform bimbel eBooks.</p>
+            </div>
+            <span class="hidden h-8 w-8 shrink-0 place-items-center rounded-full bg-[#EEF5FF] text-[#3F82F6] sm:grid">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="8.5"/><path d="m9 9 6 6m0-6-6 6"/>
+                </svg>
+            </span>
         </div>
-
-        <div class="reward">
-            <h3>🎯 Pilih Jenjangmu</h3>
-            <p>
-                Pilih jenjang pendidikan yang sesuai
-                dengan kebutuhanmu.
-            </p>
-        </div>
-
-        <div class="reward">
-            <h3>🚀 Mulai Sekarang</h3>
-            <p>
-                Setelah mendaftar, kamu dapat langsung
-                menggunakan akun untuk masuk ke sistem.
-            </p>
-        </div>
-
-    </div>
-
-
-    <!-- FORM PENDAFTARAN: input nama, jenjang, email, dan password -->
-    <div class="form-section">
-
-        <h2>Buat Akun Baru 🚀</h2>
-
-        <p class="subtitle">
-            Lengkapi data berikut untuk mendaftar.
-        </p>
 
         @if ($errors->any())
-            <div class="alert-error">
-                <div>Silakan perbaiki data berikut:</div>
-                <ul>
+            <div class="mb-4 rounded-[10px] border border-[#FFD4D4] bg-[#FFF2F2] px-3.5 py-2.5 text-xs leading-5 text-[#A32929]">
+                <p class="font-bold">Silakan perbaiki data berikut.</p>
+                <ul class="ml-4 list-disc">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
                 </ul>
             </div>
         @endif
-
-        <form action="{{ route('pendaftaranBaru') }}" method="POST">
-
+        <form action="{{ route('pendaftaranBaru') }}" method="POST" class="space-y-3.5">
             @csrf
 
-            <div class="form-group">
-                <label for="nama">Nama</label>
-
-                <input
-                    type="text"
-                    id="nama"
-                    name="nama"
-                    value="{{ old('nama') }}"
-                    placeholder="Masukkan nama kamu"
-                    class="{{ $errors->has('nama') ? 'input-error' : '' }}"
-                    required
-                >
-                @error('nama')
-                    <span class="error-message">{{ $message }}</span>
-                @enderror
+            <div>
+                <label for="nama" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Nama Lengkap</label>
+                <input id="nama" name="nama" type="text" value="{{ old('nama') }}" placeholder="Masukkan nama lengkap Anda" required class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+                @error('nama')<p class="mt-1 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>@enderror
             </div>
 
+            <div>
+                <label for="email" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Alamat Email</label>
+                <input id="email" name="email" type="email" value="{{ old('email') }}" placeholder="nama@email.com" required class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+                @error('email')<p class="mt-1 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>@enderror
+            </div>
 
-            <div class="form-group">
-                <label for="id_jenjang">Jenjang</label>
+            <div>
+                <label for="nomor_handphone" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Nomor Handphone</label>
+                <input id="nomor_handphone" name="nomor_handphone" type="tel" value="{{ old('nomor_handphone') }}" placeholder="Contoh: 08123456789" class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+            </div>
 
-                <select
-                    id="id_jenjang"
-                    name="id_jenjang"
-                    class="{{ $errors->has('id_jenjang') ? 'input-error' : '' }}"
-                    required
-                >
-                    <option value="">Pilih Jenjang</option>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                    <label for="password" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Kata Sandi</label>
+                    <div class="relative">
+                        <input id="password" name="password" type="password" placeholder="Min. 8 Karakter" required class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 pr-11 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+                        <button type="button" data-toggle-password="password" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-[#92A3BB]" aria-label="Tampilkan kata sandi">
+                            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12s3.5-5 9.5-5 9.5 5 9.5 5-3.5 5-9.5 5-9.5-5-9.5-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                        </button>
+                    </div>
+                    @error('password')<p class="mt-1 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>@enderror
+                </div>
 
+                <div>
+                    <label for="password_confirmation" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Konfirmasi Sandi</label>
+                    <div class="relative">
+                        <input id="password_confirmation" name="password_confirmation" type="password" placeholder="Ulangi sandi" required class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 pr-11 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+                        <button type="button" data-toggle-password="password_confirmation" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-[#92A3BB]" aria-label="Tampilkan kata sandi">
+                            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12s3.5-5 9.5-5 9.5 5 9.5 5-3.5 5-9.5 5-9.5-5-9.5-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label for="id_jenjang" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Jenjang Pendidikan</label>
+                <select id="id_jenjang" name="id_jenjang" required class="h-11 w-full rounded-[10px] border border-[#DCE5F1] bg-white px-3.5 text-[13px] text-[#53647D] outline-none focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+                    <option value="">Pilih jenjang</option>
                     @foreach($jenjang as $tipe_jenjang)
-
-                        <option
-                            value="{{ $tipe_jenjang->id_jenjang }}"
-                            {{ old('id_jenjang') == $tipe_jenjang->id_jenjang ? 'selected' : '' }}
-                        >
-                            {{ $tipe_jenjang->nama_tipe }}
-                        </option>
-
+                        <option value="{{ $tipe_jenjang->id_jenjang }}" {{ old('id_jenjang') == $tipe_jenjang->id_jenjang ? 'selected' : '' }}>{{ $tipe_jenjang->nama_tipe }}</option>
                     @endforeach
-
                 </select>
-                @error('id_jenjang')
-                    <span class="error-message">{{ $message }}</span>
-                @enderror
+                @error('id_jenjang')<p class="mt-1 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>@enderror
             </div>
 
-
-            <div class="form-group">
-                <label for="email">Email</label>
-
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value="{{ old('email') }}"
-                    placeholder="contoh@email.com"
-                    class="{{ $errors->has('email') ? 'input-error' : '' }}"
-                    required
-                >
-                @error('email')
-                    <span class="error-message">{{ $message }}</span>
-                @enderror
-            </div>
-
-
-            <div class="form-group">
-                <label for="password">Password</label>
-
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    placeholder="Buat password"
-                    class="{{ $errors->has('password') ? 'input-error' : '' }}"
-                    required
-                >
-                @error('password')
-                    <span class="error-message">{{ $message }}</span>
-                @enderror
-            </div>
-
-
-            <button type="submit" class="register-btn">
-                🎮 Daftar & Mulai
+            <button type="submit" class="mt-1 flex h-[46px] w-full items-center justify-center rounded-[11px] bg-[#12B981] text-[13px] font-bold text-white shadow-[0_8px_16px_rgba(18,185,129,0.18)] transition hover:-translate-y-px hover:bg-[#0EAA76]">
+                Daftar Sekarang
             </button>
-
         </form>
 
-
-        <div class="login-link">
+        <p class="mt-5 text-center text-xs text-[#53647D]">
             Sudah punya akun?
-            <a href="{{ route('login') }}">
-                Login di sini
-            </a>
-        </div>
-
+            <a href="{{ route('login') }}" class="font-bold text-[#3F82F6] hover:underline">Masuk di sini</a>
+        </p>
     </div>
+@endsection
 
-</div>
-
-</body>
-</html>
+@section('illustration')
+    <img src="{{ asset('images/auth/register-illustration.png') }}" alt="Siswa merayakan kelulusan" class="mx-auto mb-[31px] block h-[280px] w-full max-w-[380px] rounded-[22px] object-cover">
+    <h2 class="mb-2.5 text-[22px] font-extrabold leading-tight tracking-[-0.6px]">Mulai Perjalanan Prestasimu</h2>
+    <p class="mx-auto max-w-[430px] text-[13px] leading-6 text-[#53647D]">
+        Nikmati kemudahan mengakses video pembelajaran berkualitas tinggi, bank soal lengkap, dan konsultasi PR gratis.
+    </p>
+@endsection

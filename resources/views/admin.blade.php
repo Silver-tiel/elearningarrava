@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
 
-    <!-- CSS KUSTOM UNTUK HALAMAN ADMIN -->
+    <!-- TAILWIND CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- CSS KUSTOM HALAMAN ADMIN -->
     <style>
         * {
             box-sizing: border-box;
@@ -17,13 +20,21 @@
         body {
             min-height: 100vh;
             background: linear-gradient(135deg, #e3f2fd, #f5f9ff);
-            padding: 40px 20px;
             color: #263238;
         }
 
-        .page {
-            max-width: 1200px;
-            margin: 0 auto;
+        /* Flex container utama */
+        .admin-layout {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* Area konten utama yang berada di samping sidebar */
+        .main-content {
+            flex: 1; /* Mengisi sisa ruang kosong di kanan sidebar */
+            min-width: 0; /* Mencegah konten meluap (overflow) */
+            padding: 30px;
         }
 
         .topbar {
@@ -40,7 +51,7 @@
         }
 
         .topbar h1 {
-            font-size: 30px;
+            font-size: 28px;
             margin-bottom: 6px;
         }
 
@@ -136,6 +147,10 @@
         }
 
         @media (max-width: 768px) {
+            .admin-layout {
+                flex-direction: column;
+            }
+
             .stats {
                 grid-template-columns: 1fr;
             }
@@ -144,71 +159,75 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
-
-            th, td {
-                padding: 12px 14px;
-            }
         }
     </style>
 </head>
 <body>
 
-@include('header_admin.sidebar_admin')
-
-    <!-- HALAMAN ADMIN: tampilan ringkasan pengguna dan daftar data -->
-    <div class="page">
-        <div class="topbar">
-            <div>
-                <h1>Admin Panel</h1>
-                <p>Selamat datang, Admin! Kelola pengguna dan aktivitas sistem.</p>
-            </div>
-            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                <a href="{{ route('admin.modul') }}" style="display:inline-block; background:#e3f2fd; color:#1565c0; text-decoration:none; padding:10px 16px; border-radius:999px; font-weight:bold;">Modul</a>
-                <a href="{{ route('admin.quiz') }}" style="display:inline-block; background:#e8f5e9; color:#2e7d32; text-decoration:none; padding:10px 16px; border-radius:999px; font-weight:bold;">Quiz</a>
-                <span class="badge">ONLINE</span>
-            </div>
+    <div class="admin-layout">
+        
+        <!-- SIDEBAR CONTAINER -->
+        <div class="shrink-0">
+            @include('header_admin.sidebar_admin')
         </div>
 
-        <!-- KARTU STATISTIK RINGKAS UNTUK ADMIN -->
-        <div class="stats">
-            <div class="card">
-                <h3>Total Pengguna</h3>
-                <div class="number">{{ $users->count() }}</div>
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            <div class="topbar">
+                <div>
+                    <h1>Admin Panel</h1>
+                    <p>Selamat datang, Admin! Kelola pengguna dan aktivitas sistem.</p>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <a href="{{ route('admin.modul') }}" style="display:inline-block; background:#e3f2fd; color:#1565c0; text-decoration:none; padding:10px 16px; border-radius:999px; font-weight:bold;">Modul</a>
+                    <a href="{{ route('admin.quiz') }}" style="display:inline-block; background:#e8f5e9; color:#2e7d32; text-decoration:none; padding:10px 16px; border-radius:999px; font-weight:bold;">Quiz</a>
+                    <span class="badge">ONLINE</span>
+                </div>
             </div>
 
-            <div class="card">
-                <h3>Aktif Hari Ini</h3>
-                <div class="number">24</div>
+            <!-- KARTU STATISTIK -->
+            <div class="stats">
+                <div class="card">
+                    <h3>Total Pengguna</h3>
+                    <div class="number">{{ $users->count() }}</div>
+                </div>
+
+                <div class="card">
+                    <h3>Aktif Hari Ini</h3>
+                    <div class="number">24</div>
+                </div>
+
+                <div class="card">
+                    <h3>Progress</h3>
+                    <div class="number">87%</div>
+                </div>
             </div>
 
-            <div class="card">
-                <h3>Progress</h3>
-                <div class="number">87%</div>
-            </div>
-        </div>
-
-        <!-- TABEL DAFTAR PENGGUNA YANG DIAMBIL DARI DATABASE -->
-        <div class="table-card">
-            <div class="table-header">Daftar Pengguna</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nama</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($users as $user)
+            <!-- TABEL DAFTAR PENGGUNA -->
+            <div class="table-card">
+                <div class="table-header">Daftar Pengguna</div>
+                <table>
+                    <thead>
                         <tr>
-                            <td>{{ $user->nama }}</td>
-                            <td>{{ $user->email }}</td>
-                            <td><span class="status">Aktif</span></td>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>Status</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @foreach($users as $user)
+                            <tr>
+                                <td>{{ $user->nama }}</td>
+                                <td>{{ $user->email }}</td>
+                                <td><span class="status">Aktif</span></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </main>
+        
     </div>
+
 </body>
 </html>

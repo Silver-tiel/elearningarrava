@@ -16,26 +16,54 @@ class PendaftaranController extends Controller
     }
 
     // Menyimpan data user baru ke database setelah validasi berhasil.
-    public function UserBaru(Request $request)
-    {
-        // Validasi data input agar sesuai aturan aplikasi dan database.
-        $request->validate([
-            'nama' => ['required|string|min:2|max:255|unique:user,nama', 'regex:/^[a-zA-Z\s]+$/'],
-            'email' => ['required|email|unique:user,email', 'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', 'max:255'],
-            'password' => 'required|min:8|max:255',
-            'id_jenjang' => 'required|exists:jenjang,id_jenjang',
-        ]);
+   public function UserBaru(Request $request)
+{
+    $validated = $request->validate([
+        'nama' => [
+            'required',
+            'string',
+            'min:2',
+            'max:255',
+            'unique:user,nama',
+            'regex:/^[a-zA-Z\s]+$/',
+        ],
 
-        // Simpan akun baru dengan password yang telah di-hash.
-        User::create([
-            'nama' => $request->nama,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'id_jenjang' => $request->id_jenjang,
-            'id_tipeuser' => 3,
-        ]);
+        'email' => [
+            'required',
+            'email',
+            'unique:user,email',
+            'max:255',
+        ],
 
-        // Redirect ke halaman login setelah registrasi berhasil.
-        return redirect('/login')->with('success', 'Pendaftaran berhasil! Silakan login.');
-    }
+        'nomor_handphone' => [
+            'nullable',
+            'string',
+            'max:20',
+        ],
+
+        'password' => [
+            'required',
+            'string',
+            'min:8',
+            'max:255',
+            'confirmed',
+        ],
+
+        'id_jenjang' => [
+            'required',
+            'exists:jenjang,id_jenjang',
+        ],
+    ]);
+
+    User::create([
+        'nama' => $validated['nama'],
+        'email' => $validated['email'],
+        'password' => Hash::make($validated['password']),
+        'id_jenjang' => $validated['id_jenjang'],
+        'id_tipeuser' => 3,
+    ]);
+
+    return redirect('/login')
+        ->with('success', 'Pendaftaran berhasil! Silakan login.');
+}
 }

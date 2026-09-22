@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,32 +12,39 @@
             margin: 0;
             padding: 40px 20px;
         }
+
         .container {
             max-width: 700px;
             margin: 0 auto;
             background: white;
             padding: 30px;
             border-radius: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
         }
+
         h1 {
             color: #2e7d32;
             margin-bottom: 20px;
         }
+
         .form-group {
             margin-bottom: 18px;
         }
+
         label {
             display: block;
             font-weight: bold;
             margin-bottom: 6px;
         }
-        input, select {
+
+        input,
+        select {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid #d0d7de;
             border-radius: 10px;
         }
+
         button {
             background: #2e7d32;
             color: white;
@@ -47,6 +55,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Form ini dipakai oleh admin untuk menambahkan kuis baru ke sistem. -->
     <div class="container">
@@ -86,4 +95,5 @@
         </form>
     </div>
 </body>
+
 </html>
