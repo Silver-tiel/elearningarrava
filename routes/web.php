@@ -1,71 +1,65 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ModulController;
-use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SoalController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Landing / auth.
-Route::get('/', function () {
-    $jenjang = App\Models\Jenjang::all();
-    return view('pendaftaran', compact('jenjang'));
-});
-
+// Halaman pendaftaran.
 Route::get('/pendaftaran', function () {
-    $jenjang = App\Models\Jenjang::all();
-    return view('pendaftaran', compact('jenjang'));
+    $jenjang = App\Models\jenjang::all();
+    return view('pendaftaran', ['jenjang' => $jenjang]);
 })->name('pendaftaran');
 
-Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])
-    ->name('pendaftaranBaru');
+// Beranda diarahkan ke pendaftaran seperti project awal.
+Route::get('/', function () {
+    $jenjang = App\Models\jenjang::all();
+    return view('pendaftaran', ['jenjang' => $jenjang]);
+});
 
-Route::get('/login', [LoginController::class, 'showLogin'])->name('login');
+// Login.
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+// Lupa password - UI dan endpoint awal. Pengiriman email reset dapat disambungkan
+// ke Laravel Password Broker ketika konfigurasi mail sudah tersedia.
 Route::get('/forgot-password', function () {
     return view('forgot-password');
 })->name('password.request');
 
 Route::post('/forgot-password', function (Request $request) {
-    $request->validate(['email' => ['required', 'email']]);
+    $request->validate([
+        'email' => ['required', 'email'],
+    ]);
+
     return back()->with('status', 'Jika email terdaftar, tautan pengaturan ulang akan diproses.');
 })->name('password.email');
 
-// Setelah login, arahkan berdasarkan id_tipeuser.
-Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+// Proses pendaftaran.
+Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])->name('pendaftaranBaru');
 
-    // Admin.
-    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
-        Route::get('/', fn () => redirect()->route('admin.dashboard'))->name('root');
-        Route::get('/dashboard', [DashboardController::class, 'admin'])->name('dashboard');
-        Route::get('/modul', [ModulController::class, 'index'])->name('modul');
-        Route::get('/modul/create', [ModulController::class, 'create'])->name('modul.create');
-        Route::post('/modul/store', [ModulController::class, 'store'])->name('modul.store');
-        Route::get('/quiz', [QuizController::class, 'index'])->name('quiz');
-        Route::get('/quiz/create', [QuizController::class, 'create'])->name('quiz.create');
-        Route::post('/quiz/store', [QuizController::class, 'store'])->name('quiz.store');
-        Route::get('/soal', [SoalController::class, 'index'])->name('soal');
-        Route::get('/soal/create', [SoalController::class, 'create'])->name('soal.create');
-        Route::post('/soal/store', [SoalController::class, 'store'])->name('soal.store');
-    });
+// Dashboard.
+Route::get('/dashboard', function () {
+    return view('index');
+})->middleware('auth');
 
-    // Guru.
-    Route::prefix('guru')->name('guru.')->middleware('role:guru')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'guru'])->name('dashboard');
-        Route::get('/modul', [ModulController::class, 'index'])->name('modul');
-        Route::get('/quiz', [QuizController::class, 'index'])->name('quiz');
-    });
+// Admin.
+Route::get('/admin', function () {
+    $users = App\Models\User::all();
+    return view('admin', ['users' => $users]);
+})->middleware('auth')->name('admin');
 
-    // Siswa.
-    Route::prefix('siswa')->name('siswa.')->middleware('role:siswa')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'siswa'])->name('dashboard');
-        Route::get('/modul', [DashboardController::class, 'siswaModul'])->name('modul');
-        Route::get('/quiz', [DashboardController::class, 'siswaQuiz'])->name('quiz');
-    });
-});
+Route::get('/admin/modul', [ModulController::class, 'index'])->middleware('auth')->name('admin.modul');
+Route::get('/admin/modul/create', [ModulController::class, 'create'])->middleware('auth')->name('modul.create');
+Route::post('/admin/modul/store', [ModulController::class, 'store'])->middleware('auth')->name('modul.store');
+
+Route::get('/admin/quiz', [QuizController::class, 'index'])->middleware('auth')->name('admin.quiz');
+Route::get('/admin/quiz/create', [QuizController::class, 'create'])->middleware('auth')->name('quiz.create');
+Route::post('/admin/quiz/store', [QuizController::class, 'store'])->middleware('auth')->name('quiz.store');
+
+Route::get('/admin/soal', [SoalController::class, 'index'])->middleware('auth')->name('admin.soal');
+Route::get('/admin/soal/create', [SoalController::class, 'create'])->middleware('auth')->name('soal.create');
+Route::post('/admin/soal/store', [SoalController::class, 'store'])->middleware('auth')->name('soal.store');
