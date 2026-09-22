@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 // Landing / auth.
 Route::get('/', function () {
     $jenjang = App\Models\Jenjang::all();
-    return view('pendaftaran', compact('jenjang'));
+    return view('login', compact('jenjang'));
 });
 
 Route::get('/pendaftaran', function () {
