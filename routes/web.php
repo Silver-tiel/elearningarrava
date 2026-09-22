@@ -48,19 +48,26 @@ Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])->name('p
 
 // Dashboard.
 Route::get('/dashboard', function () {
+<<<<<<< HEAD
     $user = Auth::user();
     if ($user && ($user->id_tipeuser == 1 || $user->id_tipeuser == 2)) {
         return redirect()->route('admin');
     }
     return redirect()->route('siswa.dashboard');
+=======
+    return view('index');
+>>>>>>> 88257604cbcbd40d080c475d0824e266bd8671f2
 })->middleware('auth');
 
 // Admin.
 Route::get('/admin', function () {
+<<<<<<< HEAD
     $user = Auth::user();
     if ($user && $user->id_tipeuser == 3) {
         return redirect('/siswa/dashboard');
     }
+=======
+>>>>>>> 88257604cbcbd40d080c475d0824e266bd8671f2
     $users = App\Models\User::all();
     return view('admin', ['users' => $users]);
 })->middleware('auth')->name('admin');
