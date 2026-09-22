@@ -20,7 +20,7 @@
     <div class="flex min-h-screen">
 
         <!-- SIDEBAR -->
-        @include('header_admin.sidebar_admin')
+        @include('components.sidebar')
 
         <!-- MAIN CONTENT AREA -->
         <main class="flex-1 min-w-0 flex flex-col">
