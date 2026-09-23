@@ -35,6 +35,14 @@ class PendaftaranController extends Controller
             'max:255',
         ],
 
+        'nisn' => [
+            'required',
+            'string',
+            'min:10',
+            'max:10',
+            'regex:/^\d+$/',
+        ],
+
         'nomor_handphone' => [
             'nullable',
             'string',

@@ -14,6 +14,7 @@ class User extends Authenticatable
         'nama',
         'email',
         'password',
+        'nisn',
         'id_tipeuser',
         'id_jenjang',
         'total_poin',

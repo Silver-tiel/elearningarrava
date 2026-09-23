@@ -42,6 +42,11 @@
             </div>
 
             <div>
+                <label for="nisn" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">NISN</label>
+                <input id="nisn" name="nomor_handphone" type="tel" value="{{ old('nisn') }}" placeholder="Contoh: 0012345678" class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+            </div>
+
+            <div>
                 <label for="nomor_handphone" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Nomor Handphone</label>
                 <input id="nomor_handphone" name="nomor_handphone" type="tel" value="{{ old('nomor_handphone') }}" placeholder="Contoh: 08123456789" class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
             </div>
