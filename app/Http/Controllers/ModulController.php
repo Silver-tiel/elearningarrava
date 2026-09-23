@@ -84,7 +84,7 @@ public function store(Request $request)
     public function show($id)
     {
         $modul = Modul::with(['tipeModul', 'jenjang', 'quiz'])->findOrFail($id);
-        return view('admin.modul.show', compact('modul'));
+        return view('modul.show', compact('modul'));
     }
 
     // Menampilkan form edit modul

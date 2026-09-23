@@ -59,6 +59,9 @@ Route::get('/dashboard', function () {
     return redirect()->route('siswa.dashboard');
 })->middleware('auth');
 
+// Global Route untuk semua user login
+Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware('auth');
+
 // Admin dashboard.
 Route::get('/admin', function () {
     $user = Auth::user();
