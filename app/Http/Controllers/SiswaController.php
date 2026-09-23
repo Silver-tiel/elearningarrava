@@ -6,6 +6,7 @@ use App\Models\Modul;
 use App\Models\Quiz;
 use App\Models\Soal;
 use App\Models\HasilQuizModul;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -138,5 +139,13 @@ class SiswaController extends Controller
         $hasil = HasilQuizModul::where('id_hasil', $id_hasil)->where('id_user', Auth::id())->firstOrFail();
 
         return view('siswa.quiz-result', compact('quiz', 'hasil'));
+    }
+
+    public function dataSiswa(Request $request) {
+        $data_siswa = User::with(['User', 'Jenjang', 'TipeUser'])
+        ->latest()
+        ->get();
+
+        return view('admin.daftar_siswa.data_siswa', compact('moduls'));
     }
 }

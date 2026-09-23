@@ -116,5 +116,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function 
     Route::get('/soal/{id}/edit', [SoalController::class, 'edit'])->name('soal.edit');
     Route::put('/soal/{id}',    [SoalController::class, 'update'])->name('soal.update');
     Route::delete('/soal/{id}', [SoalController::class, 'destroy'])->name('soal.destroy');
-});
 
+    Route::get('/admin/data',    [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
+});
