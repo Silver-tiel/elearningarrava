@@ -34,8 +34,9 @@
                             <span class="flex items-center gap-1.5">▣ {{ $modul->jenjang->nama_jenjang ?? 'Semua kelas' }}</span>
                             <span class="flex items-center gap-1.5">▤ Materi</span>
                         </div>
-                        <div class="mt-4 border-t border-[#e4e8ef] pt-3">
+                        <div class="mt-4 border-t border-[#e4e8ef] pt-3 flex justify-between items-center">
                             <p class="text-xs text-[#718098]">Materi tersedia untuk dipelajari</p>
+                            <a href="{{ route('modul.show', $modul->id_modul) }}" class="px-3 py-1.5 bg-blue-500 text-white text-xs font-bold rounded-lg hover:bg-blue-600 transition">Baca Modul</a>
                         </div>
                     </div>
                 </div>
