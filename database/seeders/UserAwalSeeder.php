@@ -11,31 +11,33 @@ class UserAwalSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'a@gmail.com'],
-            [
-                'nama' => 'amru',
-                'password' => Hash::make('password123'),
-                'id_tipeuser' => 1,
-                'id_jenjang' => 1,
-                'total_poin' => 0,
-                'status_akun' => null,
-                'id_modul' => null,
-                'foto_profil' => null,
-            ]
-        );
+    ['nisn' => '1234567890'],
+    [
+        'nama' => 'amru',
+        'email' => 'a@gmail.com',
+        'password' => Hash::make('password123'),
+        'id_tipeuser' => 1,
+        'id_jenjang' => 1,
+        'total_poin' => 0,
+        'status_akun' => null,
+        'id_modul' => null,
+        'foto_profil' => null,
+    ]
+);
 
         User::updateOrCreate(
-            ['email' => 'dd@gmail.com'],
-            [
-                'nama' => 'dd',
-                'password' => Hash::make('password123'),
-                'id_tipeuser' => 3,
-                'id_jenjang' => 1,
-                'total_poin' => 0,
-                'status_akun' => null,
-                'id_modul' => null,
-                'foto_profil' => null,
-            ]
-        );
+    ['nisn' => '1234567891'],
+    [
+        'nama' => 'dd',
+        'email' => 'dd@gmail.com',
+        'password' => Hash::make('password123'),
+        'id_tipeuser' => 3,
+        'id_jenjang' => 1,
+        'total_poin' => 0,
+        'status_akun' => null,
+        'id_modul' => null,
+        'foto_profil' => null,
+    ]
+);
     }
 }
