@@ -1,30 +1,7 @@
-<!DOCTYPE html>
-<html lang="id">
+@extends('layouts.app')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Modul — Arrava</title>
+@section('header')
 
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
-
-    <style>
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f8fafc;
-        }
-
-        .module-image {
-            object-fit: cover;
-            object-position: center;
-        }
-    </style>
-</head>
-
-<body class="bg-slate-50 min-h-screen text-slate-800">
 
     {{-- =========================================================
         TOPBAR
@@ -74,10 +51,13 @@
             </div>
         </div>
     </header>
+    @endsection
 
     {{-- =========================================================
         MAIN CONTENT
     ========================================================== --}}
+
+    @section('content')
     <main class="px-6 lg:px-8 py-8">
 
         {{-- Page heading --}}
@@ -388,6 +368,7 @@
         </div>
 
     </main>
+    @endsection
 
     {{-- Search sederhana --}}
     <script>
