@@ -141,11 +141,44 @@ class SiswaController extends Controller
         return view('siswa.quiz-result', compact('quiz', 'hasil'));
     }
 
-    public function dataSiswa(Request $request) {
-        $data_siswa = User::with(['User', 'Jenjang', 'TipeUser'])
-        ->latest()
-        ->get();
+    public function dataSiswa(Request $request) 
+{
+    // Query dasar mengambil data siswa (id_tipeuser = 3)
+    $query = User::with(['jenjang', 'tipeUser'])->where('id_tipeuser', 3);
 
-        return view('admin.daftar_siswa.data_siswa', compact('moduls'));
+    // Filter pencarian berdasarkan nama atau email
+    if ($request->has('search') && $request->search != '') {
+        $query->where(function ($q) use ($request) {
+            $q->where('nama', 'like', '%' . $request->search . '%')
+              ->orWhere('email', 'like', '%' . $request->search . '%');
+        });
     }
+
+    if ($request->filled('kelas')) {
+        $query->where('kelas', $request->kelas);
+    }
+
+    // Ambil data siswa berpagination
+    $siswas = $query->latest()->paginate(10);
+
+    // Total Siswa Keseluruhan
+    $totalSiswa = User::where('id_tipeuser', 3)->count();
+    
+    // Set angka default agar tidak crash karena kolom 'status' belum ada di tabel user
+    $totalAktif = $totalSiswa; 
+    $totalNonaktif = 0;
+    $totalPerluDitinjau = 0;
+
+    // Data opsi kelas untuk dropdown filter
+    $listKelas = ['Kelas 10 - IPA 1', 'Kelas 10 - IPS 1', 'Kelas 11 - IPA 4', 'Kelas 11 - IPS 3', 'Kelas 12 - IPA 2', 'Kelas 12 - IPS 2'];
+
+    return view('admin.daftar_siswa.data_siswa', compact(
+        'siswas',
+        'totalSiswa',
+        'totalAktif',
+        'totalNonaktif',
+        'totalPerluDitinjau',
+        'listKelas'
+    ));
+}
 }

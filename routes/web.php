@@ -120,5 +120,6 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function 
     Route::put('/soal/{id}',    [SoalController::class, 'update'])->name('soal.update');
     Route::delete('/soal/{id}', [SoalController::class, 'destroy'])->name('soal.destroy');
 
-    Route::get('/admin/data',    [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
+    // Route untuk Halaman Utama/Tabel Daftar Siswa
+Route::get('/admin/data', [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
 });

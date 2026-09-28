@@ -1,4 +1,4 @@
-@extends('layouts.app') {{-- Sesuaikan dengan layout utama kamu --}}
+@extends('layouts.app')
 
 @section('content')
 <div class="p-8 bg-gray-50 min-h-screen">
@@ -53,7 +53,7 @@
 
     {{-- Filter & Search Bar --}}
     <div class="bg-white p-4 rounded-t-xl border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
-        <form method="GET" action="{{ route('siswa.index') }}" class="w-full flex flex-col md:flex-row gap-4 items-center justify-between">
+        <form method="GET" action="{{ route('admin.daftar_siswa') }}" class="w-full flex flex-col md:flex-row gap-4 items-center justify-between">
             <div class="relative w-full md:w-96">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                     <i class="fas fa-search"></i>
@@ -88,10 +88,9 @@
                     <th class="py-3 px-4 w-12 text-center">No</th>
                     <th class="py-3 px-4">Nama Siswa</th>
                     <th class="py-3 px-4">Email</th>
-                    <th class="py-3 px-4">Kelas</th>
+                    <th class="py-3 px-4">Jenjang / Kelas</th>
                     <th class="py-3 px-4">No Hp</th>
-                    <th class="py-3 px-4">Status</th>
-                    <th class="py-3 px-4 text-center">Aksi</th>
+                    <th class="py-3 px-4 text-center">Status</th>
                 </tr>
             </thead>
             <tbody class="text-sm divide-y divide-gray-50">
@@ -101,43 +100,25 @@
                     <td class="py-4 px-4">
                         <div class="flex items-center space-x-3">
                             <img class="w-9 h-9 rounded-full object-cover" 
-                                 src="{{ $siswa->foto ? asset('storage/' . $siswa->foto) : 'https://ui-avatars.com/api/?name=' . urlencode($siswa->nama) }}" 
+                                 src="{{ !empty($siswa->foto) ? asset('storage/' . $siswa->foto) : 'https://ui-avatars.com/api/?name=' . urlencode($siswa->nama) }}" 
                                  alt="{{ $siswa->nama }}">
                             <span class="font-semibold text-gray-800">{{ $siswa->nama }}</span>
                         </div>
                     </td>
                     <td class="py-4 px-4 text-gray-400">{{ $siswa->email }}</td>
-                    <td class="py-4 px-4 text-gray-600">{{ $siswa->kelas }}</td>
-                    <td class="py-4 px-4 text-gray-400">{{ $siswa->no_hp }}</td>
-                    <td class="py-4 px-4">
-                        @if($siswa->status == 'Aktif')
-                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-600">
-                                {{ $siswa->status }}
-                            </span>
-                        @else
-                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-500">
-                                {{ $siswa->status }}
-                            </span>
-                        @endif
+                    <td class="py-4 px-4 text-gray-600">
+                        {{ $siswa->jenjang->nama_jenjang ?? $siswa->kelas ?? '-' }}
                     </td>
+                    <td class="py-4 px-4 text-gray-400">{{ $siswa->no_hp ?? '-' }}</td>
                     <td class="py-4 px-4 text-center">
-                        <div class="flex items-center justify-center space-x-2">
-                            <a href="{{ route('siswa.edit', $siswa->id) }}" class="text-indigo-400 hover:text-indigo-600">
-                                <i class="fas fa-pen text-sm"></i>
-                            </a>
-                            <form action="{{ route('siswa.destroy', $siswa->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?');" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-rose-400 hover:text-rose-600 border-0 bg-transparent cursor-pointer">
-                                    <i class="fas fa-trash text-sm"></i>
-                                </button>
-                            </form>
-                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-600">
+                            {{ $siswa->status ?? 'Aktif' }}
+                        </span>
                     </td>
-                </tr>
+                </tr>   
                 @empty
                 <tr>
-                    <td colspan="7" class="py-8 text-center text-gray-400">
+                    <td colspan="6" class="py-8 text-center text-gray-400">
                         Tidak ada data siswa ditemukan.
                     </td>
                 </tr>
