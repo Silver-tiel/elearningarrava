@@ -112,6 +112,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function 
     Route::get('/quiz',         [QuizController::class, 'index'])->name('admin.quiz');
     Route::get('/quiz/create',  [QuizController::class, 'create'])->name('quiz.create');
     Route::get('/quiz/create',  [QuizController::class, 'create'])->name('admin.quiz.create');
+    Route::get('/quiz/{id}/edit', [QuizController::class, 'edit'])->name('admin.quiz.edit');
+    Route::put('/quiz/{id}', [QuizController::class, 'update'])->name('admin.quiz.update');
+    Route::delete('/quiz/{id}', [QuizController::class, 'destroy'])->name('admin.quiz.destroy');
+    Route::get('/quiz/{id}/preview', [SiswaController::class, 'previewQuiz'])->name('admin.quiz.preview');
     Route::post('/quiz/store',  [QuizController::class, 'store'])->name('quiz.store');
     Route::post('/quiz/store',  [QuizController::class, 'store'])->name('admin.quiz.store');
 

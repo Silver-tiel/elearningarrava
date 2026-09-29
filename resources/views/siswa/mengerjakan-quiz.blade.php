@@ -1,6 +1,7 @@
 @extends('layouts.siswa')
 
 @php
+    $isPreview = $isPreview ?? false;
     $active = 'quiz';
     $kahootStyles = [
         'A' => ['bg' => 'bg-[#E21B3C]', 'hover' => 'hover:border-[#E21B3C]', 'icon' => '▲'],
@@ -62,11 +63,23 @@
     @endif
 
     <div class="px-6 py-6 max-w-7xl mx-auto">
+        @if($errors->has('quiz'))
+            <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{{ $errors->first('quiz') }}</div>
+        @endif
+
+        @if($isPreview)
+            <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700">
+                Mode Preview — Anda sedang melihat tampilan soal sebagai admin/guru.
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6">
             
             {{-- Main Form Kuis --}}
-            <form id="form-kerjakan-quiz" method="POST" action="{{ route('siswa.quiz.submit', $quiz->id_quiz) }}" data-quiz-mode="{{ $quiz->mode_pengerjaan ?? 'wayground' }}" data-total-seconds="{{ $remainingSeconds ?? 0 }}" class="space-y-6">
-                @csrf
+            <form id="form-kerjakan-quiz" method="{{ $isPreview ? 'GET' : 'POST' }}" action="{{ $isPreview ? '#' : route('siswa.quiz.submit', $quiz->id_quiz) }}" data-quiz-mode="{{ $quiz->mode_pengerjaan ?? 'wayground' }}" data-preview="{{ $isPreview ? 'true' : 'false' }}" data-total-seconds="{{ $remainingSeconds ?? 0 }}" class="space-y-6" @if($isPreview) onsubmit="return false;" @endif>
+                @if(!$isPreview)
+                    @csrf
+                @endif
                 
                 {{-- Quiz Header Card --}}
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between">
@@ -83,7 +96,8 @@
                 {{-- Loop Soal --}}
                 @if($quiz->soal->count() > 0)
                     @foreach($quiz->soal as $index => $soal)
-                        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-hidden" id="soal-{{ $index + 1 }}" data-question-index="{{ $index }}" data-duration="{{ $soal->durasi_detik ?? 20 }}" @if($index > 0) hidden @endif>
+                        @if($isPreview || ($quiz->mode_pengerjaan ?? 'wayground') !== 'wayground' || $index === ($activeQuestionIndex ?? 0))
+                        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-hidden" id="soal-{{ $index + 1 }}" data-question-index="{{ $index }}" data-duration="{{ $questionRemainingSeconds ?? $soal->durasi_detik ?? 20 }}" data-is-last-question="{{ $index === $quiz->soal->count() - 1 ? 'true' : 'false' }}" @if($index > 0) hidden @endif>
                             {{-- Top badge --}}
                             <div class="flex items-center justify-between text-xs font-bold mb-3">
                                 <span class="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
@@ -96,6 +110,12 @@
                             <div class="my-4 bg-slate-900 text-white rounded-xl p-5 text-center text-lg font-bold shadow-inner">
                                 "{{ $soal->pertanyaan }}"
                             </div>
+
+                            @if($soal->foto_soal)
+                                <div class="my-4 flex justify-center">
+                                    <img src="{{ asset('storage/' . $soal->foto_soal) }}" alt="Foto soal" class="max-h-72 w-auto rounded-2xl border border-slate-200 bg-slate-50 object-contain shadow-sm">
+                                </div>
+                            @endif
 
                             @if(count($soal->pilihanSoal) > 0)
                                 {{-- Kahoot Colorful Answer Grid (Pilihan Ganda) --}}
@@ -138,12 +158,19 @@
                                 </div>
                             @endif
                         </section>
+                        @endif
                     @endforeach
 
                     <div id="quiz-submit-controls" class="flex justify-end pt-4">
-                        <button type="submit" class="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-sm px-8 py-3.5 shadow-lg shadow-emerald-600/20 transition transform hover:scale-105">
-                            🚀 Kumpulkan Jawaban Saya
-                        </button>
+                        @if($isPreview)
+                            <div class="inline-flex items-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-bold text-blue-700">
+                                👁️ Preview hanya untuk melihat soal
+                            </div>
+                        @else
+                            <button type="submit" class="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-sm px-8 py-3.5 shadow-lg shadow-emerald-600/20 transition transform hover:scale-105">
+                                🚀 Kumpulkan Jawaban Saya
+                            </button>
+                        @endif
                     </div>
                 @else
                     <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500 font-semibold">
@@ -194,6 +221,7 @@
         const questionButtons = Array.from(document.querySelectorAll('[data-question-target]'));
         const quizForm = document.getElementById('form-kerjakan-quiz');
         const quizMode = quizForm.dataset.quizMode;
+        const isPreview = quizForm.dataset.preview === 'true';
         const totalTimerLabel = document.getElementById('quiz-total-timer');
         const submitControls = document.getElementById('quiz-submit-controls');
         const quizNavigation = document.getElementById('quiz-navigation');
@@ -226,7 +254,11 @@
 
                     if (remaining === 0) {
                         clearInterval(activeTimer);
-                        if (index + 1 < questionPanels.length) {
+                        if (isPreview) {
+                            if (index + 1 < questionPanels.length) showQuestion(index + 1);
+                        } else if (quizMode === 'wayground') {
+                            quizForm.requestSubmit();
+                        } else if (index + 1 < questionPanels.length) {
                             showQuestion(index + 1);
                         } else {
                             quizForm.requestSubmit();
@@ -234,7 +266,7 @@
                     }
                 };
 
-                submitControls.hidden = index !== questionPanels.length - 1;
+                if (!isPreview) submitControls.hidden = panel.dataset.isLastQuestion !== 'true';
                 updateTimer();
                 activeTimer = setInterval(updateTimer, 250);
             } else {
