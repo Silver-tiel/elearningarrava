@@ -12,6 +12,37 @@
     @if($errors->has('quiz'))
         <div class="mb-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{{ $errors->first('quiz') }}</div>
     @endif
+
+    @if(session('quiz_result'))
+        @php $result = session('quiz_result'); @endphp
+        <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">Hasil submit</p>
+                    <h2 class="mt-1 text-xl font-bold text-emerald-900">{{ $result['is_lulus'] ? 'Selamat, kamu lulus!' : 'Coba lagi ya!' }}</h2>
+                </div>
+                <span class="rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white">{{ $result['is_lulus'] ? 'Lulus' : 'Belum lulus' }}</span>
+            </div>
+
+            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                <div class="rounded-xl bg-white px-3 py-2 shadow-sm">
+                    <div class="text-[11px] uppercase tracking-[0.08em] text-slate-500">Poin</div>
+                    <div class="mt-1 text-lg font-bold text-slate-800">{{ $result['poin_didapat'] }}</div>
+                </div>
+                <div class="rounded-xl bg-white px-3 py-2 shadow-sm">
+                    <div class="text-[11px] uppercase tracking-[0.08em] text-slate-500">Jawaban benar</div>
+                    <div class="mt-1 text-lg font-bold text-slate-800">{{ $result['benar'] }}/{{ $result['total_soal'] }}</div>
+                </div>
+                <div class="rounded-xl bg-white px-3 py-2 shadow-sm">
+                    <div class="text-[11px] uppercase tracking-[0.08em] text-slate-500">Status</div>
+                    <div class="mt-1 text-lg font-bold {{ $result['is_lulus'] ? 'text-emerald-600' : 'text-amber-600' }}">
+                        {{ $result['is_lulus'] ? 'Lulus' : 'Gagal' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="mb-6">
         <h1 class="text-[24px] font-bold tracking-tight text-[#172033]">Quiz</h1>
         <p class="mt-1 text-sm text-[#687892]">Uji pemahamanmu dari materi yang sudah dipelajari.</p>
@@ -42,13 +73,22 @@
 
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         @forelse($quizzes as $quiz)
-            <div class="rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#edf5ff] text-xl text-[#3180f7]">?</div>
+            @php
+                $expired = $quiz->sudahKadaluarsa();
+            @endphp
+            <div class="rounded-2xl border border-[#dfe6ef] bg-white p-5 transition {{ $expired ? 'cursor-not-allowed opacity-60 grayscale' : 'hover:-translate-y-0.5 hover:shadow-md' }}">
+                <div class="flex h-12 w-12 items-center justify-center rounded-xl {{ $expired ? 'bg-slate-200 text-slate-500' : 'bg-[#edf5ff] text-[#3180f7]' }} text-xl">{{ $expired ? '⏰' : '?' }}</div>
                 <h2 class="mt-4 text-[16px] font-bold text-[#172033]">{{ $quiz->judul }}</h2>
                 <p class="mt-2 text-sm text-[#718098]">{{ $quiz->jenjang->nama_tipe ?? 'Semua jenjang' }} · {{ $quiz->tingkatQuiz->nama_tingkat ?? 'Tingkat umum' }}</p>
                 <div class="mt-5 flex items-center justify-between border-t border-[#edf0f4] pt-4">
-                    <span class="text-xs text-[#8a97a9]">Quiz tersedia</span>
-                    <a href="{{ route('siswa.quiz.kerjakan', $quiz->id_quiz) }}" class="rounded-lg bg-[#3d82f6] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#3172e2]">Mulai</a>
+                    <span class="text-xs {{ $expired ? 'text-rose-600 font-semibold' : 'text-[#8a97a9]' }}">
+                        {{ $expired ? 'Waktu berakhir' : 'Quiz tersedia' }}
+                    </span>
+                    @if($expired)
+                        <button type="button" disabled class="cursor-not-allowed rounded-lg bg-slate-300 px-3 py-2 text-xs font-semibold text-slate-500">Kadaluarsa</button>
+                    @else
+                        <a href="{{ route('siswa.quiz.kerjakan', $quiz->id_quiz) }}" class="rounded-lg bg-[#3d82f6] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#3172e2]">Mulai</a>
+                    @endif
                 </div>
             </div>
         @empty

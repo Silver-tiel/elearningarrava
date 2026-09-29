@@ -21,24 +21,33 @@
         </div>
         <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
             @forelse ($quizzes as $quiz)
-                <a href="{{ route('siswa.latihan-soal.kerjakan', $quiz->id_quiz) }}"
-                    class="overflow-hidden rounded-xl border border-[#dfe6ef] bg-white transition hover:-translate-y-0.5 hover:shadow-md">
+                @php
+                    $expired = $quiz->sudahKadaluarsa();
+                @endphp
+                <div class="overflow-hidden rounded-xl border border-[#dfe6ef] bg-white transition {{ $expired ? 'cursor-not-allowed opacity-60 grayscale' : 'hover:-translate-y-0.5 hover:shadow-md' }}">
                     <div class="relative h-[120px] overflow-hidden bg-gradient-to-br from-[#eef6ff] to-white">
                         @if($quiz->foto_quiz)
                             <img src="{{ asset('storage/' . $quiz->foto_quiz) }}" class="h-full w-full object-cover">
                         @else
-                            <div class="flex h-full items-center justify-center text-5xl">📝</div>
+                            <div class="flex h-full items-center justify-center text-5xl">{{ $expired ? '⏰' : '📝' }}</div>
                         @endif
                     </div>
-                    <div class="p-4"><span
-                            class="inline-flex rounded-md bg-[#edf5ff] px-2 py-1 text-[11px] font-medium text-[#3180f7]">{{ $quiz->tipeQuiz->nama_tipe ?? 'Latihan' }}</span>
+                    <div class="p-4">
+                        <span class="inline-flex rounded-md {{ $expired ? 'bg-slate-200 text-slate-500' : 'bg-[#edf5ff] text-[#3180f7]' }} px-2 py-1 text-[11px] font-medium">
+                            {{ $expired ? 'Kadaluarsa' : ($quiz->tipeQuiz->nama_tipe ?? 'Latihan') }}
+                        </span>
                         <h2 class="mt-3 text-[16px] font-bold">{{ $quiz->judul }}</h2>
                         <div class="mt-4 flex items-center justify-between text-[11px] text-[#75839a]">
                             <span>{{ $quiz->tingkatQuiz->nama_tingkat ?? 'Semua Tingkat' }}</span>
                             <span>{{ $quiz->soal()->count() }} soal</span>
                         </div>
+                        @if($expired)
+                            <div class="mt-3 text-[11px] font-semibold text-rose-600">Waktu habis, tidak bisa dikerjakan.</div>
+                        @else
+                            <a href="{{ route('siswa.latihan-soal.kerjakan', $quiz->id_quiz) }}" class="mt-3 inline-flex rounded-lg bg-[#3d82f6] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#3172e2]">Mulai</a>
+                        @endif
                     </div>
-                </a>
+                </div>
             @empty
                 <div class="col-span-full py-10 text-center text-[#687892]">Belum ada latihan soal tersedia.</div>
             @endforelse

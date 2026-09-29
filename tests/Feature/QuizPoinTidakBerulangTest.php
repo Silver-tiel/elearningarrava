@@ -88,10 +88,14 @@ class QuizPoinTidakBerulangTest extends TestCase
 
         $this->actingAs($user);
 
+        $this->get(route('siswa.quiz.kerjakan', $quiz->id_quiz))->assertOk();
+        $this->travel(20)->seconds();
         $this->post(route('siswa.quiz.submit', $quiz->id_quiz), [
             'jawaban' => [$soal->id_soal => 'A'],
         ]);
 
+        $this->get(route('siswa.quiz.kerjakan', $quiz->id_quiz))->assertOk();
+        $this->travel(20)->seconds();
         $this->post(route('siswa.quiz.submit', $quiz->id_quiz), [
             'jawaban' => [$soal->id_soal => 'A'],
         ]);
@@ -164,7 +168,10 @@ class QuizPoinTidakBerulangTest extends TestCase
             'is_correct' => true,
         ]);
 
-        $this->actingAs($user);
+        $this->actingAs($user)
+            ->get(route('siswa.quiz.kerjakan', $quiz->id_quiz))
+            ->assertOk();
+        $this->travel(20)->seconds();
 
         $response = $this->post(route('siswa.quiz.submit', $quiz->id_quiz), [
             'jawaban' => [],
