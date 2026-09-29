@@ -79,20 +79,35 @@
             </div>
 
             <div class="flex items-center gap-3 w-full md:w-auto">
-                <select name="kelas"
-                    onchange="if (!this.value) { window.location.href = '{{ route('admin.daftar_siswa') }}'; return; } this.form.submit();"
+
+                <select
+                    name="kelas"
+                    onchange="filterData(this)"
                     class="w-full md:w-auto bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                     <option value="">Semua Kelas</option>
+
                     @foreach($listKelas ?? [] as $k)
-                    <option value="{{ $k }}" {{ request('kelas') == $k ? 'selected' : '' }}>{{ $k }}</option>
+                    <option value="{{ $k }}" {{ request('kelas') == $k ? 'selected' : '' }}>
+                        {{ $k }}
+                    </option>
                     @endforeach
                 </select>
 
-                <select name="status" onchange="this.form.submit()" class="w-full md:w-auto bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                <select
+                    name="status"
+                    onchange="filterData(this)"
+                    class="w-full md:w-auto bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                     <option value="">Status: Semua</option>
-                    <option value="Aktif" {{ request('status') == 'Aktif' ? 'selected' : '' }}>Status: Aktif</option>
-                    <option value="Nonaktif" {{ request('status') == 'Nonaktif' ? 'selected' : '' }}>Status: Nonaktif</option>
+
+                    <option value="Aktif" {{ request('status') == 'Aktif' ? 'selected' : '' }}>
+                        Status: Aktif
+                    </option>
+
+                    <option value="Nonaktif" {{ request('status') == 'Nonaktif' ? 'selected' : '' }}>
+                        Status: Nonaktif
+                    </option>
                 </select>
+
             </div>
         </form>
     </div>
@@ -175,4 +190,21 @@
     </div>
 
 </div>
+
+<script>
+    function filterData(select) {
+        const form = select.form;
+
+        const search = form.querySelector('[name="search"]').value;
+        const kelas = form.querySelector('[name="kelas"]').value;
+        const status = form.querySelector('[name="status"]').value;
+
+        if (!search && !kelas && !status) {
+            window.location.href = "{{ route('admin.daftar_siswa') }}";
+            return;
+        }
+
+        form.submit();
+    }
+</script>
 @endsection
