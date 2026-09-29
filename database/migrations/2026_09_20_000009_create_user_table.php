@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->unsignedInteger('id_tipeuser')->default(1);
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->integer('total_poin')->default(0);
-            $table->string('status_akun', 50)->nullable();
+            $table->string('status_akun', 50)->default('Aktif');
             $table->unsignedInteger('id_modul')->nullable();
             $table->string('foto_profil')->nullable();
             $table->timestamps();

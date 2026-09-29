@@ -377,10 +377,10 @@ class SiswaController extends Controller
 
     // Total Siswa Keseluruhan
     $totalSiswa = User::where('id_tipeuser', 3)->count();
-    
-    // Set angka default agar tidak crash karena kolom 'status' belum ada di tabel user
-    $totalAktif = $totalSiswa; 
-    $totalNonaktif = 0;
+
+        // Set angka default agar tidak crash karena kolom 'status' belum ada di tabel user
+        $totalAktif = User::where('id_tipeuser', 3)->where('status_akun', 'Aktif')->count();
+        $totalNonaktif = User::where('id_tipeuser', 3)->where('status_akun', 'Nonaktif')->count();
     $totalPerluDitinjau = 0;
 
     // Data opsi kelas untuk dropdown filter
@@ -394,5 +394,34 @@ class SiswaController extends Controller
         'totalPerluDitinjau',
         'listKelas'
     ));
+}
+
+public function updateStatus(Request $request, $id)
+{
+    try {
+        // Validasi input
+        $request->validate([
+            'status' => 'required|in:Aktif,Nonaktif'
+        ]);
+
+        // Cari data user/siswa
+        $siswa = User::findOrFail($id);
+
+        // Update ke kolom status_akun
+        $siswa->status_akun = $request->status;
+        $siswa->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status ' . $siswa->nama . ' berhasil diubah menjadi ' . $siswa->status_akun
+        ]);
+        
+    } catch (\Exception $e) {
+        // Mengembalikan pesan error asli agar terbaca di console browser
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ], 500);
+    }
 }
 }
