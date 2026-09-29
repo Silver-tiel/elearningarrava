@@ -65,30 +65,31 @@
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6">
             
             {{-- Main Form Kuis --}}
-            <form method="POST" action="{{ route('siswa.quiz.submit', $quiz->id_quiz) }}" class="space-y-6">
+            <form id="form-kerjakan-quiz" method="POST" action="{{ route('siswa.quiz.submit', $quiz->id_quiz) }}" data-quiz-mode="{{ $quiz->mode_pengerjaan ?? 'wayground' }}" data-total-seconds="{{ $remainingSeconds ?? 0 }}" class="space-y-6">
                 @csrf
                 
                 {{-- Quiz Header Card --}}
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between">
                     <div>
                         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 mb-2">
-                            <span>🎮 Mode Kahoot! Interaktif</span>
+                            <span>{{ ($quiz->mode_pengerjaan ?? 'wayground') === 'biasa' ? 'Mode Kuis Biasa' : 'Mode Wayground' }}</span>
                         </div>
                         <h1 class="text-xl font-extrabold text-slate-800">{{ $quiz->judul }}</h1>
                         <p class="text-xs text-slate-500 mt-1">Total: {{ $quiz->soal->count() }} Pertanyaan</p>
+                        <p id="quiz-total-timer" class="mt-2 text-sm font-bold text-rose-700" @if(($quiz->mode_pengerjaan ?? 'wayground') !== 'biasa') hidden @endif></p>
                     </div>
                 </div>
 
                 {{-- Loop Soal --}}
                 @if($quiz->soal->count() > 0)
                     @foreach($quiz->soal as $index => $soal)
-                        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-hidden" id="soal-{{ $index + 1 }}">
+                        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm overflow-hidden" id="soal-{{ $index + 1 }}" data-question-index="{{ $index }}" data-duration="{{ $soal->durasi_detik ?? 20 }}" @if($index > 0) hidden @endif>
                             {{-- Top badge --}}
                             <div class="flex items-center justify-between text-xs font-bold mb-3">
                                 <span class="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
                                     Pertanyaan No. {{ $index + 1 }} / {{ $quiz->soal->count() }}
                                 </span>
-                                <span class="text-slate-400">⏱️ Batas Waktu 20s</span>
+                                <span class="text-slate-400" data-question-timer @if(($quiz->mode_pengerjaan ?? 'wayground') === 'biasa') hidden @endif>⏱️ {{ $soal->durasi_detik ?? 20 }}s</span>
                             </div>
 
                             {{-- Pertanyaan --}}
@@ -139,7 +140,7 @@
                         </section>
                     @endforeach
 
-                    <div class="flex justify-end pt-4">
+                    <div id="quiz-submit-controls" class="flex justify-end pt-4">
                         <button type="submit" class="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-sm px-8 py-3.5 shadow-lg shadow-emerald-600/20 transition transform hover:scale-105">
                             🚀 Kumpulkan Jawaban Saya
                         </button>
@@ -162,13 +163,15 @@
                         </div>
                     </dl>
                     
+                    <div id="quiz-navigation" @if(($quiz->mode_pengerjaan ?? 'wayground') === 'wayground') hidden @endif>
                     <h2 class="mt-6 text-xs font-bold uppercase tracking-wider text-slate-400">Navigasi Soal</h2>
                     <div class="mt-3 grid grid-cols-5 gap-2">
                         @foreach ($quiz->soal as $index => $s)
-                            <a href="#soal-{{ $index + 1 }}" class="flex h-9 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
+                            <button type="button" data-question-target="{{ $index }}" class="flex h-9 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
                                 {{ $index + 1 }}
-                            </a>
+                            </button>
                         @endforeach
+                    </div>
                     </div>
                 </div>
 
@@ -186,4 +189,86 @@
 
         </div>
     </div>
+    <script>
+        const questionPanels = Array.from(document.querySelectorAll('[data-question-index]'));
+        const questionButtons = Array.from(document.querySelectorAll('[data-question-target]'));
+        const quizForm = document.getElementById('form-kerjakan-quiz');
+        const quizMode = quizForm.dataset.quizMode;
+        const totalTimerLabel = document.getElementById('quiz-total-timer');
+        const submitControls = document.getElementById('quiz-submit-controls');
+        const quizNavigation = document.getElementById('quiz-navigation');
+        const questionDeadlines = new Map();
+        let activeTimer;
+        let totalTimer;
+
+        function showQuestion(index) {
+            const panel = questionPanels[index];
+            if (!panel) return;
+
+            clearInterval(activeTimer);
+            questionPanels.forEach((item, itemIndex) => {
+                item.hidden = itemIndex !== index;
+            });
+            questionButtons.forEach((button, buttonIndex) => {
+                button.setAttribute('aria-current', buttonIndex === index ? 'step' : 'false');
+            });
+
+            if (quizMode === 'wayground') {
+                const duration = Number(panel.dataset.duration) || 20;
+                if (!questionDeadlines.has(index)) {
+                    questionDeadlines.set(index, Date.now() + duration * 1000);
+                }
+
+                const timerLabel = panel.querySelector('[data-question-timer]');
+                const updateTimer = () => {
+                    const remaining = Math.max(0, Math.ceil((questionDeadlines.get(index) - Date.now()) / 1000));
+                    timerLabel.textContent = `⏱️ ${remaining}s`;
+
+                    if (remaining === 0) {
+                        clearInterval(activeTimer);
+                        if (index + 1 < questionPanels.length) {
+                            showQuestion(index + 1);
+                        } else {
+                            quizForm.requestSubmit();
+                        }
+                    }
+                };
+
+                submitControls.hidden = index !== questionPanels.length - 1;
+                updateTimer();
+                activeTimer = setInterval(updateTimer, 250);
+            } else {
+                submitControls.hidden = false;
+            }
+        }
+
+        if (quizMode === 'biasa') {
+            let remaining = Number(quizForm.dataset.totalSeconds);
+            quizNavigation.hidden = false;
+
+            questionButtons.forEach((button) => {
+                button.addEventListener('click', () => showQuestion(Number(button.dataset.questionTarget)));
+            });
+
+            const totalDeadline = Date.now() + remaining * 1000;
+            const updateTotalTimer = () => {
+                remaining = Math.max(0, Math.ceil((totalDeadline - Date.now()) / 1000));
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                totalTimerLabel.textContent = `Sisa waktu: ${minutes}:${String(seconds).padStart(2, '0')}`;
+
+                if (remaining === 0) {
+                    clearInterval(totalTimer);
+                    quizForm.requestSubmit();
+                }
+            };
+
+            updateTotalTimer();
+            totalTimer = setInterval(updateTotalTimer, 1000);
+        } else {
+            quizNavigation.hidden = true;
+        }
+
+        if (questionPanels.length > 0) showQuestion(0);
+    </script>
 @endsection

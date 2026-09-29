@@ -36,10 +36,22 @@ class QuizController extends Controller
             'id_jenjang'       => 'required|integer',
             'id_tipequiz'      => 'nullable|integer',
             'id_tingkatquiz'   => 'nullable|integer',
-            'waktu_kadaluarsa' => 'nullable|date',
+            'waktu_kadaluarsa' => ['nullable', 'date', 'after_or_equal:now'],
+            'mode_pengerjaan' => 'required|in:wayground,biasa',
+            'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
             'soal'             => 'required|array|min:1',
             'soal.*.pertanyaan' => 'required|string',
+            'soal.*.durasi_detik' => 'nullable|required_if:mode_pengerjaan,wayground|integer|in:10,20,30,60',
         ]);
+
+        if ($request->filled('waktu_kadaluarsa')) {
+            $waktuKadaluarsa = \Carbon\Carbon::parse($request->waktu_kadaluarsa);
+            if ($waktuKadaluarsa->lt(now())) {
+                return redirect()->back()->withErrors([
+                    'waktu_kadaluarsa' => 'Waktu kadaluarsa tidak boleh lebih kecil dari waktu sekarang.',
+                ])->withInput();
+            }
+        }
 
         DB::transaction(function () use ($request) {
             // 1. Simpan quiz
@@ -49,6 +61,8 @@ class QuizController extends Controller
                 'id_tipequiz'      => $request->id_tipequiz ?? 1,
                 'id_tingkatquiz'   => $request->id_tingkatquiz ?? 1,
                 'waktu_kadaluarsa' => $request->waktu_kadaluarsa ?: null,
+                'mode_pengerjaan' => $request->mode_pengerjaan,
+                'durasi_total_menit' => $request->mode_pengerjaan === 'biasa' ? $request->durasi_total_menit : null,
                 'proggressQuiz'    => 'Tersedia',
             ]);
 
@@ -70,6 +84,7 @@ class QuizController extends Controller
                     'pertanyaan'    => $soalData['pertanyaan'],
                     'jawaban_benar' => $jawabanBenar,
                     'poin'          => $soalData['poin'] ?? 10,
+                    'durasi_detik'  => $soalData['durasi_detik'] ?? 20,
                 ]);
 
                 // 3. Simpan pilihan jawaban (jika bukan isian singkat)

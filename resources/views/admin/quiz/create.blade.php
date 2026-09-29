@@ -359,6 +359,20 @@
                             </select>
                         </div>
 
+                        <div class="bg-cyan-50/70 p-3 rounded-xl border border-cyan-100">
+                            <label for="select-mode-quiz" class="block text-xs font-bold text-cyan-950 mb-1.5">Mode pengerjaan</label>
+                            <select name="mode_pengerjaan" id="select-mode-quiz" required
+                                class="w-full bg-white border border-cyan-200 rounded-lg px-3 py-2 text-xs font-bold text-cyan-950">
+                                <option value="wayground" selected>Wayground</option>
+                                <option value="biasa">Kuis biasa</option>
+                            </select>
+                            <div id="total-duration-wrapper" class="hidden mt-3">
+                                <label for="input-total-duration" class="block text-xs font-semibold text-cyan-950 mb-1">Waktu seluruh kuis (menit)</label>
+                                <input type="number" name="durasi_total_menit" id="input-total-duration" min="1" max="360" value="30" disabled
+                                    class="w-full bg-white border border-cyan-200 rounded-lg px-3 py-2 text-xs font-semibold text-cyan-950">
+                            </div>
+                        </div>
+
                         {{-- 2. WAKTU KADALUARSA (BISA TIDAK PERNAH) --}}
                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
                             <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
@@ -394,7 +408,7 @@
                         </div>
 
                         {{-- Batas Waktu --}}
-                        <div>
+                        <div id="question-timer-wrapper">
                             <label class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
                                 <span>⏱️</span> Batas waktu
                             </label>
@@ -463,6 +477,10 @@
         const inputPertanyaan = document.getElementById('input-pertanyaan');
         const selectJenisSoal = document.getElementById('select-jenis-soal');
         const selectTimer = document.getElementById('select-timer');
+        const selectModeQuiz = document.getElementById('select-mode-quiz');
+        const totalDurationWrapper = document.getElementById('total-duration-wrapper');
+        const inputTotalDuration = document.getElementById('input-total-duration');
+        const questionTimerWrapper = document.getElementById('question-timer-wrapper');
         const inputPoin = document.getElementById('input-poin');
         const countBadge = document.getElementById('total-soal-count');
         const hiddenInputs = document.getElementById('hidden-inputs-container');
@@ -474,6 +492,17 @@
         const checkNoExpiry = document.getElementById('check-no-expiry');
         const expiryInputWrapper = document.getElementById('expiry-input-wrapper');
         const inputExpiry = document.getElementById('input-expiry');
+
+        function updateModeSettings() {
+            const isClassicMode = selectModeQuiz.value === 'biasa';
+            totalDurationWrapper.classList.toggle('hidden', !isClassicMode);
+            inputTotalDuration.disabled = !isClassicMode;
+            inputTotalDuration.required = isClassicMode;
+            questionTimerWrapper.classList.toggle('hidden', isClassicMode);
+        }
+
+        selectModeQuiz.addEventListener('change', updateModeSettings);
+        updateModeSettings();
 
         // Toggle Expiry Input
         checkNoExpiry.addEventListener('change', () => {
@@ -770,6 +799,12 @@
                 inputPoinHidden.name = `soal[${sIdx}][poin]`;
                 inputPoinHidden.value = soal.poin;
                 hiddenInputs.appendChild(inputPoinHidden);
+
+                const inputDurasi = document.createElement('input');
+                inputDurasi.type = 'hidden';
+                inputDurasi.name = `soal[${sIdx}][durasi_detik]`;
+                inputDurasi.value = soal.timer;
+                hiddenInputs.appendChild(inputDurasi);
 
                 if (soal.jenis_soal === 'isian_singkat') {
                     const inputSingkat = document.createElement('input');

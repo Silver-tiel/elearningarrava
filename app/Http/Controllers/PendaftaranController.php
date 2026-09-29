@@ -65,7 +65,6 @@ class PendaftaranController extends Controller
         ],
     ],
     [
-        'nama.unique' => 'Nama sudah digunakan. Silakan gunakan nama lain.',
         'nisn.unique' => 'NISN sudah terdaftar. Silakan gunakan NISN lain.',
         'email.unique' => 'Email sudah terdaftar. Silakan gunakan email lain.',
 
