@@ -36,10 +36,19 @@ class QuizController extends Controller
             'id_jenjang'       => 'required|integer',
             'id_tipequiz'      => 'nullable|integer',
             'id_tingkatquiz'   => 'nullable|integer',
-            'waktu_kadaluarsa' => 'nullable|date',
+            'waktu_kadaluarsa' => ['nullable', 'date', 'after_or_equal:now'],
             'soal'             => 'required|array|min:1',
             'soal.*.pertanyaan' => 'required|string',
         ]);
+
+        if ($request->filled('waktu_kadaluarsa')) {
+            $waktuKadaluarsa = \Carbon\Carbon::parse($request->waktu_kadaluarsa);
+            if ($waktuKadaluarsa->lt(now())) {
+                return redirect()->back()->withErrors([
+                    'waktu_kadaluarsa' => 'Waktu kadaluarsa tidak boleh lebih kecil dari waktu sekarang.',
+                ])->withInput();
+            }
+        }
 
         DB::transaction(function () use ($request) {
             // 1. Simpan quiz

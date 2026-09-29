@@ -78,10 +78,23 @@ class SiswaController extends Controller
     {
         $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
         $user = Auth::user();
-        $jawabanSiswa = $request->input('jawaban', []); // format: ['id_soal' => 'A']
+        $jawabanSiswa = $request->input('jawaban', []);
+
+        if ($quiz->waktu_kadaluarsa && now()->gt($quiz->waktu_kadaluarsa)) {
+            return redirect()->back()->withErrors([
+                'quiz' => 'Waktu kuis sudah berakhir.',
+            ]);
+        }
+
+        $totalSoal = $quiz->soal->count();
+
+        if ($totalSoal > 0 && count($jawabanSiswa) !== $totalSoal) {
+            return redirect()->back()->withErrors([
+                'jawaban' => 'Harap isi semua soal sebelum submit kuis.',
+            ]);
+        }
 
         $benar = 0;
-        $totalSoal = $quiz->soal->count();
         
         $totalPoinQuiz = 0;
         $poinDidapat = 0;
@@ -111,7 +124,12 @@ class SiswaController extends Controller
         // Syarat lulus minimal 70% benar
         $isLulus = $totalSoal > 0 && ($benar / $totalSoal) >= 0.70;
 
-        if ($isLulus) {
+        $sudahMendapatPoinUntukQuizIni = HasilQuizModul::where('id_user', $user->id_user)
+            ->where('id_quiz', $quiz->id_quiz)
+            ->where('poin_didapat', '>', 0)
+            ->exists();
+
+        if ($isLulus && $poinDidapat > 0 && !$sudahMendapatPoinUntukQuizIni) {
             $user->total_poin += $poinDidapat;
             $user->save();
         }
