@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Modul;
+use App\Models\Jenjang;
 use App\Models\Quiz;
 use App\Models\Soal;
+use App\Models\TingkatQuiz;
 use App\Models\HasilQuizModul;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -53,36 +55,113 @@ class SiswaController extends Controller
     public function latihanSoal()
     {
         // Menampilkan daftar latihan soal (biasanya quiz dengan tipe latihan)
-        $quizzes = Quiz::with(['tipeQuiz', 'tingkatQuiz'])->latest()->get();
+        $quizzes = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz'])->latest()->get();
         return view('siswa.latihan-soal', compact('quizzes'));
     }
 
     public function kerjakanLatihan($id_quiz)
     {
         $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
-        return view('siswa.mengerjakan-quiz', compact('quiz'));
+        return $this->tampilkanQuiz($quiz, 'siswa.latihan-soal');
     }
 
-    public function quiz()
+    public function quiz(Request $request)
     {
-        $quizzes = Quiz::with(['tipeQuiz', 'tingkatQuiz'])->latest()->get();
-        return view('siswa.quiz', compact('quizzes'));
+        $filters = $request->validate([
+            'jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
+            'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
+        ]);
+
+        $query = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz', 'jenjang']);
+
+        if (!empty($filters['jenjang'])) {
+            $query->where('id_jenjang', $filters['jenjang']);
+        }
+
+        if (!empty($filters['tingkat'])) {
+            $query->where('id_tingkatquiz', $filters['tingkat']);
+        }
+
+        $quizzes = $query->latest()->get();
+        $jenjangList = Jenjang::orderBy('id_jenjang')->get();
+        $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
+
+        return view('siswa.quiz', compact('quizzes', 'jenjangList', 'tingkatQuizList'));
     }
 
     public function kerjakanQuiz($id_quiz)
     {
         $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
-        return view('siswa.mengerjakan-quiz', compact('quiz'));
+        return $this->tampilkanQuiz($quiz, 'siswa.quiz');
+    }
+
+    private function tampilkanQuiz(Quiz $quiz, string $routeDaftar)
+    {
+        if ($quiz->sudahKadaluarsa()) {
+            return redirect()->route($routeDaftar)->withErrors([
+                'quiz' => 'Waktu kuis sudah berakhir.',
+            ]);
+        }
+
+        $remainingSeconds = null;
+        if ($quiz->mode_pengerjaan === 'biasa' && $quiz->durasi_total_menit) {
+            $attemptKey = $this->attemptSessionKey($quiz);
+            $startedAt = session($attemptKey);
+
+            if (!$startedAt) {
+                $startedAt = now()->timestamp;
+                session([$attemptKey => $startedAt]);
+            }
+
+            $remainingSeconds = max(
+                0,
+                ($quiz->durasi_total_menit * 60) - (now()->timestamp - (int) $startedAt)
+            );
+
+            if ($remainingSeconds === 0) {
+                session()->forget($attemptKey);
+                return redirect()->route($routeDaftar)->withErrors([
+                    'quiz' => 'Waktu pengerjaan kuis sudah habis.',
+                ]);
+            }
+        }
+
+        return view('siswa.mengerjakan-quiz', compact('quiz', 'remainingSeconds'));
     }
 
     public function submitQuiz(Request $request, $id_quiz)
     {
         $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
         $user = Auth::user();
-        $jawabanSiswa = $request->input('jawaban', []); // format: ['id_soal' => 'A']
+        $jawabanSiswa = $request->input('jawaban', []);
+
+        if ($quiz->sudahKadaluarsa()) {
+            return redirect()->route('siswa.quiz')->withErrors([
+                'quiz' => 'Waktu kuis sudah berakhir.',
+            ]);
+        }
+
+        $attemptKey = $this->attemptSessionKey($quiz);
+        if ($quiz->mode_pengerjaan === 'biasa' && $quiz->durasi_total_menit) {
+            $startedAt = session($attemptKey);
+            if (!$startedAt) {
+                return redirect()->route('siswa.quiz')->withErrors([
+                    'quiz' => 'Silakan mulai kuis terlebih dahulu.',
+                ]);
+            }
+
+            $elapsedSeconds = now()->timestamp - (int) $startedAt;
+            if ($elapsedSeconds > $quiz->durasi_total_menit * 60) {
+                session()->forget($attemptKey);
+                return redirect()->route('siswa.quiz')->withErrors([
+                    'quiz' => 'Waktu pengerjaan kuis sudah habis.',
+                ]);
+            }
+        }
+
+        $totalSoal = $quiz->soal->count();
 
         $benar = 0;
-        $totalSoal = $quiz->soal->count();
         
         $totalPoinQuiz = 0;
         $poinDidapat = 0;
@@ -112,7 +191,12 @@ class SiswaController extends Controller
         // Syarat lulus minimal 70% benar
         $isLulus = $totalSoal > 0 && ($benar / $totalSoal) >= 0.70;
 
-        if ($isLulus) {
+        $sudahMendapatPoinUntukQuizIni = HasilQuizModul::where('id_user', $user->id_user)
+            ->where('id_quiz', $quiz->id_quiz)
+            ->where('poin_didapat', '>', 0)
+            ->exists();
+
+        if ($isLulus && $poinDidapat > 0 && !$sudahMendapatPoinUntukQuizIni) {
             $user->total_poin += $poinDidapat;
             $user->save();
         }
@@ -125,12 +209,19 @@ class SiswaController extends Controller
             'waktu_dapat' => now(),
         ]);
 
+        session()->forget($attemptKey);
+
         return redirect()->back()->with('quiz_result', [
             'poin_didapat' => $poinDidapat,
             'benar' => $benar,
             'total_soal' => $totalSoal,
             'is_lulus' => $isLulus
         ]);
+    }
+
+    private function attemptSessionKey(Quiz $quiz): string
+    {
+        return 'quiz_attempt.' . Auth::id() . '.' . $quiz->id_quiz;
     }
 
     public function hasilQuiz($id_quiz, $id_hasil)

@@ -12,6 +12,9 @@
 @endsection
 @section('content')
     <div class="px-8 py-8">
+        @if($errors->has('quiz'))
+            <div class="mb-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">{{ $errors->first('quiz') }}</div>
+        @endif
         <div class="mb-6">
             <h1 class="text-[24px] font-bold">Latihan Soal</h1>
             <p class="mt-1 text-[14px] text-[#687892]">Ayo Semangat mengerjakan.</p>

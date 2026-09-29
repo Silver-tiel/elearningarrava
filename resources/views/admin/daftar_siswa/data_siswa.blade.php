@@ -130,7 +130,7 @@
                         <td class="py-4 px-4 text-slate-600">
                             {{ $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? '-' }}
                         </td>
-                        <td class="py-4 px-4 text-slate-500">{{ $siswa->no_hp ?? '-' }}</td>
+                        <td class="py-4 px-4 text-slate-500">{{ $siswa->nomor_hp ?? '-' }}</td>
                         <td class="py-4 px-4 text-center">
                             @php
                             $status = $siswa->status ?? 'Aktif';
