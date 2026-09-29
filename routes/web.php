@@ -33,19 +33,19 @@ Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 // Logout
 Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
 
-// Lupa password - UI dan endpoint awal. Pengiriman email reset dapat disambungkan
-// ke Laravel Password Broker ketika konfigurasi mail sudah tersedia.
-Route::get('/forgot-password', function () {
-    return view('forgot-password');
-})->name('password.request');
+// // Lupa password - UI dan endpoint awal. Pengiriman email reset dapat disambungkan
+// // ke Laravel Password Broker ketika konfigurasi mail sudah tersedia.
+// Route::get('/forgot-password', function () {
+//     return view('forgot-password');
+// })->name('password.request');
 
-Route::post('/forgot-password', function (Request $request) {
-    $request->validate([
-        'email' => ['required', 'email'],
-    ]);
+// Route::post('/forgot-password', function (Request $request) {
+//     $request->validate([
+//         'email' => ['required', 'email'],
+//     ]);
 
-    return back()->with('status', 'Jika email terdaftar, tautan pengaturan ulang akan diproses.');
-})->name('password.email');
+//     return back()->with('status', 'Jika email terdaftar, tautan pengaturan ulang akan diproses.');
+// })->name('password.email');
 
 // Proses pendaftaran.
 Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])->name('pendaftaranBaru');

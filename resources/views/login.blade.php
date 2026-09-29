@@ -60,7 +60,7 @@
                     <input type="checkbox" name="remember" value="1" class="h-[17px] w-[17px] accent-[#3F82F6]">
                     <span>Ingat Saya</span>
                 </label>
-                <a href="{{ route('password.request') }}" class="font-bold text-[#3F82F6] hover:underline">Lupa
+                <a href="" class="font-bold text-[#3F82F6] hover:underline">Lupa
                     Password?</a>
             </div>
 
