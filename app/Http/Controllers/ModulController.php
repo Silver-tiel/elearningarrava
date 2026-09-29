@@ -177,4 +177,182 @@ public function store(Request $request)
 
         return redirect()->route('admin.modul')->with('success', 'Modul berhasil dihapus.');
     }
+    // API: mengambil semua modul
+    public function apiIndex()
+    {
+        $moduls = Modul::with([
+            'tipeModul',
+            'jenjang',
+            'quiz'
+        ])
+        ->latest()
+        ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data modul berhasil diambil.',
+            'data' => $moduls,
+        ], 200);
+    }
+
+    // API: menampilkan detail modul
+    public function apiShow($id)
+    {
+        $modul = Modul::with(['tipeModul', 'jenjang', 'quiz'])->find($id);
+
+        if (!$modul) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Modul tidak ditemukan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail modul berhasil diambil.',
+            'data' => $modul,
+        ], 200);
+    }
+
+    // API: menyimpan data modul baru
+    public function apiStore(Request $request)
+    {
+        $request->validate([
+            'judul_modul' => 'required|string|max:255',
+            'id_tipemodul' => 'required|integer',
+            'id_jenjang' => 'required|integer',
+            'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
+            'file_link' => 'nullable|url',
+            'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        $pathFile = null;
+        $tipeFile = null;
+
+        if ($request->hasFile('file_upload')) {
+            $file = $request->file('file_upload');
+            $pathFile = $file->store('modul/files', 'public');
+            $tipeFile = $file->getClientOriginalExtension();
+        } elseif ($request->filled('file_link')) {
+            $pathFile = $request->file_link;
+            $tipeFile = 'link';
+        }
+
+        $pathFoto = null;
+        if ($request->hasFile('foto_modul')) {
+            $foto = $request->file('foto_modul');
+            $pathFoto = $foto->store('modul/covers', 'public');
+        }
+
+        $modul = Modul::create([
+            'judul_modul' => $request->judul_modul,
+            'file_materi' => $pathFile,
+            'tipe_file' => $tipeFile,
+            'id_tipemodul' => $request->id_tipemodul,
+            'id_jenjang' => $request->id_jenjang,
+            'id_quiz' => $request->id_quiz ?: null,
+            'progressModul' => 'Tersedia',
+            'foto_modul' => $pathFoto,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Modul berhasil ditambahkan.',
+            'data' => $modul,
+        ], 201);
+    }
+
+    // API: update data modul
+    public function apiUpdate(Request $request, $id)
+    {
+        $module = Modul::find($id);
+
+        if (!$module) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Modul tidak ditemukan.',
+            ], 404);
+        }
+
+        $request->validate([
+            'judul_modul' => 'required|string|max:255',
+            'id_tipemodul' => 'required|integer',
+            'id_jenjang' => 'required|integer',
+            'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
+            'file_link' => 'nullable|url',
+            'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        $pathFile = $module->file_materi;
+        $tipeFile = $module->tipe_file;
+
+        if ($request->hasFile('file_upload')) {
+            if ($module->file_materi && $module->tipe_file !== 'link' && Storage::disk('public')->exists($module->file_materi)) {
+                Storage::disk('public')->delete($module->file_materi);
+            }
+
+            $file = $request->file('file_upload');
+            $pathFile = $file->store('modul/files', 'public');
+            $tipeFile = $file->getClientOriginalExtension();
+        } elseif ($request->filled('file_link')) {
+            if ($module->file_materi && $module->tipe_file !== 'link' && Storage::disk('public')->exists($module->file_materi)) {
+                Storage::disk('public')->delete($module->file_materi);
+            }
+            $pathFile = $request->file_link;
+            $tipeFile = 'link';
+        }
+
+        $pathFoto = $module->foto_modul;
+        if ($request->hasFile('foto_modul')) {
+            if ($module->foto_modul && Storage::disk('public')->exists($module->foto_modul)) {
+                Storage::disk('public')->delete($module->foto_modul);
+            }
+            $foto = $request->file('foto_modul');
+            $pathFoto = $module->store('modul/covers', 'public');
+        }
+
+        $module->update([
+            'judul_modul' => $request->judul_modul,
+            'file_materi' => $pathFile,
+            'tipe_file' => $tipeFile,
+            'id_tipemodul' => $request->id_tipemodul,
+            'id_jenjang' => $request->id_jenjang,
+            'id_quiz' => $request->id_quiz ?: null,
+            'foto_modul' => $pathFoto,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Modul berhasil diperbarui.',
+            'data' => $module,
+        ], 200);
+    }
+
+    // API: hapus modul
+    public function apiDestroy($id)
+    {
+        $modul = Modul::find($id);
+
+        if (!$modul) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Modul tidak ditemukan.',
+            ], 404);
+        }
+
+        if ($modul->file_materi && $modul->tipe_file !== 'link' && Storage::disk('public')->exists($modul->file_materi)) {
+            Storage::disk('public')->delete($modul->file_materi);
+        }
+
+        if ($modul->foto_modul && Storage::disk('public')->exists($modul->foto_modul)) {
+            Storage::disk('public')->delete($modul->foto_modul);
+        }
+
+        $modul->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Modul berhasil dihapus.',
+        ], 200);
+    }
 }
