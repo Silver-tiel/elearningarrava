@@ -7,12 +7,14 @@ use App\Http\Controllers\ModulController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SoalController;
 use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\GuruController;
 use App\Models\Modul;
 use App\Models\Quiz;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
 
 // Halaman pendaftaran.
 Route::get('/pendaftaran', function () {
@@ -122,4 +124,14 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function 
 
     // Route untuk Halaman Utama/Tabel Daftar Siswa
 Route::get('/admin/data', [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
+
+    // Route Manajemen Guru
+    Route::prefix('guru')->middleware(['auth', 'role:admin'])->group(function () {
+        Route::get('/', [GuruController::class, 'index'])->name('admin.guru');
+        Route::get('/create', [GuruController::class, 'create'])->name('admin.guru.create');
+        Route::post('/', [GuruController::class, 'store'])->name('admin.guru.store');
+        Route::get('/{id}/edit', [GuruController::class, 'edit'])->name('admin.guru.edit');
+        Route::put('/{id}', [GuruController::class, 'update'])->name('admin.guru.update');
+        Route::delete('/{id}', [GuruController::class, 'destroy'])->name('admin.guru.destroy');
+    });
 });
