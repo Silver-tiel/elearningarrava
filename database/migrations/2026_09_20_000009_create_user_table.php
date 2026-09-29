@@ -12,6 +12,7 @@ return new class extends Migration {
             $table->string('nama');
             $table->string('email')->unique();
             $table->string('password');
+            $table->string('nisn')->unique();
             $table->unsignedInteger('id_tipeuser')->default(1);
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->integer('total_poin')->default(0);

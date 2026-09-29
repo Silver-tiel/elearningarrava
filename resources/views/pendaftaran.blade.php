@@ -42,6 +42,12 @@
             </div>
 
             <div>
+                <label for="nisn" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">NISN</label>
+                <input id="nisn" name="nisn" type="tel" value="{{ old('nisn') }}" placeholder="Contoh: 0012345678" class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+                @error('nisn')<p class="mt-1 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>@enderror
+            </div>
+
+            <div>
                 <label for="nomor_handphone" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Nomor Handphone</label>
                 <input id="nomor_handphone" name="nomor_handphone" type="tel" value="{{ old('nomor_handphone') }}" placeholder="Contoh: 08123456789" class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
             </div>
@@ -78,6 +84,12 @@
                     @endforeach
                 </select>
                 @error('id_jenjang')<p class="mt-1 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>@enderror
+            </div>
+
+            <div>
+                <label for="kelas" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Kelas</label>
+                <input id="kelas" name="kelas" type="text" value="{{ old('kelas') }}" placeholder="Contoh: Kelas 10 - IPA 1" required class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+                @error('kelas')<p class="mt-1 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>@enderror
             </div>
 
             <button type="submit" class="mt-1 flex h-[46px] w-full items-center justify-center rounded-[11px] bg-[#12B981] text-[13px] font-bold text-white shadow-[0_8px_16px_rgba(18,185,129,0.18)] transition hover:-translate-y-px hover:bg-[#0EAA76]">
