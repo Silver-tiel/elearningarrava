@@ -13,4 +13,9 @@ class TipeModul extends Model
     protected $fillable = [
         'nama_tipe',
     ];
+
+    public function getNamaTipemodulAttribute()
+    {
+        return $this->nama_tipe;
+    }
 }

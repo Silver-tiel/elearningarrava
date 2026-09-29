@@ -33,19 +33,19 @@ Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 // Logout
 Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
 
-// Lupa password - UI dan endpoint awal. Pengiriman email reset dapat disambungkan
-// ke Laravel Password Broker ketika konfigurasi mail sudah tersedia.
-Route::get('/forgot-password', function () {
-    return view('forgot-password');
-})->name('password.request');
+// // Lupa password - UI dan endpoint awal. Pengiriman email reset dapat disambungkan
+// // ke Laravel Password Broker ketika konfigurasi mail sudah tersedia.
+// Route::get('/forgot-password', function () {
+//     return view('forgot-password');
+// })->name('password.request');
 
-Route::post('/forgot-password', function (Request $request) {
-    $request->validate([
-        'email' => ['required', 'email'],
-    ]);
+// Route::post('/forgot-password', function (Request $request) {
+//     $request->validate([
+//         'email' => ['required', 'email'],
+//     ]);
 
-    return back()->with('status', 'Jika email terdaftar, tautan pengaturan ulang akan diproses.');
-})->name('password.email');
+//     return back()->with('status', 'Jika email terdaftar, tautan pengaturan ulang akan diproses.');
+// })->name('password.email');
 
 // Proses pendaftaran.
 Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])->name('pendaftaranBaru');
@@ -110,6 +110,10 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function 
     Route::get('/quiz',         [QuizController::class, 'index'])->name('admin.quiz');
     Route::get('/quiz/create',  [QuizController::class, 'create'])->name('quiz.create');
     Route::get('/quiz/create',  [QuizController::class, 'create'])->name('admin.quiz.create');
+    Route::get('/quiz/{id}/edit', [QuizController::class, 'edit'])->name('admin.quiz.edit');
+    Route::put('/quiz/{id}', [QuizController::class, 'update'])->name('admin.quiz.update');
+    Route::delete('/quiz/{id}', [QuizController::class, 'destroy'])->name('admin.quiz.destroy');
+    Route::get('/quiz/{id}/preview', [SiswaController::class, 'previewQuiz'])->name('admin.quiz.preview');
     Route::post('/quiz/store',  [QuizController::class, 'store'])->name('quiz.store');
     Route::post('/quiz/store',  [QuizController::class, 'store'])->name('admin.quiz.store');
 

@@ -1,7 +1,25 @@
 @extends('layouts.app')
 
 @section('header')
-<h1 class="text-base font-semibold text-slate-800">Ringkasan Data Siswa</h1>
+    <h1 class="text-lg font-bold text-gray-900">Manajemen Akun Siswa</h1>
+
+    <div class="flex items-center gap-4">
+        <!-- Icon Notifikasi -->
+        <button class="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                </path>
+            </svg>
+        </button>
+        <!-- Switch Bahasa -->
+        <button class="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100">
+            <span>ID</span>
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </button>
+    </div>
 @endsection
 
 @section('content')
@@ -10,8 +28,18 @@
     {{-- Judul Halaman --}}
     <div>
         <h1 class="text-2xl font-bold text-slate-800">Manajemen Siswa</h1>
-        <p class="text-sm text-slate-500">Kelola data siswa yang terdaftar di platform e-learning.</p>
+        <p class="text-sm text-slate-500">Kelola data siswa dan ubah status akun terdaftar di platform e-learning.</p>
     </div>
+
+    {{-- Notifikasi Sukses Ubah Status --}}
+    @if(session('success'))
+    <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm flex items-center gap-3">
+        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        {{ session('success') }}
+    </div>
+    @endif
 
     {{-- Stats Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -79,13 +107,11 @@
             </div>
 
             <div class="flex items-center gap-3 w-full md:w-auto">
-
                 <select
                     name="kelas"
                     onchange="filterData(this)"
                     class="w-full md:w-auto bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                     <option value="">Semua Kelas</option>
-
                     @foreach($listKelas ?? [] as $k)
                     <option value="{{ $k }}" {{ request('kelas') == $k ? 'selected' : '' }}>
                         {{ $k }}
@@ -98,16 +124,9 @@
                     onchange="filterData(this)"
                     class="w-full md:w-auto bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                     <option value="">Status: Semua</option>
-
-                    <option value="Aktif" {{ request('status') == 'Aktif' ? 'selected' : '' }}>
-                        Status: Aktif
-                    </option>
-
-                    <option value="Nonaktif" {{ request('status') == 'Nonaktif' ? 'selected' : '' }}>
-                        Status: Nonaktif
-                    </option>
+                    <option value="Aktif" {{ request('status') == 'Aktif' ? 'selected' : '' }}>Status: Aktif</option>
+                    <option value="Nonaktif" {{ request('status') == 'Nonaktif' ? 'selected' : '' }}>Status: Nonaktif</option>
                 </select>
-
             </div>
         </form>
     </div>
@@ -123,7 +142,7 @@
                         <th class="py-3.5 px-4">Email</th>
                         <th class="py-3.5 px-4">Jenjang / Kelas</th>
                         <th class="py-3.5 px-4">No Hp</th>
-                        <th class="py-3.5 px-4 text-center">Status</th>
+                        <th class="py-3.5 px-4 text-center">Ubah Status</th>
                         <th class="py-3.5 px-4">Poin</th>
                     </tr>
                 </thead>
@@ -146,19 +165,31 @@
                             {{ $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? '-' }}
                         </td>
                         <td class="py-4 px-4 text-slate-500">{{ $siswa->nomor_hp ?? '-' }}</td>
+                        
+                        {{-- Dropdown Form untuk Mengubah Status Langsung --}}
                         <td class="py-4 px-4 text-center">
-                            @php
-                            $status = $siswa->status ?? 'Aktif';
-                            $badgeClass = match($status) {
-                            'Aktif' => 'bg-emerald-50 text-emerald-600 border border-emerald-100',
-                            'Nonaktif' => 'bg-rose-50 text-rose-600 border border-rose-100',
-                            default => 'bg-amber-50 text-amber-600 border border-amber-100',
-                            };
-                            @endphp
-                            <span class="px-3 py-1 rounded-full text-xs font-medium {{ $badgeClass }}">
-                                {{ $status }}
-                            </span>
+                            <form action="{{ route('admin.siswa.updateStatus', $siswa->id) }}" method="POST">
+                                @csrf
+                                @method('PATCH')
+                                @php
+                                $status = $siswa->status ?? 'Aktif';
+                                $badgeClass = match($status) {
+                                    'Aktif' => 'bg-emerald-50 text-emerald-600 border-emerald-200 focus:ring-emerald-500',
+                                    'Nonaktif' => 'bg-rose-50 text-rose-600 border-rose-200 focus:ring-rose-500',
+                                    default => 'bg-amber-50 text-amber-600 border-amber-200 focus:ring-amber-500',
+                                };
+                                @endphp
+                                <select 
+                                    name="status" 
+                                    onchange="this.form.submit()"
+                                    class="text-xs font-semibold px-2.5 py-1 rounded-full border focus:outline-none focus:ring-2 cursor-pointer transition {{ $badgeClass }}">
+                                    <option value="Aktif" {{ $status == 'Aktif' ? 'selected' : '' }}>Aktif</option>
+                                    <option value="Nonaktif" {{ $status == 'Nonaktif' ? 'selected' : '' }}>Nonaktif</option>
+                                    <option value="Perlu Ditinjau" {{ $status == 'Perlu Ditinjau' ? 'selected' : '' }}>Perlu Ditinjau</option>
+                                </select>
+                            </form>
                         </td>
+
                         <td class="py-4 px-4 text-slate-500">{{ $siswa->total_poin ?? 0 }}</td>
                     </tr>
                     @empty
@@ -194,7 +225,6 @@
 <script>
     function filterData(select) {
         const form = select.form;
-
         const search = form.querySelector('[name="search"]').value;
         const kelas = form.querySelector('[name="kelas"]').value;
         const status = form.querySelector('[name="status"]').value;

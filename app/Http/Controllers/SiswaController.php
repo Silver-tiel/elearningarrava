@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 
 class SiswaController extends Controller
 {
+    private const WAYGROUND_SUBMISSION_GRACE_SECONDS = 10;
+
     public function dashboard(Request $request)
     {
         $modulCount = Modul::count();
@@ -95,6 +97,17 @@ class SiswaController extends Controller
         return $this->tampilkanQuiz($quiz, 'siswa.quiz');
     }
 
+    public function previewQuiz($id_quiz)
+    {
+        $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
+
+        return view('siswa.mengerjakan-quiz', [
+            'quiz' => $quiz,
+            'remainingSeconds' => null,
+            'isPreview' => true,
+        ]);
+    }
+
     private function tampilkanQuiz(Quiz $quiz, string $routeDaftar)
     {
         if ($quiz->sudahKadaluarsa()) {
@@ -104,6 +117,39 @@ class SiswaController extends Controller
         }
 
         $remainingSeconds = null;
+        $activeQuestionIndex = 0;
+        $questionRemainingSeconds = null;
+
+        if ($quiz->mode_pengerjaan === 'wayground') {
+            $attemptKey = $this->waygroundAttemptSessionKey($quiz);
+            $attempt = session($attemptKey);
+
+            if (!$attempt) {
+                $attempt = [
+                    'active_question_index' => 0,
+                    'question_started_at' => now()->timestamp,
+                    'answers' => [],
+                ];
+                session([$attemptKey => $attempt]);
+            }
+
+            $activeQuestionIndex = (int) $attempt['active_question_index'];
+            $activeQuestion = $quiz->soal->values()->get($activeQuestionIndex);
+
+            if (!$activeQuestion) {
+                session()->forget($attemptKey);
+                return redirect()->route($routeDaftar)->withErrors([
+                    'quiz' => 'Sesi pengerjaan kuis tidak valid. Silakan mulai kembali.',
+                ]);
+            }
+
+            $questionRemainingSeconds = max(
+                0,
+                (int) ($activeQuestion->durasi_detik ?? 20)
+                    - (now()->timestamp - (int) $attempt['question_started_at'])
+            );
+        }
+
         if ($quiz->mode_pengerjaan === 'biasa' && $quiz->durasi_total_menit) {
             $attemptKey = $this->attemptSessionKey($quiz);
             $startedAt = session($attemptKey);
@@ -126,7 +172,12 @@ class SiswaController extends Controller
             }
         }
 
-        return view('siswa.mengerjakan-quiz', compact('quiz', 'remainingSeconds'));
+        return view('siswa.mengerjakan-quiz', compact(
+            'quiz',
+            'remainingSeconds',
+            'activeQuestionIndex',
+            'questionRemainingSeconds'
+        ));
     }
 
     public function submitQuiz(Request $request, $id_quiz)
@@ -134,6 +185,7 @@ class SiswaController extends Controller
         $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
         $user = Auth::user();
         $jawabanSiswa = $request->input('jawaban', []);
+        $jawabanSiswa = is_array($jawabanSiswa) ? $jawabanSiswa : [];
 
         if ($quiz->sudahKadaluarsa()) {
             return redirect()->route('siswa.quiz')->withErrors([
@@ -142,6 +194,52 @@ class SiswaController extends Controller
         }
 
         $attemptKey = $this->attemptSessionKey($quiz);
+        if ($quiz->mode_pengerjaan === 'wayground') {
+            $attemptKey = $this->waygroundAttemptSessionKey($quiz);
+            $attempt = session($attemptKey);
+
+            if (!$attempt) {
+                return redirect()->route('siswa.quiz')->withErrors([
+                    'quiz' => 'Silakan mulai kuis terlebih dahulu.',
+                ]);
+            }
+
+            $activeQuestionIndex = (int) $attempt['active_question_index'];
+            $activeQuestion = $quiz->soal->values()->get($activeQuestionIndex);
+
+            if (!$activeQuestion) {
+                session()->forget($attemptKey);
+                return redirect()->route('siswa.quiz')->withErrors([
+                    'quiz' => 'Sesi pengerjaan kuis tidak valid. Silakan mulai kembali.',
+                ]);
+            }
+
+            $questionDuration = max(1, (int) ($activeQuestion->durasi_detik ?? 20));
+            $elapsedSeconds = now()->timestamp - (int) $attempt['question_started_at'];
+
+            if ($elapsedSeconds < $questionDuration) {
+                return redirect()->route('siswa.quiz.kerjakan', $quiz->id_quiz)->withErrors([
+                    'quiz' => 'Waktu untuk soal ini belum habis.',
+                ]);
+            }
+
+            $attempt['answers'][$activeQuestion->id_soal] = $elapsedSeconds <= $questionDuration + self::WAYGROUND_SUBMISSION_GRACE_SECONDS
+                ? ($jawabanSiswa[$activeQuestion->id_soal] ?? null)
+                : null;
+            $nextQuestionIndex = $activeQuestionIndex + 1;
+
+            if ($nextQuestionIndex < $quiz->soal->count()) {
+                $attempt['active_question_index'] = $nextQuestionIndex;
+                $attempt['question_started_at'] = now()->timestamp;
+                session([$attemptKey => $attempt]);
+
+                return redirect()->route('siswa.quiz.kerjakan', $quiz->id_quiz);
+            }
+
+            $jawabanSiswa = $attempt['answers'];
+            session()->forget($attemptKey);
+        }
+
         if ($quiz->mode_pengerjaan === 'biasa' && $quiz->durasi_total_menit) {
             $startedAt = session($attemptKey);
             if (!$startedAt) {
@@ -172,13 +270,14 @@ class SiswaController extends Controller
 
             if (isset($jawabanSiswa[$soal->id_soal])) {
                 $jawab = $jawabanSiswa[$soal->id_soal];
-                $pilihanBenar = $soal->pilihanSoal->where('is_correct', true)->first();
-                
-                $isCorrect = false;
-                if ($pilihanBenar && strtolower(trim($pilihanBenar->label)) === strtolower(trim($jawab))) {
-                    $isCorrect = true;
-                } elseif (strtolower(trim($soal->jawaban_benar)) === strtolower(trim($jawab))) {
-                    $isCorrect = true;
+                $jawab = is_scalar($jawab) ? strtolower(trim((string) $jawab)) : '';
+
+                if ($soal->pilihanSoal->isNotEmpty()) {
+                    $correctChoices = $soal->pilihanSoal->where('is_correct', true);
+                    $isCorrect = $correctChoices->count() === 1
+                        && strtolower(trim($correctChoices->first()->label)) === $jawab;
+                } else {
+                    $isCorrect = strtolower(trim($soal->jawaban_benar)) === $jawab;
                 }
 
                 if ($isCorrect) {
@@ -193,7 +292,7 @@ class SiswaController extends Controller
 
         $sudahMendapatPoinUntukQuizIni = HasilQuizModul::where('id_user', $user->id_user)
             ->where('id_quiz', $quiz->id_quiz)
-            ->where('poin_didapat', '>', 0)
+            ->where('is_lulus', true)
             ->exists();
 
         if ($isLulus && $poinDidapat > 0 && !$sudahMendapatPoinUntukQuizIni) {
@@ -206,12 +305,13 @@ class SiswaController extends Controller
             'id_quiz' => $quiz->id_quiz,
             'total_poin' => $totalPoinQuiz,
             'poin_didapat' => $poinDidapat,
+            'is_lulus' => $isLulus,
             'waktu_dapat' => now(),
         ]);
 
         session()->forget($attemptKey);
 
-        return redirect()->back()->with('quiz_result', [
+        return redirect()->route('siswa.quiz')->with('quiz_result', [
             'poin_didapat' => $poinDidapat,
             'benar' => $benar,
             'total_soal' => $totalSoal,
@@ -222,6 +322,11 @@ class SiswaController extends Controller
     private function attemptSessionKey(Quiz $quiz): string
     {
         return 'quiz_attempt.' . Auth::id() . '.' . $quiz->id_quiz;
+    }
+
+    private function waygroundAttemptSessionKey(Quiz $quiz): string
+    {
+        return 'wayground_attempt.' . Auth::id() . '.' . $quiz->id_quiz;
     }
 
     public function hasilQuiz($id_quiz, $id_hasil)

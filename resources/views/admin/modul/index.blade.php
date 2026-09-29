@@ -7,50 +7,26 @@
         TOPBAR
         Sidebar sengaja TIDAK dibuat karena sudah tersedia.
     ========================================================== --}}
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
-        <div class="h-[72px] px-6 lg:px-8 flex items-center justify-between">
+    {{-- Header / Topbar Quiz --}}
+    <h1 class="text-lg font-bold text-gray-900">Pusat Manajemen Modul</h1>
 
-            <div>
-                <h1 class="font-extrabold text-[20px] text-slate-900 leading-tight">
-                    Pusat Manajemen Modul
-                </h1>
-            </div>
-
-            <div class="flex items-center gap-5">
-
-                {{-- Search --}}
-                <div class="hidden md:flex items-center w-[280px] h-9 bg-slate-50 rounded-xl px-3 gap-2">
-                    <svg class="w-4 h-4 text-slate-500 shrink-0" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="m21 21-4.35-4.35m1.35-5.65a7 7 0 1 1-14 0 7 7 0 0 1 14 0z" />
-                    </svg>
-                    <input type="text" id="searchModule"
-                        placeholder="Cari data, laporan, kelas..."
-                        class="w-full bg-transparent outline-none text-xs text-slate-600 placeholder:text-slate-400">
-                </div>
-
-                {{-- Notification --}}
-                <button
-                    class="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-700 hover:bg-slate-100 transition">
-                    <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 17h5l-1.5-1.5V11a6.5 6.5 0 0 0-13 0v4.5L4 17h5m6 0a3 3 0 0 1-6 0m6 0H9" />
-                    </svg>
-                </button>
-
-                {{-- Account --}}
-                <button class="flex items-center gap-2 text-sm font-bold text-slate-700">
-                    <span>ID</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="m6 9 6 6 6-6" />
-                    </svg>
-                </button>
-
-            </div>
-        </div>
-    </header>
+    <div class="flex items-center gap-4">
+        <!-- Icon Notifikasi -->
+        <button class="p-2 text-gray-400 hover:text-gray-600 rounded-lg transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
+                </path>
+            </svg>
+        </button>
+        <!-- Switch Bahasa -->
+        <button class="flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100">
+            <span>ID</span>
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </button>
+    </div>
     @endsection
 
     {{-- =========================================================
@@ -203,24 +179,70 @@
                         default => ucfirst($status),
                     };
 
-                    $image = $module->gambar
-                        ?? $module->image
-                        ?? $module->thumbnail
-                        ?? 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=700&q=80';
+                    $image = $module->foto_url ?? 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=700&q=80';
+
                 @endphp
 
                 <article
                     class="module-card bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition duration-200"
-                    data-search="{{ strtolower(($module->judul ?? '') . ' ' . ($module->kategori ?? '') . ' ' . ($module->guru ?? '')) }}">
+                    data-search="{{ strtolower(($module->judul_modul ?? '') . ' ' . ($module->tipeModul->nama_tipe ?? '') . ' ' . ($module->jenjang->nama_tipe ?? '')) }}">
 
                     <div class="flex gap-4">
 
-                        {{-- Thumbnail --}}
-                        <div class="w-[160px] h-[200px] rounded-xl overflow-hidden shrink-0 bg-slate-100">
-                            <img src="{{ $image }}"
-                                alt="{{ $module->judul ?? 'Modul' }}"
-                                class="module-image w-full h-full"
-                                onerror="this.src='https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=700&q=80'">
+                        {{-- Thumbnail BARU (Otomatis Mendeteksi PDF / Cover / Video) --}}
+                        <div class="w-[160px] h-[200px] rounded-xl overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center relative">
+                            @if($module->foto_modul && Storage::disk('public')->exists($module->foto_modul))
+                                {{-- Jika ada foto sampul yang diunggah --}}
+                                <img src="{{ Storage::url($module->foto_modul) }}"
+                                    alt="{{ $module->judul_modul }}"
+                                    class="w-full h-full object-cover">
+                            @elseif($module->tipe_file === 'pdf' || str_ends_with(strtolower($module->file_materi ?? ''), '.pdf'))
+                                {{-- Tampilan Sampul Dokumen PDF Elegan --}}
+                                <div class="w-full h-full bg-gradient-to-b from-rose-50 to-red-100 border border-red-200 p-3 flex flex-col justify-between items-center text-center">
+                                    <span class="px-2 py-0.5 rounded bg-red-600 text-white font-extrabold text-[10px] tracking-wider uppercase shadow-sm">
+                                        PDF
+                                    </span>
+                                    <div class="my-auto flex flex-col items-center">
+                                        <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-red-500 mb-2 border border-red-100">
+                                            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM13 3.5L18.5 9H13V3.5zM6 20V4h5v6h6v10H6z"/>
+                                            </svg>
+                                        </div>
+                                        <span class="text-[11px] font-bold text-slate-800 line-clamp-2 leading-tight px-1">
+                                            {{ $module->judul_modul }}
+                                        </span>
+                                    </div>
+                                    <span class="text-[9px] font-semibold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                                        Dokumen Materi
+                                    </span>
+                                </div>
+                            @elseif($module->tipe_file === 'link' || ($module->tipeModul && strtolower($module->tipeModul->nama_tipe) === 'video'))
+                                {{-- Tampilan Sampul Materi Video --}}
+                                <div class="w-full h-full bg-gradient-to-b from-blue-50 to-indigo-100 border border-blue-200 p-3 flex flex-col justify-between items-center text-center">
+                                    <span class="px-2 py-0.5 rounded bg-blue-600 text-white font-extrabold text-[10px] tracking-wider uppercase shadow-sm">
+                                        VIDEO
+                                    </span>
+                                    <div class="my-auto flex flex-col items-center">
+                                        <div class="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center mb-2 shadow-md">
+                                            <svg class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                        </div>
+                                        <span class="text-[11px] font-bold text-slate-800 line-clamp-2 leading-tight px-1">
+                                            {{ $module->judul_modul }}
+                                        </span>
+                                    </div>
+                                    <span class="text-[9px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                                        Video Materi
+                                    </span>
+                                </div>
+                            @else
+                                {{-- Default Placeholder Materi --}}
+                                <div class="w-full h-full bg-slate-50 border border-slate-200 p-4 flex flex-col items-center justify-center text-slate-400 text-center">
+                                    <svg class="w-10 h-10 mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 16.5 5c1.747 0 3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                    </svg>
+                                    <span class="text-[11px] font-semibold text-slate-500 line-clamp-2">{{ $module->judul_modul }}</span>
+                                </div>
+                            @endif
                         </div>
 
                         {{-- Information --}}
@@ -230,12 +252,12 @@
 
                                 <span
                                     class="inline-flex items-center rounded-md px-2 py-1 text-[11px] font-bold
-                                    {{ str_contains(strtolower($module->kategori ?? ''), 'matematika')
+                                    {{ str_contains(strtolower($module->tipeModul->nama_tipe ?? ''), 'matematika')
                                         ? 'bg-amber-100 text-amber-600'
-                                        : (str_contains(strtolower($module->kategori ?? ''), 'bahasa')
+                                        : (str_contains(strtolower($module->tipeModul->nama_tipe ?? ''), 'bahasa')
                                             ? 'bg-blue-50 text-blue-600'
                                             : 'bg-emerald-50 text-emerald-600') }}">
-                                    {{ $module->kategori ?? 'Umum' }}
+                                    {{ $module->tipeModul->nama_tipe ?? 'Umum' }}
                                 </span>
 
                                 <span
@@ -246,7 +268,7 @@
                             </div>
 
                             <h3 class="font-extrabold text-[16px] text-slate-900 mt-3 leading-tight">
-                                {{ $module->judul ?? 'Judul Modul' }}
+                                {{ $module->judul_modul ?? 'Judul Modul' }}
                             </h3>
 
                             <p class="text-xs text-slate-500 leading-relaxed mt-1.5 line-clamp-2">
@@ -263,7 +285,7 @@
                                             d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z" />
                                         <path stroke-linecap="round" stroke-width="1.8" d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20" />
                                     </svg>
-                                    Kelas {{ $module->kelas ?? '-' }}
+                                    Jenjang {{ $module->jenjang->nama_tipe ?? '-' }}
                                 </span>
 
                                 <span class="inline-flex items-center gap-1.5">
@@ -290,7 +312,7 @@
                                 <div class="flex items-center gap-3 shrink-0">
 
                                     {{-- Baca --}}
-                                    <a href="{{ route('modul.show', $module->id_modul ?? $module->id) }}"
+                                    <a href="{{ route('modul.show', $module->id_modul) }}"
                                         title="Baca Modul"
                                         class="text-emerald-500 hover:text-emerald-700 transition">
                                         <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -300,7 +322,7 @@
                                     </a>
 
                                     {{-- Edit --}}
-                                    <a href="{{ route('admin.modul.edit', $module->id_modul ?? $module->id) }}"
+                                    <a href="{{ route('admin.modul.edit', $module->id_modul) }}"
                                         title="Edit Modul"
                                         class="text-blue-500 hover:text-blue-700 transition">
                                         <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor"
@@ -312,9 +334,10 @@
 
                                     {{-- Delete --}}
                                     <form
-                                        action="{{ route('admin.modul.destroy', $module->id_modul ?? $module->id) }}"
+                                        action="{{ route('admin.modul.destroy', $module->id_modul) }}"
                                         method="POST"
-                                        onsubmit="return confirm('Yakin ingin menghapus modul ini?')">
+                                        onsubmit="return confirm('Yakin ingin menghapus modul ini?')"
+                                        class="inline">
                                         @csrf
                                         @method('DELETE')
 
