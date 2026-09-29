@@ -115,7 +115,7 @@
             {{-- Kanan: Aksi --}}
             <div class="flex items-center gap-2">
                 <a href="{{ route('admin.quiz') }}"
-                    class="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                    class="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition">
                     Keluar
                 </a>
                 <button type="submit" id="btn-submit-form"
