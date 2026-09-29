@@ -54,7 +54,7 @@
                     <p class="mt-1.5 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>
                 @enderror
             </div>
-
+{{-- 
             <div class="flex items-center justify-between pt-1 text-xs text-[#52647E]">
                 <label class="inline-flex cursor-pointer items-center gap-2 font-normal">
                     <input type="checkbox" name="remember" value="1" class="h-[17px] w-[17px] accent-[#3F82F6]">
@@ -62,7 +62,7 @@
                 </label>
                 <a href="" class="font-bold text-[#3F82F6] hover:underline">Lupa
                     Password?</a>
-            </div>
+            </div> --}}
 
             <button type="submit"
                 class="mt-1 flex h-[46px] w-full items-center justify-center rounded-[11px] bg-[#3F82F6] text-[13px] font-bold text-white shadow-[0_8px_16px_rgba(63,130,246,0.18)] transition hover:-translate-y-px hover:bg-[#3274E9] hover:shadow-[0_10px_20px_rgba(63,130,246,0.22)]">
