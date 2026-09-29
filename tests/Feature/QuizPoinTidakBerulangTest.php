@@ -47,6 +47,7 @@ class QuizPoinTidakBerulangTest extends TestCase
         $user = User::create([
             'nama' => 'Siswa Test',
             'email' => 'siswa@example.com',
+            'nisn' => '1000000001',
             'password' => bcrypt('password123'),
             'id_tipeuser' => 3,
             'id_jenjang' => 1,
@@ -98,7 +99,7 @@ class QuizPoinTidakBerulangTest extends TestCase
         $this->assertSame(10, User::find($user->id_user)->total_poin);
     }
 
-    public function test_submit_kuis_tidak_boleh_kosong(): void
+    public function test_submit_kuis_boleh_kosong_dan_mendapat_nol_poin(): void
     {
         DB::table('jenjang')->insert([
             'id_jenjang' => 1,
@@ -131,6 +132,7 @@ class QuizPoinTidakBerulangTest extends TestCase
         $user = User::create([
             'nama' => 'Siswa Kosong',
             'email' => 'siswa-kosong@example.com',
+            'nisn' => '1000000002',
             'password' => bcrypt('password123'),
             'id_tipeuser' => 3,
             'id_jenjang' => 1,
@@ -168,6 +170,121 @@ class QuizPoinTidakBerulangTest extends TestCase
             'jawaban' => [],
         ]);
 
-        $response->assertSessionHasErrors('jawaban');
+        $response->assertSessionHas('quiz_result');
+        $this->assertSame(0, session('quiz_result')['poin_didapat']);
+    }
+
+    public function test_quiz_kadaluarsa_tidak_bisa_dibuka_atau_disubmit(): void
+    {
+        DB::table('jenjang')->insert([
+            'id_jenjang' => 1,
+            'nama_tipe' => 'SMA',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('jenjang')->insert([
+            ['id_jenjang' => 2, 'nama_tipe' => 'SMP', 'created_at' => now(), 'updated_at' => now()],
+            ['id_jenjang' => 3, 'nama_tipe' => 'SD', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        DB::table('tipeuser')->insert([
+            'id_tipeUser' => 3,
+            'nama_tipe' => 'Siswa',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('tipequiz')->insert([
+            'id_tipequiz' => 1,
+            'nama_tipe' => 'Latihan',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('tingkatquiz')->insert([
+            'id_tingkatquiz' => 1,
+            'nama_tingkat' => 'Dasar',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('tingkatquiz')->insert([
+            ['id_tingkatquiz' => 2, 'nama_tingkat' => 'Sedang', 'created_at' => now(), 'updated_at' => now()],
+            ['id_tingkatquiz' => 3, 'nama_tingkat' => 'Sulit', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $user = User::create([
+            'nama' => 'Siswa Expired',
+            'email' => 'siswa-expired@example.com',
+            'nisn' => '1000000003',
+            'password' => bcrypt('password123'),
+            'id_tipeuser' => 3,
+            'id_jenjang' => 1,
+            'total_poin' => 0,
+        ]);
+
+        $quiz = Quiz::create([
+            'judul' => 'Quiz Expired',
+            'id_tipequiz' => 1,
+            'id_tingkatquiz' => 1,
+            'id_jenjang' => 1,
+            'waktu_kadaluarsa' => now()->subMinute(),
+        ]);
+
+        Quiz::create([
+            'judul' => 'Quiz SD Mudah',
+            'id_tipequiz' => 1,
+            'id_tingkatquiz' => 1,
+            'id_jenjang' => 1,
+        ]);
+
+        Quiz::create([
+            'judul' => 'Quiz SMA Sulit',
+            'id_tipequiz' => 1,
+            'id_tingkatquiz' => 3,
+            'id_jenjang' => 3,
+        ]);
+
+        $this->actingAs($user);
+
+        $this->get(route('siswa.quiz', ['jenjang' => 1, 'tingkat' => 1]))
+            ->assertOk()
+            ->assertSee('Quiz SD Mudah')
+            ->assertDontSee('Quiz SMA Sulit')
+            ->assertDontSee('Quiz Expired');
+
+        $this->get(route('siswa.quiz.kerjakan', $quiz->id_quiz))
+            ->assertRedirect(route('siswa.quiz'))
+            ->assertSessionHasErrors('quiz');
+
+        $this->post(route('siswa.quiz.submit', $quiz->id_quiz), ['jawaban' => []])
+            ->assertRedirect(route('siswa.quiz'))
+            ->assertSessionHasErrors('quiz');
+
+        $this->assertDatabaseCount('hasilquizmodul', 0);
+
+        $quizBiasa = Quiz::create([
+            'judul' => 'Quiz Biasa Berwaktu',
+            'id_tipequiz' => 1,
+            'id_tingkatquiz' => 1,
+            'id_jenjang' => 1,
+            'mode_pengerjaan' => 'biasa',
+            'durasi_total_menit' => 1,
+        ]);
+
+        $attemptKey = 'quiz_attempt.' . $user->id_user . '.' . $quizBiasa->id_quiz;
+        $this->get(route('siswa.quiz.kerjakan', $quizBiasa->id_quiz))->assertOk();
+        $this->assertNotNull(session($attemptKey));
+        $this->assertSame('biasa', $quizBiasa->mode_pengerjaan);
+        $this->assertSame(1, $quizBiasa->durasi_total_menit);
+
+        $this->travel(61)->seconds();
+        $this->assertGreaterThan(60, now()->timestamp - (int) session($attemptKey));
+        $this->post(route('siswa.quiz.submit', $quizBiasa->id_quiz), ['jawaban' => []])
+            ->assertRedirect(route('siswa.quiz'))
+            ->assertSessionHasErrors('quiz');
+
+        $this->assertDatabaseCount('hasilquizmodul', 0);
     }
 }

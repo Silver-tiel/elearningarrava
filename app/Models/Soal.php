@@ -17,6 +17,11 @@ class Soal extends Model
         'pertanyaan',
         'jawaban_benar',
         'poin',
+        'durasi_detik',
+    ];
+
+    protected $casts = [
+        'durasi_detik' => 'integer',
     ];
 
     public function quiz()

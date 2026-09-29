@@ -132,7 +132,7 @@
                                 {{ $status }}
                             </span>
                         </td>
-                        <td class="py-4 px-4 text-slate-500">{{ $siswa->poin ?? '-' }}</td>
+                        <td class="py-4 px-4 text-slate-500">{{ $siswa->total_poin ?? '-' }}</td>
                     </tr>   
                     @empty
                     <tr>
