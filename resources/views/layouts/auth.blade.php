@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'eBooks')</title>
+    <title>@yield('title', 'Arrava Pintar')</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -23,7 +23,7 @@
                             <path d="M20 10v5" />
                         </svg>
                     </span>
-                    <span class="text-[19px] font-extrabold tracking-[-0.6px]">eBooks</span>
+                    <span class="text-[19px] font-extrabold tracking-[-0.6px]">Arrava Pintar</span>
                 </a>
 
                 <div class="w-full max-w-[472px]">

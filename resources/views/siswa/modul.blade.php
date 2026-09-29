@@ -17,26 +17,44 @@
 
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
         @forelse($moduls as $modul)
+            @php
+                $isVideo = ($modul->id_tipemodul == 1 || $modul->youtube_embed_url);
+            @endphp
             <div class="group overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
                 <div class="flex gap-4">
-                    <div class="h-[200px] w-[160px] shrink-0 overflow-hidden rounded-xl bg-[#eef2f7]">
-                        @if($modul->foto_modul)
+                    <div class="relative h-[200px] w-[160px] shrink-0 overflow-hidden rounded-xl bg-[#eef2f7]">
+                        @if($modul->foto_modul && Storage::disk('public')->exists($modul->foto_modul))
                             <img src="{{ asset('storage/'.$modul->foto_modul) }}" alt="{{ $modul->judul_modul }}" class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
+                        @elseif($modul->youtube_id)
+                            <img src="https://img.youtube.com/vi/{{ $modul->youtube_id }}/hqdefault.jpg" alt="{{ $modul->judul_modul }}" class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
+                            <div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow text-sm font-bold pl-0.5">▶</div>
+                            </div>
                         @else
-                            <div class="flex h-full items-center justify-center text-4xl">📚</div>
+                            <div class="flex h-full items-center justify-center text-4xl">{{ $isVideo ? '🎬' : '📚' }}</div>
                         @endif
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <span class="inline-flex rounded-md bg-[#eaf9f2] px-2 py-1 text-[11px] font-semibold text-[#20a978]">{{ $modul->tipeModul->nama_tipe ?? 'Pelajaran' }}</span>
+                    <div class="min-w-0 flex-1 flex flex-col">
+                        <span class="inline-flex self-start rounded-md {{ $isVideo ? 'bg-red-50 text-red-600' : 'bg-[#eaf9f2] text-[#20a978]' }} px-2 py-1 text-[11px] font-semibold">
+                            {{ $isVideo ? 'Video Pembelajaran' : ($modul->tipeModul->nama_tipe ?? 'Pelajaran') }}
+                        </span>
                         <h2 class="mt-3 text-[16px] font-bold leading-snug text-[#172033]">{{ $modul->judul_modul }}</h2>
-                        <p class="mt-1.5 line-clamp-2 text-[13px] leading-5 text-[#687892]">Materi pembelajaran digital untuk siswa {{ $modul->jenjang->nama_jenjang ?? '' }}.</p>
+                        <p class="mt-1.5 line-clamp-2 text-[13px] leading-5 text-[#687892]">Materi pembelajaran digital untuk siswa {{ $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? '' }}.</p>
                         <div class="mt-4 flex items-center gap-5 text-xs text-[#65748b]">
-                            <span class="flex items-center gap-1.5">▣ {{ $modul->jenjang->nama_jenjang ?? 'Semua kelas' }}</span>
-                            <span class="flex items-center gap-1.5">▤ Materi</span>
+                            <span class="flex items-center gap-1.5">▣ {{ $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? 'Semua kelas' }}</span>
+                            <span class="flex items-center gap-1.5">{{ $isVideo ? '▶ Video' : '▤ Dokumen' }}</span>
                         </div>
-                        <div class="mt-4 border-t border-[#e4e8ef] pt-3 flex justify-between items-center">
-                            <p class="text-xs text-[#718098]">Materi tersedia untuk dipelajari</p>
-                            <a href="{{ route('modul.show', $modul->id_modul) }}" class="px-3 py-1.5 bg-blue-500 text-white text-xs font-bold rounded-lg hover:bg-blue-600 transition">Baca Modul</a>
+                        <div class="mt-auto pt-3 border-t border-[#e4e8ef] flex justify-between items-center">
+                            <p class="text-xs text-[#718098]">{{ $isVideo ? 'Tonton materi video' : 'Materi siap dibaca' }}</p>
+                            @if($isVideo)
+                                <a href="{{ route('siswa.materi-video.detail', $modul->id_modul) }}" class="px-3.5 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition flex items-center gap-1 shadow-sm">
+                                    <span>▶</span> Tonton Video
+                                </a>
+                            @else
+                                <a href="{{ route('modul.show', $modul->id_modul) }}" class="px-3.5 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition flex items-center gap-1 shadow-sm">
+                                    <span>📖</span> Baca Modul
+                                </a>
+                            @endif
                         </div>
                     </div>
                 </div>

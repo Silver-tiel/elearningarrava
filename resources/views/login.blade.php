@@ -1,6 +1,6 @@
 @extends('layouts.auth')
 
-@section('title', 'Masuk - eBooks')
+@section('title', 'Arrava Pintar')
 
 @section('auth_form')
     <div>

@@ -13,4 +13,9 @@ class Jenjang extends Model
     protected $fillable = [
         'nama_tipe',
     ];
+
+    public function getNamaJenjangAttribute()
+    {
+        return $this->nama_tipe;
+    }
 }

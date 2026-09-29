@@ -79,6 +79,13 @@
                     <span>Belajar</span>
                 </a>
 
+                <!-- Materi Video -->
+                <a href="{{ route('siswa.materi-video') }}" 
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ request()->is('siswa/materi-video*') ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-gray-50' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Materi Video</span>
+                </a>
+
                 <!-- Quiz -->
                 <a href="{{ route('siswa.quiz') }}" 
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ request()->is('siswa/quiz*') ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-gray-50' }}">
