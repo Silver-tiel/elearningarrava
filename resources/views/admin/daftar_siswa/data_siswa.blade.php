@@ -80,17 +80,7 @@
             </div>
         </div>
 
-        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center space-x-4">
-            <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <div>
-                <p class="text-xs text-slate-400 font-medium">Perlu Ditinjau</p>
-                <h3 id="stat-ditinjau" class="text-xl font-bold text-slate-800">{{ $totalPerluDitinjau ?? 0 }}</h3>
-            </div>
-        </div>
+        
     </div>
 
     {{-- Filter & Search Bar --}}
