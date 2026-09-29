@@ -13,12 +13,36 @@ use Illuminate\Validation\ValidationException;
 // Controller khusus untuk mengelola data kuis pembelajaran.
 class QuizController extends Controller
 {
-    // Menampilkan daftar kuis untuk halaman admin atau siswa.
-    public function index()
+    // Menampilkan daftar kuis untuk halaman admin atau guru.
+    public function index(Request $request)
     {
-        $quizzes = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang'])->withCount('soal')->latest()->get();
+        $filters = $request->validate([
+            'jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
+            'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
+            'sort' => ['nullable', 'in:terbaru,terlama'],
+        ]);
 
-        return view('admin.quiz.index', ['quizzes' => $quizzes]);
+        $query = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang'])->withCount('soal');
+
+        if (!empty($filters['jenjang'])) {
+            $query->where('id_jenjang', $filters['jenjang']);
+        }
+
+        if (!empty($filters['tingkat'])) {
+            $query->where('id_tingkatquiz', $filters['tingkat']);
+        }
+
+        if (isset($filters['sort']) && $filters['sort'] === 'terlama') {
+            $query->oldest();
+        } else {
+            $query->latest();
+        }
+
+        $quizzes = $query->get();
+        $jenjangList = Jenjang::orderBy('id_jenjang')->get();
+        $tingkatQuizList = \App\Models\TingkatQuiz::orderBy('id_tingkatquiz')->get();
+
+        return view('admin.quiz.index', compact('quizzes', 'jenjangList', 'tingkatQuizList'));
     }
 
     // Menampilkan form untuk menambah kuis baru (bergaya Kahoot).

@@ -54,10 +54,16 @@ class SiswaController extends Controller
         return view('siswa.materi-video', compact('modul'));
     }
 
-    public function latihanSoal()
+    public function latihanSoal(Request $request)
     {
-        // Menampilkan daftar latihan soal (biasanya quiz dengan tipe latihan)
-        $quizzes = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz'])->latest()->get();
+        $user = Auth::user();
+        $query = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz']);
+        
+        if ($user && $user->id_jenjang) {
+            $query->where('id_jenjang', $user->id_jenjang);
+        }
+        
+        $quizzes = $query->latest()->get();
         return view('siswa.latihan-soal', compact('quizzes'));
     }
 
@@ -70,25 +76,31 @@ class SiswaController extends Controller
     public function quiz(Request $request)
     {
         $filters = $request->validate([
-            'jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
             'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
+            'sort' => ['nullable', 'in:terbaru,terlama'],
         ]);
 
         $query = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz', 'jenjang']);
 
-        if (!empty($filters['jenjang'])) {
-            $query->where('id_jenjang', $filters['jenjang']);
+        $user = Auth::user();
+        if ($user && $user->id_jenjang) {
+            $query->where('id_jenjang', $user->id_jenjang);
         }
 
         if (!empty($filters['tingkat'])) {
             $query->where('id_tingkatquiz', $filters['tingkat']);
         }
 
-        $quizzes = $query->latest()->get();
-        $jenjangList = Jenjang::orderBy('id_jenjang')->get();
+        if (isset($filters['sort']) && $filters['sort'] === 'terlama') {
+            $query->oldest();
+        } else {
+            $query->latest();
+        }
+
+        $quizzes = $query->get();
         $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
 
-        return view('siswa.quiz', compact('quizzes', 'jenjangList', 'tingkatQuizList'));
+        return view('siswa.quiz', compact('quizzes', 'tingkatQuizList'));
     }
 
     public function kerjakanQuiz($id_quiz)

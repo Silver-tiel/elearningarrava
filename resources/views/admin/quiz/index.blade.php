@@ -99,14 +99,44 @@
         {{-- Card Semua Quiz --}}
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
 
-            {{-- Header Card --}}
-            <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-
-                <div>
+            {{-- Header Card & Filters --}}
+            <div class="p-5 border-b border-slate-100 flex flex-col gap-4">
+                <div class="flex items-center justify-between">
                     <h3 class="font-bold text-slate-800 text-base">
                         Semua Quiz ({{ $quizzes->count() }})
                     </h3>
                 </div>
+                <form method="GET" action="{{ route('admin.quiz') }}" class="flex flex-col sm:flex-row sm:items-end gap-3">
+                    <div class="flex-1">
+                        <label for="filter-jenjang" class="mb-1 block text-xs font-semibold text-slate-500">Jenjang</label>
+                        <select id="filter-jenjang" name="jenjang" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option value="">Semua jenjang</option>
+                            @foreach($jenjangList as $jenjang)
+                                <option value="{{ $jenjang->id_jenjang }}" @selected(request('jenjang') == $jenjang->id_jenjang)>{{ $jenjang->nama_tipe }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label for="filter-tingkat" class="mb-1 block text-xs font-semibold text-slate-500">Kesulitan</label>
+                        <select id="filter-tingkat" name="tingkat" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option value="">Semua tingkat</option>
+                            @foreach($tingkatQuizList as $tingkat)
+                                <option value="{{ $tingkat->id_tingkatquiz }}" @selected(request('tingkat') == $tingkat->id_tingkatquiz)>{{ $tingkat->nama_tingkat }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label for="filter-sort" class="mb-1 block text-xs font-semibold text-slate-500">Urutkan</label>
+                        <select id="filter-sort" name="sort" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option value="terbaru" @selected(request('sort') == 'terbaru')>Terbaru</option>
+                            <option value="terlama" @selected(request('sort') == 'terlama')>Terlama</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="h-9 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white transition hover:bg-indigo-700">Terapkan</button>
+                        <a href="{{ route('admin.quiz') }}" class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-4 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">Reset</a>
+                    </div>
+                </form>
             </div>
 
             {{-- Jika Belum Ada Quiz --}}
