@@ -40,6 +40,34 @@
             </aside>
         </div>
     </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButtons = document.querySelectorAll('[data-toggle-password]');
+            
+            const eyeIcon = `<svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 12s3.5-5 9.5-5 9.5 5 9.5 5-3.5 5-9.5 5-9.5-5-9.5-5Z"/><circle cx="12" cy="12" r="2.5"/></svg>`;
+            
+            const eyeOffIcon = `<svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" y1="2" x2="22" y2="22" /></svg>`;
+
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-toggle-password');
+                    const passwordInput = document.getElementById(targetId);
+                    
+                    if (passwordInput) {
+                        if (passwordInput.type === 'password') {
+                            passwordInput.type = 'text';
+                            this.innerHTML = eyeOffIcon;
+                            this.setAttribute('aria-label', 'Sembunyikan kata sandi');
+                        } else {
+                            passwordInput.type = 'password';
+                            this.innerHTML = eyeIcon;
+                            this.setAttribute('aria-label', 'Tampilkan kata sandi');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>
