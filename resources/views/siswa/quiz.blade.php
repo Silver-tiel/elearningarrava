@@ -50,21 +50,19 @@
 
     <form method="GET" action="{{ route('siswa.quiz') }}" class="mb-6 grid gap-3 rounded-xl border border-[#dfe6ef] bg-white p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end">
         <div>
-            <label for="filter-jenjang" class="mb-1.5 block text-xs font-semibold text-[#52627a]">Jenjang</label>
-            <select id="filter-jenjang" name="jenjang" class="h-10 w-full rounded-lg border border-[#d5deea] bg-white px-3 text-sm text-[#172033] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
-                <option value="">Semua jenjang</option>
-                @foreach($jenjangList as $jenjang)
-                    <option value="{{ $jenjang->id_jenjang }}" @selected(request('jenjang') == $jenjang->id_jenjang)>{{ $jenjang->nama_tipe }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
             <label for="filter-tingkat" class="mb-1.5 block text-xs font-semibold text-[#52627a]">Kesulitan</label>
             <select id="filter-tingkat" name="tingkat" class="h-10 w-full rounded-lg border border-[#d5deea] bg-white px-3 text-sm text-[#172033] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
                 <option value="">Semua tingkat</option>
                 @foreach($tingkatQuizList as $tingkat)
                     <option value="{{ $tingkat->id_tingkatquiz }}" @selected(request('tingkat') == $tingkat->id_tingkatquiz)>{{ $tingkat->nama_tingkat }}</option>
                 @endforeach
+            </select>
+        </div>
+        <div>
+            <label for="filter-sort" class="mb-1.5 block text-xs font-semibold text-[#52627a]">Urutkan</label>
+            <select id="filter-sort" name="sort" class="h-10 w-full rounded-lg border border-[#d5deea] bg-white px-3 text-sm text-[#172033] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                <option value="terbaru" @selected(request('sort') == 'terbaru')>Terbaru</option>
+                <option value="terlama" @selected(request('sort') == 'terlama')>Terlama</option>
             </select>
         </div>
         <button type="submit" class="h-10 rounded-lg bg-[#3180f7] px-4 text-sm font-semibold text-white transition hover:bg-[#246bd4]">Terapkan</button>
