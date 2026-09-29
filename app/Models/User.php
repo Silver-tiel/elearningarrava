@@ -16,6 +16,7 @@ class User extends Authenticatable
         'email',
         'password',
         'nisn',
+        'nomor_hp',
         'id_tipeuser',
         'id_jenjang',
         'total_poin',
@@ -44,4 +45,6 @@ class User extends Authenticatable
         // Hubungkan ke Model TipeUser (atau nama model tipe user kamu), bukan User
         return $this->belongsTo(TipeUser::class, 'id_tipeuser');
     }
+
+    
 }

@@ -155,7 +155,13 @@ class SiswaController extends Controller
     }
 
     if ($request->filled('kelas')) {
-        $query->where('kelas', $request->kelas);
+    $query->whereHas('jenjang', function ($q) use ($request) {
+        $q->where('nama_tipe', $request->kelas);
+    });
+    }
+
+    if ($request->filled('status')) {
+        $query->where('status_akun', $request->status);
     }
 
     // Ambil data siswa berpagination
@@ -170,7 +176,7 @@ class SiswaController extends Controller
     $totalPerluDitinjau = 0;
 
     // Data opsi kelas untuk dropdown filter
-    $listKelas = ['Kelas 10 - IPA 1', 'Kelas 10 - IPS 1', 'Kelas 11 - IPA 4', 'Kelas 11 - IPS 3', 'Kelas 12 - IPA 2', 'Kelas 12 - IPS 2'];
+    $listKelas = ['SD', 'SMP', 'SMA'];
 
     return view('admin.daftar_siswa.data_siswa', compact(
         'siswas',
