@@ -84,25 +84,22 @@ Route::get('/admin', function () {
 Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'role:siswa'])->group(function () {
     Route::get('/dashboard', [SiswaController::class, 'dashboard'])->name('dashboard');
 
+    // Halaman Belajar
     Route::get('/belajar', [SiswaController::class, 'belajar'])->name('modul');
+    Route::get('/belajar/{id_modul}/materi', [SiswaController::class, 'materiVideoDetail'])->name('modul.materi');
+    Route::get('/belajar/{id_modul}/latihan', [SiswaController::class, 'latihanSoalModul'])->name('modul.latihan');
 
-    Route::get('/materi-video', [SiswaController::class, 'materiVideo'])->name('materi-video');
-    Route::get('/materi-video/{id_modul}', [SiswaController::class, 'materiVideoDetail'])->name('materi-video.detail');
-
-    Route::get('/latihan-soal', [SiswaController::class, 'latihanSoal'])->name('latihan-soal');
-    Route::get('/latihan-soal/{quiz}', [SiswaController::class, 'kerjakanLatihan'])->name('latihan-soal.kerjakan');
-
+    // Quiz global (tetap ada)
     Route::get('/quiz', [SiswaController::class, 'quiz'])->name('quiz');
     Route::get('/quiz/{quiz}', [SiswaController::class, 'kerjakanQuiz'])->name('quiz.kerjakan');
     Route::post('/quiz/{quiz}/submit', [SiswaController::class, 'submitQuiz'])->name('quiz.submit');
-    Route::get('/quiz/{quiz}/result/{hasil}', [SiswaController::class, 'hasilQuiz'])->name('quiz.result');
 });
 
 // Admin resource routes (dikelompokkan dengan prefix & middleware)
 Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function () {
     Route::get('/modul', [ModulController::class, 'index'])->name('admin.modul');
-    Route::get('/modul/create', [ModulController::class, 'create'])->name('admin.modul.create'); 
-    Route::post('/modul/store', [ModulController::class, 'store'])->name('admin.modul.store'); 
+    Route::get('/modul/create', [ModulController::class, 'create'])->name('admin.modul.create');
+    Route::post('/modul/store', [ModulController::class, 'store'])->name('admin.modul.store');
     Route::get('/modul/{id}/edit', [ModulController::class, 'edit'])->name('admin.modul.edit');
     Route::put('/modul/{id}', [ModulController::class, 'update'])->name('admin.modul.update');
     Route::delete('/modul/{id}', [ModulController::class, 'destroy'])->name('admin.modul.destroy');

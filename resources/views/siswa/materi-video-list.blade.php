@@ -18,7 +18,7 @@
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         @forelse($moduls as $modul)
-            <a href="{{ route('siswa.materi-video.detail', $modul->id_modul) }}"
+            <a href="{{ route('siswa.modul.materi', $modul->id_modul) }}"
                class="group overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white transition hover:-translate-y-0.5 hover:shadow-md">
                 <div class="relative h-44 overflow-hidden bg-[#eef2f7]">
                     @if($modul->foto_modul)

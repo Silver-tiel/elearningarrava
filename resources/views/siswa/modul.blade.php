@@ -47,13 +47,16 @@
                         <div class="mt-auto pt-3 border-t border-[#e4e8ef] flex justify-between items-center">
                             <p class="text-xs text-[#718098]">{{ $isVideo ? 'Tonton materi video' : 'Materi siap dibaca' }}</p>
                             @if($isVideo)
-                                <a href="{{ route('siswa.materi-video.detail', $modul->id_modul) }}" class="px-3.5 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition flex items-center gap-1 shadow-sm">
-                                    <span>▶</span> Tonton Video
-                                </a>
+                                {{-- Ganti bagian tombol di bawah ini --}}
+                        <a href="{{ route('siswa.modul.materi', $modul->id_modul) }}"
+                        class="px-3.5 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition flex items-center gap-1 shadow-sm">
+                            <span>▶</span> Tonton Video
+                        </a>
                             @else
-                                <a href="{{ route('modul.show', $modul->id_modul) }}" class="px-3.5 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition flex items-center gap-1 shadow-sm">
-                                    <span>📖</span> Baca Modul
-                                </a>
+                            <a href="{{ route('siswa.modul.materi', $modul->id_modul) }}"
+                            class="px-3.5 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition flex items-center gap-1 shadow-sm">
+                                <span>📖</span> Buka Modul
+                            </a>
                             @endif
                         </div>
                     </div>

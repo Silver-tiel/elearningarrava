@@ -60,10 +60,10 @@
 
     <div class="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         @forelse($moduls ?? [] as $modul)
-            @php
-                $isVideo = ($modul->id_tipemodul == 1 || $modul->youtube_embed_url);
-                $targetUrl = $isVideo ? route('siswa.materi-video.detail', $modul->id_modul) : route('modul.show', $modul->id_modul);
-            @endphp
+    @php
+        $isVideo = ($modul->id_tipemodul == 1 || $modul->youtube_id);
+        $targetUrl = route('siswa.modul.materi', $modul->id_modul);
+    @endphp
             <a href="{{ $targetUrl }}" class="overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white transition hover:-translate-y-0.5 hover:shadow-md">
                 <div class="relative h-36 bg-[#eef3f8] overflow-hidden">
                     @if($modul->foto_modul && Storage::disk('public')->exists($modul->foto_modul))

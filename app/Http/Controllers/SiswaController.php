@@ -9,8 +9,10 @@ use App\Models\Soal;
 use App\Models\TingkatQuiz;
 use App\Models\HasilQuizModul;
 use App\Models\User;
+use App\Models\CatatanModul;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+
 
 class SiswaController extends Controller
 {
@@ -43,14 +45,41 @@ class SiswaController extends Controller
         return view('siswa.materi-video-list', compact('moduls'));
     }
 
-    public function materiVideoDetail($id_modul)
-    {
-        $modul = Modul::with(['materiVideo' => function($q) {
-            $q->orderBy('urutan', 'asc');
-        }])->findOrFail($id_modul);
 
-        return view('siswa.materi-video', compact('modul'));
+
+    public function materiVideoDetail(Request $request, $id_modul)
+    {
+        $modul = Modul::with([
+            'tipeModul',
+            'jenjang',
+            'materiVideo' => fn ($q) => $q->orderBy('urutan', 'asc'),
+            'catatan',
+        ])->findOrFail($id_modul);
+
+        $selectedVideoId = $request->get('v');
+        $selectedVideo = $selectedVideoId
+            ? $modul->materiVideo->firstWhere('id_materi', $selectedVideoId)
+            : $modul->materiVideo->first();
+
+        return view('siswa.materi-video', compact('modul', 'selectedVideo'));
     }
+
+public function latihanSoalModul($id_modul)
+{
+    $modul = Modul::with(['tipeModul', 'jenjang'])->findOrFail($id_modul);
+
+    $quizzes = Quiz::belumKadaluarsa()
+        ->where(function ($q) use ($modul) {
+            $q->where('id_quiz', $modul->id_quiz)
+              ->orWhere('id_jenjang', $modul->id_jenjang);
+        })
+        ->with(['tipeQuiz', 'tingkatQuiz'])
+        ->withCount('soal')
+        ->latest()
+        ->get();
+
+    return view('siswa.latihan-soal-modul', compact('modul', 'quizzes'));
+}
 
     public function latihanSoal()
     {
@@ -162,7 +191,7 @@ class SiswaController extends Controller
         $totalSoal = $quiz->soal->count();
 
         $benar = 0;
-        
+
         $totalPoinQuiz = 0;
         $poinDidapat = 0;
 
@@ -173,7 +202,7 @@ class SiswaController extends Controller
             if (isset($jawabanSiswa[$soal->id_soal])) {
                 $jawab = $jawabanSiswa[$soal->id_soal];
                 $pilihanBenar = $soal->pilihanSoal->where('is_correct', true)->first();
-                
+
                 $isCorrect = false;
                 if ($pilihanBenar && strtolower(trim($pilihanBenar->label)) === strtolower(trim($jawab))) {
                     $isCorrect = true;
@@ -232,7 +261,7 @@ class SiswaController extends Controller
         return view('siswa.quiz-result', compact('quiz', 'hasil'));
     }
 
-    public function dataSiswa(Request $request) 
+    public function dataSiswa(Request $request)
 {
     // Query dasar mengambil data siswa (id_tipeuser = 3)
     $query = User::with(['jenjang', 'tipeUser'])->where('id_tipeuser', 3);
@@ -254,9 +283,9 @@ class SiswaController extends Controller
 
     // Total Siswa Keseluruhan
     $totalSiswa = User::where('id_tipeuser', 3)->count();
-    
+
     // Set angka default agar tidak crash karena kolom 'status' belum ada di tabel user
-    $totalAktif = $totalSiswa; 
+    $totalAktif = $totalSiswa;
     $totalNonaktif = 0;
     $totalPerluDitinjau = 0;
 

@@ -45,6 +45,12 @@ class Modul extends Model
         return $this->hasMany(MateriVideo::class, 'id_modul', 'id_modul');
     }
     // Helper accessor untuk mendapatkan URL lengkap file materi
+
+    public function catatan()
+    {
+        return $this->hasMany(CatatanModul::class, 'id_modul', 'id_modul')->orderBy('urutan');
+    }
+
     public function getFileUrlAttribute()
     {
         if (!$this->file_materi) {
