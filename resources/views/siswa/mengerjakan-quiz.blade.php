@@ -266,7 +266,7 @@
                     }
                 };
 
-                if (!isPreview) submitControls.hidden = panel.dataset.isLastQuestion !== 'true';
+                if (!isPreview) submitControls.hidden = false;
                 updateTimer();
                 activeTimer = setInterval(updateTimer, 250);
             } else {

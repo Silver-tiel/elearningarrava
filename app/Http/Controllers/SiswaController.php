@@ -325,14 +325,6 @@ class SiswaController extends Controller
             $durasi = $this->durasiSoal($activeQuestion);
             $elapsedSeconds = now()->timestamp - (int) $attempt['question_started_at'];
 
-            // Tolak submit yang terlalu awal (mis. lewat request manual),
-            // tapi beri toleransi kecil untuk pembulatan detik JS vs server.
-            if ($elapsedSeconds + self::WAYGROUND_TOLERANSI_AWAL_DETIK < $durasi) {
-                return redirect()->route('siswa.quiz.kerjakan', $quiz->id_quiz)->withErrors([
-                    'quiz' => 'Waktu untuk soal ini belum habis.',
-                ]);
-            }
-
             // Jawaban yang datang terlambat dianggap tidak menjawab.
             $attempt['answers'][$activeQuestion->id_soal] =
                 $elapsedSeconds <= $durasi + self::WAYGROUND_GRACE_DETIK
