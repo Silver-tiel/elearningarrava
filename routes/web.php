@@ -125,7 +125,7 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function 
 
     // Route untuk Halaman Utama/Tabel Daftar Siswa
     Route::get('/data', [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
-    Route::post('/data/{id}/status', [SiswaController::class, 'updateStatus'])->name('admin.daftar_siswa.status');
+    Route::patch('/data/{id}/status', [SiswaController::class, 'updateStatus'])->name('admin.siswa.status');
 
     // Route Guru
     Route::get('/guru', [GuruController::class, 'index'])->name('admin.guru');
