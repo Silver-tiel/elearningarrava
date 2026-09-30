@@ -93,7 +93,7 @@
                 </label>
 
                 <input
-                oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                    oninput="this.value=this.value.replace(/[^0-9]/g,'')"
                     type="text"
                     name="no_telepon"
                     id="no_telepon"
