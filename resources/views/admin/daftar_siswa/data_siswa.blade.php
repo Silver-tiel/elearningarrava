@@ -132,6 +132,7 @@
                         <th class="py-3.5 px-4">Nama Siswa</th>
                         <th class="py-3.5 px-4">Email</th>
                         <th class="py-3.5 px-4">Jenjang / Kelas</th>
+                        <th class="py-3.5 px-4">NISN</th>
                         <th class="py-3.5 px-4">No Hp</th>
                         <th class="py-3.5 px-4 text-center">Status</th>
                         <th class="py-3.5 px-4">Poin</th>
@@ -155,6 +156,7 @@
                         <td class="py-4 px-4 text-slate-600">
                             {{ $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? '-' }}
                         </td>
+                        <td class="py-4 px-4 text-slate-500">{{ $siswa->nisn ?? '-' }}</td>
                         <td class="py-4 px-4 text-slate-500">{{ $siswa->nomor_hp ?? '-' }}</td>
 
                         {{-- Dropdown Status Interaktif --}}
