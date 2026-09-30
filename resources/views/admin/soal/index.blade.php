@@ -78,6 +78,7 @@
                     <th>Jenjang</th>
                     <th>Jenis Soal</th>
                     <th>Pertanyaan</th>
+                    <th>Foto</th>
                     <th>Jawaban Benar</th>
                     <th>Aksi</th>
                 </tr>
@@ -89,6 +90,13 @@
                         <td>{{ $soal->id_jenjang }}</td>
                         <td>{{ $soal->id_jenis_soal }}</td>
                         <td>{{ $soal->pertanyaan }}</td>
+                        <td>
+                            @if($soal->foto_soal)
+                                <img src="{{ asset('storage/' . $soal->foto_soal) }}" alt="Foto soal" style="max-width: 120px; max-height: 90px; border-radius: 8px; object-fit: cover;">
+                            @else
+                                <span>-</span>
+                            @endif
+                        </td>
                         <td>{{ $soal->jawaban_benar }}</td>
                         <td>
                             <div class="action-buttons">

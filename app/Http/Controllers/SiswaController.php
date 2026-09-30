@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Auth;
 
 class SiswaController extends Controller
 {
+    private const WAYGROUND_SUBMISSION_GRACE_SECONDS = 10;
+
     public function dashboard(Request $request)
     {
         $modulCount = Modul::count();
@@ -64,27 +66,16 @@ class SiswaController extends Controller
         return view('siswa.materi-video', compact('modul', 'selectedVideo'));
     }
 
-public function latihanSoalModul($id_modul)
-{
-    $modul = Modul::with(['tipeModul', 'jenjang'])->findOrFail($id_modul);
-
-    $quizzes = Quiz::belumKadaluarsa()
-        ->where(function ($q) use ($modul) {
-            $q->where('id_quiz', $modul->id_quiz)
-              ->orWhere('id_jenjang', $modul->id_jenjang);
-        })
-        ->with(['tipeQuiz', 'tingkatQuiz'])
-        ->withCount('soal')
-        ->latest()
-        ->get();
-
-    return view('siswa.latihan-soal-modul', compact('modul', 'quizzes'));
-}
-
     public function latihanSoal()
     {
-        // Menampilkan daftar latihan soal (biasanya quiz dengan tipe latihan)
-        $quizzes = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz'])->latest()->get();
+        $user = Auth::user();
+        $query = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz']);
+
+        if ($user && $user->id_jenjang) {
+            $query->where('id_jenjang', $user->id_jenjang);
+        }
+
+        $quizzes = $query->latest()->get();
         return view('siswa.latihan-soal', compact('quizzes'));
     }
 
@@ -97,31 +88,48 @@ public function latihanSoalModul($id_modul)
     public function quiz(Request $request)
     {
         $filters = $request->validate([
-            'jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
             'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
+            'sort' => ['nullable', 'in:terbaru,terlama'],
         ]);
 
         $query = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz', 'jenjang']);
 
-        if (!empty($filters['jenjang'])) {
-            $query->where('id_jenjang', $filters['jenjang']);
+        $user = Auth::user();
+        if ($user && $user->id_jenjang) {
+            $query->where('id_jenjang', $user->id_jenjang);
         }
 
         if (!empty($filters['tingkat'])) {
             $query->where('id_tingkatquiz', $filters['tingkat']);
         }
 
-        $quizzes = $query->latest()->get();
-        $jenjangList = Jenjang::orderBy('id_jenjang')->get();
+        if (isset($filters['sort']) && $filters['sort'] === 'terlama') {
+            $query->oldest();
+        } else {
+            $query->latest();
+        }
+
+        $quizzes = $query->get();
         $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
 
-        return view('siswa.quiz', compact('quizzes', 'jenjangList', 'tingkatQuizList'));
+        return view('siswa.quiz', compact('quizzes', 'tingkatQuizList'));
     }
 
     public function kerjakanQuiz($id_quiz)
     {
         $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
         return $this->tampilkanQuiz($quiz, 'siswa.quiz');
+    }
+
+    public function previewQuiz($id_quiz)
+    {
+        $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
+
+        return view('siswa.mengerjakan-quiz', [
+            'quiz' => $quiz,
+            'remainingSeconds' => null,
+            'isPreview' => true,
+        ]);
     }
 
     private function tampilkanQuiz(Quiz $quiz, string $routeDaftar)
@@ -133,6 +141,39 @@ public function latihanSoalModul($id_modul)
         }
 
         $remainingSeconds = null;
+        $activeQuestionIndex = 0;
+        $questionRemainingSeconds = null;
+
+        if ($quiz->mode_pengerjaan === 'wayground') {
+            $attemptKey = $this->waygroundAttemptSessionKey($quiz);
+            $attempt = session($attemptKey);
+
+            if (!$attempt) {
+                $attempt = [
+                    'active_question_index' => 0,
+                    'question_started_at' => now()->timestamp,
+                    'answers' => [],
+                ];
+                session([$attemptKey => $attempt]);
+            }
+
+            $activeQuestionIndex = (int) $attempt['active_question_index'];
+            $activeQuestion = $quiz->soal->values()->get($activeQuestionIndex);
+
+            if (!$activeQuestion) {
+                session()->forget($attemptKey);
+                return redirect()->route($routeDaftar)->withErrors([
+                    'quiz' => 'Sesi pengerjaan kuis tidak valid. Silakan mulai kembali.',
+                ]);
+            }
+
+            $questionRemainingSeconds = max(
+                0,
+                (int) ($activeQuestion->durasi_detik ?? 20)
+                    - (now()->timestamp - (int) $attempt['question_started_at'])
+            );
+        }
+
         if ($quiz->mode_pengerjaan === 'biasa' && $quiz->durasi_total_menit) {
             $attemptKey = $this->attemptSessionKey($quiz);
             $startedAt = session($attemptKey);
@@ -155,7 +196,12 @@ public function latihanSoalModul($id_modul)
             }
         }
 
-        return view('siswa.mengerjakan-quiz', compact('quiz', 'remainingSeconds'));
+        return view('siswa.mengerjakan-quiz', compact(
+            'quiz',
+            'remainingSeconds',
+            'activeQuestionIndex',
+            'questionRemainingSeconds'
+        ));
     }
 
     public function submitQuiz(Request $request, $id_quiz)
@@ -163,6 +209,7 @@ public function latihanSoalModul($id_modul)
         $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id_quiz);
         $user = Auth::user();
         $jawabanSiswa = $request->input('jawaban', []);
+        $jawabanSiswa = is_array($jawabanSiswa) ? $jawabanSiswa : [];
 
         if ($quiz->sudahKadaluarsa()) {
             return redirect()->route('siswa.quiz')->withErrors([
@@ -171,6 +218,52 @@ public function latihanSoalModul($id_modul)
         }
 
         $attemptKey = $this->attemptSessionKey($quiz);
+        if ($quiz->mode_pengerjaan === 'wayground') {
+            $attemptKey = $this->waygroundAttemptSessionKey($quiz);
+            $attempt = session($attemptKey);
+
+            if (!$attempt) {
+                return redirect()->route('siswa.quiz')->withErrors([
+                    'quiz' => 'Silakan mulai kuis terlebih dahulu.',
+                ]);
+            }
+
+            $activeQuestionIndex = (int) $attempt['active_question_index'];
+            $activeQuestion = $quiz->soal->values()->get($activeQuestionIndex);
+
+            if (!$activeQuestion) {
+                session()->forget($attemptKey);
+                return redirect()->route('siswa.quiz')->withErrors([
+                    'quiz' => 'Sesi pengerjaan kuis tidak valid. Silakan mulai kembali.',
+                ]);
+            }
+
+            $questionDuration = max(1, (int) ($activeQuestion->durasi_detik ?? 20));
+            $elapsedSeconds = now()->timestamp - (int) $attempt['question_started_at'];
+
+            if ($elapsedSeconds < $questionDuration) {
+                return redirect()->route('siswa.quiz.kerjakan', $quiz->id_quiz)->withErrors([
+                    'quiz' => 'Waktu untuk soal ini belum habis.',
+                ]);
+            }
+
+            $attempt['answers'][$activeQuestion->id_soal] = $elapsedSeconds <= $questionDuration + self::WAYGROUND_SUBMISSION_GRACE_SECONDS
+                ? ($jawabanSiswa[$activeQuestion->id_soal] ?? null)
+                : null;
+            $nextQuestionIndex = $activeQuestionIndex + 1;
+
+            if ($nextQuestionIndex < $quiz->soal->count()) {
+                $attempt['active_question_index'] = $nextQuestionIndex;
+                $attempt['question_started_at'] = now()->timestamp;
+                session([$attemptKey => $attempt]);
+
+                return redirect()->route('siswa.quiz.kerjakan', $quiz->id_quiz);
+            }
+
+            $jawabanSiswa = $attempt['answers'];
+            session()->forget($attemptKey);
+        }
+
         if ($quiz->mode_pengerjaan === 'biasa' && $quiz->durasi_total_menit) {
             $startedAt = session($attemptKey);
             if (!$startedAt) {
@@ -201,13 +294,14 @@ public function latihanSoalModul($id_modul)
 
             if (isset($jawabanSiswa[$soal->id_soal])) {
                 $jawab = $jawabanSiswa[$soal->id_soal];
-                $pilihanBenar = $soal->pilihanSoal->where('is_correct', true)->first();
+                $jawab = is_scalar($jawab) ? strtolower(trim((string) $jawab)) : '';
 
-                $isCorrect = false;
-                if ($pilihanBenar && strtolower(trim($pilihanBenar->label)) === strtolower(trim($jawab))) {
-                    $isCorrect = true;
-                } elseif (strtolower(trim($soal->jawaban_benar)) === strtolower(trim($jawab))) {
-                    $isCorrect = true;
+                if ($soal->pilihanSoal->isNotEmpty()) {
+                    $correctChoices = $soal->pilihanSoal->where('is_correct', true);
+                    $isCorrect = $correctChoices->count() === 1
+                        && strtolower(trim($correctChoices->first()->label)) === $jawab;
+                } else {
+                    $isCorrect = strtolower(trim($soal->jawaban_benar)) === $jawab;
                 }
 
                 if ($isCorrect) {
@@ -222,7 +316,7 @@ public function latihanSoalModul($id_modul)
 
         $sudahMendapatPoinUntukQuizIni = HasilQuizModul::where('id_user', $user->id_user)
             ->where('id_quiz', $quiz->id_quiz)
-            ->where('poin_didapat', '>', 0)
+            ->where('is_lulus', true)
             ->exists();
 
         if ($isLulus && $poinDidapat > 0 && !$sudahMendapatPoinUntukQuizIni) {
@@ -235,12 +329,13 @@ public function latihanSoalModul($id_modul)
             'id_quiz' => $quiz->id_quiz,
             'total_poin' => $totalPoinQuiz,
             'poin_didapat' => $poinDidapat,
+            'is_lulus' => $isLulus,
             'waktu_dapat' => now(),
         ]);
 
         session()->forget($attemptKey);
 
-        return redirect()->back()->with('quiz_result', [
+        return redirect()->route('siswa.quiz')->with('quiz_result', [
             'poin_didapat' => $poinDidapat,
             'benar' => $benar,
             'total_soal' => $totalSoal,
@@ -251,6 +346,11 @@ public function latihanSoalModul($id_modul)
     private function attemptSessionKey(Quiz $quiz): string
     {
         return 'quiz_attempt.' . Auth::id() . '.' . $quiz->id_quiz;
+    }
+
+    private function waygroundAttemptSessionKey(Quiz $quiz): string
+    {
+        return 'wayground_attempt.' . Auth::id() . '.' . $quiz->id_quiz;
     }
 
     public function hasilQuiz($id_quiz, $id_hasil)
@@ -275,7 +375,13 @@ public function latihanSoalModul($id_modul)
     }
 
     if ($request->filled('kelas')) {
-        $query->where('kelas', $request->kelas);
+    $query->whereHas('jenjang', function ($q) use ($request) {
+        $q->where('nama_tipe', $request->kelas);
+    });
+    }
+
+    if ($request->filled('status')) {
+        $query->where('status_akun', $request->status);
     }
 
     // Ambil data siswa berpagination
@@ -284,13 +390,13 @@ public function latihanSoalModul($id_modul)
     // Total Siswa Keseluruhan
     $totalSiswa = User::where('id_tipeuser', 3)->count();
 
-    // Set angka default agar tidak crash karena kolom 'status' belum ada di tabel user
-    $totalAktif = $totalSiswa;
-    $totalNonaktif = 0;
+        // Set angka default agar tidak crash karena kolom 'status' belum ada di tabel user
+        $totalAktif = User::where('id_tipeuser', 3)->where('status_akun', 'Aktif')->count();
+        $totalNonaktif = User::where('id_tipeuser', 3)->where('status_akun', 'Nonaktif')->count();
     $totalPerluDitinjau = 0;
 
     // Data opsi kelas untuk dropdown filter
-    $listKelas = ['Kelas 10 - IPA 1', 'Kelas 10 - IPS 1', 'Kelas 11 - IPA 4', 'Kelas 11 - IPS 3', 'Kelas 12 - IPA 2', 'Kelas 12 - IPS 2'];
+    $listKelas = ['SD', 'SMP', 'SMA'];
 
     return view('admin.daftar_siswa.data_siswa', compact(
         'siswas',
@@ -300,5 +406,34 @@ public function latihanSoalModul($id_modul)
         'totalPerluDitinjau',
         'listKelas'
     ));
+}
+
+public function updateStatus(Request $request, $id)
+{
+    try {
+        // Validasi input
+        $request->validate([
+            'status' => 'required|in:Aktif,Nonaktif'
+        ]);
+
+        // Cari data user/siswa
+        $siswa = User::findOrFail($id);
+
+        // Update ke kolom status_akun
+        $siswa->status_akun = $request->status;
+        $siswa->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status ' . $siswa->nama . ' berhasil diubah menjadi ' . $siswa->status_akun
+        ]);
+
+    } catch (\Exception $e) {
+        // Mengembalikan pesan error asli agar terbaca di console browser
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ], 500);
+    }
 }
 }

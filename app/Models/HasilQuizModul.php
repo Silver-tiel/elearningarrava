@@ -15,6 +15,7 @@ class HasilQuizModul extends Model
         'id_quiz',
         'total_poin',
         'poin_didapat',
+        'is_lulus',
         'waktu_dapat',
     ];
 

@@ -16,6 +16,7 @@ class Soal extends Model
         'id_jenis_soal',
         'pertanyaan',
         'jawaban_benar',
+        'foto_soal',
         'poin',
         'durasi_detik',
     ];
