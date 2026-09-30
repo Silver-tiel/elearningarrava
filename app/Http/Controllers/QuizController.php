@@ -199,7 +199,7 @@ class QuizController extends Controller
         ], $this->quizValidationMessages());
         $questions = $this->normalizeQuestionAnswers($validated['soal']);
 
-        DB::transaction(function () use ($quiz, $validated, $questions) {
+        DB::transaction(function () use ($quiz, $validated, $questions, $request) {
             $quiz->update([
                 'judul' => $validated['judul'],
                 'id_jenjang' => $validated['id_jenjang'],
