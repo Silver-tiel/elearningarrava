@@ -46,9 +46,11 @@ class PendaftaranController extends Controller
         ],
 
         'nomor_handphone' => [
-            'nullable',
+            'required',
             'string',
+            'min:10',
             'max:20',
+            'regex:/^[0-9+\-\s]+$/',
         ],
 
         'password' => [
@@ -77,6 +79,11 @@ class PendaftaranController extends Controller
         'email.required' => 'Alamat email wajib diisi.',
         'email.email' => 'Format alamat email tidak valid.',
 
+        'nomor_handphone.required' => 'Nomor handphone wajib diisi.',
+        'nomor_handphone.min' => 'Nomor handphone minimal 10 digit/karakter.',
+        'nomor_handphone.max' => 'Nomor handphone maksimal 20 digit/karakter.',
+        'nomor_handphone.regex' => 'Format nomor handphone tidak valid.',
+
         'password.required' => 'Kata sandi wajib diisi.',
         'password.min' => 'Kata sandi minimal 8 karakter.',
         'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
@@ -90,6 +97,7 @@ User::create([
     'nisn' => $validated['nisn'],
     'nama' => $validated['nama'],
     'email' => $validated['email'],
+    'nomor_hp' => $validated['nomor_handphone'],
     'password' => Hash::make($validated['password']),
     'id_jenjang' => $validated['id_jenjang'],
     'id_tipeuser' => 3,
