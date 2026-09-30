@@ -94,7 +94,7 @@ class QuizController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'judul'            => 'required|string|max:255',
+            'judul'            => 'required|string|max:255|regex:/^[a-zA-Z0-9\s]+$/',
             'id_jenjang'       => 'required|integer',
             'id_tipequiz'      => 'nullable|integer',
             'id_tingkatquiz'   => 'nullable|integer',
@@ -177,7 +177,7 @@ class QuizController extends Controller
     {
         $quiz = Quiz::findOrFail($id);
         $validated = $request->validate([
-            'judul' => 'required|string|max:255',
+            'judul' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s]+$/',
             'id_jenjang' => 'required|integer',
             'id_tipequiz' => 'nullable|integer',
             'id_tingkatquiz' => 'nullable|integer',
@@ -435,6 +435,7 @@ class QuizController extends Controller
         return [
             'judul.required' => 'Judul quiz wajib diisi.',
             'judul.max' => 'Judul quiz maksimal 255 karakter.',
+            'judul.regex' => 'Judul quiz hanya boleh berisi huruf, angka, dan spasi.',
             'id_jenjang.required' => 'Jenjang quiz wajib dipilih.',
             'id_jenjang.integer' => 'Jenjang quiz tidak valid.',
             'waktu_kadaluarsa.date' => 'Format waktu kadaluarsa tidak valid.',
