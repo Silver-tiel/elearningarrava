@@ -66,7 +66,24 @@ class SiswaController extends Controller
         return view('siswa.materi-video', compact('modul', 'selectedVideo'));
     }
 
-    public function latihanSoal()
+public function latihanSoalModul($id_modul)
+{
+    $modul = Modul::with(['tipeModul', 'jenjang'])->findOrFail($id_modul);
+
+    $quizzes = Quiz::belumKadaluarsa()
+        ->where(function ($q) use ($modul) {
+            $q->where('id_quiz', $modul->id_quiz)
+              ->orWhere('id_jenjang', $modul->id_jenjang);
+        })
+        ->with(['tipeQuiz', 'tingkatQuiz'])
+        ->withCount('soal')
+        ->latest()
+        ->get();
+
+    return view('siswa.latihan-soal-modul', compact('modul', 'quizzes'));
+}
+
+    public function latihanSoal(Request $request)
     {
         $user = Auth::user();
         $query = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz']);
@@ -302,6 +319,13 @@ class SiswaController extends Controller
                         && strtolower(trim($correctChoices->first()->label)) === $jawab;
                 } else {
                     $isCorrect = strtolower(trim($soal->jawaban_benar)) === $jawab;
+                $pilihanBenar = $soal->pilihanSoal->where('is_correct', true)->first();
+
+                $isCorrect = false;
+                if ($pilihanBenar && strtolower(trim($pilihanBenar->label)) === strtolower(trim($jawab))) {
+                    $isCorrect = true;
+                } elseif (strtolower(trim($soal->jawaban_benar)) === strtolower(trim($jawab))) {
+                    $isCorrect = true;
                 }
 
                 if ($isCorrect) {
@@ -393,6 +417,10 @@ class SiswaController extends Controller
         // Set angka default agar tidak crash karena kolom 'status' belum ada di tabel user
         $totalAktif = User::where('id_tipeuser', 3)->where('status_akun', 'Aktif')->count();
         $totalNonaktif = User::where('id_tipeuser', 3)->where('status_akun', 'Nonaktif')->count();
+
+    // Set angka default agar tidak crash karena kolom 'status' belum ada di tabel user
+    $totalAktif = $totalSiswa;
+    $totalNonaktif = 0;
     $totalPerluDitinjau = 0;
 
     // Data opsi kelas untuk dropdown filter
