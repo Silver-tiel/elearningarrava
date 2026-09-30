@@ -95,5 +95,21 @@ class UserAwalSeeder extends Seeder
                 'foto_profil' => null,
             ]
         );
+
+        User::updateOrCreate(
+            ['nisn' => '1234567894'],
+            [
+                'nama'        => 'abim',
+                'email'       => 'abim@gmail.com',
+                'password'    => Hash::make('password123'),
+                'id_tipeuser' => 2,
+                'id_jenjang'  => 1,
+                'nomor_hp'    => '081212121216',
+                'total_poin'  => 100,
+                'status_akun' => 'Aktif',
+                'id_modul'    => null,
+                'foto_profil' => null,
+            ]
+        );
     }
 }
