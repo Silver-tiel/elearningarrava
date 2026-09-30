@@ -124,5 +124,14 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function 
     Route::delete('/soal/{id}', [SoalController::class, 'destroy'])->name('soal.destroy');
 
     // Route untuk Halaman Utama/Tabel Daftar Siswa
-Route::get('/admin/data', [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
+    Route::get('/data', [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
+    Route::post('/data/{id}/status', [SiswaController::class, 'updateStatus'])->name('admin.daftar_siswa.status');
+
+    // Route Guru
+    Route::get('/guru', [GuruController::class, 'index'])->name('admin.guru');
+    Route::get('/guru/create', [GuruController::class, 'create'])->name('admin.guru.create');
+    Route::post('/guru', [GuruController::class, 'store'])->name('admin.guru.store');
+    Route::get('/guru/{id}/edit', [GuruController::class, 'edit'])->name('admin.guru.edit');
+    Route::put('/guru/{id}', [GuruController::class, 'update'])->name('admin.guru.update');
+    Route::delete('/guru/{id}', [GuruController::class, 'destroy'])->name('admin.guru.destroy');
 });
