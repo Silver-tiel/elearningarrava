@@ -37,13 +37,24 @@ public function store(Request $request)
 {
     // 1. Validasi input yang lebih fleksibel
     $request->validate([
-        'judul_modul' => 'required|string|max:255',
+        'judul_modul' => 'required|string|max:255|unique:modul,judul_modul',
         'id_tipemodul' => 'required|integer',
         'id_jenjang' => 'required|integer',
         'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
         'file_link' => 'nullable|url',
         'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-    ]);
+        'file' => 'required|file|mimes:pdf,doc,docx|max:2048',
+    ], );
+
+    $namaFile = $request->file('file')->getClientOriginalName();
+
+    $cekFile = Modul::where('file', $namaFile)->exists();
+
+    if ($cekFile) {
+    return back()->withErrors([
+        'file' => 'File tersebut sudah digunakan pada modul lain.'
+        ]);
+    }
 
     $pathFile = null;
     $tipeFile = null;
