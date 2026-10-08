@@ -3,10 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Guru;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class GuruController extends Controller
 {
+    /**
+     * Tampilkan profil guru yang sedang login.
+     */
+    public function profil()
+    {
+        $user = Auth::user();
+
+        return view('admin.guru.profil', compact('user'));
+    }
+
     public function index()
     {
         $gurus = Guru::latest()->get();

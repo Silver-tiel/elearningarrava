@@ -97,6 +97,11 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'role:siswa'])->grou
     Route::post('/quiz/{quiz}/submit', [SiswaController::class, 'submitQuiz'])->name('quiz.submit');
 });
 
+// Profil guru (hanya untuk guru yang login)
+Route::get('/admin/profil', [GuruController::class, 'profil'])
+    ->middleware(['auth', 'role:guru'])
+    ->name('admin.profil');
+
 // Admin resource routes (dikelompokkan dengan prefix & middleware)
 Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function () {
     Route::get('/modul', [ModulController::class, 'index'])->name('admin.modul');
