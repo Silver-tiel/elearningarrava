@@ -95,6 +95,9 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'role:siswa'])->grou
     Route::get('/quiz', [SiswaController::class, 'quiz'])->name('quiz');
     Route::get('/quiz/{quiz}', [SiswaController::class, 'kerjakanQuiz'])->name('quiz.kerjakan');
     Route::post('/quiz/{quiz}/submit', [SiswaController::class, 'submitQuiz'])->name('quiz.submit');
+
+    Route::get('/profil', [SiswaController::class, 'profile'])->name('profil');
+    Route::put('/profil/update', [SiswaController::class, 'updateProfil'])->name('profil.update');
 });
 
 // Admin resource routes (dikelompokkan dengan prefix & middleware)

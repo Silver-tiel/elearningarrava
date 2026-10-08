@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -658,5 +659,46 @@ class SiswaController extends Controller
             'success' => true,
             'message' => 'Status ' . $siswa->nama . ' berhasil diubah menjadi ' . $siswa->status_akun,
         ]);
+    }
+
+    public function index()
+    {
+        return view('dashboard');
+    }
+
+    public function profile()
+    {
+        $user = auth()->user();
+        return view('siswa.profil_siswa', compact('user'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        // Validasi input tanpa mengizinkan perubahan email
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'no_hp' => 'nullable|string|max:20',
+            'kelas' => 'nullable|string|max:50',
+            'avatar' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        $user->name = $request->name;
+        $user->no_hp = $request->no_hp;
+        $user->kelas = $request->kelas;
+
+        // Proses unggah foto profil jika ada
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar && Storage::exists($user->avatar)) {
+                Storage::delete($user->avatar);
+            }
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = Storage::url($path);
+        }
+
+        $user->save();
+
+        return redirect()->back()->with('success', 'Profil berhasil diperbarui!');
     }
 }
