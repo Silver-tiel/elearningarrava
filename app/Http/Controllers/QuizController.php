@@ -113,6 +113,7 @@ class QuizController extends Controller
             'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
             'soal_foto' => 'nullable|array',
             'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'kode_soal' => sprintf('KUIS-%d-%03d', $quiz->id_quiz, $index + 1), 
         ], $this->quizValidationMessages());
         $questions = $this->normalizeQuestionAnswers($validated['soal']);
 

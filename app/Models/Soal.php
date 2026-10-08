@@ -12,6 +12,7 @@ class Soal extends Model
 
     protected $fillable = [
         'id_quiz',
+        'kode_soal',
         'id_jenjang',
         'id_jenis_soal',
         'pertanyaan',
