@@ -40,6 +40,7 @@ class QuizManagementTest extends TestCase
         });
         Schema::create('quiz', function (Blueprint $table) {
             $table->increments('id_quiz');
+            $table->string('kode_quiz')->nullable();
             $table->string('judul');
             $table->unsignedInteger('id_tipequiz')->default(1);
             $table->unsignedInteger('id_tingkatquiz')->default(1);
@@ -52,11 +53,13 @@ class QuizManagementTest extends TestCase
         });
         Schema::create('soal', function (Blueprint $table) {
             $table->increments('id_soal');
+            $table->string('kode_soal')->nullable();
             $table->unsignedInteger('id_quiz');
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->unsignedInteger('id_jenis_soal')->nullable();
             $table->text('pertanyaan');
             $table->text('jawaban_benar');
+            $table->string('foto_soal')->nullable();
             $table->integer('poin')->default(10);
             $table->unsignedSmallInteger('durasi_detik')->default(20);
             $table->timestamps();

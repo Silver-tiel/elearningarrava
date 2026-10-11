@@ -15,7 +15,9 @@ return new class extends Migration {
             $table->unsignedInteger('id_jenis_soal')->nullable();
             $table->text('pertanyaan');
             $table->text('jawaban_benar');
+            $table->string('foto_soal')->nullable();
             $table->integer('poin')->default(10);
+            $table->unsignedSmallInteger('durasi_detik')->default(20);
             $table->timestamps();
 
             $table->foreign('id_quiz')->references('id_quiz')->on('quiz')->onDelete('cascade');

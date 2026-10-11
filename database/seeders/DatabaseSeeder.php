@@ -10,5 +10,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(MasterDataSeeder::class);
         $this->call(UserAwalSeeder::class);
+        $this->call(QuizSeeder::class);
+        $this->call(ModulSeeder::class);
     }
 }

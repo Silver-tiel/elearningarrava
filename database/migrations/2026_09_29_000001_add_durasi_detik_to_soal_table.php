@@ -9,14 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('soal', function (Blueprint $table) {
-            $table->unsignedSmallInteger('durasi_detik')->default(20);
+            if (!Schema::hasColumn('soal', 'durasi_detik')) {
+                $table->unsignedSmallInteger('durasi_detik')->default(20);
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('soal', function (Blueprint $table) {
-            $table->dropColumn('durasi_detik');
+            if (Schema::hasColumn('soal', 'durasi_detik')) {
+                $table->dropColumn('durasi_detik');
+            }
         });
     }
 };

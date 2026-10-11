@@ -28,6 +28,7 @@ class QuizRewardEligibilityTest extends TestCase
 
         Schema::create('quiz', function (Blueprint $table) {
             $table->increments('id_quiz');
+            $table->string('kode_quiz')->nullable();
             $table->string('judul');
             $table->dateTime('waktu_kadaluarsa')->nullable();
             $table->string('mode_pengerjaan')->nullable();
@@ -37,6 +38,7 @@ class QuizRewardEligibilityTest extends TestCase
 
         Schema::create('soal', function (Blueprint $table) {
             $table->increments('id_soal');
+            $table->string('kode_soal')->nullable();
             $table->unsignedInteger('id_quiz');
             $table->text('pertanyaan');
             $table->text('jawaban_benar');

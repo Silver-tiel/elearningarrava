@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Guru;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -35,8 +36,8 @@ class UserAwalSeeder extends Seeder
                 'nama'        => 'dd',
                 'email'       => 'dd@gmail.com',
                 'password'    => Hash::make('password123'),
-                'id_tipeuser' => 1,
-                'id_jenjang'  => null,
+                'id_tipeuser' => 3,
+                'id_jenjang'  => 1,
                 'nomor_hp'    => '081212121212',
                 'total_poin'  => 0,
                 'status_akun' => 'Aktif',
@@ -96,8 +97,9 @@ class UserAwalSeeder extends Seeder
             ]
         );
 
+        // GURU
         User::updateOrCreate(
-            ['nisn' => '1234567894'],
+            ['nisn' => '1234567895'],
             [
                 'nama'        => 'abim',
                 'email'       => 'abim@gmail.com',
@@ -109,6 +111,15 @@ class UserAwalSeeder extends Seeder
                 'status_akun' => 'Aktif',
                 'id_modul'    => null,
                 'foto_profil' => null,
+            ]
+        );
+
+        // DATA TABEL GURU
+        Guru::updateOrCreate(
+            ['nik' => '3201010101900001'],
+            [
+                'nama'       => 'abim',
+                'no_telepon' => '081212121216',
             ]
         );
     }

@@ -71,7 +71,7 @@ class SoalController extends Controller
     // Menampilkan form untuk mengedit soal.
     public function edit($id)
     {
-        $soal = Soal::with('pilihanSoal')->findOrFail($id);
+        $soal = Soal::with('pilihanSoal')->where('id_soal', $id)->orWhere('kode_soal', $id)->firstOrFail();
         $jenjangList = Jenjang::orderBy('id_jenjang')->get();
         return view('admin.soal.edit', compact('soal', 'jenjangList'));
     }
@@ -79,8 +79,8 @@ class SoalController extends Controller
     // Memperbarui soal di database.
     public function update(Request $request, $id)
     {
-        $soal = Soal::findOrFail($id);
-        $questionData = $this->validateQuestionData($request);
+        $soal = Soal::where('id_soal', $id)->orWhere('kode_soal', $id)->firstOrFail();
+        $questionData = $this->validateQuestionData($request, $soal->id_soal);
 
         $request->validate([
             'foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -101,6 +101,16 @@ class SoalController extends Controller
                 return back()->withInput()->withErrors([
                     'foto_soal' => 'File foto soal tidak valid atau rusak.',
                 ]);
+            }
+
+            // Cegah upload ulang gambar yang sama persis pada soal ini
+            if ($fotoLama && Storage::disk('public')->exists($fotoLama)) {
+                $fotoLamaPath = Storage::disk('public')->path($fotoLama);
+                if (file_exists($fotoLamaPath) && md5_file($foto->getRealPath()) === md5_file($fotoLamaPath)) {
+                    return back()->withInput()->withErrors([
+                        'foto_soal' => 'Foto yang diunggah sama dengan foto yang sudah terpasang pada soal ini.',
+                    ]);
+                }
             }
 
             $pathFoto = $foto->store('soal/foto', 'public');
@@ -126,7 +136,7 @@ class SoalController extends Controller
         return redirect()->route('admin.soal')->with('success', 'Soal berhasil diperbarui.');
     }
 
-    private function validateQuestionData(Request $request): array
+    private function validateQuestionData(Request $request, $ignoreSoalId = null): array
     {
         $validated = $request->validate([
             'id_quiz' => 'required|integer|exists:quiz,id_quiz',
@@ -134,11 +144,29 @@ class SoalController extends Controller
             'id_jenis_soal' => 'required|integer|exists:jenis_soal,id_jenis_soal',
             'pertanyaan' => 'required|string|max:10000',
             'jawaban_benar' => 'nullable|string|max:2000',
+            'poin' => 'nullable|integer|min:0',
+            'durasi_detik' => 'nullable|integer|min:1',
             'correct_choice' => 'nullable|in:A,B,C,D',
             'pilihan' => 'nullable|array',
             'pilihan.*.label' => 'required|in:A,B,C,D',
             'pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
         ]);
+
+        $pertanyaanLower = mb_strtolower(trim($validated['pertanyaan']));
+        $duplikatQuery = Soal::where('id_quiz', $validated['id_quiz'])
+            ->where(function ($q) use ($pertanyaanLower) {
+                $q->whereRaw('LOWER(TRIM(pertanyaan)) = ?', [$pertanyaanLower]);
+            });
+
+        if ($ignoreSoalId) {
+            $duplikatQuery->where('id_soal', '!=', $ignoreSoalId);
+        }
+
+        if ($duplikatQuery->exists()) {
+            throw ValidationException::withMessages([
+                'pertanyaan' => 'Pertanyaan dengan teks yang sama sudah ada di quiz ini.',
+            ]);
+        }
 
         $type = (int) $validated['id_jenis_soal'];
         $choices = [];
@@ -166,6 +194,7 @@ class SoalController extends Controller
         } else {
             $correctLabel = $validated['correct_choice'] ?? '';
             $seenLabels = [];
+            $seenTexts = [];
             $correctText = null;
 
             foreach ($validated['pilihan'] ?? [] as $choice) {
@@ -181,6 +210,15 @@ class SoalController extends Controller
                     ]);
                 }
                 $seenLabels[] = $label;
+
+                $textKey = mb_strtolower($text);
+                if (in_array($textKey, $seenTexts, true)) {
+                    throw ValidationException::withMessages([
+                        'pilihan' => 'Teks pilihan jawaban tidak boleh sama dalam satu soal.',
+                    ]);
+                }
+                $seenTexts[] = $textKey;
+
                 $isCorrect = $label === $correctLabel;
                 $choices[] = ['label' => $label, 'teks_pilihan' => $text, 'is_correct' => $isCorrect];
                 if ($isCorrect) {
@@ -209,6 +247,8 @@ class SoalController extends Controller
                 'id_jenis_soal' => $type,
                 'pertanyaan' => $validated['pertanyaan'],
                 'jawaban_benar' => $answer,
+                'poin' => $validated['poin'] ?? 10,
+                'durasi_detik' => $validated['durasi_detik'] ?? 20,
             ],
             'pilihan' => $choices,
         ];
@@ -226,7 +266,7 @@ class SoalController extends Controller
     // Menghapus soal dari database.
     public function destroy($id)
     {
-        $soal = Soal::findOrFail($id);
+        $soal = Soal::where('id_soal', $id)->orWhere('kode_soal', $id)->firstOrFail();
 
         if ($soal->foto_soal && Storage::disk('public')->exists($soal->foto_soal)) {
             Storage::disk('public')->delete($soal->foto_soal);

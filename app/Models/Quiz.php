@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Quiz extends Model
 {
@@ -17,6 +18,7 @@ class Quiz extends Model
     ];
 
     protected $fillable = [
+        'kode_quiz',
         'judul',
         'id_tipequiz',
         'id_tingkatquiz',
@@ -61,5 +63,29 @@ class Quiz extends Model
     {
         return $this->waktu_kadaluarsa !== null
             && now()->greaterThanOrEqualTo($this->waktu_kadaluarsa);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($quiz) {
+            if (\Illuminate\Support\Facades\Schema::hasTable($quiz->getTable()) && !\Illuminate\Support\Facades\Schema::hasColumn($quiz->getTable(), 'kode_quiz')) {
+                return;
+            }
+
+            if (empty($quiz->kode_quiz)) {
+                do {
+                    $code = 'QZ-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+                } while (static::where('kode_quiz', $code)->exists());
+
+                $quiz->kode_quiz = $code;
+            }
+        });
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'kode_quiz';
     }
 }

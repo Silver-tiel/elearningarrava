@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Soal extends Model
 {
@@ -45,5 +46,41 @@ class Soal extends Model
     public function pilihanSoal()
     {
         return $this->hasMany(PilihanSoal::class, 'id_soal', 'id_soal');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($soal) {
+            if (\Illuminate\Support\Facades\Schema::hasTable($soal->getTable()) && !\Illuminate\Support\Facades\Schema::hasColumn($soal->getTable(), 'kode_soal')) {
+                return;
+            }
+
+            if (empty($soal->kode_soal)) {
+                $quizKode = null;
+                if ($soal->relationLoaded('quiz') && $soal->quiz && !empty($soal->quiz->kode_quiz)) {
+                    $quizKode = $soal->quiz->kode_quiz;
+                } elseif (!empty($soal->id_quiz)) {
+                    $quiz = Quiz::find($soal->id_quiz);
+                    $quizKode = $quiz && !empty($quiz->kode_quiz) ? $quiz->kode_quiz : null;
+                }
+
+                $prefix = 'SL-' . ($quizKode ?: ('QZ-' . strtoupper(Str::random(4)))) . '-';
+                
+                $seq = 1;
+                do {
+                    $code = $prefix . str_pad($seq, 2, '0', STR_PAD_LEFT);
+                    $seq++;
+                } while (static::where('kode_soal', $code)->exists());
+
+                $soal->kode_soal = $code;
+            }
+        });
+    }
+
+    public function getRouteKeyName()
+    {
+        return 'kode_soal';
     }
 }

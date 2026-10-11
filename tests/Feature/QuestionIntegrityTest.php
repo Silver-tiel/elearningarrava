@@ -30,6 +30,7 @@ class QuestionIntegrityTest extends TestCase
         });
         Schema::create('quiz', function (Blueprint $table) {
             $table->increments('id_quiz');
+            $table->string('kode_quiz')->nullable();
             $table->string('judul');
             $table->unsignedInteger('id_tipequiz')->default(1);
             $table->unsignedInteger('id_tingkatquiz')->default(1);
@@ -42,6 +43,7 @@ class QuestionIntegrityTest extends TestCase
         });
         Schema::create('soal', function (Blueprint $table) {
             $table->increments('id_soal');
+            $table->string('kode_soal')->nullable();
             $table->unsignedInteger('id_quiz');
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->unsignedInteger('id_jenis_soal')->nullable();

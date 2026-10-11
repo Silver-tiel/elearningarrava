@@ -27,6 +27,7 @@ class PendaftaranDuplicateTest extends TestCase
             $table->unsignedInteger('id_jenjang');
             $table->unsignedInteger('id_tipeuser');
             $table->foreign('id_jenjang')->references('id_jenjang')->on('jenjang');
+            $table->timestamps();
         });
 
         DB::table('jenjang')->insert([

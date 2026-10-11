@@ -221,6 +221,13 @@ class QuizPoinTidakBerulangTest extends TestCase
             ['id_tingkatquiz' => 3, 'nama_tingkat' => 'Sulit', 'created_at' => now(), 'updated_at' => now()],
         ]);
 
+        DB::table('jenis_soal')->insert([
+            'id_jenis_soal' => 1,
+            'nama_jenis_soal' => 'Pilihan Ganda',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $user = User::create([
             'nama' => 'Siswa Expired',
             'email' => 'siswa-expired@example.com',
@@ -280,14 +287,23 @@ class QuizPoinTidakBerulangTest extends TestCase
             'durasi_total_menit' => 1,
         ]);
 
+        Soal::create([
+            'id_quiz' => $quizBiasa->id_quiz,
+            'id_jenjang' => 1,
+            'id_jenis_soal' => 1,
+            'pertanyaan' => 'Pertanyaan berwaktu',
+            'jawaban_benar' => 'A',
+            'poin' => 10,
+        ]);
+
         $attemptKey = 'quiz_attempt.' . $user->id_user . '.' . $quizBiasa->id_quiz;
         $this->get(route('siswa.quiz.kerjakan', $quizBiasa->id_quiz))->assertOk();
         $this->assertNotNull(session($attemptKey));
         $this->assertSame('biasa', $quizBiasa->mode_pengerjaan);
         $this->assertSame(1, $quizBiasa->durasi_total_menit);
 
-        $this->travel(61)->seconds();
-        $this->assertGreaterThan(60, now()->timestamp - (int) session($attemptKey));
+        $this->travel(76)->seconds();
+        $this->assertGreaterThan(75, now()->timestamp - (int) session($attemptKey));
         $this->post(route('siswa.quiz.submit', $quizBiasa->id_quiz), ['jawaban' => []])
             ->assertRedirect(route('siswa.quiz'))
             ->assertSessionHasErrors('quiz');
