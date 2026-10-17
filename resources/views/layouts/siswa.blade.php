@@ -13,6 +13,7 @@
     @stack('styles')
 </head>
 <body class="bg-[#F8FAFC] text-slate-800 antialiased">
+    @include('components.page-loader')
 
     <div class="flex min-h-screen">
 

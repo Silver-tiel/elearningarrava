@@ -15,6 +15,27 @@
     <h1 class="text-[20px] font-bold text-slate-800">Ruang Quiz Interaktif</h1>
 @endsection
 
+@push('styles')
+<style>
+    @keyframes bounce-in {
+        0% { transform: scale(0.85); opacity: 0; }
+        60% { transform: scale(1.03); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-bounce-in {
+        animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes loading-stripes {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(20%); }
+        100% { transform: translateX(100%); }
+    }
+    .animate-loading-bar {
+        animation: loading-stripes 1.8s infinite ease-in-out;
+    }
+</style>
+@endpush
+
 @section('content')
     @if(session('quiz_result'))
         <div id="quizResultModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -50,17 +71,45 @@
             </div>
         </div>
         
-        <style>
-            @keyframes bounce-in {
-                0% { transform: scale(0.8); opacity: 0; }
-                60% { transform: scale(1.05); opacity: 1; }
-                100% { transform: scale(1); opacity: 1; }
-            }
-            .animate-bounce-in {
-                animation: bounce-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            }
-        </style>
     @endif
+
+    {{-- Modal Loading Transisi & Hiburan saat Submit Quiz --}}
+    <div id="quizSubmitLoadingModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full text-center border-t-8 border-emerald-500 animate-bounce-in relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-100 rounded-full blur-2xl pointer-events-none opacity-60"></div>
+            <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-indigo-100 rounded-full blur-2xl pointer-events-none opacity-60"></div>
+
+            <div class="relative w-20 h-20 mx-auto mb-5">
+                <div class="absolute inset-0 rounded-full bg-emerald-200 animate-ping opacity-60"></div>
+                <div class="relative w-20 h-20 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30 text-4xl">
+                    <span id="quizLoadingIcon" class="animate-bounce">🚀</span>
+                </div>
+            </div>
+            
+            <h3 id="quizLoadingTitle" class="text-xl font-extrabold text-slate-800 mb-1.5">
+                Menyimpan Jawabanmu...
+            </h3>
+            <p id="quizLoadingSubtitle" class="text-xs text-slate-500 mb-5 font-medium leading-relaxed">
+                Mohon tunggu sebentar, sistem sedang memverifikasi jawaban dan menghitung perolehan skor...
+            </p>
+
+            {{-- Progress Bar Animasi Berjalan --}}
+            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-6 relative">
+                <div class="bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 h-full w-full rounded-full animate-loading-bar"></div>
+            </div>
+
+            {{-- Kartu Edukasi / Hiburan Trivia --}}
+            <div class="bg-gradient-to-br from-indigo-50/80 to-blue-50/80 rounded-2xl p-4 border border-indigo-100/80 text-left">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <span class="text-base">💡</span>
+                    <span class="text-[11px] font-black uppercase tracking-wider text-indigo-700">Tahukah Kamu?</span>
+                </div>
+                <p id="quizTriviaText" class="text-xs text-slate-600 leading-relaxed font-medium">
+                    "Otak manusia memiliki sekitar 86 miliar neuron yang selalu siap menyerap hal-hal baru!"
+                </p>
+            </div>
+        </div>
+    </div>
 
     <div class="px-6 py-6 max-w-7xl mx-auto">
         @if($errors->has('quiz'))
@@ -299,6 +348,55 @@
             totalTimer = setInterval(updateTotalTimer, 1000);
         } else {
             quizNavigation.hidden = true;
+        }
+
+        const educationalTrivia = [
+            "Otak manusia memiliki sekitar 86 miliar neuron yang aktif membentuk koneksi baru saat kamu belajar hal baru!",
+            "Istirahat 5 menit setelah belajar 25 menit (Teknik Pomodoro) melipatgandakan daya ingat dan fokusmu.",
+            "Menjelaskan materi kuis dengan kata-katamu sendiri dapat meningkatkan pemahaman konsep hingga 85%.",
+            "Otak mengonsumsi sekitar 20% dari seluruh energi tubuh meskipun beratnya hanya 2% dari bobot badanmu.",
+            "Mencoba menjawab soal melatih 'retrieval practice', metode terbukti paling efektif untuk mengingat jangka panjang.",
+            "Tidur cukup setelah belajar membantu otak menyortir dan mengunci informasi ke dalam memori permanen."
+        ];
+
+        let isQuizSubmitting = false;
+
+        function showQuizSubmitModal() {
+            if (isQuizSubmitting) return;
+            isQuizSubmitting = true;
+
+            const modal = document.getElementById('quizSubmitLoadingModal');
+            const triviaText = document.getElementById('quizTriviaText');
+            const submitBtn = document.querySelector('#quiz-submit-controls button[type="submit"]');
+
+            if (triviaText && educationalTrivia.length > 0) {
+                const randomIndex = Math.floor(Math.random() * educationalTrivia.length);
+                triviaText.textContent = `"${educationalTrivia[randomIndex]}"`;
+            }
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+            }
+
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            if (window.PageLoader) {
+                window.PageLoader.start();
+            }
+        }
+
+        if (quizForm) {
+            quizForm.addEventListener('submit', function (e) {
+                if (isPreview) {
+                    e.preventDefault();
+                    return;
+                }
+                showQuizSubmitModal();
+            });
         }
 
         if (questionPanels.length > 0) showQuestion(0);
