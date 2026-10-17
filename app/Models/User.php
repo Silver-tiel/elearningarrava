@@ -19,6 +19,8 @@ class User extends Authenticatable
         'password',
         'nisn',
         'nomor_hp',
+        'kelas',
+        'asal_sekolah',
         'id_tipeuser',
         'id_jenjang',
         'total_poin',

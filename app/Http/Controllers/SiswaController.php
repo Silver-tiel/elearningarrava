@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\HasilQuizModul;
+use App\Models\Jenjang;
 use App\Models\Modul;
+use App\Models\PencapaianUser;
 use App\Models\Quiz;
 use App\Models\TingkatQuiz;
 use App\Models\User;
@@ -668,37 +670,62 @@ class SiswaController extends Controller
 
     public function profile()
     {
-        $user = auth()->user();
-        return view('siswa.profil_siswa', compact('user'));
+        $user = auth()->user()->load('jenjang');
+        $jenjangs = Jenjang::orderBy('nama_tipe')->get();
+        $scoreSummary = HasilQuizModul::query()
+            ->where('id_user', $user->id_user)
+            ->selectRaw('COUNT(*) as jumlah_kuis, COALESCE(SUM(total_poin), 0) as total_poin, COALESCE(SUM(poin_didapat), 0) as poin_didapat')
+            ->first();
+        $averageScore = (int) $scoreSummary->total_poin > 0
+            ? (int) round($scoreSummary->poin_didapat / $scoreSummary->total_poin * 100)
+            : null;
+        $achievements = PencapaianUser::query()
+            ->where('id_user', $user->id_user)
+            ->orderByDesc('waktu_pencapaian')
+            ->take(4)
+            ->get();
+
+        return view('siswa.profil_siswa', compact(
+            'user',
+            'jenjangs',
+            'scoreSummary',
+            'averageScore',
+            'achievements'
+        ));
     }
 
     public function updateProfile(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
 
-        // Validasi input tanpa mengizinkan perubahan email
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'no_hp' => 'nullable|string|max:20',
-            'kelas' => 'nullable|string|max:50',
-            'avatar' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        $validated = $request->validate([
+            'nama' => ['required', 'string', 'min:2', 'max:255'],
+            'nisn' => [
+                'required',
+                'string',
+                'digits:10',
+                \Illuminate\Validation\Rule::unique('user', 'nisn')->ignore($user->id_user, 'id_user'),
+            ],
+            'nomor_hp' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
+            'kelas' => ['nullable', 'string', 'max:50'],
+            'asal_sekolah' => ['nullable', 'string', 'max:255'],
+            'id_jenjang' => ['nullable', 'exists:jenjang,id_jenjang'],
+            'foto_profil' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
-        $user->name = $request->name;
-        $user->no_hp = $request->no_hp;
-        $user->kelas = $request->kelas;
+        $oldPhoto = $user->foto_profil;
+        $user->fill(collect($validated)->except('foto_profil')->all());
 
-        // Proses unggah foto profil jika ada
-        if ($request->hasFile('avatar')) {
-            if ($user->avatar && Storage::exists($user->avatar)) {
-                Storage::delete($user->avatar);
-            }
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = Storage::url($path);
+        if ($request->hasFile('foto_profil')) {
+            $user->foto_profil = $request->file('foto_profil')->store('profil-siswa', 'public');
         }
 
         $user->save();
 
-        return redirect()->back()->with('success', 'Profil berhasil diperbarui!');
+        if ($oldPhoto && $request->hasFile('foto_profil')) {
+            Storage::disk('public')->delete($oldPhoto);
+        }
+
+        return redirect()->route('siswa.profil')->with('success', 'Profil berhasil diperbarui.');
     }
 }

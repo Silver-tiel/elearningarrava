@@ -16,6 +16,10 @@ class PencapaianUser extends Model
         'waktu_pencapaian',
     ];
 
+    protected $casts = [
+        'waktu_pencapaian' => 'datetime',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class, 'id_user', 'id_user');

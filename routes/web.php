@@ -97,7 +97,7 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'role:siswa'])->grou
     Route::post('/quiz/{quiz}/submit', [SiswaController::class, 'submitQuiz'])->name('quiz.submit');
 
     Route::get('/profil', [SiswaController::class, 'profile'])->name('profil');
-    Route::put('/profil/update', [SiswaController::class, 'updateProfil'])->name('profil.update');
+    Route::put('/profil/update', [SiswaController::class, 'updateProfile'])->name('profil.update');
 });
 
 // Profil guru (hanya untuk guru yang login)

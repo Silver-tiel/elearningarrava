@@ -1,521 +1,355 @@
-<div class="min-h-screen bg-slate-100 p-6 font-sans text-slate-800">
+@extends('layouts.siswa')
 
-    {{-- Topbar / Header --}}
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-slate-800">
-            Dashboard Utama
-        </h1>
+@section('title', 'Profil Pengguna - eBooks')
 
-        <div class="flex items-center gap-4">
-
-            {{-- Language Selector --}}
-            <div class="flex items-center gap-1 text-sm text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
-                <i class="fa-solid font-bold text-base">🌐</i>
-                <span class="font-medium">ID</span>
-                <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
-            </div>
-
-            {{-- User Profile --}}
-            <button
-                onclick="openEditModal()"
-                class="flex items-center gap-3 bg-white p-1.5 pr-4 rounded-full border border-slate-200 hover:bg-slate-50 transition"
-            >
-                <img
-                    src="{{ auth()->user()->avatar
-                        ? asset('storage/' . auth()->user()->avatar)
-                        : 'https://ui-avatars.com/api/?name=' . urlencode(auth()->user()->name) }}"
-                    alt="Avatar"
-                    class="w-10 h-10 rounded-full object-cover"
-                >
-
-                <div class="text-left">
-                    <h4 class="text-sm font-bold leading-tight text-slate-800">
-                        {{ auth()->user()->name }}
-                    </h4>
-
-                    <p class="text-xs text-slate-500">
-                        {{ auth()->user()->kelas }}
-                    </p>
-                </div>
-            </button>
-
+@section('header')
+    <div class="flex items-center justify-between gap-4">
+        <h1 class="text-lg font-bold text-slate-800">Profil Pengguna</h1>
+        <div class="hidden w-full max-w-xs items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-400 md:flex">
+            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
+            </svg>
+            <span>Cari materi, tugas, atau kelas...</span>
         </div>
     </div>
+@endsection
 
-
-    {{-- Main Content --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {{-- Left & Middle Column --}}
-        <div class="lg:col-span-2 space-y-6">
-
-            {{-- Banner Welcome --}}
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white relative overflow-hidden shadow-lg shadow-blue-500/10 flex justify-between items-center">
-
-                <div class="max-w-md z-10">
-
-                    <h2 class="text-2xl font-bold mb-2">
-                        Halo, {{ auth()->user()->name }}! 👋
-                    </h2>
-
+@section('content')
+    <div class="min-h-full bg-slate-100 px-4 py-6 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+            @if (session('success'))
+                <div role="status" class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                    {{ session('success') }}
                 </div>
-
-                <div class="hidden sm:block z-10">
-                    <img
-                        src="{{ asset('images/banner-illustration.png') }}"
-                        alt="Ilustrasi"
-                        class="w-36 h-36 object-contain rounded-xl"
-                    >
-                </div>
-
-            </div>
-
-
-            {{-- Stat Cards --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-                {{-- Streak --}}
-                <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-
-                    <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                        Hari Streak
-                    </span>
-
-                    <h3 class="text-xl font-extrabold text-slate-800 mt-1">
-                        {{ auth()->user()->streak }} Hari
-                    </h3>
-
-                    <span class="inline-block mt-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-[11px] font-semibold rounded">
-                        Konsisten belajar!
-                    </span>
-
-                </div>
-
-
-                {{-- XP Hari Ini --}}
-                <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-
-                    <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                        Poin XP
-                    </span>
-
-                    <h3 class="text-xl font-extrabold text-slate-800 mt-1">
-                        +{{ $total_poin }} XP
-                    </h3>
-
-                    <span class="inline-block mt-2 text-blue-600 text-[11px] font-semibold">
-                        XP diperoleh hari ini
-                    </span>
-
-                </div>
-
-
-                {{-- Persentase Belajar --}}
-                <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-
-                    <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                        Persentase Belajar
-                    </span>
-
-                    <h3 class="text-xl font-extrabold text-slate-800 mt-1">
-                        {{ $progressPercentage }}%
-                    </h3>
-
-                    <span class="inline-block mt-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[11px] font-semibold rounded">
-                        Sangat baik
-                    </span>
-
-                </div>
-
-
-                {{-- Total XP --}}
-                <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm">
-
-                    <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                        Total XP Akumulatif
-                    </span>
-
-                    <h3 class="text-xl font-extrabold text-slate-800 mt-1">
-                        {{ number_format(auth()->user()->total_xp) }} XP
-                    </h3>
-
-                    <span class="inline-block mt-2 text-rose-500 text-[11px] font-semibold">
-                        Level {{ auth()->user()->level }} • Smart Learner
-                    </span>
-
-                </div>
-
-            </div>
-
-
-            {{-- Progress Pembelajaran --}}
-            @if($currentCourse)
-
-                <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
-
-                    <div class="flex items-center gap-4 w-full">
-
-                        <div class="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                            <i class="fa-solid fa-book-open text-xl"></i>
-                        </div>
-
-                        <div class="w-full">
-
-                            <div class="flex justify-between items-center mb-1">
-
-                                <h4 class="font-bold text-slate-800">
-                                    {{ $currentCourse->nama_matpel }}
-                                </h4>
-
-                                <span class="text-xs font-semibold text-blue-600">
-                                    Materi: {{ $currentCourse->materi_aktif }}
-                                </span>
-
-                            </div>
-
-                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden my-1">
-
-                                <div
-                                    class="bg-blue-600 h-full rounded-full"
-                                    style="width: {{ $currentCourse->progress }}%"
-                                ></div>
-
-                            </div>
-
-                            <div class="flex justify-between text-xs text-slate-400 font-medium">
-
-                                <span>
-                                    Progress:
-                                    Bab {{ $currentCourse->bab_aktif }}
-                                    dari {{ $currentCourse->total_bab }}
-                                </span>
-
-                                <span>
-                                    {{ $currentCourse->progress }}% Selesai
-                                </span>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
             @endif
 
+            @if ($errors->any())
+                <div role="alert" class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <p class="font-semibold">Profil belum dapat disimpan:</p>
+                    <ul class="mt-1 list-inside list-disc">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
-            {{-- Modul Pelajaran --}}
-            <div>
+            <div class="grid items-start gap-5 xl:grid-cols-12">
+                <div class="space-y-5 xl:col-span-7">
+                    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                        <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
+                            <div class="h-20 w-20 shrink-0">
+                                @if ($user->foto_profil && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->foto_profil))
+                                    <img
+                                        src="{{ \Illuminate\Support\Facades\Storage::url($user->foto_profil) }}"
+                                        alt="Foto profil {{ $user->nama }}"
+                                        class="h-20 w-20 rounded-full object-cover ring-4 ring-slate-100"
+                                    >
+                                @else
+                                    <div class="flex h-20 w-20 items-center justify-center rounded-full bg-blue-50 text-2xl font-bold text-blue-600 ring-4 ring-slate-100">
+                                        {{ strtoupper(substr($user->nama ?? 'S', 0, 1)) }}
+                                    </div>
+                                @endif
+                            </div>
 
-                <h3 class="text-base font-bold text-slate-800 mb-3">
-                    Modul Pelajaran
-                </h3>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                    @forelse($moduls as $modul)
-
-                        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-
-                            <div>
-
-                                <div class="flex justify-between items-center mb-3">
-
-                                    <span class="p-2 bg-slate-50 rounded-lg text-blue-600">
-                                        <i class="fa-solid fa-file-lines"></i>
-                                    </span>
-
-                                    <span class="text-xs text-slate-400 font-medium">
-                                        {{ $modul->jam }}
-                                    </span>
-
+                            <div class="min-w-0 flex-1">
+                                <h2 class="truncate text-xl font-bold text-slate-900">{{ $user->nama }}</h2>
+                                <p class="mt-1 break-all text-sm text-slate-400">
+                                    {{ $user->email }}
+                                    <span class="px-1">•</span>
+                                    {{ $user->jenjang->nama_tipe ?? 'Siswa Terdaftar' }}
+                                </p>
+                                <div class="mt-3 flex flex-wrap items-center gap-3">
+                                    <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">Siswa</span>
+                                    <button
+                                        type="button"
+                                        data-open-profile-modal
+                                        class="text-xs font-semibold text-blue-600 underline underline-offset-2 hover:text-blue-700"
+                                    >
+                                        Edit Profil Saya
+                                    </button>
                                 </div>
-
-                                <h4 class="font-bold text-slate-800">
-                                    {{ $modul->nama_pelajaran }}
-                                </h4>
-
-                                <p class="text-xs text-slate-400 mt-0.5">
-                                    Tutor: {{ $modul->nama_tutor }}
-                                </p>
-
                             </div>
-
-                            <a
-                                href="{{ route('materi.show', $modul->id) }}"
-                                class="mt-4 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg text-center transition"
-                            >
-                                Mulai Belajar
-                            </a>
-
                         </div>
+                    </section>
 
-                    @empty
-
-                        <p class="text-xs text-slate-400 col-span-3">
-                            Tidak ada jadwal modul hari ini.
-                        </p>
-
-                    @endforelse
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        {{-- Right Column --}}
-        <div class="space-y-6">
-
-            {{-- Latihan Soal --}}
-            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-
-                <h3 class="text-base font-bold text-slate-800 mb-4">
-                    Latihan Soal
-                </h3>
-
-                <div class="space-y-4">
-
-                    @forelse($latihanSoal as $item)
-
-                        <div class="flex justify-between items-center border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-
+                    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                        <div class="mb-5 flex items-center justify-between gap-3">
                             <div>
-
-                                <h5 class="text-sm font-bold text-slate-800">
-                                    {{ $item->judul }}
-                                </h5>
-
-                                <p class="text-xs text-slate-400">
-                                    {{ $item->mata_pelajaran }}
-                                </p>
-
+                                <h2 class="text-base font-bold text-slate-900">Data Pribadi &amp; Sekolah</h2>
+                                <p class="mt-1 text-sm text-slate-500">Informasi yang tersimpan pada akun Anda.</p>
                             </div>
-
-                            <span class="px-2 py-1 text-[10px] font-semibold rounded-full {{ $item->sisa_waktu_color }}">
-                                {{ $item->sisa_waktu }}
-                            </span>
-
+                            <button
+                                type="button"
+                                data-open-profile-modal
+                                class="shrink-0 rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-600 transition hover:bg-blue-50"
+                            >
+                                Edit Profil
+                            </button>
                         </div>
 
-                    @empty
-
-                        <p class="text-xs text-slate-400">
-                            Belum ada latihan soal.
-                        </p>
-
-                    @endforelse
-
+                        <dl class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <dt class="text-xs font-semibold text-slate-400">Email</dt>
+                                <dd class="mt-1 break-all text-sm font-medium text-slate-700">{{ $user->email }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-semibold text-slate-400">Nomor Induk Siswa Nasional (NISN)</dt>
+                                <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->nisn ?: 'Belum diisi' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-semibold text-slate-400">Jenjang Akademik</dt>
+                                <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->jenjang->nama_tipe ?? 'Belum diisi' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-semibold text-slate-400">Kelas Akademik</dt>
+                                <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->kelas ?: 'Belum diisi' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-semibold text-slate-400">Asal Sekolah</dt>
+                                <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->asal_sekolah ?: 'Belum diisi' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-semibold text-slate-400">Nomor Handphone</dt>
+                                <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->nomor_hp ?: 'Belum diisi' }}</dd>
+                            </div>
+                        </dl>
+                    </section>
                 </div>
 
-            </div>
-
-
-            {{-- Pencapaian Terbaru --}}
-            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-
-                <h3 class="text-base font-bold text-slate-800 mb-4">
-                    Pencapaian Terbaru
-                </h3>
-
-                <div class="grid grid-cols-3 gap-2 text-center">
-
-                    @forelse($achievements as $badge)
-
-                        <div class="flex flex-col items-center">
-
-                            <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-xl mb-1">
-                                {!! $badge->icon !!}
+                <div class="space-y-5 xl:col-span-5">
+                    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                        <h2 class="text-base font-bold text-slate-900">Statistik Capaian Akademik</h2>
+                        <div class="mt-5 flex items-center gap-4 border-b border-slate-100 pb-5">
+                            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-50 text-lg font-bold text-blue-600">
+                                {{ $averageScore !== null ? $averageScore . '%' : '—' }}
                             </div>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800">Rata-rata nilai kuis</p>
+                                @if ($averageScore !== null)
+                                    <p class="mt-1 text-xs leading-relaxed text-slate-400">
+                                        Berdasarkan {{ $scoreSummary->jumlah_kuis }} hasil kuis yang tersimpan.
+                                    </p>
+                                @else
+                                    <p class="mt-1 text-xs leading-relaxed text-slate-400">Nilai akan tampil setelah Anda menyelesaikan kuis.</p>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between text-sm">
+                            <span class="text-slate-500">Kuis diselesaikan</span>
+                            <span class="font-semibold text-slate-700">{{ $scoreSummary->jumlah_kuis }}</span>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between text-sm">
+                            <span class="text-slate-500">Total poin</span>
+                            <span class="font-semibold text-slate-700">{{ number_format($scoreSummary->poin_didapat) }}</span>
+                        </div>
+                    </section>
 
-                            <span class="text-xs font-semibold text-slate-700">
-                                {{ $badge->nama }}
-                            </span>
-
+                    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                        <div class="flex items-center justify-between gap-3">
+                            <h2 class="text-base font-bold text-slate-900">Tanda Penghargaan Milikmu</h2>
+                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">{{ $achievements->count() }}</span>
                         </div>
 
-                    @empty
-
-                        <p class="text-xs text-slate-400 col-span-3">
-                            Belum ada badge.
-                        </p>
-
-                    @endforelse
-
+                        @if ($achievements->isNotEmpty())
+                            <ul class="mt-4 grid gap-3 sm:grid-cols-2">
+                                @foreach ($achievements as $achievement)
+                                    <li class="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50 p-3">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-500" aria-hidden="true">
+                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3z"/>
+                                            </svg>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="truncate text-xs font-semibold text-slate-700">{{ $achievement->nama }}</p>
+                                            <p class="mt-0.5 text-[11px] text-slate-400">{{ $achievement->waktu_pencapaian?->format('d M Y') }}</p>
+                                        </div>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <p class="mt-4 rounded-xl bg-slate-50 px-4 py-5 text-center text-sm text-slate-400">
+                                Belum ada penghargaan. Terus belajar untuk meraih pencapaian pertamamu!
+                            </p>
+                        @endif
+                    </section>
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
-</div>
-
-
-{{-- MODAL EDIT PROFIL --}}
-<div
-    id="editProfileModal"
-    class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4"
->
-
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
-
-        <div class="flex justify-between items-center mb-4">
-
-            <h3 class="text-lg font-bold text-slate-800">
-                Edit Profil Siswa
-            </h3>
-
-            <button
-                onclick="closeEditModal()"
-                class="text-slate-400 hover:text-slate-600"
-            >
-                &times;
+    <dialog
+        id="profile-edit-modal"
+        aria-labelledby="profile-modal-title"
+        data-open-on-load="{{ $errors->any() ? 'true' : 'false' }}"
+        class="m-auto max-h-[90vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50"
+    >
+        <div class="sticky top-0 z-10 flex items-start justify-between border-b border-slate-100 bg-white px-5 py-4 sm:px-6">
+            <div>
+                <h2 id="profile-modal-title" class="text-lg font-bold text-slate-900">Edit Profil</h2>
+                <p class="mt-1 text-sm text-slate-500">Perbarui data pribadi dan sekolah Anda.</p>
+            </div>
+            <button type="button" data-close-profile-modal aria-label="Tutup popup" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="m6 6 12 12M18 6 6 18"/>
+                </svg>
             </button>
-
         </div>
 
-
-        <form
-            action="{{ route('siswa.profil.update') }}"
-            method="POST"
-            enctype="multipart/form-data"
-            class="space-y-4"
-        >
-
+        <form action="{{ route('siswa.profil.update') }}" method="POST" enctype="multipart/form-data" class="space-y-4 bg-white px-5 py-5 sm:px-6">
             @csrf
             @method('PUT')
 
-
-            {{-- Foto Profil --}}
             <div>
-
-                <label class="block text-xs font-semibold text-slate-600 mb-1">
-                    Foto Profil
-                </label>
-
+                <label for="foto_profil" class="mb-1.5 block text-xs font-semibold text-slate-500">Foto Profil</label>
                 <input
+                    id="foto_profil"
+                    name="foto_profil"
                     type="file"
-                    name="avatar"
-                    class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    class="block w-full rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600 file:mr-4 file:border-0 file:bg-blue-50 file:px-4 file:py-2.5 file:text-xs file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
                 >
-
+                <p class="mt-1 text-xs text-slate-400">JPG, PNG, atau WebP. Maksimal 2 MB.</p>
+                @error('foto_profil')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
             </div>
 
-
-            {{-- Nama Lengkap --}}
             <div>
-
-                <label class="block text-xs font-semibold text-slate-600 mb-1">
-                    Nama Lengkap
-                </label>
-
+                <label for="nama" class="mb-1.5 block text-xs font-semibold text-slate-500">Nama Lengkap</label>
                 <input
+                    id="nama"
+                    name="nama"
                     type="text"
-                    name="name"
-                    value="{{ auth()->user()->name }}"
+                    value="{{ old('nama', $user->nama) }}"
+                    autocomplete="name"
                     required
-                    class="w-full text-sm border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
+                    maxlength="255"
+                    class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 >
-
+                @error('nama')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
             </div>
 
-
-            {{-- Email --}}
             <div>
-
-                <label class="block text-xs font-semibold text-slate-400 mb-1">
-                    Email (Tidak dapat diubah)
-                </label>
-
+                <label for="email" class="mb-1.5 block text-xs font-semibold text-slate-500">Email</label>
                 <input
+                    id="email"
                     type="email"
-                    value="{{ auth()->user()->email }}"
+                    value="{{ $user->email }}"
                     readonly
-                    class="w-full text-sm border border-slate-200 bg-slate-100 text-slate-500 rounded-lg p-2.5 cursor-not-allowed focus:outline-none"
+                    aria-describedby="email-readonly-note"
+                    class="h-11 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3.5 text-sm text-slate-500"
                 >
-
+                <p id="email-readonly-note" class="mt-1 text-xs text-slate-400">Email terikat ke akun dan tidak dapat diubah.</p>
             </div>
 
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="nisn" class="mb-1.5 block text-xs font-semibold text-slate-500">Nomor Induk Siswa Nasional (NISN)</label>
+                    <input
+                        id="nisn"
+                        name="nisn"
+                        type="text"
+                        inputmode="numeric"
+                        pattern="[0-9]{10}"
+                        value="{{ old('nisn', $user->nisn) }}"
+                        maxlength="10"
+                        required
+                        autocomplete="off"
+                        class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    >
+                    <p class="mt-1 text-xs text-slate-400">NISN dapat diubah, harus terdiri dari 10 angka, dan belum digunakan akun lain.</p>
+                    @error('nisn')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                </div>
 
-            {{-- Nomor HP --}}
+                <div>
+                    <label for="id_jenjang" class="mb-1.5 block text-xs font-semibold text-slate-500">Jenjang Akademik</label>
+                    <select
+                        id="id_jenjang"
+                        name="id_jenjang"
+                        class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    >
+                        <option value="">Pilih jenjang</option>
+                        @foreach ($jenjangs as $jenjang)
+                            <option value="{{ $jenjang->id_jenjang }}" @selected((string) old('id_jenjang', $user->id_jenjang) === (string) $jenjang->id_jenjang)>
+                                {{ $jenjang->nama_tipe }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('id_jenjang')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="kelas" class="mb-1.5 block text-xs font-semibold text-slate-500">Kelas Akademik</label>
+                    <input
+                        id="kelas"
+                        name="kelas"
+                        type="text"
+                        value="{{ old('kelas', $user->kelas) }}"
+                        maxlength="50"
+                        placeholder="Contoh: Kelas 10"
+                        class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    >
+                    @error('kelas')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                </div>
+
+                <div>
+                    <label for="asal_sekolah" class="mb-1.5 block text-xs font-semibold text-slate-500">Asal Sekolah</label>
+                    <input
+                        id="asal_sekolah"
+                        name="asal_sekolah"
+                        type="text"
+                        value="{{ old('asal_sekolah', $user->asal_sekolah) }}"
+                        maxlength="255"
+                        placeholder="Nama sekolah"
+                        class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    >
+                    @error('asal_sekolah')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                </div>
+            </div>
+
             <div>
-
-                <label class="block text-xs font-semibold text-slate-600 mb-1">
-                    Nomor HP / WhatsApp
-                </label>
-
+                <label for="nomor_hp" class="mb-1.5 block text-xs font-semibold text-slate-500">Nomor Handphone</label>
                 <input
-                    type="text"
-                    name="no_hp"
-                    value="{{ auth()->user()->no_hp }}"
-                    placeholder="08xxxxxxxxxx"
-                    class="w-full text-sm border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
+                    id="nomor_hp"
+                    name="nomor_hp"
+                    type="tel"
+                    inputmode="tel"
+                    value="{{ old('nomor_hp', $user->nomor_hp) }}"
+                    maxlength="20"
+                    class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 >
-
+                @error('nomor_hp')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
             </div>
 
-
-            {{-- Kelas --}}
-            <div>
-
-                <label class="block text-xs font-semibold text-slate-600 mb-1">
-                    Kelas
-                </label>
-
-                <input
-                    type="text"
-                    name="kelas"
-                    value="{{ auth()->user()->kelas }}"
-                    placeholder="Siswa Kelas 10"
-                    class="w-full text-sm border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-blue-500"
-                >
-
-            </div>
-
-
-            {{-- Tombol --}}
-            <div class="flex justify-end gap-2 pt-2">
-
-                <button
-                    type="button"
-                    onclick="closeEditModal()"
-                    class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-200"
-                >
+            <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
+                <button type="button" data-close-profile-modal class="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
                     Batal
                 </button>
-
-                <button
-                    type="submit"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700"
-                >
+                <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200">
                     Simpan Perubahan
                 </button>
-
             </div>
-
         </form>
+    </dialog>
+@endsection
 
-    </div>
+@push('scripts')
+    <script>
+        const profileEditModal = document.getElementById('profile-edit-modal');
 
-</div>
+        document.querySelectorAll('[data-open-profile-modal]').forEach((button) => {
+            button.addEventListener('click', () => profileEditModal.showModal());
+        });
 
+        document.querySelectorAll('[data-close-profile-modal]').forEach((button) => {
+            button.addEventListener('click', () => profileEditModal.close());
+        });
 
-<script>
+        profileEditModal.addEventListener('click', (event) => {
+            if (event.target === profileEditModal) profileEditModal.close();
+        });
 
-    function openEditModal() {
-        document
-            .getElementById('editProfileModal')
-            .classList.remove('hidden');
-    }
-
-    function closeEditModal() {
-        document
-            .getElementById('editProfileModal')
-            .classList.add('hidden');
-    }
-
-</script>
+        if (profileEditModal.dataset.openOnLoad === 'true') profileEditModal.showModal();
+    </script>
+@endpush
