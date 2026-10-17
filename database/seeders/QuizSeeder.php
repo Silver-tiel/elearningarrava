@@ -25,8 +25,13 @@ class QuizSeeder extends Seeder
             foreach ($jenjangIds as $idJenjang) {
                 // Buat 3 Quiz per Jenjang
                 for ($i = 1; $i <= 3; $i++) {
+                    $judulQuiz = 'Quiz Latihan ' . $i . ' - ' . $namaJenjang[$idJenjang];
+                    if (Quiz::where('judul', $judulQuiz)->exists()) {
+                        continue;
+                    }
+
                     $quiz = Quiz::create([
-                        'judul' => 'Quiz Latihan ' . $i . ' - ' . $namaJenjang[$idJenjang],
+                        'judul' => $judulQuiz,
                         'id_jenjang' => $idJenjang,
                         'id_tipequiz' => 1,
                         'id_tingkatquiz' => $i, // 1: Mudah, 2: Sedang, 3: Sulit

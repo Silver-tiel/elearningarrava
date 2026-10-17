@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('quiz', function (Blueprint $table) {
             $table->increments('id_quiz');
+            $table->string('kode_quiz')->unique();
             $table->string('judul');
             $table->unsignedInteger('id_tipequiz');
             $table->unsignedInteger('id_tingkatquiz');
@@ -18,6 +19,8 @@ return new class extends Migration
             $table->string('hasil_quiz')->nullable();
             $table->string('proggressQuiz')->nullable();
             $table->string('foto_quiz')->nullable();
+            $table->string('mode_pengerjaan')->default('wayground');
+            $table->unsignedSmallInteger('durasi_total_menit')->nullable();
             $table->timestamps();
 
             $table->foreign('id_tipequiz')->references('id_tipequiz')->on('tipequiz');

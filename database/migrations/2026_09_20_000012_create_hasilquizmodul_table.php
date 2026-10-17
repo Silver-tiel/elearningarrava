@@ -14,6 +14,7 @@ return new class extends Migration
             $table->unsignedInteger('id_quiz');
             $table->integer('total_poin')->default(0);
             $table->integer('poin_didapat')->default(0);
+            $table->boolean('is_lulus')->default(false);
             $table->dateTime('waktu_dapat');
             $table->timestamps();
 

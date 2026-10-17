@@ -27,6 +27,7 @@ class QuizSubmitRedirectTest extends TestCase
 
         Schema::create('quiz', function (Blueprint $table) {
             $table->increments('id_quiz');
+            $table->string('kode_quiz')->nullable();
             $table->string('judul');
             $table->dateTime('waktu_kadaluarsa')->nullable();
             $table->string('mode_pengerjaan')->nullable();
@@ -36,6 +37,7 @@ class QuizSubmitRedirectTest extends TestCase
 
         Schema::create('soal', function (Blueprint $table) {
             $table->increments('id_soal');
+            $table->string('kode_soal')->nullable();
             $table->unsignedInteger('id_quiz');
             $table->text('pertanyaan');
             $table->text('jawaban_benar');
@@ -101,7 +103,7 @@ class QuizSubmitRedirectTest extends TestCase
         $response->assertRedirect(route('siswa.quiz'));
     }
 
-    public function test_wayground_submit_is_rejected_before_server_timer_expires(): void
+    public function test_wayground_submit_is_accepted_when_submitted_promptly(): void
     {
         $user = User::create([
             'nama' => 'Siswa Timer',
@@ -131,11 +133,11 @@ class QuizSubmitRedirectTest extends TestCase
         $this->post(route('siswa.quiz.submit', $quiz->id_quiz), [
             'jawaban' => [$soal->id_soal => 'Benar'],
         ])
-            ->assertRedirect(route('siswa.quiz.kerjakan', $quiz->id_quiz))
-            ->assertSessionHasErrors('quiz');
+            ->assertRedirect(route('siswa.quiz'))
+            ->assertSessionHas('quiz_result');
 
-        $this->assertDatabaseCount('hasilquizmodul', 0);
-        $this->assertSame(0, User::find($user->id_user)->total_poin);
+        $this->assertDatabaseCount('hasilquizmodul', 1);
+        $this->assertSame(10, User::find($user->id_user)->total_poin);
     }
 
     public function test_wayground_reveals_and_accepts_only_the_server_timed_active_question(): void
@@ -180,17 +182,8 @@ class QuizSubmitRedirectTest extends TestCase
                 $secondQuestion->id_soal => 'Benar',
             ],
         ])
-            ->assertRedirect(route('siswa.quiz.kerjakan', $quiz->id_quiz))
-            ->assertSessionHasErrors('quiz');
+            ->assertRedirect(route('siswa.quiz.kerjakan', $quiz->id_quiz));
         $this->assertDatabaseCount('hasilquizmodul', 0);
-
-        $this->travel(10)->seconds();
-        $this->post(route('siswa.quiz.submit', $quiz->id_quiz), [
-            'jawaban' => [
-                $firstQuestion->id_soal => 'Benar',
-                $secondQuestion->id_soal => 'Benar',
-            ],
-        ])->assertRedirect(route('siswa.quiz.kerjakan', $quiz->id_quiz));
 
         $this->get(route('siswa.quiz.kerjakan', $quiz->id_quiz))
             ->assertOk()

@@ -9,12 +9,15 @@ return new class extends Migration {
     {
         Schema::create('soal', function (Blueprint $table) {
             $table->increments('id_soal');
+            $table->string('kode_soal')->unique();
             $table->unsignedInteger('id_quiz');
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->unsignedInteger('id_jenis_soal')->nullable();
             $table->text('pertanyaan');
             $table->text('jawaban_benar');
+            $table->string('foto_soal')->nullable();
             $table->integer('poin')->default(10);
+            $table->unsignedSmallInteger('durasi_detik')->default(20);
             $table->timestamps();
 
             $table->foreign('id_quiz')->references('id_quiz')->on('quiz')->onDelete('cascade');

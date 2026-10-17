@@ -8,6 +8,7 @@ use App\Models\PilihanSoal;
 use App\Models\Jenjang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 // Controller khusus untuk mengelola data kuis pembelajaran.
@@ -56,7 +57,7 @@ class QuizController extends Controller
 
     public function edit($id)
     {
-        $quiz = Quiz::with('soal.pilihanSoal')->findOrFail($id);
+        $quiz = Quiz::with('soal.pilihanSoal')->where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
         $jenjangList = Jenjang::all();
         $tingkatQuizList = \App\Models\TingkatQuiz::all();
         $savedQuestions = $quiz->soal->map(function (Soal $soal) {
@@ -76,11 +77,15 @@ class QuizController extends Controller
             })->all();
 
             return [
+                'id_soal' => $soal->id_soal,
+                'kode_soal' => $soal->kode_soal,
                 'jenis_soal' => $type,
                 'pertanyaan' => $soal->pertanyaan,
                 'timer' => (string) ($soal->durasi_detik ?? 20),
                 'poin' => (int) ($soal->poin ?? 10),
                 'jawaban_singkat' => $type === 'isian_singkat' ? $soal->jawaban_benar : '',
+                'foto_soal' => $soal->foto_soal,
+                'foto_url' => $soal->foto_soal ? asset('storage/' . $soal->foto_soal) : null,
                 'pilihan' => $choices,
             ];
         })->values()->all();
@@ -113,6 +118,7 @@ class QuizController extends Controller
             'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
             'soal_foto' => 'nullable|array',
             'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ], $this->quizValidationMessages());
         $questions = $this->normalizeQuestionAnswers($validated['soal']);
 
@@ -141,11 +147,14 @@ class QuizController extends Controller
             // 2. Simpan setiap soal
             foreach ($questions as $index => $soalData) {
                 $fotoPath = null;
+                $foto = null;
                 if ($request->hasFile("soal_foto.$index")) {
                     $foto = $request->file("soal_foto.$index");
-                    if ($foto->isValid()) {
-                        $fotoPath = $foto->store('soal/foto', 'public');
-                    }
+                } elseif ($request->hasFile("soal.$index.foto_soal")) {
+                    $foto = $request->file("soal.$index.foto_soal");
+                }
+                if ($foto && $foto->isValid()) {
+                    $fotoPath = $foto->store('soal/foto', 'public');
                 }
 
                 $soal = Soal::create([
@@ -175,7 +184,7 @@ class QuizController extends Controller
 
     public function update(Request $request, $id)
     {
-        $quiz = Quiz::findOrFail($id);
+        $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
         $validated = $request->validate([
             'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
             'id_jenjang' => 'required|integer',
@@ -196,8 +205,37 @@ class QuizController extends Controller
             'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
             'soal_foto' => 'nullable|array',
             'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ], $this->quizValidationMessages());
         $questions = $this->normalizeQuestionAnswers($validated['soal']);
+
+        // Cegah unggah gambar yang sama persis pada soal yang sama saat edit kuis
+        $oldSoalList = $quiz->soal()->orderBy('id_soal')->get();
+        $fotoErrors = [];
+        foreach ($oldSoalList as $idx => $oldSoal) {
+            if ($oldSoal->foto_soal && Storage::disk('public')->exists($oldSoal->foto_soal)) {
+                $uploadedFoto = null;
+                $inputKey = null;
+                if ($request->hasFile("soal_foto.$idx")) {
+                    $uploadedFoto = $request->file("soal_foto.$idx");
+                    $inputKey = "soal_foto.$idx";
+                } elseif ($request->hasFile("soal.$idx.foto_soal")) {
+                    $uploadedFoto = $request->file("soal.$idx.foto_soal");
+                    $inputKey = "soal.$idx.foto_soal";
+                }
+
+                if ($uploadedFoto && $uploadedFoto->isValid()) {
+                    $oldPath = Storage::disk('public')->path($oldSoal->foto_soal);
+                    if (file_exists($oldPath) && md5_file($uploadedFoto->getRealPath()) === md5_file($oldPath)) {
+                        $fotoErrors[$inputKey] = 'Foto yang diunggah sama dengan foto yang sudah terpasang pada soal ini.';
+                    }
+                }
+            }
+        }
+
+        if ($fotoErrors) {
+            throw ValidationException::withMessages($fotoErrors);
+        }
 
         DB::transaction(function () use ($quiz, $validated, $questions, $request) {
             $quiz->update([
@@ -218,10 +256,19 @@ class QuizController extends Controller
 
     public function destroy($id)
     {
-        $quiz = Quiz::findOrFail($id);
+        $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
 
         DB::transaction(function () use ($quiz) {
-            $questionIds = $quiz->soal()->pluck('id_soal');
+            $oldSoalList = $quiz->soal()->get();
+            $questionIds = $oldSoalList->pluck('id_soal');
+            
+            // Hapus semua foto soal terkait dari storage
+            foreach ($oldSoalList as $oldSoal) {
+                if ($oldSoal->foto_soal && Storage::disk('public')->exists($oldSoal->foto_soal)) {
+                    Storage::disk('public')->delete($oldSoal->foto_soal);
+                }
+            }
+
             PilihanSoal::whereIn('id_soal', $questionIds)->delete();
             $quiz->soal()->delete();
             $quiz->delete();
@@ -232,25 +279,28 @@ class QuizController extends Controller
 
     private function replaceQuestions(Quiz $quiz, array $questions, int $idJenjang, Request $request = null): void
     {
-        $oldSoalList = $quiz->soal()->get();
+        $oldSoalList = $quiz->soal()->orderBy('id_soal')->get();
+        $oldPhotosByIndex = $oldSoalList->mapWithKeys(fn($item, $idx) => [$idx => $item->foto_soal]);
         
         $questionIds = $oldSoalList->pluck('id_soal');
         PilihanSoal::whereIn('id_soal', $questionIds)->delete();
         $quiz->soal()->delete();
-        
-        // Hapus foto lama agar tidak menumpuk di storage (opsional)
-        // foreach ($oldSoalList as $oldSoal) {
-        //     if ($oldSoal->foto_soal && \Illuminate\Support\Facades\Storage::disk('public')->exists($oldSoal->foto_soal)) {
-        //         \Illuminate\Support\Facades\Storage::disk('public')->delete($oldSoal->foto_soal);
-        //     }
-        // }
 
         foreach ($questions as $index => $questionData) {
-            $fotoPath = null;
-            if ($request && $request->hasFile("soal_foto.$index")) {
-                $foto = $request->file("soal_foto.$index");
-                if ($foto->isValid()) {
-                    $fotoPath = $foto->store('soal/foto', 'public');
+            $fotoPath = $oldPhotosByIndex[$index] ?? null;
+            if ($request) {
+                $foto = null;
+                if ($request->hasFile("soal_foto.$index")) {
+                    $foto = $request->file("soal_foto.$index");
+                } elseif ($request->hasFile("soal.$index.foto_soal")) {
+                    $foto = $request->file("soal.$index.foto_soal");
+                }
+                if ($foto && $foto->isValid()) {
+                    $newPath = $foto->store('soal/foto', 'public');
+                    if ($fotoPath && $fotoPath !== $newPath && Storage::disk('public')->exists($fotoPath)) {
+                        Storage::disk('public')->delete($fotoPath);
+                    }
+                    $fotoPath = $newPath;
                 }
             }
 
@@ -280,8 +330,20 @@ class QuizController extends Controller
     {
         $normalized = [];
         $errors = [];
+        $seenQuestions = [];
 
         foreach ($questions as $index => $question) {
+            $pertanyaanRaw = trim((string) ($question['pertanyaan'] ?? ''));
+            $pertanyaanKey = mb_strtolower($pertanyaanRaw);
+
+            if ($pertanyaanKey !== '') {
+                if (in_array($pertanyaanKey, $seenQuestions, true)) {
+                    $errors["soal.$index.pertanyaan"] = 'Pertanyaan tidak boleh sama dengan soal lain dalam quiz ini.';
+                } else {
+                    $seenQuestions[] = $pertanyaanKey;
+                }
+            }
+
             $type = $question['jenis_soal'];
             $choices = [];
             $correctChoice = null;
@@ -315,6 +377,7 @@ class QuizController extends Controller
             } else {
                 $submittedChoices = array_values($question['pilihan'] ?? []);
                 $seenLabels = [];
+                $seenTexts = [];
                 foreach ($submittedChoices as $choice) {
                     $label = strtoupper(trim($choice['label']));
                     $text = trim($choice['teks_pilihan'] ?? '');
@@ -331,6 +394,13 @@ class QuizController extends Controller
                         $errors["soal.$index.pilihan"] = 'Label pilihan jawaban tidak boleh berulang.';
                     }
                     $seenLabels[] = $label;
+
+                    $textKey = mb_strtolower($text);
+                    if (in_array($textKey, $seenTexts, true)) {
+                        $errors["soal.$index.pilihan"] = 'Teks pilihan jawaban tidak boleh sama dalam satu soal.';
+                    }
+                    $seenTexts[] = $textKey;
+
                     $choices[] = ['label' => $label, 'teks_pilihan' => $text, 'is_correct' => $isCorrect];
                     if ($isCorrect) {
                         $correctChoice = $choices[array_key_last($choices)];

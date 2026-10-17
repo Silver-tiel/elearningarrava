@@ -26,15 +26,19 @@ class AdminQuizPreviewTest extends TestCase
 
         Schema::create('quiz', function (Blueprint $table) {
             $table->increments('id_quiz');
+            $table->string('kode_quiz')->nullable();
             $table->string('judul');
             $table->timestamps();
         });
 
         Schema::create('soal', function (Blueprint $table) {
             $table->increments('id_soal');
+            $table->string('kode_soal')->nullable();
             $table->unsignedInteger('id_quiz');
             $table->text('pertanyaan');
             $table->text('jawaban_benar');
+            $table->string('foto_soal')->nullable();
+            $table->unsignedSmallInteger('durasi_detik')->default(20);
             $table->timestamps();
         });
 

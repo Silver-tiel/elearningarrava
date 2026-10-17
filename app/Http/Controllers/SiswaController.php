@@ -425,7 +425,7 @@ class SiswaController extends Controller
 
     public function hasilQuiz($id_quiz, $id_hasil)
     {
-        $quiz = Quiz::findOrFail($id_quiz);
+        $quiz = Quiz::where('id_quiz', $id_quiz)->orWhere('kode_quiz', $id_quiz)->firstOrFail();
 
         $hasil = HasilQuizModul::where('id_hasil', $id_hasil)
             ->where('id_quiz', $quiz->id_quiz)
@@ -447,12 +447,18 @@ class SiswaController extends Controller
 
     // Memuat quiz dengan urutan soal dan pilihan yang deterministik.
     // Wayground bergantung pada indeks soal, jadi urutannya tidak boleh berubah.
-    private function muatQuiz($id_quiz): Quiz
+    private function muatQuiz($identifier): Quiz
     {
         return Quiz::with([
             'soal' => fn($q) => $q->orderBy('id_soal'),
             'soal.pilihanSoal' => fn($q) => $q->orderBy('label'),
-        ])->findOrFail($id_quiz);
+        ])->where(function ($q) use ($identifier) {
+            if (is_numeric($identifier)) {
+                $q->where('id_quiz', $identifier)->orWhere('kode_quiz', $identifier);
+            } else {
+                $q->where('kode_quiz', $identifier);
+            }
+        })->firstOrFail();
     }
 
     // Hanya siswa dengan jenjang yang sama yang boleh mengerjakan kuis.
