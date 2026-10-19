@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Throwable;
 
 class SiswaController extends Controller
@@ -710,37 +711,41 @@ class SiswaController extends Controller
     }
 
     public function updateProfile(Request $request)
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        $validated = $request->validate([
-            'nama' => ['required', 'string', 'min:2', 'max:255'],
-            'nisn' => [
-                'required',
-                'string',
-                'digits:10',
-                \Illuminate\Validation\Rule::unique('user', 'nisn')->ignore($user->id_user, 'id_user'),
-            ],
-            'nomor_hp' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
-            'kelas' => ['nullable', 'string', 'max:50'],
-            'asal_sekolah' => ['nullable', 'string', 'max:255'],
-            'id_jenjang' => ['nullable', 'exists:jenjang,id_jenjang'],
-            'foto_profil' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-        ]);
+    $validated = $request->validate([
+        'username' => [
+            'required',
+            'string',
+            'max:50',
+            Rule::unique('user', 'username')->ignore($user->id_user, 'id_user'),
+        ],
+        'nomor_hp'     => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
+        'kelas'        => ['nullable', 'string', 'max:50'],
+        'asal_sekolah' => ['nullable', 'string', 'max:255'],
+        'foto_profil'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        // 'nama', 'nisn', dan 'id_jenjang' sengaja dihapus dari validasi 
+        // karena bersifat readonly di view siswa dan tidak dikirim via form.
+    ]);
 
-        $oldPhoto = $user->foto_profil;
-        $user->fill(collect($validated)->except('foto_profil')->all());
+    $oldPhoto = $user->foto_profil;
 
-        if ($request->hasFile('foto_profil')) {
-            $user->foto_profil = $request->file('foto_profil')->store('profil-siswa', 'public');
-        }
+    // Isi atribut selain foto_profil
+    $user->fill(collect($validated)->except('foto_profil')->all());
 
-        $user->save();
-
-        if ($oldPhoto && $request->hasFile('foto_profil')) {
-            Storage::disk('public')->delete($oldPhoto);
-        }
-
-        return redirect()->route('siswa.profil')->with('success', 'Profil berhasil diperbarui.');
+    // Handle upload foto profil jika ada berkas baru
+    if ($request->hasFile('foto_profil')) {
+        $user->foto_profil = $request->file('foto_profil')->store('profil-siswa', 'public');
     }
+
+    $user->save();
+
+    // Hapus foto profil lama jika ada foto baru yang berhasil diunggah
+    if ($oldPhoto && $request->hasFile('foto_profil')) {
+        Storage::disk('public')->delete($oldPhoto);
+    }
+
+    return redirect()->route('siswa.profil')->with('success', 'Profil berhasil diperbarui.');
+}
 }

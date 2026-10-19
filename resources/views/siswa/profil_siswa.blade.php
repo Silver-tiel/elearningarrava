@@ -90,6 +90,10 @@
 
                         <dl class="grid gap-4 sm:grid-cols-2">
                             <div>
+                                <dt class="text-xs font-semibold text-slate-400">Username</dt>
+                                <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->username ?: 'Belum diisi' }}</dd>
+                            </div>
+                            <div>
                                 <dt class="text-xs font-semibold text-slate-400">Email</dt>
                                 <dd class="mt-1 break-all text-sm font-medium text-slate-700">{{ $user->email }}</dd>
                             </div>
@@ -100,10 +104,6 @@
                             <div>
                                 <dt class="text-xs font-semibold text-slate-400">Jenjang Akademik</dt>
                                 <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->jenjang->nama_tipe ?? 'Belum diisi' }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-xs font-semibold text-slate-400">Kelas Akademik</dt>
-                                <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->kelas ?: 'Belum diisi' }}</dd>
                             </div>
                             <div>
                                 <dt class="text-xs font-semibold text-slate-400">Asal Sekolah</dt>
@@ -223,18 +223,32 @@
             </div>
 
             <div>
+                <label for="username" class="mb-1.5 block text-xs font-semibold text-slate-500">Username</label>
+                <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    value="{{ old('username', $user->username) }}"
+                    autocomplete="username"
+                    required
+                    maxlength="50"
+                    placeholder="Masukkan username"
+                    class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                >
+                @error('username')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+            </div>
+
+            <div>
                 <label for="nama" class="mb-1.5 block text-xs font-semibold text-slate-500">Nama Lengkap</label>
                 <input
                     id="nama"
-                    name="nama"
                     type="text"
-                    value="{{ old('nama', $user->nama) }}"
-                    autocomplete="name"
-                    required
-                    maxlength="255"
-                    class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    value="{{ $user->nama }}"
+                    readonly
+                    aria-describedby="nama-readonly-note"
+                    class="h-11 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3.5 text-sm text-slate-500"
                 >
-                @error('nama')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                <p id="nama-readonly-note" class="mt-1 text-xs text-slate-400">Nama terikat ke akun dan tidak dapat diubah.</p>
             </div>
 
             <div>
@@ -255,65 +269,26 @@
                     <label for="nisn" class="mb-1.5 block text-xs font-semibold text-slate-500">Nomor Induk Siswa Nasional (NISN)</label>
                     <input
                         id="nisn"
-                        name="nisn"
                         type="text"
-                        inputmode="numeric"
-                        pattern="[0-9]{10}"
-                        value="{{ old('nisn', $user->nisn) }}"
-                        maxlength="10"
-                        required
-                        autocomplete="off"
-                        class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                        value="{{ $user->nisn }}"
+                        readonly
+                        aria-describedby="nisn-readonly-note"
+                        class="h-11 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3.5 text-sm text-slate-500"
                     >
-                    <p class="mt-1 text-xs text-slate-400">NISN dapat diubah, harus terdiri dari 10 angka, dan belum digunakan akun lain.</p>
-                    @error('nisn')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                    <p id="nisn-readonly-note" class="mt-1 text-xs text-slate-400">NISN terikat ke data siswa dan tidak dapat diubah.</p>
                 </div>
 
                 <div>
                     <label for="id_jenjang" class="mb-1.5 block text-xs font-semibold text-slate-500">Jenjang Akademik</label>
-                    <select
+                    <input
                         id="id_jenjang"
-                        name="id_jenjang"
-                        class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                    >
-                        <option value="">Pilih jenjang</option>
-                        @foreach ($jenjangs as $jenjang)
-                            <option value="{{ $jenjang->id_jenjang }}" @selected((string) old('id_jenjang', $user->id_jenjang) === (string) $jenjang->id_jenjang)>
-                                {{ $jenjang->nama_tipe }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('id_jenjang')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
-                </div>
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-2">
-                <div>
-                    <label for="kelas" class="mb-1.5 block text-xs font-semibold text-slate-500">Kelas Akademik</label>
-                    <input
-                        id="kelas"
-                        name="kelas"
                         type="text"
-                        value="{{ old('kelas', $user->kelas) }}"
-                        maxlength="50"
-                        placeholder="Contoh: Kelas 10"
-                        class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                        value="{{ $user->jenjang->nama_tipe ?? 'Belum ditentukan' }}"
+                        readonly
+                        aria-describedby="jenjang-readonly-note"
+                        class="h-11 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3.5 text-sm text-slate-500"
                     >
-                    @error('kelas')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
-                </div>
-
-                <div>
-                    <label for="asal_sekolah" class="mb-1.5 block text-xs font-semibold text-slate-500">Asal Sekolah</label>
-                    <input
-                        id="asal_sekolah"
-                        name="asal_sekolah"
-                        type="text"
-                        value="{{ old('asal_sekolah', $user->asal_sekolah) }}"
-                        maxlength="255"
-                        placeholder="Nama sekolah"
-                        class="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                    >
-                    @error('asal_sekolah')<p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+                    <p id="jenjang-readonly-note" class="mt-1 text-xs text-slate-400">Jenjang akademik dikelola oleh pihak sekolah/sistem.</p>
                 </div>
             </div>
 
