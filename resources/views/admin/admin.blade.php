@@ -34,7 +34,7 @@
     </div>
 
     <!-- STATS CARDS (DATA DINAMIS DATABASE) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
 
         <!-- Card 1: Total Siswa -->
         <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
@@ -102,6 +102,22 @@
                 <h3 class="text-2xl font-bold text-gray-900 mt-0.5">{{ number_format($quizCount ?? 0) }}</h3>
             </div>
         </div>
+
+        <!-- Card 5: Total Penghargaan -->
+        <a href="{{ route('admin.achievement') }}" class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between hover:border-rose-200 hover:shadow-md transition group">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                    </svg>
+                </div>
+                <span class="text-[11px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">Kelola →</span>
+            </div>
+            <div class="mt-4">
+                <p class="text-xs font-medium text-gray-400">Total Penghargaan</p>
+                <h3 class="text-2xl font-bold text-gray-900 mt-0.5">{{ number_format($achievementCount ?? 0) }}</h3>
+            </div>
+        </a>
 
     </div>
 

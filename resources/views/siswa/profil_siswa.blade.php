@@ -154,15 +154,24 @@
                         @if ($achievements->isNotEmpty())
                             <ul class="mt-4 grid gap-3 sm:grid-cols-2">
                                 @foreach ($achievements as $achievement)
-                                    <li class="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50 p-3">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-500" aria-hidden="true">
-                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3z"/>
-                                            </svg>
-                                        </span>
+                                    <li class="flex min-w-0 items-center gap-3 rounded-xl bg-slate-50 p-3 transition hover:bg-slate-100/70">
+                                        @php
+                                            $gambarAch = $achievement->achievement?->gambar_achivement;
+                                        @endphp
+                                        @if ($gambarAch && \Illuminate\Support\Facades\Storage::disk('public')->exists($gambarAch))
+                                            <img src="{{ \Illuminate\Support\Facades\Storage::url($gambarAch) }}"
+                                                 alt="{{ $achievement->nama }}"
+                                                 class="h-10 w-10 shrink-0 rounded-xl object-cover ring-2 ring-amber-100 shadow-sm bg-white">
+                                        @else
+                                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-500 shadow-sm" aria-hidden="true">
+                                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3z"/>
+                                                </svg>
+                                            </span>
+                                        @endif
                                         <div class="min-w-0">
-                                            <p class="truncate text-xs font-semibold text-slate-700">{{ $achievement->nama }}</p>
-                                            <p class="mt-0.5 text-[11px] text-slate-400">{{ $achievement->waktu_pencapaian?->format('d M Y') }}</p>
+                                            <p class="truncate text-xs font-semibold text-slate-800">{{ $achievement->nama }}</p>
+                                            <p class="mt-0.5 text-[11px] text-slate-400">Diraih: {{ $achievement->waktu_pencapaian?->format('d M Y') }}</p>
                                         </div>
                                     </li>
                                 @endforeach

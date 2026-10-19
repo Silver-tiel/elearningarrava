@@ -50,5 +50,8 @@ class User extends Authenticatable
         return $this->belongsTo(TipeUser::class, 'id_tipeuser');
     }
 
-    
+    public function pencapaianUsers(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PencapaianUser::class, 'id_user', 'id_user');
+    }
 }
