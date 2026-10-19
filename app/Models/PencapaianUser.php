@@ -12,6 +12,7 @@ class PencapaianUser extends Model
 
     protected $fillable = [
         'id_user',
+        'id_achievement',
         'nama',
         'waktu_pencapaian',
     ];
@@ -23,5 +24,10 @@ class PencapaianUser extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'id_user', 'id_user');
+    }
+
+    public function achievement()
+    {
+        return $this->belongsTo(Achievement::class, 'id_achievement', 'id_achievement');
     }
 }

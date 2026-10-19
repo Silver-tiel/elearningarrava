@@ -6,6 +6,7 @@ use App\Models\HasilQuizModul;
 use App\Models\Jenjang;
 use App\Models\Modul;
 use App\Models\PencapaianUser;
+use App\Models\Achievement;
 use App\Models\Quiz;
 use App\Models\TingkatQuiz;
 use App\Models\User;
@@ -406,6 +407,10 @@ class SiswaController extends Controller
             return [$hasil, $poinDiberikan];
         });
 
+        if ($poinDiberikan > 0) {
+            Achievement::syncForUser($user->fresh());
+        }
+
         // Percobaan selesai: bersihkan kedua jenis attempt.
         session()->forget([
             $this->attemptSessionKey($quiz),
@@ -677,6 +682,10 @@ class SiswaController extends Controller
     public function profile()
     {
         $user = auth()->user()->load('jenjang');
+
+        // Sinkronkan capaian penghargaan siswa sesuai poin yang diperoleh
+        Achievement::syncForUser($user);
+
         $jenjangs = Jenjang::orderBy('nama_tipe')->get();
         $scoreSummary = HasilQuizModul::query()
             ->where('id_user', $user->id_user)
@@ -685,10 +694,10 @@ class SiswaController extends Controller
         $averageScore = (int) $scoreSummary->total_poin > 0
             ? (int) round($scoreSummary->poin_didapat / $scoreSummary->total_poin * 100)
             : null;
-        $achievements = PencapaianUser::query()
+        $achievements = PencapaianUser::with('achievement')
             ->where('id_user', $user->id_user)
             ->orderByDesc('waktu_pencapaian')
-            ->take(4)
+            ->take(6)
             ->get();
 
         return view('siswa.profil_siswa', compact(

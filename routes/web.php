@@ -8,9 +8,11 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SoalController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\GuruController;
+use App\Http\Controllers\AchievementController;
 use App\Models\Modul;
 use App\Models\Quiz;
 use App\Models\User;
+use App\Models\Achievement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -73,12 +75,13 @@ Route::get('/admin', function () {
     }
 
     return view('admin.admin', [
-        'siswaCount'   => User::where('id_tipeuser', 3)->count(),
-        'guruCount'    => User::where('id_tipeuser', 2)->count(),
-        'modulCount'   => Modul::count(),
-        'quizCount'    => Quiz::count(),
-        'siswaTerbaru' => User::where('id_tipeuser', 3)->latest()->take(5)->get(),
-        'modulTerbaru' => Modul::with(['jenjang'])->latest()->take(5)->get(),
+        'siswaCount'       => User::where('id_tipeuser', 3)->count(),
+        'guruCount'        => User::where('id_tipeuser', 2)->count(),
+        'modulCount'       => Modul::count(),
+        'quizCount'        => Quiz::count(),
+        'achievementCount' => Achievement::count(),
+        'siswaTerbaru'     => User::where('id_tipeuser', 3)->latest()->take(5)->get(),
+        'modulTerbaru'     => Modul::with(['jenjang'])->latest()->take(5)->get(),
     ]);
 })->middleware('auth')->name('admin');
 
@@ -142,4 +145,13 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function 
     Route::get('/guru/{id}/edit', [GuruController::class, 'edit'])->name('admin.guru.edit');
     Route::put('/guru/{id}', [GuruController::class, 'update'])->name('admin.guru.update');
     Route::delete('/guru/{id}', [GuruController::class, 'destroy'])->name('admin.guru.destroy');
+
+    // Route Achievement / Penghargaan Siswa
+    Route::get('/achievement', [AchievementController::class, 'index'])->name('admin.achievement');
+    Route::get('/achievement/create', [AchievementController::class, 'create'])->name('admin.achievement.create');
+    Route::post('/achievement', [AchievementController::class, 'store'])->name('admin.achievement.store');
+    Route::get('/achievement/{id}/edit', [AchievementController::class, 'edit'])->name('admin.achievement.edit');
+    Route::put('/achievement/{id}', [AchievementController::class, 'update'])->name('admin.achievement.update');
+    Route::delete('/achievement/{id}', [AchievementController::class, 'destroy'])->name('admin.achievement.destroy');
+    Route::post('/achievement/{id}/sync', [AchievementController::class, 'sync'])->name('admin.achievement.sync');
 });
