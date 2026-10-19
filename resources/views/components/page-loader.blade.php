@@ -3,18 +3,53 @@
      style="background: linear-gradient(90deg, #4f46e5, #06b6d4, #10b981); box-shadow: 0 0 10px rgba(79, 70, 229, 0.7), 0 0 5px rgba(6, 182, 212, 0.5);">
 </div>
 
+{{-- Karakter yang bergerak bersamaan ujung bar loading --}}
+{{-- PANDUAN GANTI GAMBAR: Ubah src di tag <img> di bawah ini --}}
+<div id="global-page-loader-character" class="fixed top-[4px] left-0 pointer-events-none z-[999999] opacity-0 transition-all duration-300 ease-out will-change-[left,opacity]" style="left: 0%;">
+    <div class="loader-character-bob">
+        <img src="{{ asset('assets/foto_karakter/loading/silverwolfloading.png') }}" 
+             alt="Loading Character" 
+             class="w-8 h-auto [image-rendering:pixelated] drop-shadow-[0_2px_8px_rgba(79,70,229,0.5)]">
+    </div>
+</div>
+
+<style>
+    @keyframes loader-character-bob {
+        0%, 100% {
+            transform: translateY(0) rotate(0deg);
+        }
+        50% {
+            transform: translateY(5px) rotate(4deg);
+        }
+    }
+    .loader-character-bob {
+        animation: loader-character-bob 0.5s infinite ease-in-out;
+    }
+</style>
+
 <script>
     (function () {
         const loader = document.getElementById('global-page-loader');
+        const loaderChar = document.getElementById('global-page-loader-character');
         if (!loader) return;
 
         let progress = 0;
         let timer = null;
 
+        function updateCharPosition(val) {
+            if (!loaderChar) return;
+            // Gunakan clamp agar karakter tidak keluar dari batas layar kiri & kanan
+            loaderChar.style.left = `clamp(8px, calc(${val}% - 16px), calc(100% - 38px))`;
+        }
+
         function setProgress(val) {
             progress = Math.min(val, 95);
             loader.style.opacity = '1';
             loader.style.width = progress + '%';
+            if (loaderChar) {
+                loaderChar.style.opacity = '1';
+                updateCharPosition(progress);
+            }
         }
 
         function startLoader() {
@@ -23,6 +58,11 @@
             loader.style.transition = 'width 0.2s ease-out, opacity 0.2s ease';
             loader.style.opacity = '1';
             loader.style.width = progress + '%';
+            if (loaderChar) {
+                loaderChar.style.transition = 'left 0.2s ease-out, opacity 0.2s ease';
+                loaderChar.style.opacity = '1';
+                updateCharPosition(progress);
+            }
 
             timer = setInterval(() => {
                 if (progress < 60) {
@@ -31,16 +71,22 @@
                     progress += Math.floor(Math.random() * 5) + 2;
                 }
                 loader.style.width = progress + '%';
+                if (loaderChar) updateCharPosition(progress);
             }, 250);
         }
 
         function completeLoader() {
             if (timer) clearInterval(timer);
             loader.style.width = '100%';
+            if (loaderChar) {
+                loaderChar.style.left = 'calc(100% - 38px)';
+            }
             setTimeout(() => {
                 loader.style.opacity = '0';
+                if (loaderChar) loaderChar.style.opacity = '0';
                 setTimeout(() => {
                     loader.style.width = '0%';
+                    if (loaderChar) loaderChar.style.left = '0%';
                 }, 300);
             }, 150);
         }

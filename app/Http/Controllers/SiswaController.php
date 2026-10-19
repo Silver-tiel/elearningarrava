@@ -682,18 +682,24 @@ class SiswaController extends Controller
 
     public function profile()
     {
-        $user = auth()->user()->load('jenjang');
+        $user = auth()->user()->fresh()->load('jenjang');
 
         // Sinkronkan capaian penghargaan siswa sesuai poin yang diperoleh
         Achievement::syncForUser($user);
 
         $jenjangs = Jenjang::orderBy('nama_tipe')->get();
+        $hasIsLulus = \Illuminate\Support\Facades\Schema::hasColumn('hasilquizmodul', 'is_lulus');
+        $kuisLulusExpr = $hasIsLulus
+            ? 'COUNT(DISTINCT CASE WHEN is_lulus = 1 THEN id_quiz END) as kuis_lulus'
+            : 'COUNT(DISTINCT id_quiz) as kuis_lulus';
+
         $scoreSummary = HasilQuizModul::query()
             ->where('id_user', $user->id_user)
-            ->selectRaw('COUNT(*) as jumlah_kuis, COALESCE(SUM(total_poin), 0) as total_poin, COALESCE(SUM(poin_didapat), 0) as poin_didapat')
+            ->selectRaw("COUNT(*) as total_percobaan, {$kuisLulusExpr}, COUNT(*) as jumlah_kuis, COALESCE(SUM(total_poin), 0) as total_poin_maks, COALESCE(SUM(poin_didapat), 0) as poin_didapat")
             ->first();
-        $averageScore = (int) $scoreSummary->total_poin > 0
-            ? (int) round($scoreSummary->poin_didapat / $scoreSummary->total_poin * 100)
+
+        $averageScore = (int) ($scoreSummary->total_poin_maks ?? 0) > 0
+            ? (int) round($scoreSummary->poin_didapat / $scoreSummary->total_poin_maks * 100)
             : null;
         $achievements = PencapaianUser::with('achievement')
             ->where('id_user', $user->id_user)
