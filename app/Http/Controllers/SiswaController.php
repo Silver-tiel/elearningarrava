@@ -42,12 +42,17 @@ class SiswaController extends Controller
 
     public function dashboard(Request $request)
     {
+        $user = $request->user();
+        if ($user) {
+            Achievement::syncForUser($user);
+        }
+
         $modulCount = Modul::count();
         $quizCount = Quiz::count();
         $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->take(4)->get();
 
         return view('siswa.dashboard', [
-            'user' => $request->user(),
+            'user' => $user,
             'modulCount' => $modulCount,
             'quizCount' => $quizCount,
             'moduls' => $moduls,
@@ -378,6 +383,10 @@ class SiswaController extends Controller
         $totalSoal = $quiz->soal->count();
         $isLulus = $totalSoal > 0 && ($benar / $totalSoal) >= self::RASIO_LULUS;
 
+        // Simpan rank lama sebelum poin masuk untuk deteksi level-up
+        $oldRankInfo = $user->rank_tier;
+        $oldRankName = $oldRankInfo['current_rank'] ?? 'Pemula';
+
         // ---- Simpan hasil + beri poin secara atomik ----
         // Baris user dikunci supaya dua submit bersamaan tidak memberi poin ganda.
         [$hasil, $poinDiberikan] = DB::transaction(function () use ($user, $quiz, $totalPoinQuiz, $poinDidapat, $isLulus) {
@@ -409,7 +418,22 @@ class SiswaController extends Controller
         });
 
         if ($poinDiberikan > 0) {
-            Achievement::syncForUser($user->fresh());
+            $freshUser = $user->fresh();
+            Achievement::syncForUser($freshUser);
+
+            $newRankInfo = $freshUser->refreshRankTier();
+            $newRankName = $newRankInfo['current_rank'] ?? 'Pemula';
+
+            // Jika naik pangkat baru, simpan ke flash session agar modal animasi muncul
+            if ($newRankName !== $oldRankName && $newRankName !== 'Pemula') {
+                session()->flash('rank_up', [
+                    'old_rank' => $oldRankName,
+                    'new_rank' => $newRankName,
+                    'badge_url' => $newRankInfo['current_badge_url'],
+                    'poin' => (int) ($freshUser->total_poin ?? 0),
+                    'poin_diberikan' => $poinDiberikan,
+                ]);
+            }
         }
 
         // Percobaan selesai: bersihkan kedua jenis attempt.

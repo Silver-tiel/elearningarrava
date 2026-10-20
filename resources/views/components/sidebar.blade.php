@@ -6,15 +6,27 @@
     $role = $isAdmin ? 'admin' : 'siswa';
 @endphp
 
-<aside class="w-64 h-screen sticky top-0 bg-white border-r border-gray-100 flex flex-col justify-between p-4 shrink-0">
+<!-- Backdrop Gelap untuk Layar Kecil (Mobile) -->
+<div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0 pointer-events-none lg:hidden"></div>
+
+<aside id="mainSidebar" class="fixed inset-y-0 left-0 z-50 flex h-full w-64 -translate-x-full flex-col justify-between border-r border-gray-100 bg-white p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:static lg:h-screen lg:top-0 lg:translate-x-0 lg:shadow-none shrink-0">
     <!-- Top Section -->
     <div class="space-y-6">
-        <!-- Logo Brand -->
-        <div class="flex items-center gap-3 px-2">
-            <div class="bg-blue-600 text-white font-bold rounded-xl text-xl flex items-center justify-center w-10 h-10 shrink-0 shadow-md shadow-blue-500/20">
-                eB
+        <!-- Logo Brand & Tombol Close (Mobile) -->
+        <div class="flex items-center justify-between px-2">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 text-white font-bold rounded-xl text-xl flex items-center justify-center w-10 h-10 shrink-0 shadow-md shadow-blue-500/20">
+                    eB
+                </div>
+                <span class="text-xl font-bold text-gray-900 tracking-tight">eBooks</span>
             </div>
-            <span class="text-xl font-bold text-gray-900 tracking-tight">eBooks</span>
+
+            <!-- Tombol Tutup Sidebar di Layar Kecil -->
+            <button id="sidebarClose" type="button" class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition lg:hidden" aria-label="Tutup Menu">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
 
         <!-- Navigation Links -->
@@ -134,3 +146,59 @@
         </form>
     </div>
 </aside>
+
+<script>
+    (function() {
+        function initResponsiveSidebar() {
+            const sidebar = document.getElementById('mainSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const closeBtn = document.getElementById('sidebarClose');
+            const toggleBtns = document.querySelectorAll('[data-sidebar-toggle]');
+
+            if (!sidebar || !backdrop) return;
+
+            function openSidebar() {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('opacity-0', 'pointer-events-none');
+                backdrop.classList.add('opacity-100', 'pointer-events-auto');
+                document.body.classList.add('overflow-hidden', 'lg:overflow-auto');
+            }
+
+            function closeSidebar() {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+                backdrop.classList.add('opacity-0', 'pointer-events-none');
+                document.body.classList.remove('overflow-hidden', 'lg:overflow-auto');
+            }
+
+            toggleBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openSidebar();
+                });
+            });
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    closeSidebar();
+                });
+            }
+
+            backdrop.addEventListener('click', closeSidebar);
+
+            // Tutup sidebar jika layar di-resize ke desktop
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 1024) {
+                    closeSidebar();
+                }
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initResponsiveSidebar);
+        } else {
+            initResponsiveSidebar();
+        }
+    })();
+</script>
