@@ -33,6 +33,23 @@
     .animate-loading-bar {
         animation: loading-stripes 1.8s infinite ease-in-out;
     }
+    @keyframes quiz-char-track {
+        0% { left: 0%; transform: scaleX(1); }
+        48% { left: calc(100% - 36px); transform: scaleX(1); }
+        50% { left: calc(100% - 36px); transform: scaleX(-1); }
+        98% { left: 0%; transform: scaleX(-1); }
+        100% { left: 0%; transform: scaleX(1); }
+    }
+    .animate-quiz-char-track {
+        animation: quiz-char-track 3.6s infinite ease-in-out;
+    }
+    @keyframes quiz-char-bob {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-6px) rotate(4deg); }
+    }
+    .animate-quiz-char-bob {
+        animation: quiz-char-bob 0.5s infinite ease-in-out;
+    }
 </style>
 @endpush
 
@@ -93,9 +110,23 @@
                 Mohon tunggu sebentar, sistem sedang memverifikasi jawaban dan menghitung perolehan skor...
             </p>
 
-            {{-- Progress Bar Animasi Berjalan --}}
-            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-6 relative">
-                <div class="bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 h-full w-full rounded-full animate-loading-bar"></div>
+            {{-- Progress Bar Animasi Berjalan & Karakter Interaktif --}}
+            <div class="w-full mb-5 text-left">
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden relative shadow-inner">
+                    <div class="bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 h-full w-full rounded-full animate-loading-bar"></div>
+                </div>
+
+                {{-- Karakter yang bergerak bolak-balik bersamaan bar dengan efek memantul/bobbing --}}
+                {{-- PANDUAN GANTI GAMBAR: Ubah src pada tag <img> di bawah --}}
+                <div class="relative w-full h-8 mt-1.5 pointer-events-none select-none">
+                    <div class="absolute top-0 animate-quiz-char-track will-change-[left,transform]">
+                        <div class="animate-quiz-char-bob">
+                            <img src="{{ asset('assets/foto_karakter/loading/silverwolfloading.png') }}" 
+                                 alt="Quiz Loading Mascot" 
+                                 class="w-9 h-auto [image-rendering:pixelated] drop-shadow-[0_2px_6px_rgba(16,185,129,0.4)]">
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Kartu Edukasi / Hiburan Trivia --}}

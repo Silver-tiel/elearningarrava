@@ -12,5 +12,6 @@ class DatabaseSeeder extends Seeder
         $this->call(UserAwalSeeder::class);
         $this->call(QuizSeeder::class);
         $this->call(ModulSeeder::class);
+        $this->call(AchievementSeeder::class);
     }
 }

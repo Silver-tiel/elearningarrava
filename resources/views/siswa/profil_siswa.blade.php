@@ -137,11 +137,11 @@
                         </div>
                         <div class="mt-4 flex items-center justify-between text-sm">
                             <span class="text-slate-500">Kuis diselesaikan</span>
-                            <span class="font-semibold text-slate-700">{{ $scoreSummary->jumlah_kuis }}</span>
+                            <span class="font-semibold text-slate-700">{{ $scoreSummary->kuis_lulus ?? $scoreSummary->jumlah_kuis }}</span>
                         </div>
                         <div class="mt-3 flex items-center justify-between text-sm">
                             <span class="text-slate-500">Total poin</span>
-                            <span class="font-semibold text-slate-700">{{ number_format($scoreSummary->poin_didapat) }}</span>
+                            <span class="font-semibold text-slate-700">{{ number_format($user->total_poin ?? 0) }}</span>
                         </div>
                     </section>
 

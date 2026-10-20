@@ -24,6 +24,7 @@ class SiswaProfileTest extends TestCase
         Schema::create('user', function (Blueprint $table) {
             $table->increments('id_user');
             $table->string('nama');
+            $table->string('username', 50)->nullable()->unique();
             $table->string('email')->unique();
             $table->string('password');
             $table->string('nisn')->unique();
@@ -42,8 +43,10 @@ class SiswaProfileTest extends TestCase
         Schema::create('hasilquizmodul', function (Blueprint $table) {
             $table->increments('id_hasil');
             $table->unsignedInteger('id_user');
+            $table->unsignedInteger('id_quiz')->default(1);
             $table->integer('total_poin')->default(0);
             $table->integer('poin_didapat')->default(0);
+            $table->boolean('is_lulus')->default(false);
         });
 
         Schema::create('pencapaianuser', function (Blueprint $table) {
@@ -62,6 +65,7 @@ class SiswaProfileTest extends TestCase
 
         $student = User::create([
             'nama' => 'Nama Lama',
+            'username' => 'namalama',
             'email' => 'siswa@example.com',
             'password' => bcrypt('password123'),
             'nisn' => '0012345678',
@@ -73,6 +77,7 @@ class SiswaProfileTest extends TestCase
         $this->actingAs($student)
             ->put(route('siswa.profil.update'), [
                 'nama' => 'Nama Baru',
+                'username' => 'namabaru',
                 'nisn' => '0098765432',
                 'nomor_hp' => '08111111111',
                 'kelas' => 'Kelas 10',
@@ -86,8 +91,8 @@ class SiswaProfileTest extends TestCase
 
         $student->refresh();
 
-        $this->assertSame('Nama Baru', $student->nama);
-        $this->assertSame('0098765432', $student->nisn);
+        $this->assertSame('namabaru', $student->username);
+        $this->assertSame('08111111111', $student->nomor_hp);
         $this->assertSame('siswa@example.com', $student->email);
         $this->assertSame('Kelas 10', $student->kelas);
         $this->assertSame('SMA Negeri 1', $student->asal_sekolah);
@@ -97,13 +102,14 @@ class SiswaProfileTest extends TestCase
         $this->actingAs($student)
             ->get(route('siswa.profil'))
             ->assertOk()
-            ->assertSee('Nama Baru')
-            ->assertSee('Email terikat ke akun dan tidak dapat diubah.')
+            ->assertSee('namabaru')
+            ->assertSee('Email')
             ->assertSee('Simpan Perubahan')
             ->assertSeeHtml('data-open-on-load="false"');
 
         User::create([
             'nama' => 'Siswa Lain',
+            'username' => 'lain',
             'email' => 'lain@example.com',
             'password' => bcrypt('password123'),
             'nisn' => '0088888888',
@@ -114,18 +120,16 @@ class SiswaProfileTest extends TestCase
         $this->actingAs($student)
             ->from(route('siswa.profil'))
             ->put(route('siswa.profil.update'), [
-                'nama' => 'Nama Baru',
-                'nisn' => '0088888888',
+                'username' => 'lain', // Duplicate username should trigger error
                 'id_jenjang' => 1,
             ])
             ->assertRedirect(route('siswa.profil'))
-            ->assertSessionHasErrors('nisn');
+            ->assertSessionHasErrors('username');
 
         $this->get(route('siswa.profil'))
             ->assertOk()
-            ->assertSee('0088888888')
             ->assertSeeHtml('data-open-on-load="true"');
 
-        $this->assertSame('0098765432', $student->fresh()->nisn);
+        $this->assertSame('namabaru', $student->fresh()->username);
     }
 }
