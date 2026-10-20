@@ -61,10 +61,10 @@ Route::get('/dashboard', function () {
         return redirect()->route('admin');
     }
     return redirect()->route('siswa.dashboard');
-})->middleware('auth');
+})->middleware(['auth', 'active.student']);
 
 // Global Route untuk semua user login
-Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware('auth');
+Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware(['auth', 'active.student']);
 
 // Admin dashboard.
 Route::get('/admin', function () {
@@ -83,10 +83,10 @@ Route::get('/admin', function () {
         'siswaTerbaru'     => User::where('id_tipeuser', 3)->latest()->take(5)->get(),
         'modulTerbaru'     => Modul::with(['jenjang'])->latest()->take(5)->get(),
     ]);
-})->middleware('auth')->name('admin');
+})->middleware(['auth', 'active.student'])->name('admin');
 
 // Siswa.
-Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'role:siswa'])->group(function () {
+Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'active.student', 'role:siswa'])->group(function () {
     Route::get('/dashboard', [SiswaController::class, 'dashboard'])->name('dashboard');
 
     // Halaman Belajar
@@ -109,7 +109,7 @@ Route::get('/admin/profil', [GuruController::class, 'profil'])
     ->name('admin.profil');
 
 // Admin resource routes (dikelompokkan dengan prefix & middleware)
-Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru'])->group(function () {
     Route::get('/modul', [ModulController::class, 'index'])->name('admin.modul');
     Route::get('/modul/create', [ModulController::class, 'create'])->name('admin.modul.create');
     Route::post('/modul/store', [ModulController::class, 'store'])->name('admin.modul.store');
@@ -136,6 +136,8 @@ Route::prefix('admin')->middleware(['auth', 'role:admin,guru'])->group(function 
 
     // Route untuk Halaman Utama/Tabel Daftar Siswa
     Route::get('/data', [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
+    Route::patch('/data/{id}', [SiswaController::class, 'updateStudentData'])->name('admin.siswa.update');
+    Route::patch('/data/{id}/jenjang', [SiswaController::class, 'updateStudentJenjang'])->name('admin.siswa.jenjang');
     Route::patch('/data/{id}/status', [SiswaController::class, 'updateStatus'])->name('admin.siswa.status');
 
     // Route Guru

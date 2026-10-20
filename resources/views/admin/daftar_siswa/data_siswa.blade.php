@@ -147,14 +147,28 @@
                         <td class="py-4 px-4">
                             <div class="flex items-center space-x-3">
                                 <img class="w-9 h-9 rounded-full object-cover border border-slate-100 shadow-sm"
-                                    src="{{ !empty($siswa->foto) ? asset('storage/' . $siswa->foto) : 'https://ui-avatars.com/api/?name=' . urlencode($siswa->nama) . '&background=EFF6FF&color=2563EB' }}"
+                                    src="{{ !empty($siswa->foto_profil) ? \Illuminate\Support\Facades\Storage::url($siswa->foto_profil) : 'https://ui-avatars.com/api/?name=' . urlencode($siswa->nama) . '&background=EFF6FF&color=2563EB' }}"
                                     alt="{{ $siswa->nama }}">
                                 <span class="font-semibold text-slate-800">{{ $siswa->nama }}</span>
                             </div>
                         </td>
                         <td class="py-4 px-4 text-slate-500">{{ $siswa->email }}</td>
                         <td class="py-4 px-4 text-slate-600">
-                            {{ $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? '-' }}
+                            <select
+                                data-student-jenjang
+                                data-id="{{ $siswa->id_user }}"
+                                data-current-value="{{ $siswa->id_jenjang }}"
+                                aria-label="Ubah jenjang {{ $siswa->nama }}"
+                                onchange="updateStudentJenjang(this)"
+                                class="max-w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            >
+                                <option value="">Belum ditentukan</option>
+                                @foreach ($jenjangs as $jenjang)
+                                    <option value="{{ $jenjang->id_jenjang }}" {{ $siswa->id_jenjang == $jenjang->id_jenjang ? 'selected' : '' }}>
+                                        {{ $jenjang->nama_tipe }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </td>
                         <td class="py-4 px-4 text-slate-500">{{ $siswa->nisn ?? '-' }}</td>
                         <td class="py-4 px-4 text-slate-500">{{ $siswa->nomor_hp ?? '-' }}</td>
@@ -241,6 +255,39 @@
 
 <script>
     let pendingData = null;
+
+    async function updateStudentJenjang(select) {
+        const previousValue = select.dataset.currentValue;
+        select.disabled = true;
+
+        try {
+            const url = "{{ route('admin.siswa.jenjang', ':id') }}".replace(':id', select.dataset.id);
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    id_jenjang: select.value || null
+                })
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Gagal mengubah jenjang siswa.');
+            }
+
+            select.dataset.currentValue = select.value;
+            showToast('success', data.message);
+        } catch (error) {
+            select.value = previousValue;
+            showToast('error', error.message || 'Terjadi kesalahan saat mengubah jenjang siswa.');
+        } finally {
+            select.disabled = false;
+        }
+    }
 
     function filterData(select) {
         const form = select.form;

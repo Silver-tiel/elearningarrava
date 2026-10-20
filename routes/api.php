@@ -7,7 +7,7 @@ use App\Http\Controllers\ModulController;
 // AUTH
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
 
     Route::get('/me', [AuthController::class, 'me']);
 

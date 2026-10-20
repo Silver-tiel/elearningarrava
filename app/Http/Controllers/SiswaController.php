@@ -622,6 +622,7 @@ class SiswaController extends Controller
 
         // Opsi dropdown filter kelas.
         $listKelas = ['SD', 'SMP', 'SMA'];
+        $jenjangs = Jenjang::orderBy('nama_tipe')->get();
 
         return view('admin.daftar_siswa.data_siswa', compact(
             'siswas',
@@ -629,8 +630,99 @@ class SiswaController extends Controller
             'totalAktif',
             'totalNonaktif',
             'totalPerluDitinjau',
-            'listKelas'
+            'listKelas',
+            'jenjangs'
         ));
+    }
+
+    public function updateStudentData(Request $request, $id)
+    {
+        try {
+            $data = $request->validate([
+                'nama' => ['required', 'string', 'max:255'],
+                'id_jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->validator->errors()->first(),
+            ], 422);
+        }
+
+        $siswa = User::where('id_tipeuser', 3)->find($id);
+
+        if (!$siswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Siswa tidak ditemukan.',
+            ], 404);
+        }
+
+        try {
+            $siswa->nama = $data['nama'];
+            $siswa->id_jenjang = $data['id_jenjang'] ?? null;
+            $siswa->save();
+            $siswa->load('jenjang');
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menyimpan data siswa. Silakan coba lagi.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data siswa berhasil diperbarui.',
+            'siswa' => [
+                'nama' => $siswa->nama,
+                'id_jenjang' => $siswa->id_jenjang,
+                'jenjang' => $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? '-',
+            ],
+        ]);
+    }
+
+    public function updateStudentJenjang(Request $request, $id)
+    {
+        try {
+            $data = $request->validate([
+                'id_jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->validator->errors()->first(),
+            ], 422);
+        }
+
+        $siswa = User::where('id_tipeuser', 3)->find($id);
+
+        if (!$siswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Siswa tidak ditemukan.',
+            ], 404);
+        }
+
+        try {
+            $siswa->id_jenjang = $data['id_jenjang'] ?? null;
+            $siswa->save();
+            $siswa->load('jenjang');
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengubah jenjang siswa. Silakan coba lagi.',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Jenjang siswa berhasil diperbarui.',
+            'jenjang' => $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? '-',
+        ]);
     }
 
     public function updateStatus(Request $request, $id)

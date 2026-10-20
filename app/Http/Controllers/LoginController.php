@@ -28,6 +28,16 @@ class LoginController extends Controller
 
             $user = Auth::user();
 
+            if ($user && (int) $user->id_tipeuser === 3 && $user->status_akun === 'Nonaktif') {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return back()->withErrors([
+                    'email' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.',
+                ])->onlyInput('email');
+            }
+
             // Jika tipe akun admin (1) atau guru (2), arahkan langsung ke halaman admin
             if ($user && ($user->id_tipeuser == 1 || $user->id_tipeuser == 2)) {
                 return redirect()->intended('/admin');

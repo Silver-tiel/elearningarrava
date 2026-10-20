@@ -19,8 +19,7 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::with(['tipeUser', 'jenjang'])
-            ->where('email', $validated['email'])
+        $user = User::where('email', $validated['email'])
             ->first();
 
         if (!$user || !Hash::check(
@@ -32,6 +31,15 @@ class AuthController extends Controller
                 'message' => 'Email atau password salah.',
             ], 401);
         }
+
+        if ((int) $user->id_tipeuser === 3 && $user->status_akun === 'Nonaktif') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.',
+            ], 403);
+        }
+
+        $user->load(['tipeUser', 'jenjang']);
 
         // Hapus token lama jika ingin satu sesi per perangkat.
         $user->tokens()->delete();

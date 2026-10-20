@@ -47,13 +47,13 @@
                                     >
                                 @else
                                     <div class="flex h-20 w-20 items-center justify-center rounded-full bg-blue-50 text-2xl font-bold text-blue-600 ring-4 ring-slate-100">
-                                        {{ strtoupper(substr($user->nama ?? 'S', 0, 1)) }}
+                                        {{ strtoupper(substr($user->username ?? 'S', 0, 1)) }}
                                     </div>
                                 @endif
                             </div>
 
                             <div class="min-w-0 flex-1">
-                                <h2 class="truncate text-xl font-bold text-slate-900">{{ $user->nama }}</h2>
+                                <h2 class="truncate text-xl font-bold text-slate-900">{{ $user->username ?: 'Username belum diatur' }}</h2>
                                 <p class="mt-1 break-all text-sm text-slate-400">
                                     {{ $user->email }}
                                     <span class="px-1">•</span>
@@ -90,8 +90,8 @@
 
                         <dl class="grid gap-4 sm:grid-cols-2">
                             <div>
-                                <dt class="text-xs font-semibold text-slate-400">Username</dt>
-                                <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->username ?: 'Belum diisi' }}</dd>
+                                <dt class="text-xs font-semibold text-slate-400">Nama Lengkap</dt>
+                                <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->nama ?: 'Belum diisi' }}</dd>
                             </div>
                             <div>
                                 <dt class="text-xs font-semibold text-slate-400">Email</dt>
