@@ -32,8 +32,8 @@
     @include('orangtua.partials.sidebar')
 
     {{-- MAIN AREA --}}
-    <main class="flex-1 min-w-0 flex flex-col">
-
+    
+    <main class="flex-1 min-w-0 flex flex-col lg:ml-60">    
         {{-- TOPBAR --}}
         <header class="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
             <div class="flex items-center gap-3">

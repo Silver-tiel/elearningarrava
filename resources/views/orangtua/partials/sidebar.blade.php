@@ -12,7 +12,8 @@
 </div>
 
 <aside id="otSidebar"
-       class="fixed inset-y-0 left-0 z-50 flex h-full w-60 -translate-x-full flex-col border-r border-slate-100 bg-white shadow-2xl transition-transform duration-300 ease-in-out lg:static lg:h-screen lg:translate-x-0 lg:shadow-none shrink-0">
+       class="fixed inset-y-0 left-0 z-50 flex h-screen w-60 -translate-x-full flex-col border-r border-slate-100 bg-white shadow-2xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-none shrink-0">
+
 
     {{-- Brand --}}
     <div class="flex items-center justify-between px-4 py-4 border-b border-slate-100">
