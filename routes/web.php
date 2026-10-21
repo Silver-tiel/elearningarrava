@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AnakSayaController;
+use App\Http\Controllers\PerkembanganNilaiController;
 
 
 // Halaman pendaftaran.
@@ -76,6 +77,8 @@ Route::prefix('orangtua')
         Route::get('/dashboard', [OrangtuaController::class, 'dashboard'])->name('dashboard');
 
         Route::get('/anak-saya', [AnakSayaController::class, 'index'])->name('anak-saya');
+
+        Route::get('/perkembangan-nilai', [PerkembanganNilaiController::class, 'index'])->name('perkembangan-nilai');
     });
 
 // Global Route untuk semua user login
