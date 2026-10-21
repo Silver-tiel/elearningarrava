@@ -1,5 +1,5 @@
 @extends('layouts.orangtua')
-
+@include('components.page-loader')
 @section('title', 'Perkembangan Nilai - Portal Orang Tua')
 @section('breadcrumb', 'Perkembangan Nilai')
 

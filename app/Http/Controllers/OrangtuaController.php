@@ -12,6 +12,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class OrangtuaController extends Controller
 {
@@ -247,5 +249,47 @@ class OrangtuaController extends Controller
             'pencapaian',
             'totalJamBelajar'
         ));
+    }
+
+    /* -----------------------------------------------------------------
+     |  Halaman Pengaturan Akun – menampilkan & menyimpan data profil.
+     * --------------------------------------------------------------- */
+    public function pengaturan()
+    {
+        $user = Auth::user();
+        return view('orangtua.pengaturan', compact('user'));
+    }
+
+    public function updatePengaturan(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'nama'       => ['required', 'string', 'max:100'],
+            'email'      => ['required', 'email', Rule::unique('user', 'email')->ignore($user->id_user, 'id_user')],
+            'nomor_hp'   => ['nullable', 'string', 'max:20'],
+            'foto_profil'=> ['nullable', 'image', 'max:2048'],
+            'password'   => ['nullable', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $data = [
+            'nama'     => $request->nama,
+            'email'    => $request->email,
+            'nomor_hp' => $request->nomor_hp,
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        if ($request->hasFile('foto_profil')) {
+            $path = $request->file('foto_profil')->store('foto_profil', 'public');
+            $data['foto_profil'] = $path;
+        }
+
+        DB::table('user')->where('id_user', $user->id_user)->update($data);
+
+        return redirect()->route('orangtua.pengaturan')
+            ->with('success', 'Perubahan berhasil disimpan.');
     }
 }
