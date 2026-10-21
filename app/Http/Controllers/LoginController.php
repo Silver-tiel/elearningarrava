@@ -43,6 +43,11 @@ class LoginController extends Controller
                 return redirect()->intended('/admin');
             }
 
+            // Jika tipe akun orangtua (4), arahkan ke portal orang tua
+            if ($user && $user->id_tipeuser == 4) {
+                return redirect()->intended('/orangtua/dashboard');
+            }
+
             // Redirect ke halaman dashboard untuk siswa/user biasa.
             return redirect()->intended('/siswa/dashboard');
         }
