@@ -9,6 +9,7 @@ use App\Http\Controllers\SoalController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\GuruController;
 use App\Http\Controllers\AchievementController;
+use App\Http\Controllers\OrangtuaController;
 use App\Models\Modul;
 use App\Models\Quiz;
 use App\Models\User;
@@ -16,6 +17,8 @@ use App\Models\Achievement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AnakSayaController;
+use App\Http\Controllers\PerkembanganNilaiController;
 
 
 // Halaman pendaftaran.
@@ -60,8 +63,23 @@ Route::get('/dashboard', function () {
     if ($user && ($user->id_tipeuser == 1 || $user->id_tipeuser == 2)) {
         return redirect()->route('admin');
     }
+    if ($user && $user->id_tipeuser == 4) {
+        return redirect()->route('orangtua.dashboard');
+    }
     return redirect()->route('siswa.dashboard');
 })->middleware(['auth', 'active.student']);
+
+// Orangtua routes.
+Route::prefix('orangtua')
+    ->name('orangtua.')
+    ->middleware(['auth', 'active.student', 'role:orangtua'])
+    ->group(function () {
+        Route::get('/dashboard', [OrangtuaController::class, 'dashboard'])->name('dashboard');
+
+        Route::get('/anak-saya', [AnakSayaController::class, 'index'])->name('anak-saya');
+
+        Route::get('/perkembangan-nilai', [PerkembanganNilaiController::class, 'index'])->name('perkembangan-nilai');
+    });
 
 // Global Route untuk semua user login
 Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware(['auth', 'active.student']);

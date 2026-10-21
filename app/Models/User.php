@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Achievement;
+use App\Models\OrangtuaSiswa;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\HasApiTokens;
@@ -58,6 +59,22 @@ class User extends Authenticatable
     public function pencapaianUsers(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(PencapaianUser::class, 'id_user', 'id_user');
+    }
+
+    /**
+     * Siswa yang dapat dipantau oleh akun orang tua ini.
+     */
+    public function siswaList(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OrangtuaSiswa::class, 'id_orangtua', 'id_user');
+    }
+
+    /**
+     * Orang tua yang terhubung ke siswa ini.
+     */
+    public function orangtuaList(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(OrangtuaSiswa::class, 'id_siswa', 'id_user');
     }
 
     /**

@@ -13,9 +13,10 @@ class RoleMiddleware
      * 1 = admin, 2 = guru, 3 = siswa
      */
     private const ROLE_MAP = [
-        'admin' => 1,
-        'guru'  => 2,
-        'siswa' => 3,
+        'admin'    => 1,
+        'guru'     => 2,
+        'siswa'    => 3,
+        'orangtua' => 4,
     ];
 
     public function handle(Request $request, Closure $next, ...$roles): Response
