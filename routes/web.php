@@ -79,6 +79,9 @@ Route::prefix('orangtua')
         Route::get('/anak-saya', [AnakSayaController::class, 'index'])->name('anak-saya');
 
         Route::get('/perkembangan-nilai', [PerkembanganNilaiController::class, 'index'])->name('perkembangan-nilai');
+
+        Route::get('/pengaturan', [OrangtuaController::class, 'pengaturan'])->name('pengaturan');
+        Route::put('/pengaturan', [OrangtuaController::class, 'updatePengaturan'])->name('pengaturan.update');
     });
 
 // Global Route untuk semua user login
