@@ -17,6 +17,7 @@ use App\Models\Achievement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AnakSayaController;
 
 
 // Halaman pendaftaran.
@@ -68,9 +69,14 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'active.student']);
 
 // Orangtua routes.
-Route::prefix('orangtua')->name('orangtua.')->middleware(['auth', 'active.student', 'role:orangtua'])->group(function () {
-    Route::get('/dashboard', [OrangtuaController::class, 'dashboard'])->name('dashboard');
-});
+Route::prefix('orangtua')
+    ->name('orangtua.')
+    ->middleware(['auth', 'active.student', 'role:orangtua'])
+    ->group(function () {
+        Route::get('/dashboard', [OrangtuaController::class, 'dashboard'])->name('dashboard');
+
+        Route::get('/anak-saya', [AnakSayaController::class, 'index'])->name('anak-saya');
+    });
 
 // Global Route untuk semua user login
 Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware(['auth', 'active.student']);
