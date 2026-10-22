@@ -18,14 +18,14 @@ class ModulSeeder extends Seeder
                 'judul_modul' => 'Dasar-Dasar Matematika SD',
                 'id_jenjang' => 1,
                 'id_tipemodul' => 1,
-                'file_materi' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'file_materi' => 'https://youtu.be/P88N7DmPiX8?si=9GP0EDNTi1TXBXVu',
                 'tipe_file' => 'link',
                 'progressModul' => 'Tersedia',
                 'videos' => [
                     [
                         'judul' => 'Pengenalan Bilangan dan Penjumlahan',
                         'deskripsi' => 'Materi pengenalan bilangan bulat dasar dan operasi penjumlahan.',
-                        'file_video' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                        'file_video' => 'https://youtu.be/P88N7DmPiX8?si=9GP0EDNTi1TXBXVu',
                         'durasi' => '10:00',
                         'urutan' => 1,
                     ],
@@ -42,7 +42,7 @@ class ModulSeeder extends Seeder
                 'judul_modul' => 'Ilmu Pengetahuan Alam SMP: Ekosistem',
                 'id_jenjang' => 2,
                 'id_tipemodul' => 1,
-                'file_materi' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'file_materi' => 'https://youtu.be/IVm9sgRVp-0?si=ABHhq7avku8nfHQj',
                 'tipe_file' => 'link',
                 'progressModul' => 'Tersedia',
                 'videos' => [
@@ -66,7 +66,7 @@ class ModulSeeder extends Seeder
                 'judul_modul' => 'Fisika SMA: Kinematika Gerak Lurus',
                 'id_jenjang' => 3,
                 'id_tipemodul' => 1,
-                'file_materi' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'file_materi' => 'https://youtu.be/5ikiX0gv5w4?si=Uz2COASiezVgFUvh',
                 'tipe_file' => 'link',
                 'progressModul' => 'Tersedia',
                 'videos' => [
