@@ -1,4 +1,5 @@
 @extends('layouts.orangtua')
+@include('components.page-loader')
 
 @section('title', 'Anak Saya - Portal Orang Tua')
 @section('breadcrumb', 'Anak Saya')

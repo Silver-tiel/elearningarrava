@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AnakSayaController;
 use App\Http\Controllers\PerkembanganNilaiController;
+use App\Http\Controllers\MateriPembelajaranController;
+use App\Http\Controllers\PencapaianController;
 
 
 // Halaman pendaftaran.
@@ -79,6 +81,12 @@ Route::prefix('orangtua')
         Route::get('/anak-saya', [AnakSayaController::class, 'index'])->name('anak-saya');
 
         Route::get('/perkembangan-nilai', [PerkembanganNilaiController::class, 'index'])->name('perkembangan-nilai');
+
+        Route::get('/pengaturan', [OrangtuaController::class, 'pengaturan'])->name('pengaturan');
+        Route::put('/pengaturan', [OrangtuaController::class, 'updatePengaturan'])->name('pengaturan.update');
+
+        Route::get('/materi-pembelajaran', [MateriPembelajaranController::class, 'index'])->name('materi-pembelajaran');
+        Route::get('/pencapaian', [PencapaianController::class, 'index'])->name('pencapaian');
     });
 
 // Global Route untuk semua user login
