@@ -24,7 +24,7 @@
 
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         @forelse($quizzes as $quiz)
-            <a href="{{ route('siswa.quiz.kerjakan', $quiz->id_quiz) }}"
+            <a href="{{ route('siswa.quiz.detail', $quiz->id_quiz) }}"
                class="rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
                 <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#edf5ff] text-xl font-bold text-[#3180f7]">
                     ?

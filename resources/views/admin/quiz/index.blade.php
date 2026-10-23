@@ -209,8 +209,16 @@
                                                     {{ $quiz->judul }}
                                                 </div>
 
-                                                <div class="text-xs text-slate-400">
-                                                    ID: #{{ $quiz->id_quiz }}
+                                                <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+                                                    <span>ID: #{{ $quiz->id_quiz }}</span>
+                                                    <span>•</span>
+                                                    <span>{{ $quiz->jenjang->nama_tipe ?? 'Semua jenjang' }}</span>
+                                                    @if($quiz->token)
+                                                        <span>•</span>
+                                                        <span class="inline-flex items-center gap-1 font-mono font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200 text-[11px]" title="Token Masuk Kuis">
+                                                            🔑 {{ $quiz->token }}
+                                                        </span>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>

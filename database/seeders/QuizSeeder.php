@@ -32,11 +32,13 @@ class QuizSeeder extends Seeder
 
                     $quiz = Quiz::create([
                         'judul' => $judulQuiz,
+                        'deskripsi' => 'Uji pemahaman dasar materi ' . $namaJenjang[$idJenjang] . ' tingkat ' . ($i === 1 ? 'mudah' : ($i === 2 ? 'sedang' : 'sulit')) . '. Pastikan membaca soal dengan teliti sebelum menjawab.',
                         'id_jenjang' => $idJenjang,
                         'id_tipequiz' => 1,
                         'id_tingkatquiz' => $i, // 1: Mudah, 2: Sedang, 3: Sulit
                         'mode_pengerjaan' => 'wayground',
                         'durasi_total_menit' => null,
+                        'token' => $i === 3 ? 'ARRAVA' : null,
                         'proggressQuiz' => 'Tersedia',
                         'waktu_kadaluarsa' => null,
                     ]);

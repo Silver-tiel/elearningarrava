@@ -20,16 +20,23 @@ class Quiz extends Model
     protected $fillable = [
         'kode_quiz',
         'judul',
+        'deskripsi',
         'id_tipequiz',
         'id_tingkatquiz',
         'id_jenjang',
         'waktu_kadaluarsa',
         'mode_pengerjaan',
         'durasi_total_menit',
+        'token',
         'hasil_quiz',
         'proggressQuiz',
         'foto_quiz',
     ];
+
+    public function perluToken(): bool
+    {
+        return !empty($this->token);
+    }
 
     public function jenjang()
     {

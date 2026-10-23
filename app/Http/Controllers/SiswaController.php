@@ -173,6 +173,64 @@ class SiswaController extends Controller
      |  PENGERJAAN QUIZ
      * ------------------------------------------------------------------- */
 
+    public function detailQuiz($id_quiz)
+    {
+        $quiz = $this->muatQuiz($id_quiz);
+
+        if ($tolak = $this->tolakJikaBukanJenjangnya($quiz, 'siswa.quiz')) {
+            return $tolak;
+        }
+
+        $totalPoin = $quiz->soal->sum('poin');
+        $totalSoal = $quiz->soal->count();
+
+        return view('siswa.quiz-detail', compact('quiz', 'totalPoin', 'totalSoal'));
+    }
+
+    public function mulaiQuiz(Request $request, $id_quiz)
+    {
+        $quiz = $this->muatQuiz($id_quiz);
+
+        if ($tolak = $this->tolakJikaBukanJenjangnya($quiz, 'siswa.quiz')) {
+            return $tolak;
+        }
+
+        if ($quiz->sudahKadaluarsa() && !$this->punyaAttemptAktif($quiz)) {
+            return redirect()->route('siswa.quiz')->withErrors([
+                'quiz' => 'Waktu kuis sudah berakhir.',
+            ]);
+        }
+
+        if ($quiz->soal->isEmpty()) {
+            return redirect()->route('siswa.quiz')->withErrors([
+                'quiz' => 'Kuis ini belum memiliki soal.',
+            ]);
+        }
+
+        // Jika kuis memerlukan token
+        if ($quiz->perluToken()) {
+            $tokenInput = trim((string) $request->input('token', ''));
+
+            if ($tokenInput === '') {
+                return redirect()->back()->withInput()->withErrors([
+                    'token' => 'Token kuis wajib diisi untuk memulai.',
+                    'id_quiz' => $quiz->id_quiz,
+                ]);
+            }
+
+            if (strcasecmp($tokenInput, $quiz->token) !== 0) {
+                return redirect()->back()->withInput()->withErrors([
+                    'token' => 'Token kuis salah. Silakan tanyakan token kepada guru Anda.',
+                    'id_quiz' => $quiz->id_quiz,
+                ]);
+            }
+
+            session(["quiz_token_verified_{$quiz->id_quiz}" => true]);
+        }
+
+        return redirect()->route('siswa.quiz.kerjakan', $quiz->id_quiz);
+    }
+
     public function kerjakanLatihan($id_quiz)
     {
         return $this->tampilkanQuiz($this->muatQuiz($id_quiz), 'siswa.latihan-soal');
@@ -199,6 +257,15 @@ class SiswaController extends Controller
     {
         if ($tolak = $this->tolakJikaBukanJenjangnya($quiz, $routeDaftar)) {
             return $tolak;
+        }
+
+        // Jika kuis memerlukan token dan siswa belum verifikasi token serta belum ada attempt berjalan
+        if ($quiz->perluToken() && !$this->punyaAttemptAktif($quiz)) {
+            if (!session("quiz_token_verified_{$quiz->id_quiz}")) {
+                return redirect()->route('siswa.quiz.detail', $quiz->id_quiz)->withErrors([
+                    'token' => 'Kuis ini memerlukan token. Silakan masukkan token kuis.',
+                ]);
+            }
         }
 
         // Kadaluarsa = batas untuk MEMULAI. Percobaan yang sudah berjalan
@@ -436,10 +503,11 @@ class SiswaController extends Controller
             }
         }
 
-        // Percobaan selesai: bersihkan kedua jenis attempt.
+        // Percobaan selesai: bersihkan kedua jenis attempt dan status token.
         session()->forget([
             $this->attemptSessionKey($quiz),
             $this->waygroundAttemptSessionKey($quiz),
+            "quiz_token_verified_{$quiz->id_quiz}",
         ]);
 
         return redirect()->route('siswa.quiz')->with('quiz_result', [

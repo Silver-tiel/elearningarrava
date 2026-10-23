@@ -42,12 +42,14 @@ class QuizManagementTest extends TestCase
             $table->increments('id_quiz');
             $table->string('kode_quiz')->nullable();
             $table->string('judul');
+            $table->text('deskripsi')->nullable();
             $table->unsignedInteger('id_tipequiz')->default(1);
             $table->unsignedInteger('id_tingkatquiz')->default(1);
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->dateTime('waktu_kadaluarsa')->nullable();
             $table->string('mode_pengerjaan')->nullable();
             $table->integer('durasi_total_menit')->nullable();
+            $table->string('token')->nullable();
             $table->string('proggressQuiz')->nullable();
             $table->timestamps();
         });
@@ -195,6 +197,88 @@ class QuizManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Input quiz belum valid. Periksa kembali:')
             ->assertSee('Judul quiz wajib diisi.');
+    }
+
+    public function test_admin_can_create_quiz_with_deskripsi_and_token(): void
+    {
+        $this->actingAs($this->makeAdmin());
+
+        $this->post(route('admin.quiz.store'), [
+            'judul' => 'Quiz Berdeskripsi Dan Token',
+            'deskripsi' => 'Ini adalah petunjuk pengerjaan quiz lengkap.',
+            'id_jenjang' => 1,
+            'mode_pengerjaan' => 'wayground',
+            'use_token' => '1',
+            'token' => 'ARRAVA99',
+            'soal' => [[
+                'jenis_soal' => 'kuis',
+                'pertanyaan' => 'Pertanyaan uji coba token',
+                'poin' => 10,
+                'durasi_detik' => 20,
+                'pilihan' => [
+                    ['label' => 'A', 'teks_pilihan' => 'Pilihan A', 'is_correct' => '1'],
+                    ['label' => 'B', 'teks_pilihan' => 'Pilihan B', 'is_correct' => '0'],
+                ],
+            ]],
+        ])->assertRedirect(route('admin.quiz'));
+
+        $quiz = Quiz::where('judul', 'Quiz Berdeskripsi Dan Token')->firstOrFail();
+        $this->assertSame('Ini adalah petunjuk pengerjaan quiz lengkap.', $quiz->deskripsi);
+        $this->assertSame('ARRAVA99', $quiz->token);
+        $this->assertTrue($quiz->perluToken());
+    }
+
+    public function test_siswa_sees_preview_and_must_submit_valid_token_before_taking_quiz(): void
+    {
+        $siswa = User::create([
+            'nama' => 'Siswa Test',
+            'email' => 'siswa-' . uniqid() . '@example.com',
+            'password' => bcrypt('password123'),
+            'id_tipeuser' => 3,
+        ]);
+        $this->actingAs($siswa);
+
+        $quiz = Quiz::create([
+            'judul' => 'Quiz Rahasia',
+            'deskripsi' => 'Harap kerjakan mandiri tanpa melihat buku.',
+            'id_jenjang' => 1,
+            'mode_pengerjaan' => 'wayground',
+            'token' => 'LULUS2026',
+            'proggressQuiz' => 'Tersedia',
+        ]);
+        Soal::create([
+            'id_quiz' => $quiz->id_quiz,
+            'id_jenjang' => 1,
+            'id_jenis_soal' => 1,
+            'pertanyaan' => 'Pertanyaan rahasia?',
+            'jawaban_benar' => 'A',
+            'durasi_detik' => 20,
+        ]);
+
+        // Siswa can view preview/detail with description
+        $this->get(route('siswa.quiz.detail', $quiz->id_quiz))
+            ->assertOk()
+            ->assertSee('Quiz Rahasia')
+            ->assertSee('Harap kerjakan mandiri tanpa melihat buku.')
+            ->assertSee('Masukkan Token Kuis');
+
+        // Siswa attempting to access kerjakan directly without token verification gets redirected to detail
+        $this->get(route('siswa.quiz.kerjakan', $quiz->id_quiz))
+            ->assertRedirect(route('siswa.quiz.detail', $quiz->id_quiz))
+            ->assertSessionHasErrors('token');
+
+        // Siswa submits wrong token
+        $this->post(route('siswa.quiz.mulai', $quiz->id_quiz), ['token' => 'SALAH123'])
+            ->assertSessionHasErrors('token');
+
+        // Siswa submits correct token (case-insensitive)
+        $this->post(route('siswa.quiz.mulai', $quiz->id_quiz), ['token' => 'lulus2026'])
+            ->assertRedirect(route('siswa.quiz.kerjakan', $quiz->id_quiz));
+
+        // Now siswa can access the quiz solver room
+        $this->get(route('siswa.quiz.kerjakan', $quiz->id_quiz))
+            ->assertOk()
+            ->assertSee('Pertanyaan rahasia?');
     }
 
     private function makeAdmin(): User

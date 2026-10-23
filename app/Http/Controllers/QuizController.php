@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 // Controller khusus untuk mengelola data kuis pembelajaran.
 class QuizController extends Controller
@@ -100,12 +101,15 @@ class QuizController extends Controller
     {
         $validated = $request->validate([
             'judul'            => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
+            'deskripsi'        => 'nullable|string|max:3000',
             'id_jenjang'       => 'required|integer',
             'id_tipequiz'      => 'nullable|integer',
             'id_tingkatquiz'   => 'nullable|integer',
             'waktu_kadaluarsa' => ['nullable', 'date', 'after_or_equal:now'],
             'mode_pengerjaan' => 'required|in:wayground,biasa',
             'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
+            'use_token'        => 'nullable|boolean',
+            'token'            => 'nullable|required_if:use_token,1|string|max:50',
             'soal'             => 'required|array|min:1',
             'soal.*.pertanyaan' => 'required|string',
             'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
@@ -131,16 +135,22 @@ class QuizController extends Controller
             }
         }
 
-        DB::transaction(function () use ($request, $questions) {
+        $token = $request->boolean('use_token')
+            ? ($request->filled('token') ? trim($request->input('token')) : strtoupper(Str::random(6)))
+            : null;
+
+        DB::transaction(function () use ($request, $questions, $token) {
             // 1. Simpan quiz
             $quiz = Quiz::create([
                 'judul'            => $request->judul,
+                'deskripsi'        => $request->deskripsi ?: null,
                 'id_jenjang'       => $request->id_jenjang,
                 'id_tipequiz'      => $request->id_tipequiz ?? 1,
                 'id_tingkatquiz'   => $request->id_tingkatquiz ?? 1,
                 'waktu_kadaluarsa' => $request->waktu_kadaluarsa ?: null,
                 'mode_pengerjaan' => $request->mode_pengerjaan,
                 'durasi_total_menit' => $request->mode_pengerjaan === 'biasa' ? $request->durasi_total_menit : null,
+                'token'            => $token,
                 'proggressQuiz'    => 'Tersedia',
             ]);
 
@@ -187,12 +197,15 @@ class QuizController extends Controller
         $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
         $validated = $request->validate([
             'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
+            'deskripsi' => 'nullable|string|max:3000',
             'id_jenjang' => 'required|integer',
             'id_tipequiz' => 'nullable|integer',
             'id_tingkatquiz' => 'nullable|integer',
             'waktu_kadaluarsa' => ['nullable', 'date'],
             'mode_pengerjaan' => 'required|in:wayground,biasa',
             'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
+            'use_token' => 'nullable|boolean',
+            'token' => 'nullable|required_if:use_token,1|string|max:50',
             'soal' => 'required|array|min:1',
             'soal.*.pertanyaan' => 'required|string',
             'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
@@ -237,15 +250,21 @@ class QuizController extends Controller
             throw ValidationException::withMessages($fotoErrors);
         }
 
-        DB::transaction(function () use ($quiz, $validated, $questions, $request) {
+        $token = $request->boolean('use_token')
+            ? ($request->filled('token') ? trim($request->input('token')) : ($quiz->token ?: strtoupper(Str::random(6))))
+            : null;
+
+        DB::transaction(function () use ($quiz, $validated, $questions, $request, $token) {
             $quiz->update([
                 'judul' => $validated['judul'],
+                'deskripsi' => $request->deskripsi ?: null,
                 'id_jenjang' => $validated['id_jenjang'],
                 'id_tipequiz' => $validated['id_tipequiz'] ?? $quiz->id_tipequiz,
                 'id_tingkatquiz' => $validated['id_tingkatquiz'] ?? $quiz->id_tingkatquiz,
                 'waktu_kadaluarsa' => $validated['waktu_kadaluarsa'] ?: null,
                 'mode_pengerjaan' => $validated['mode_pengerjaan'],
                 'durasi_total_menit' => $validated['mode_pengerjaan'] === 'biasa' ? $validated['durasi_total_menit'] : null,
+                'token' => $token,
             ]);
 
             $this->replaceQuestions($quiz, $questions, (int) $validated['id_jenjang'], $request);
@@ -517,6 +536,9 @@ class QuizController extends Controller
             'durasi_total_menit.integer' => 'Durasi quiz harus berupa angka bulat.',
             'durasi_total_menit.min' => 'Durasi quiz minimal 1 menit.',
             'durasi_total_menit.max' => 'Durasi quiz maksimal 360 menit.',
+            'deskripsi.max' => 'Deskripsi quiz maksimal 3000 karakter.',
+            'token.required_if' => 'Token quiz wajib diisi jika opsi token diaktifkan.',
+            'token.max' => 'Token quiz maksimal 50 karakter.',
             'soal.required' => 'Tambahkan minimal satu soal ke quiz.',
             'soal.array' => 'Data soal tidak valid.',
             'soal.min' => 'Quiz wajib memiliki minimal satu soal.',

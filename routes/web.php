@@ -120,8 +120,10 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'active.student', 'r
     Route::get('/belajar/{id_modul}/materi', [SiswaController::class, 'materiVideoDetail'])->name('modul.materi');
     Route::get('/belajar/{id_modul}/latihan', [SiswaController::class, 'latihanSoalModul'])->name('modul.latihan');
 
-    // Quiz global (tetap ada)
+    // Quiz global
     Route::get('/quiz', [SiswaController::class, 'quiz'])->name('quiz');
+    Route::get('/quiz/{quiz}/detail', [SiswaController::class, 'detailQuiz'])->name('quiz.detail');
+    Route::post('/quiz/{quiz}/mulai', [SiswaController::class, 'mulaiQuiz'])->name('quiz.mulai');
     Route::get('/quiz/{quiz}', [SiswaController::class, 'kerjakanQuiz'])->name('quiz.kerjakan');
     Route::post('/quiz/{quiz}/submit', [SiswaController::class, 'submitQuiz'])->name('quiz.submit');
 

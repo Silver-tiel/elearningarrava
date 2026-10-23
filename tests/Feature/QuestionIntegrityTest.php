@@ -32,12 +32,14 @@ class QuestionIntegrityTest extends TestCase
             $table->increments('id_quiz');
             $table->string('kode_quiz')->nullable();
             $table->string('judul');
+            $table->text('deskripsi')->nullable();
             $table->unsignedInteger('id_tipequiz')->default(1);
             $table->unsignedInteger('id_tingkatquiz')->default(1);
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->dateTime('waktu_kadaluarsa')->nullable();
             $table->string('mode_pengerjaan')->nullable();
             $table->integer('durasi_total_menit')->nullable();
+            $table->string('token')->nullable();
             $table->string('proggressQuiz')->nullable();
             $table->timestamps();
         });

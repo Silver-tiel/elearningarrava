@@ -60,7 +60,7 @@
                         Kembali
                     </a>
                     @if($modul->id_quiz)
-                        <a href="{{ route('siswa.quiz.kerjakan', $modul->id_quiz) }}"
+                        <a href="{{ route('siswa.quiz.detail', $modul->id_quiz) }}"
                            class="rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-emerald-700">
                             Lanjut ke Kuis →
                         </a>

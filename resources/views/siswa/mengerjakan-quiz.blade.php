@@ -143,7 +143,7 @@
     </div>
 
     <div class="px-6 py-6 max-w-7xl mx-auto">
-        @if($errors->has('quiz'))
+        @if(isset($errors) && $errors->has('quiz'))
             <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{{ $errors->first('quiz') }}</div>
         @endif
 

@@ -160,7 +160,7 @@
         if (btnSelesai) {
             btnSelesai.addEventListener('click', function () {
                 if (!isCompleted) return;
-                window.location.href = "{{ route('siswa.quiz.kerjakan', $modul->id_quiz ?? 0) }}";
+                window.location.href = "{{ route('siswa.quiz.detail', $modul->id_quiz ?? 0) }}";
             });
         }
     </script>

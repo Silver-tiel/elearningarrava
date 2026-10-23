@@ -438,6 +438,54 @@
                             </div>
                         </div>
 
+                        {{-- DESKRIPSI QUIZ --}}
+                        <div class="bg-amber-50/70 p-3 rounded-xl border border-amber-200">
+                            <label class="block text-xs font-bold text-amber-950 mb-1.5 flex items-center justify-between">
+                                <span class="flex items-center gap-1.5">
+                                    <span>📝</span> Deskripsi / Petunjuk
+                                </span>
+                                <span class="text-[10px] text-amber-700 font-semibold bg-amber-100 px-1.5 py-0.5 rounded">Opsional</span>
+                            </label>
+                            <textarea name="deskripsi" id="input-deskripsi" rows="3" placeholder="Tuliskan gambaran materi, aturan pengerjaan, atau petunjuk untuk siswa..."
+                                class="w-full bg-white border border-amber-300 rounded-lg p-2.5 text-xs font-medium text-amber-950 placeholder-amber-400 focus:ring-2 focus:ring-amber-500 transition resize-none">{{ old('deskripsi', $quiz->deskripsi ?? '') }}</textarea>
+                            <p class="text-[10px] text-amber-800/80 mt-1">Ditampilkan di halaman preview sebelum siswa mulai mengerjakan kuis.</p>
+                        </div>
+
+                        {{-- OPSI TOKEN MASUK --}}
+                        <div class="bg-purple-50/70 p-3 rounded-xl border border-purple-200">
+                            <label class="block text-xs font-bold text-purple-950 mb-1.5 flex items-center justify-between">
+                                <span class="flex items-center gap-1.5">
+                                    <span>🔐</span> Token Masuk Quiz
+                                </span>
+                            </label>
+                            
+                            <div class="flex items-center gap-2 mb-2">
+                                <input type="checkbox" name="use_token" value="1" id="check-use-token" @checked(old('use_token', isset($quiz) && $quiz->token))
+                                    class="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 cursor-pointer">
+                                <label for="check-use-token" class="text-xs font-semibold text-purple-900 cursor-pointer select-none">
+                                    Pakaikan Token Kuis
+                                </label>
+                            </div>
+
+                            <div id="token-input-wrapper" class="{{ (old('use_token') || (isset($quiz) && $quiz->token)) ? '' : 'hidden' }} space-y-2 pt-2 border-t border-purple-100">
+                                <div class="flex items-center gap-2">
+                                    <div class="relative flex-1">
+                                        <input type="text" name="token" id="input-token"
+                                            value="{{ old('token', $quiz->token ?? '') }}"
+                                            placeholder="Contoh: KUIS123"
+                                            maxlength="50"
+                                            class="w-full uppercase font-mono tracking-wider bg-white border border-purple-300 rounded-lg px-3 py-1.5 text-xs font-bold text-purple-950 focus:ring-2 focus:ring-purple-500">
+                                    </div>
+                                    <button type="button" id="btn-generate-token"
+                                        class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 shadow-sm"
+                                        title="Buat token acak otomatis">
+                                        <span>🎲 Acak</span>
+                                    </button>
+                                </div>
+                                <p class="text-[10px] text-purple-700 leading-tight">Siswa wajib mengisi token ini saat preview sebelum tombol mulai mengerjakan kuis dapat ditekan.</p>
+                            </div>
+                        </div>
+
                         <hr class="border-gray-100">
 
                         {{-- 3. JENIS SOAL (Kuis, Benar/Salah, Isian Singkat) --}}
@@ -693,6 +741,40 @@
             }
         });
 
+        // Toggle Token Input
+        const checkUseToken = document.getElementById('check-use-token');
+        const tokenInputWrapper = document.getElementById('token-input-wrapper');
+        const inputToken = document.getElementById('input-token');
+        const btnGenerateToken = document.getElementById('btn-generate-token');
+
+        function generateRandomToken() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let res = '';
+            for (let i = 0; i < 6; i++) {
+                res += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            if (inputToken) {
+                inputToken.value = res;
+            }
+        }
+
+        if (checkUseToken) {
+            checkUseToken.addEventListener('change', () => {
+                if (checkUseToken.checked) {
+                    tokenInputWrapper.classList.remove('hidden');
+                    if (inputToken && !inputToken.value.trim()) {
+                        generateRandomToken();
+                    }
+                } else {
+                    tokenInputWrapper.classList.add('hidden');
+                }
+            });
+        }
+
+        if (btnGenerateToken) {
+            btnGenerateToken.addEventListener('click', generateRandomToken);
+        }
+
         // Render Thumbnails pada sidebar
         function renderThumbnails() {
             thumbContainer.innerHTML = '';
@@ -938,6 +1020,16 @@
                 alert('Harap isi judul kuis!');
                 e.preventDefault();
                 return;
+            }
+
+            // Check Token
+            if (checkUseToken && checkUseToken.checked) {
+                if (!inputToken || !inputToken.value.trim()) {
+                    alert('Harap masukkan token kuis atau matikan opsi token!');
+                    if (inputToken) inputToken.focus();
+                    e.preventDefault();
+                    return;
+                }
             }
 
             let valid = true;
