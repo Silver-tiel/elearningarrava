@@ -110,6 +110,7 @@ class QuizController extends Controller
             'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
             'use_token'        => 'nullable|boolean',
             'token'            => 'nullable|required_if:use_token,1|string|max:50',
+            'foto_quiz'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'soal'             => 'required|array|min:1',
             'soal.*.pertanyaan' => 'required|string',
             'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
@@ -139,7 +140,12 @@ class QuizController extends Controller
             ? ($request->filled('token') ? trim($request->input('token')) : strtoupper(Str::random(6)))
             : null;
 
-        DB::transaction(function () use ($request, $questions, $token) {
+        $fotoQuizPath = null;
+        if ($request->hasFile('foto_quiz') && $request->file('foto_quiz')->isValid()) {
+            $fotoQuizPath = $request->file('foto_quiz')->store('quiz/cover', 'public');
+        }
+
+        DB::transaction(function () use ($request, $questions, $token, $fotoQuizPath) {
             // 1. Simpan quiz
             $quiz = Quiz::create([
                 'judul'            => $request->judul,
@@ -151,6 +157,7 @@ class QuizController extends Controller
                 'mode_pengerjaan' => $request->mode_pengerjaan,
                 'durasi_total_menit' => $request->mode_pengerjaan === 'biasa' ? $request->durasi_total_menit : null,
                 'token'            => $token,
+                'foto_quiz'        => $fotoQuizPath,
                 'proggressQuiz'    => 'Tersedia',
             ]);
 
@@ -206,6 +213,8 @@ class QuizController extends Controller
             'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
             'use_token' => 'nullable|boolean',
             'token' => 'nullable|required_if:use_token,1|string|max:50',
+            'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'hapus_foto_quiz' => 'nullable|boolean',
             'soal' => 'required|array|min:1',
             'soal.*.pertanyaan' => 'required|string',
             'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
@@ -254,7 +263,22 @@ class QuizController extends Controller
             ? ($request->filled('token') ? trim($request->input('token')) : ($quiz->token ?: strtoupper(Str::random(6))))
             : null;
 
-        DB::transaction(function () use ($quiz, $validated, $questions, $request, $token) {
+        $fotoQuizPath = $quiz->foto_quiz;
+        if ($request->boolean('hapus_foto_quiz')) {
+            if ($quiz->foto_quiz && Storage::disk('public')->exists($quiz->foto_quiz)) {
+                Storage::disk('public')->delete($quiz->foto_quiz);
+            }
+            $fotoQuizPath = null;
+        }
+
+        if ($request->hasFile('foto_quiz') && $request->file('foto_quiz')->isValid()) {
+            if ($quiz->foto_quiz && Storage::disk('public')->exists($quiz->foto_quiz)) {
+                Storage::disk('public')->delete($quiz->foto_quiz);
+            }
+            $fotoQuizPath = $request->file('foto_quiz')->store('quiz/cover', 'public');
+        }
+
+        DB::transaction(function () use ($quiz, $validated, $questions, $request, $token, $fotoQuizPath) {
             $quiz->update([
                 'judul' => $validated['judul'],
                 'deskripsi' => $request->deskripsi ?: null,
@@ -265,6 +289,7 @@ class QuizController extends Controller
                 'mode_pengerjaan' => $validated['mode_pengerjaan'],
                 'durasi_total_menit' => $validated['mode_pengerjaan'] === 'biasa' ? $validated['durasi_total_menit'] : null,
                 'token' => $token,
+                'foto_quiz' => $fotoQuizPath,
             ]);
 
             $this->replaceQuestions($quiz, $questions, (int) $validated['id_jenjang'], $request);
@@ -281,6 +306,11 @@ class QuizController extends Controller
             $oldSoalList = $quiz->soal()->get();
             $questionIds = $oldSoalList->pluck('id_soal');
             
+            // Hapus cover quiz jika ada
+            if ($quiz->foto_quiz && Storage::disk('public')->exists($quiz->foto_quiz)) {
+                Storage::disk('public')->delete($quiz->foto_quiz);
+            }
+
             // Hapus semua foto soal terkait dari storage
             foreach ($oldSoalList as $oldSoal) {
                 if ($oldSoal->foto_soal && Storage::disk('public')->exists($oldSoal->foto_soal)) {
@@ -539,6 +569,9 @@ class QuizController extends Controller
             'deskripsi.max' => 'Deskripsi quiz maksimal 3000 karakter.',
             'token.required_if' => 'Token quiz wajib diisi jika opsi token diaktifkan.',
             'token.max' => 'Token quiz maksimal 50 karakter.',
+            'foto_quiz.image' => 'File cover quiz harus berupa gambar.',
+            'foto_quiz.mimes' => 'Format cover quiz harus JPG, PNG, atau WebP.',
+            'foto_quiz.max' => 'Ukuran file cover quiz maksimal 2MB.',
             'soal.required' => 'Tambahkan minimal satu soal ke quiz.',
             'soal.array' => 'Data soal tidak valid.',
             'soal.min' => 'Quiz wajib memiliki minimal satu soal.',

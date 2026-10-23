@@ -50,6 +50,7 @@ class QuizManagementTest extends TestCase
             $table->string('mode_pengerjaan')->nullable();
             $table->integer('durasi_total_menit')->nullable();
             $table->string('token')->nullable();
+            $table->string('foto_quiz')->nullable();
             $table->string('proggressQuiz')->nullable();
             $table->timestamps();
         });
@@ -279,6 +280,61 @@ class QuizManagementTest extends TestCase
         $this->get(route('siswa.quiz.kerjakan', $quiz->id_quiz))
             ->assertOk()
             ->assertSee('Pertanyaan rahasia?');
+    }
+
+    public function test_admin_can_upload_and_update_quiz_cover_photo(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $this->actingAs($this->makeAdmin());
+
+        $file = \Illuminate\Http\UploadedFile::fake()->image('cover_test.jpg', 600, 400);
+
+        $response = $this->post(route('admin.quiz.store'), [
+            'judul' => 'Quiz Bergambar',
+            'deskripsi' => 'Quiz dengan cover menarik.',
+            'id_jenjang' => 1,
+            'id_tingkatquiz' => 1,
+            'mode_pengerjaan' => 'wayground',
+            'foto_quiz' => $file,
+            'soal' => [
+                [
+                    'pertanyaan' => 'Apa warna langit?',
+                    'jenis_soal' => 'kuis',
+                    'poin' => 10,
+                    'durasi_detik' => 20,
+                    'pilihan' => [
+                        ['label' => 'A', 'teks_pilihan' => 'Biru', 'is_correct' => 1],
+                        ['label' => 'B', 'teks_pilihan' => 'Merah', 'is_correct' => 0],
+                        ['label' => 'C', 'teks_pilihan' => '', 'is_correct' => 0],
+                        ['label' => 'D', 'teks_pilihan' => '', 'is_correct' => 0],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect(route('admin.quiz'));
+        $quiz = Quiz::where('judul', 'Quiz Bergambar')->first();
+        $this->assertNotNull($quiz);
+        $this->assertNotNull($quiz->foto_quiz);
+        \Illuminate\Support\Facades\Storage::disk('public')->assertExists($quiz->foto_quiz);
+
+        // Siswa can view quiz with photo in list and detail
+        $siswa = User::create([
+            'nama' => 'Siswa Pengamat',
+            'email' => 'siswa-cover@example.com',
+            'password' => bcrypt('password123'),
+            'id_tipeuser' => 2,
+        ]);
+        $this->actingAs($siswa);
+        $this->get(route('siswa.quiz'))
+            ->assertOk()
+            ->assertSee('Quiz Bergambar')
+            ->assertSee($quiz->foto_quiz);
+
+        $this->get(route('siswa.quiz.detail', $quiz->id_quiz))
+            ->assertOk()
+            ->assertSee('Quiz Bergambar')
+            ->assertSee($quiz->foto_quiz);
     }
 
     private function makeAdmin(): User

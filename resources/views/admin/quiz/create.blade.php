@@ -451,6 +451,43 @@
                             <p class="text-[10px] text-amber-800/80 mt-1">Ditampilkan di halaman preview sebelum siswa mulai mengerjakan kuis.</p>
                         </div>
 
+                        {{-- COVER / FOTO QUIZ --}}
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-200">
+                            <label class="block text-xs font-bold text-blue-950 mb-1.5 flex items-center justify-between">
+                                <span class="flex items-center gap-1.5">
+                                    <span>🖼️</span> Foto Cover Quiz
+                                </span>
+                                <span class="text-[10px] text-blue-700 font-semibold bg-blue-100 px-1.5 py-0.5 rounded">Opsional</span>
+                            </label>
+
+                            <input type="hidden" name="hapus_foto_quiz" id="input-hapus-foto-quiz" value="0">
+
+                            {{-- Preview Container --}}
+                            <div id="quiz-cover-preview-wrapper" class="relative rounded-xl overflow-hidden border border-blue-200 bg-white mb-2 aspect-video flex items-center justify-center {{ (isset($quiz) && $quiz->foto_quiz) ? '' : 'hidden' }}">
+                                <img id="quiz-cover-preview-img"
+                                     src="{{ (isset($quiz) && $quiz->foto_quiz) ? asset('storage/' . $quiz->foto_quiz) : '' }}"
+                                     alt="Cover Quiz"
+                                     class="w-full h-full object-cover">
+                                
+                                <button type="button" id="btn-hapus-cover"
+                                        class="absolute top-2 right-2 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg px-2 py-1 text-[11px] font-bold shadow transition flex items-center gap-1"
+                                        title="Hapus foto cover">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    <span>Hapus</span>
+                                </button>
+                            </div>
+
+                            {{-- File Input / Trigger --}}
+                            <label for="input-foto-quiz" class="flex flex-col items-center justify-center border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-xl p-3 bg-white/70 hover:bg-white cursor-pointer transition text-center group">
+                                <div class="flex items-center gap-2 text-xs font-bold text-blue-700 group-hover:text-blue-900">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    <span id="label-foto-quiz-text">{{ (isset($quiz) && $quiz->foto_quiz) ? 'Ganti Foto Cover' : 'Unggah Foto Cover' }}</span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mt-1">Rekomendasi rasio 16:9 (PNG, JPG, WebP maks 2MB)</p>
+                                <input type="file" name="foto_quiz" id="input-foto-quiz" accept="image/jpeg,image/png,image/jpg,image/webp" class="hidden">
+                            </label>
+                        </div>
+
                         {{-- OPSI TOKEN MASUK --}}
                         <div class="bg-purple-50/70 p-3 rounded-xl border border-purple-200">
                             <label class="block text-xs font-bold text-purple-950 mb-1.5 flex items-center justify-between">
@@ -773,6 +810,41 @@
 
         if (btnGenerateToken) {
             btnGenerateToken.addEventListener('click', generateRandomToken);
+        }
+
+        // Cover Quiz Image Preview & Removal
+        const inputFotoQuiz = document.getElementById('input-foto-quiz');
+        const previewCoverWrapper = document.getElementById('quiz-cover-preview-wrapper');
+        const previewCoverImg = document.getElementById('quiz-cover-preview-img');
+        const btnHapusCover = document.getElementById('btn-hapus-cover');
+        const inputHapusFotoQuiz = document.getElementById('input-hapus-foto-quiz');
+        const labelFotoQuizText = document.getElementById('label-foto-quiz-text');
+
+        if (inputFotoQuiz) {
+            inputFotoQuiz.addEventListener('change', function(e) {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        previewCoverImg.src = evt.target.result;
+                        previewCoverWrapper.classList.remove('hidden');
+                        if (inputHapusFotoQuiz) inputHapusFotoQuiz.value = '0';
+                        if (labelFotoQuizText) labelFotoQuizText.textContent = 'Ganti Foto Cover';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        if (btnHapusCover) {
+            btnHapusCover.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (inputFotoQuiz) inputFotoQuiz.value = '';
+                previewCoverImg.src = '';
+                previewCoverWrapper.classList.add('hidden');
+                if (inputHapusFotoQuiz) inputHapusFotoQuiz.value = '1';
+                if (labelFotoQuizText) labelFotoQuizText.textContent = 'Unggah Foto Cover';
+            });
         }
 
         // Render Thumbnails pada sidebar

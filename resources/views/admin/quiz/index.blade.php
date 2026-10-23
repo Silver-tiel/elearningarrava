@@ -199,10 +199,15 @@
                                     {{-- Judul --}}
                                     <td class="py-4 px-6">
                                         <div class="flex items-center gap-3">
-                                            <div
-                                                class="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg shrink-0">
-                                                ❓
-                                            </div>
+                                            @if($quiz->foto_quiz)
+                                                <img src="{{ asset('storage/' . $quiz->foto_quiz) }}" alt="{{ $quiz->judul }}"
+                                                     class="w-11 h-11 rounded-xl object-cover border border-slate-200 shrink-0 shadow-xs">
+                                            @else
+                                                <div
+                                                    class="w-11 h-11 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                                    ❓
+                                                </div>
+                                            @endif
 
                                             <div>
                                                 <div class="font-bold text-slate-800 text-base">
