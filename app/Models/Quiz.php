@@ -38,6 +38,15 @@ class Quiz extends Model
         return !empty($this->token);
     }
 
+    public function getCoverUrlAttribute(): string
+    {
+        if (!empty($this->foto_quiz)) {
+            return asset('storage/' . $this->foto_quiz);
+        }
+
+        return asset('assets/widget/latarQuizDefault.png');
+    }
+
     public function jenjang()
     {
         return $this->belongsTo(Jenjang::class, 'id_jenjang', 'id_jenjang');

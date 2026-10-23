@@ -9,7 +9,7 @@
 <!-- Backdrop Gelap untuk Layar Kecil (Mobile) -->
 <div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0 pointer-events-none lg:hidden"></div>
 
-<aside id="mainSidebar" class="fixed inset-y-0 left-0 z-50 flex h-full w-64 -translate-x-full flex-col justify-between border-r border-gray-100 bg-white p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:static lg:h-screen lg:top-0 lg:translate-x-0 lg:shadow-none shrink-0">
+<aside id="mainSidebar" class="fixed inset-y-0 left-0 z-50 flex h-screen w-64 -translate-x-full flex-col justify-between border-r border-gray-100 bg-white p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none lg:z-30 shrink-0 overflow-y-auto">
     <!-- Top Section -->
     <div class="space-y-6">
         <!-- Logo Brand & Tombol Close (Mobile) -->

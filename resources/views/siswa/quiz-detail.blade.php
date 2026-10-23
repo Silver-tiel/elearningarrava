@@ -37,9 +37,7 @@
 
     {{-- Hero Preview Banner --}}
     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B4FB3] via-[#1368CE] to-[#46178F] p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-        @if($quiz->foto_quiz)
-            <div class="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none" style="background-image: url('{{ asset('storage/' . $quiz->foto_quiz) }}');"></div>
-        @endif
+        <div class="absolute inset-0 bg-cover bg-center opacity-15 pointer-events-none" style="background-image: url('{{ $quiz->cover_url }}');"></div>
         <div class="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
         <div class="absolute -right-4 -bottom-6 w-56 h-56 rounded-full bg-purple-500/20 blur-3xl pointer-events-none"></div>
 
@@ -74,11 +72,9 @@
             </p>
         </div>
 
-        @if($quiz->foto_quiz)
-            <div class="relative z-10 shrink-0 w-full md:w-60 aspect-video md:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
-                <img src="{{ asset('storage/' . $quiz->foto_quiz) }}" alt="{{ $quiz->judul }}" class="w-full h-full object-cover">
-            </div>
-        @endif
+        <div class="relative z-10 shrink-0 w-full md:w-60 aspect-video md:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
+            <img src="{{ $quiz->cover_url }}" alt="{{ $quiz->judul }}" class="w-full h-full object-cover">
+        </div>
     </div>
 
     {{-- Ringkasan Spesifikasi Kuis --}}

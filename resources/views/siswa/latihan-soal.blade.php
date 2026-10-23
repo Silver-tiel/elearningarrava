@@ -25,12 +25,8 @@
                     $expired = $quiz->sudahKadaluarsa();
                 @endphp
                 <div class="overflow-hidden rounded-xl border border-[#dfe6ef] bg-white transition {{ $expired ? 'cursor-not-allowed opacity-60 grayscale' : 'hover:-translate-y-0.5 hover:shadow-md' }}">
-                    <div class="relative h-[120px] overflow-hidden bg-gradient-to-br from-[#eef6ff] to-white">
-                        @if($quiz->foto_quiz)
-                            <img src="{{ asset('storage/' . $quiz->foto_quiz) }}" class="h-full w-full object-cover">
-                        @else
-                            <div class="flex h-full items-center justify-center text-5xl">{{ $expired ? '⏰' : '📝' }}</div>
-                        @endif
+                    <div class="relative h-[120px] overflow-hidden bg-slate-900">
+                        <img src="{{ $quiz->cover_url }}" alt="{{ $quiz->judul }}" class="h-full w-full object-cover">
                     </div>
                     <div class="p-4">
                         <span class="inline-flex rounded-md {{ $expired ? 'bg-slate-200 text-slate-500' : 'bg-[#edf5ff] text-[#3180f7]' }} px-2 py-1 text-[11px] font-medium">

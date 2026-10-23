@@ -335,6 +335,18 @@ class QuizManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Quiz Bergambar')
             ->assertSee($quiz->foto_quiz);
+
+        // Quiz without custom photo uses default cover (latarQuizDefault.png)
+        $quizTanpaCover = Quiz::create([
+            'judul' => 'Quiz Standar Default',
+            'id_jenjang' => 1,
+            'mode_pengerjaan' => 'wayground',
+        ]);
+        $this->assertStringContainsString('assets/widget/latarQuizDefault.png', $quizTanpaCover->cover_url);
+        $this->get(route('siswa.quiz'))
+            ->assertOk()
+            ->assertSee('Quiz Standar Default')
+            ->assertSee('assets/widget/latarQuizDefault.png');
     }
 
     private function makeAdmin(): User

@@ -121,7 +121,7 @@
                     'waktu_kadaluarsa' => $quiz->waktu_kadaluarsa ? $quiz->waktu_kadaluarsa->translatedFormat('d M Y, H:i') : null,
                     'is_expired' => $expired,
                     'perlu_token' => $quiz->perluToken(),
-                    'foto_url' => $quiz->foto_quiz ? asset('storage/' . $quiz->foto_quiz) : null,
+                    'foto_url' => $quiz->cover_url,
                     'mulai_url' => route('siswa.quiz.mulai', $quiz->id_quiz),
                     'detail_url' => route('siswa.quiz.detail', $quiz->id_quiz),
                 ];
@@ -132,24 +132,10 @@
                 <div>
                     {{-- Cover / Thumbnail Area --}}
                     <div class="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-900">
-                        @if($quiz->foto_quiz)
-                            <img src="{{ asset('storage/' . $quiz->foto_quiz) }}"
-                                 alt="{{ $quiz->judul }}"
-                                 class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105">
-                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30"></div>
-                        @else
-                            {{-- Modern sleek fallback gradient with subtle pattern --}}
-                            <div class="h-full w-full bg-gradient-to-tr from-[#0F172A] via-[#1E293B] to-[#1E3A8A] relative overflow-hidden flex items-center justify-center">
-                                <div class="absolute -right-8 -bottom-8 h-36 w-36 rounded-full bg-blue-500/20 blur-2xl pointer-events-none"></div>
-                                <div class="absolute -left-6 -top-6 h-28 w-28 rounded-full bg-indigo-500/20 blur-xl pointer-events-none"></div>
-                                
-                                {{-- Subtle watermark badge --}}
-                                <div class="text-white/20 text-6xl select-none font-black transform -rotate-12 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-0">
-                                    {{ $isWayground ? '⚡' : '🎯' }}
-                                </div>
-                            </div>
-                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/20"></div>
-                        @endif
+                        <img src="{{ $quiz->cover_url }}"
+                             alt="{{ $quiz->judul }}"
+                             class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30"></div>
 
                         {{-- Badges on Cover --}}
                         {{-- Top Left: Jenjang Badge --}}
