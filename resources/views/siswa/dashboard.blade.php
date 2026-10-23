@@ -47,13 +47,27 @@
             </div>
         </a>
 
-        <a href="{{ route('siswa.quiz') }}" class="rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-            <div class="flex items-center justify-between">
+        <a href="{{ route('siswa.quiz') }}" class="group relative overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+            <div class="relative z-10 flex items-center justify-between">
                 <span class="text-sm text-[#77859a]">Quiz Tersedia</span>
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#edf5ff] text-[#3180f7]">✎</span>
             </div>
-            <p class="mt-3 text-3xl font-bold text-[#172033]">{{ $quizCount }}</p>
+            <p class="relative z-10 mt-3 text-3xl font-bold text-[#172033]">{{ $quizCount }}</p>
             <p class="mt-4 text-sm font-semibold text-[#3180f7]">Buka quiz →</p>
+
+            <!-- Karakter Animasi Diperbesar di Pojok Kanan Bawah -->   
+            <div class="pointer-events-none absolute bottom-1 right-2 h-28 w-28">
+                <!-- 1. Gambar Diam (PNG) -->
+                <img src="{{ asset('assets/foto_karakter/quiz/quizgirl1.png') }}" 
+                    alt="Quiz Tersedia" 
+                    style="image-rendering: pixelated;" 
+                    class="h-full w-full object-contain transition-opacity duration-150 group-hover:opacity-0">
+                
+                <!-- 2. Gambar Bergerak (GIF) -->
+                <img src="{{ asset('assets/foto_karakter/quiz/quizgirl.gif') }}" 
+                    alt="Quiz Tersedia Animasi" 
+                    style="image-rendering: pixelated;" 
+                    class="absolute inset-0 h-full w-full object-contain opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            </div>
         </a>
 
         @php
