@@ -21,7 +21,7 @@
 
         @if ($errors->any())
             <div
-                class="mb-4 rounded-[10px] border border-[#FFD4D4] bg-[#FFF2F2] px-3.5 py-2.5 text-xs leading-5 text-[#A32929]">
+                class="shake mb-4 rounded-[10px] border border-[#FFD4D4] bg-[#FFF2F2] px-3.5 py-2.5 text-xs leading-5 text-[#A32929]">
                 <p class="font-bold">Silakan perbaiki data berikut.</p>
                 <ul class="ml-4 list-disc">
                     @foreach ($errors->all() as $error)
@@ -30,7 +30,7 @@
                 </ul>
             </div>
         @endif
-        <form action="{{ route('pendaftaranBaru') }}" method="POST" class="space-y-3.5">
+        <form action="{{ route('pendaftaranBaru') }}" method="POST" class="space-y-3.5 {{ $errors->any() ? 'shake' : '' }}">
             @csrf
 
             <div>

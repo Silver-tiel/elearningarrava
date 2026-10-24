@@ -68,6 +68,7 @@
             });
         });
     </script>
+    @include('components.hover-effects')
 </body>
 
 </html>

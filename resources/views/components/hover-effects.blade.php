@@ -483,16 +483,64 @@
 
   // Otomatis bunyikan error jika halaman dimuat dengan pesan error dari backend
   @if(session('error') || session('status_error') || (isset($errors) && $errors->any()))
-    const hasInitialServerError = true;
+    let pendingInitialError = true;
   @else
-    const hasInitialServerError = false;
+    let pendingInitialError = false;
   @endif
 
-  function triggerInitialError() {
-    if (!hasInitialServerError) return;
-    setTimeout(() => {
+  function checkDomForErrors() {
+    if (pendingInitialError) return true;
+    const errorEl = document.querySelector(
+      '.bg-red-50, .bg-rose-50, [role="alert"], .alert-danger, .error-feedback, [data-error-auto], .bg-\\[\\#FFF2F2\\]'
+    );
+    if (errorEl) {
+      pendingInitialError = true;
+      return true;
+    }
+    return false;
+  }
+
+  function tryPlayPendingError() {
+    if (!pendingInitialError) return;
+    const c = getAudioCtx();
+    if (!c) return;
+
+    if (c.state === 'running') {
+      pendingInitialError = false;
       playErrorSound(-8.5);
-    }, 250);
+    } else {
+      c.resume().then(() => {
+        if (pendingInitialError) {
+          pendingInitialError = false;
+          playErrorSound(-8.5);
+        }
+      }).catch(() => {});
+    }
+  }
+
+  function triggerInitialError() {
+    checkDomForErrors();
+    if (!pendingInitialError) return;
+
+    // 1. Coba putar langsung via HTMLAudioElement (sering berhasil jika navigasi dari domain yang sama)
+    try {
+      const audio = new Audio(ERROR_AUDIO_URL);
+      audio.playbackRate = Math.pow(2, -8.5 / 12);
+      audio.volume = 0.85;
+      audio.play().then(() => {
+        pendingInitialError = false;
+      }).catch(() => {
+        // Jika diblokir autoplay policy browser, tryPlayPendingError akan menyambut interaksi pertama
+      });
+    } catch(e) {}
+
+    // 2. Coba via Web Audio API
+    setTimeout(tryPlayPendingError, 200);
+
+    // 3. Pasang pendengar interaksi pertama jika browser memblokir audio sampai ada interaksi
+    ['pointerdown', 'keydown', 'touchstart', 'pointermove', 'focusin', 'click'].forEach(evt => {
+      window.addEventListener(evt, tryPlayPendingError, { passive: true, once: true });
+    });
   }
 
   // Mulai download buffer audio secepatnya

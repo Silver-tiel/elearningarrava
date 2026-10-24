@@ -16,12 +16,12 @@
         @endif
 
         @if ($errors->any())
-            <div class="mb-5 rounded-[10px] border border-[#FFD4D4] bg-[#FFF2F2] px-3.5 py-3 text-xs leading-5 text-[#A32929]">
+            <div class="shake mb-5 rounded-[10px] border border-[#FFD4D4] bg-[#FFF2F2] px-3.5 py-3 text-xs leading-5 text-[#A32929]">
                 {{ $errors->first() }}
             </div>
         @endif
 
-        <form action="{{ route('login.submit') }}" method="POST" class="space-y-4">
+        <form action="{{ route('login.submit') }}" method="POST" class="space-y-4 {{ $errors->any() ? 'shake' : '' }}">
             @csrf
 
             <div>
