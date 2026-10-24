@@ -24,8 +24,8 @@
                 @php
                     $expired = $quiz->sudahKadaluarsa();
                 @endphp
-                <div class="overflow-hidden rounded-xl border border-[#dfe6ef] bg-white transition {{ $expired ? 'cursor-not-allowed opacity-60 grayscale' : 'hover:-translate-y-0.5 hover:shadow-md' }}">
-                    <div class="relative h-[120px] overflow-hidden bg-slate-900">
+                <div class="hover-frame group rounded-xl border border-[#dfe6ef] bg-white transition {{ $expired ? 'cursor-not-allowed opacity-60 grayscale' : 'hover:-translate-y-0.5 hover:shadow-md' }}">
+                    <div class="relative h-[120px] overflow-hidden rounded-t-xl bg-slate-900">
                         <img src="{{ $quiz->cover_url }}" alt="{{ $quiz->judul }}" class="h-full w-full object-cover">
                     </div>
                     <div class="p-4">

@@ -45,5 +45,6 @@
         </main>
     </div>
 
+    @include('components.hover-effects')
 </body>
 </html>

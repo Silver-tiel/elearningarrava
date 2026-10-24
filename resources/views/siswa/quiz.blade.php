@@ -126,12 +126,12 @@
                     'detail_url' => route('siswa.quiz.detail', $quiz->id_quiz),
                 ];
             @endphp
-            <div class="quiz-card-item group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 bg-white transition-all duration-300 {{ $expired ? 'cursor-not-allowed opacity-65 grayscale' : 'hover:-translate-y-1.5 hover:shadow-xl hover:border-blue-400/60' }}"
+            <div class="quiz-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200 bg-white transition-all duration-300 {{ $expired ? 'cursor-not-allowed opacity-65 grayscale' : 'hover:-translate-y-1.5 hover:shadow-xl hover:border-blue-400/60' }}"
                  data-title="{{ strtolower($quiz->judul) }}">
 
                 <div>
                     {{-- Cover / Thumbnail Area --}}
-                    <div class="relative h-44 sm:h-48 w-full overflow-hidden bg-slate-900">
+                    <div class="relative h-44 sm:h-48 w-full overflow-hidden rounded-t-2xl sm:rounded-t-3xl bg-slate-900">
                         <img src="{{ $quiz->cover_url }}"
                              alt="{{ $quiz->judul }}"
                              class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105">

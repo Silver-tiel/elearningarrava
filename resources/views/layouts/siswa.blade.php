@@ -49,6 +49,7 @@
         </main>
     </div>
 
+    @include('components.hover-effects')
     @stack('scripts')
 </body>
 </html>

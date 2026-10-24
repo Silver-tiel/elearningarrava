@@ -14,7 +14,6 @@
     @if(session('error'))
         <div class="mb-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</div>
     @endif
-
     <div class="mb-7">
         <p class="text-sm font-medium text-[#3180f7]">Dashboard Siswa</p>
         <h1 class="mt-1 text-[28px] font-bold tracking-tight text-[#172033]">Halo, {{ $user->nama }} 👋</h1>
@@ -22,7 +21,7 @@
     </div>
 
     <div class="grid gap-5 lg:grid-cols-3">
-        <a href="{{ route('siswa.modul') }}" class="group relative overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+        <a href="{{ route('siswa.modul') }}" class="hover-frame group relative rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <div class="relative z-10 flex items-center justify-between">
                 <span class="text-sm text-[#77859a]">Materi Tersedia</span>
             </div>
@@ -47,7 +46,7 @@
             </div>
         </a>
 
-        <a href="{{ route('siswa.quiz') }}" class="group relative overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+        <a href="{{ route('siswa.quiz') }}" class="hover-frame group relative rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <div class="relative z-10 flex items-center justify-between">
                 <span class="text-sm text-[#77859a]">Quiz Tersedia</span>
             </div>
@@ -83,7 +82,7 @@
                 'is_max' => false,
             ];
         @endphp
-        <div class="flex flex-col justify-between rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+        <div class="hover-frame flex flex-col justify-between rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
             <div>
                 <div class="flex items-center justify-between gap-2">
                     <span class="text-sm text-[#77859a]">Peringkat &amp; EXP</span>
@@ -168,8 +167,8 @@
         $isVideo = ($modul->id_tipemodul == 1 || $modul->youtube_id);
         $targetUrl = route('siswa.modul.materi', $modul->id_modul);
     @endphp
-            <a href="{{ $targetUrl }}" class="overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white transition hover:-translate-y-0.5 hover:shadow-md">
-                <div class="relative h-36 bg-[#eef3f8] overflow-hidden">
+            <a href="{{ $targetUrl }}" class="hover-frame group block rounded-2xl border border-[#dfe6ef] bg-white transition hover:-translate-y-0.5 hover:shadow-md">
+                <div class="relative h-36 bg-[#eef3f8] overflow-hidden rounded-t-2xl">
                     @if($modul->foto_modul && Storage::disk('public')->exists($modul->foto_modul))
                         <img src="{{ asset('storage/'.$modul->foto_modul) }}" alt="{{ $modul->judul_modul }}" class="h-full w-full object-cover">
                     @elseif($modul->youtube_id)

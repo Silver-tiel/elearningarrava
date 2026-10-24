@@ -20,7 +20,7 @@
             @php
                 $isVideo = ($modul->id_tipemodul == 1 || $modul->youtube_embed_url);
             @endphp
-            <div class="group overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+            <div class="hover-frame group rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
                 <div class="flex gap-4">
                     <div class="relative h-[200px] w-[160px] shrink-0 overflow-hidden rounded-xl bg-[#eef2f7]">
                         @if($modul->foto_modul && Storage::disk('public')->exists($modul->foto_modul))
