@@ -233,6 +233,7 @@
                                     ℹ️ Detail
                                 </a>
                                 <button type="button"
+                                        data-quiz-start
                                         onclick='openQuizPreviewModal(@json($modalData))'
                                         class="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs px-4 py-2 transition shadow-sm hover:shadow hover:scale-[1.02]">
                                     <span>Kerjakan</span>
@@ -350,6 +351,7 @@
                             Halaman Penuh
                         </a>
                         <button type="submit"
+                                data-quiz-start
                                 class="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs shadow-md shadow-blue-500/25 transition transform hover:scale-[1.02]">
                             <span>Mulai Kerjakan</span>
                             <span>🚀</span>

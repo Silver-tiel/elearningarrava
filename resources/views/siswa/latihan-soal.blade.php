@@ -40,7 +40,7 @@
                         @if($expired)
                             <div class="mt-3 text-[11px] font-semibold text-rose-600">Waktu habis, tidak bisa dikerjakan.</div>
                         @else
-                            <a href="{{ route('siswa.latihan-soal.kerjakan', $quiz->id_quiz) }}" class="mt-3 inline-flex rounded-lg bg-[#3d82f6] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#3172e2]">Mulai</a>
+                            <a href="{{ route('siswa.latihan-soal.kerjakan', $quiz->id_quiz) }}" data-quiz-start class="mt-3 inline-flex rounded-lg bg-[#3d82f6] px-3 py-2 text-[11px] font-semibold text-white transition hover:bg-[#3172e2]">Mulai</a>
                         @endif
                     </div>
                 </div>

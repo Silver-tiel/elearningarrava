@@ -215,7 +215,7 @@
                     Belum Ada Soal
                 </button>
             @else
-                <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 transition transform hover:-translate-y-0.5 active:translate-y-0">
+                <button type="submit" data-quiz-start class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 transition transform hover:-translate-y-0.5 active:translate-y-0">
                     <span>Mulai Kerjakan Soal</span>
                     <span class="text-base">🚀</span>
                 </button>
