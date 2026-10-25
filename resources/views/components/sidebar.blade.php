@@ -138,8 +138,7 @@
                 <!-- Dashboard -->
                 <a href="{{ route('admin') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminDash ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminDash ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actAdminDash ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                         <span class="truncate">Dashboard</span>
@@ -154,8 +153,7 @@
                 <!-- Siswa -->
                 <a href="{{ route('admin.daftar_siswa') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminSiswa ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminSiswa ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actAdminSiswa ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         <span class="truncate">Siswa</span>
@@ -170,10 +168,9 @@
                 <!-- Modul -->
                 <a href="{{ route('admin.modul') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminModul ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminModul ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actAdminModul ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 16.5 5c1.747 0 3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         <span class="truncate">Modul</span>
                     </div>
                     <div class="sidebar-pop-wrap">
@@ -186,8 +183,7 @@
                 <!-- Quiz -->
                 <a href="{{ route('admin.quiz') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminQuiz ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminQuiz ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actAdminQuiz ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         <span class="truncate">Quiz</span>
@@ -202,8 +198,7 @@
                 <!-- Penghargaan / Achievement -->
                 <a href="{{ route('admin.achievement') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminAchieve ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminAchieve ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actAdminAchieve ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
                         <span class="truncate">Penghargaan</span>
@@ -218,8 +213,7 @@
                 <!-- Guru -->
                 <a href="{{ route('admin.guru') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminGuru ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminGuru ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actAdminGuru ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         <span class="truncate">Guru</span>
@@ -236,8 +230,7 @@
                 <!-- Profil -->
                 <a href="{{ route('admin.profil') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminProfil ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminProfil ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actAdminProfil ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                         <span class="truncate">Profil</span>
@@ -263,8 +256,7 @@
                 <!-- Dashboard -->
                 <a href="{{ route('siswa.dashboard') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaDash ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaDash ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actSiswaDash ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                         <span class="truncate">Dashboard</span>
@@ -279,8 +271,7 @@
                 <!-- Belajar / Modul -->
                 <a href="{{ route('siswa.modul') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaBelajar ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaBelajar ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actSiswaBelajar ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 16.5 5c1.747 0 3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         <span class="truncate">Belajar</span>
@@ -295,8 +286,7 @@
                 <!-- Materi Video -->
                 <a href="{{ route('siswa.modul') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaVideo ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaVideo ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actSiswaVideo ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         <span class="truncate">Materi Video</span>
@@ -311,8 +301,7 @@
                 <!-- Quiz -->
                 <a href="{{ route('siswa.quiz') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaQuiz ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaQuiz ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actSiswaQuiz ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         <span class="truncate">Quiz</span>
@@ -327,8 +316,7 @@
                 <!-- Profil -->
                 <a href="{{ route('siswa.profil') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaProfil ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaProfil ? 'true' : 'false' }}"
-                   data-hover-sound>
+                   data-active="{{ $actSiswaProfil ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                         <span class="truncate">Profil</span>
@@ -367,11 +355,19 @@
 
 <script>
     (function() {
+        // Expose helper untuk membunyikan suara menu sidebar lewat audio engine utama
+        window.playSidebarMenuSound = function(pitchShift, vol) {
+            if (window.ArravaHoverSound && window.ArravaHoverSound.playMenuClick) {
+                window.ArravaHoverSound.playMenuClick(pitchShift !== undefined ? pitchShift : 0, vol !== undefined ? vol : 0.85);
+            }
+        };
+
+        // Responsive sidebar drawer logic untuk layar mobile & desktop
         function initResponsiveSidebar() {
-            const sidebar = document.getElementById('mainSidebar');
-            const backdrop = document.getElementById('sidebarBackdrop');
-            const closeBtn = document.getElementById('sidebarClose');
-            const toggleBtns = document.querySelectorAll('[data-sidebar-toggle]');
+            var sidebar = document.getElementById('mainSidebar');
+            var backdrop = document.getElementById('sidebarBackdrop');
+            var closeBtn = document.getElementById('sidebarClose');
+            var toggleBtns = document.querySelectorAll('[data-sidebar-toggle]');
 
             if (!sidebar || !backdrop) return;
 
@@ -389,7 +385,7 @@
                 document.body.classList.remove('overflow-hidden', 'lg:overflow-auto');
             }
 
-            toggleBtns.forEach(btn => {
+            toggleBtns.forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     openSidebar();
@@ -405,40 +401,12 @@
 
             backdrop.addEventListener('click', closeSidebar);
 
-            // Tutup sidebar jika layar di-resize ke desktop
             window.addEventListener('resize', function() {
                 if (window.innerWidth >= 1024) {
                     closeSidebar();
                 }
             });
         }
-
-        // Event listener saat link sidebar diklik (memutar sound pluck-thud menu click + delay transisi)
-        document.addEventListener('click', function(e) {
-            const item = e.target.closest('.sidebar-menu-item');
-            if (!item) return;
-
-            // Putar sound menu click via window.ArravaHoverSound jika tersedia
-            if (window.ArravaHoverSound && typeof window.ArravaHoverSound.playMenuClick === 'function') {
-                window.ArravaHoverSound.playMenuClick(0, 0.75);
-            }
-
-            // Jika link mengarah ke halaman lain, beri delay 160ms agar suaranya terdengar
-            if (item.tagName === 'A' && item.href && !item.href.includes('#') && !item.dataset.navigating) {
-                const currentClean = window.location.href.split('#')[0].split('?')[0];
-                const targetClean = item.href.split('#')[0].split('?')[0];
-
-                if (currentClean === targetClean) {
-                    return; // Halaman yang sedang aktif
-                }
-
-                e.preventDefault();
-                item.dataset.navigating = 'true';
-                setTimeout(() => {
-                    window.location.href = item.href;
-                }, 160);
-            }
-        });
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initResponsiveSidebar);
@@ -447,3 +415,4 @@
         }
     })();
 </script>
+
