@@ -189,13 +189,23 @@
 
                     <div class="flex gap-4">
 
-                        {{-- Thumbnail BARU (Otomatis Mendeteksi PDF / Cover / Video) --}}
-                        <div class="w-[160px] h-[200px] rounded-xl overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center relative">
+                        {{-- Thumbnail BARU (Otomatis Mendeteksi YouTube / Cover / PDF) --}}
+                        <div class="w-[160px] h-[200px] rounded-xl overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center relative group">
                             @if($module->foto_modul && Storage::disk('public')->exists($module->foto_modul))
                                 {{-- Jika ada foto sampul yang diunggah --}}
                                 <img src="{{ Storage::url($module->foto_modul) }}"
                                     alt="{{ $module->judul_modul }}"
                                     class="w-full h-full object-cover">
+                            @elseif($module->youtube_id)
+                                {{-- Sampul Otomatis dari Video YouTube (Sama seperti implementasi di Siswa) --}}
+                                <img src="https://img.youtube.com/vi/{{ $module->youtube_id }}/hqdefault.jpg"
+                                    alt="{{ $module->judul_modul }}"
+                                    class="w-full h-full object-cover transition duration-300 group-hover:scale-105">
+                                <div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                    <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg text-sm font-bold pl-0.5">
+                                        ▶
+                                    </div>
+                                </div>
                             @elseif($module->tipe_file === 'pdf' || str_ends_with(strtolower($module->file_materi ?? ''), '.pdf'))
                                 {{-- Tampilan Sampul Dokumen PDF Elegan --}}
                                 <div class="w-full h-full bg-gradient-to-b from-rose-50 to-red-100 border border-red-200 p-3 flex flex-col justify-between items-center text-center">
@@ -217,7 +227,7 @@
                                     </span>
                                 </div>
                             @elseif($module->tipe_file === 'link' || ($module->tipeModul && strtolower($module->tipeModul->nama_tipe) === 'video'))
-                                {{-- Tampilan Sampul Materi Video --}}
+                                {{-- Tampilan Sampul Materi Video Non-YouTube --}}
                                 <div class="w-full h-full bg-gradient-to-b from-blue-50 to-indigo-100 border border-blue-200 p-3 flex flex-col justify-between items-center text-center">
                                     <span class="px-2 py-0.5 rounded bg-blue-600 text-white font-extrabold text-[10px] tracking-wider uppercase shadow-sm">
                                         VIDEO

@@ -101,8 +101,16 @@
                         Gambar Sampul / Thumbnail Modul (Biarkan kosong jika tidak ingin mengubah)
                     </label>
                     <input type="file" id="foto_modul" name="foto_modul" accept="image/*" class="w-full">
-                    @if($module->foto_modul)
-                        <img src="{{ Storage::url($module->foto_modul) }}" class="mt-2 w-32 h-32 object-cover rounded-lg border">
+                    @if($module->foto_modul && Storage::disk('public')->exists($module->foto_modul))
+                        <div class="mt-2">
+                            <img src="{{ Storage::url($module->foto_modul) }}" class="w-32 h-32 object-cover rounded-lg border shadow-sm">
+                            <span class="text-xs text-slate-500 font-medium block mt-1">Sampul foto khusus</span>
+                        </div>
+                    @elseif($module->youtube_id)
+                        <div class="mt-2 flex items-center gap-3">
+                            <img src="https://img.youtube.com/vi/{{ $module->youtube_id }}/hqdefault.jpg" class="w-36 h-24 object-cover rounded-lg border shadow-sm">
+                            <span class="text-xs text-slate-500 font-medium">Sampul otomatis dari video YouTube</span>
+                        </div>
                     @endif
                 </div>
                 <!-- Tombol Aksi / Simpan -->

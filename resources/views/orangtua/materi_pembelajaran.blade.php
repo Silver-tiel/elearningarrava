@@ -284,8 +284,8 @@
                     // Label mapel / jenjang
                     $mapelLabel = $modul->jenjang->nama_tipe ?? '-';
 
-                    // Materi video count
-                    $videoCount = $modul->materiVideo->count();
+                    // Format materi
+                    $isVideo = $modul->is_video;
                 @endphp
                 <tr class="hover:bg-slate-50/50 transition-colors duration-100 group">
 
@@ -302,8 +302,8 @@
                                     {{ $modul->judul_modul }}
                                 </p>
                                 <p class="text-[11px] text-slate-400 mt-0.5 truncate">
-                                    @if($videoCount > 0)
-                                    Bab {{ $loop->iteration }} &bull; {{ $videoCount }} Video Materi
+                                    @if($isVideo)
+                                    Bab {{ $loop->iteration }} &bull; Video Pembelajaran
                                     @else
                                     Bab {{ $loop->iteration }} &bull; Materi Digital
                                     @endif
