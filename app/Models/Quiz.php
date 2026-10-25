@@ -31,7 +31,13 @@ class Quiz extends Model
         'hasil_quiz',
         'proggressQuiz',
         'foto_quiz',
+        'opsi_preview',
     ];
+
+    public function isPreviewLengkap(): bool
+    {
+        return ($this->opsi_preview ?? 'lengkap') === 'lengkap';
+    }
 
     public function perluToken(): bool
     {
@@ -44,7 +50,7 @@ class Quiz extends Model
             return asset('storage/' . $this->foto_quiz);
         }
 
-        return asset('assets/widget/latarQuizDefault.png');
+        return asset('assets/widget/latarQuizDefault.webp');
     }
 
     public function jenjang()
@@ -67,16 +73,30 @@ class Quiz extends Model
         return $this->hasMany(Soal::class, 'id_quiz', 'id_quiz');
     }
 
+    public function hasil()
+    {
+        return $this->hasMany(HasilQuizModul::class, 'id_quiz', 'id_quiz');
+    }
+
     public function scopeBelumKadaluarsa(Builder $query): Builder
     {
         return $query->where(function (Builder $query) {
-            $query->whereNull('waktu_kadaluarsa')
-                ->orWhere('waktu_kadaluarsa', '>', now());
+            $query->where(function ($sub) {
+                $sub->whereNotNull('token')
+                    ->where('token', '!=', '');
+            })->orWhere(function ($sub) {
+                $sub->whereNull('waktu_kadaluarsa')
+                    ->orWhere('waktu_kadaluarsa', '>', now());
+            });
         });
     }
 
     public function sudahKadaluarsa(): bool
     {
+        if ($this->perluToken()) {
+            return false;
+        }
+
         return $this->waktu_kadaluarsa !== null
             && now()->greaterThanOrEqualTo($this->waktu_kadaluarsa);
     }
@@ -84,7 +104,7 @@ class Quiz extends Model
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($quiz) {
             if (\Illuminate\Support\Facades\Schema::hasTable($quiz->getTable()) && !\Illuminate\Support\Facades\Schema::hasColumn($quiz->getTable(), 'kode_quiz')) {
                 return;

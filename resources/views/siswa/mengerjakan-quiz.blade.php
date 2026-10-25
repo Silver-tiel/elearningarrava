@@ -1,6 +1,9 @@
 @extends('layouts.siswa')
 
+@section('hideSidebar', 'true')
+
 @php
+    $hideSidebar = true;
     $isPreview = $isPreview ?? false;
     $active = 'quiz';
     $kahootStyles = [
@@ -12,7 +15,29 @@
 @endphp
 
 @section('header-left')
-    <h1 class="text-[20px] font-bold text-slate-800">Ruang Quiz Interaktif</h1>
+    <div class="flex items-center justify-between w-full">
+        <div class="min-w-0">
+            <h1 class="text-base sm:text-lg font-extrabold text-slate-800 leading-tight truncate">
+                {{ $quiz->judul }}
+            </h1>
+        </div>
+
+        <div class="shrink-0 pl-2">
+            @if($isPreview)
+                <a href="{{ route('admin.quiz') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-xs transition">
+                    <span>←</span>
+                    <span class="hidden sm:inline">Keluar Preview</span>
+                </a>
+            @else
+                <a href="{{ route('siswa.quiz') }}"
+                   onclick="return confirm('Apakah Anda yakin ingin meninggalkan kuis? Jawaban yang belum dikirim tidak akan tersimpan!');"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs shadow-xs transition">
+                    <span>✕</span>
+                    <span class="hidden sm:inline">Keluar Kuis</span>
+                </a>
+            @endif
+        </div>
+    </div>
 @endsection
 
 @push('styles')
@@ -165,7 +190,7 @@
                 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between">
                     <div>
                         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 mb-2">
-                            <span>{{ ($quiz->mode_pengerjaan ?? 'wayground') === 'biasa' ? 'Mode Kuis Biasa' : 'Mode Wayground' }}</span>
+                            <span>{{ ($quiz->mode_pengerjaan ?? 'wayground') === 'biasa' ? 'Mode Waktu Total' : 'Mode Waktu per Soal' }}</span>
                         </div>
                         <h1 class="text-xl font-extrabold text-slate-800">{{ $quiz->judul }}</h1>
                         <p class="text-xs text-slate-500 mt-1">Total: {{ $quiz->soal->count() }} Pertanyaan</p>

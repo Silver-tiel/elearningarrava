@@ -16,7 +16,6 @@
 @section('content')
 @php
     $expired = $quiz->sudahKadaluarsa();
-    $isWayground = ($quiz->mode_pengerjaan ?? 'wayground') === 'wayground';
 @endphp
 
 <div class="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-6">
@@ -44,14 +43,13 @@
         <div class="relative z-10 flex-1">
             <div class="flex flex-wrap items-center gap-2 mb-3">
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur text-white">
-                    🎓 {{ $quiz->jenjang->nama_tipe ?? 'Semua Jenjang' }}
-                </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur text-white">
                     📈 {{ $quiz->tingkatQuiz->nama_tingkat ?? 'Umum' }}
                 </span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold {{ $isWayground ? 'bg-amber-400 text-slate-900' : 'bg-emerald-400 text-slate-900' }}">
-                    ⚡ {{ $isWayground ? 'Mode Wayground' : 'Mode Kuis Biasa' }}
-                </span>
+                @if(isset($hasilSiswa) && $hasilSiswa->poin_didapat > 0)
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-300 text-slate-900 shadow-sm">
+                        ✅ Selesai (+{{ $hasilSiswa->poin_didapat }} Poin)
+                    </span>
+                @endif
                 @if($quiz->perluToken())
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-200 text-purple-950">
                         🔒 Perlu Token
@@ -74,6 +72,20 @@
 
         <div class="relative z-10 shrink-0 w-full md:w-60 aspect-video md:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
             <img src="{{ $quiz->cover_url }}" alt="{{ $quiz->judul }}" class="w-full h-full object-cover">
+            @if($expired && !$quiz->perluToken())
+                <div class="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40 backdrop-blur-[0.5px]">
+                    <img src="{{ asset('assets/widget/expiredQuiz.webp') }}"
+                         alt="Kuis Kadaluarsa"
+                         class="w-full h-full object-cover [image-rendering:pixelated] opacity-90 drop-shadow-md">
+                </div>
+            @endif
+            @if(isset($hasilSiswa) && $hasilSiswa->poin_didapat > 0)
+                <div class="absolute top-2 right-2 z-10 pointer-events-none select-none">
+                    <img src="{{ asset('assets/widget/quizBerhasilStempel.webp') }}"
+                         alt="Stempel Selesai"
+                         class="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-2xl transform -rotate-12">
+                </div>
+            @endif
         </div>
     </div>
 
@@ -93,12 +105,8 @@
                 <span>⏱️</span> Waktu Kuis
             </div>
             <div class="text-lg sm:text-xl font-black text-slate-800">
-                @if($isWayground)
-                    Detik/Soal
-                    <span class="block text-[11px] font-semibold text-slate-400">Sesuai timer soal</span>
-                @else
-                    {{ $quiz->durasi_total_menit ?? 30 }} <span class="text-xs font-semibold text-slate-400">Menit Total</span>
-                @endif
+                {{ $quiz->durasi_total_menit ? ($quiz->durasi_total_menit . ' Menit') : 'Fleksibel' }}
+                <span class="block text-[11px] font-semibold text-slate-400">Total estimasi</span>
             </div>
         </div>
 
@@ -140,17 +148,10 @@
                 <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 mt-0.5">1</span>
                 <span>Pastikan perangkat Anda terhubung dengan internet yang stabil sebelum menekan tombol <strong>Mulai Kerjakan</strong>.</span>
             </div>
-            @if($isWayground)
-                <div class="flex items-start gap-2.5">
-                    <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-700 mt-0.5">2</span>
-                    <span><strong>Mode Wayground:</strong> Setiap soal memiliki batas waktu detik tersendiri. Waktu akan langsung berjalan begitu pertanyaan muncul!</span>
-                </div>
-            @else
-                <div class="flex items-start gap-2.5">
-                    <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 mt-0.5">2</span>
-                    <span><strong>Mode Kuis Biasa:</strong> Anda memiliki total waktu <strong>{{ $quiz->durasi_total_menit ?? 30 }} menit</strong> untuk menyelesaikan seluruh pertanyaan kuis.</span>
-                </div>
-            @endif
+            <div class="flex items-start gap-2.5">
+                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 mt-0.5">2</span>
+                <span>Setiap pertanyaan kuis memiliki bobot poin dan batas waktu tertentu. Jawablah dengan fokus dan teliti.</span>
+            </div>
             <div class="flex items-start gap-2.5">
                 <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700 mt-0.5">3</span>
                 <span>Periksa kembali setiap jawaban sebelum menekan kirim atau sebelum waktu pengerjaan habis.</span>
@@ -163,6 +164,117 @@
             @endif
         </div>
     </div>
+
+    {{-- Rincian Soal / Tipe Soal yang Ada di Dalam Quiz --}}
+    @if(($quiz->opsi_preview ?? 'lengkap') === 'tipe_saja')
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                    <span>🏷️</span> Tipe Soal yang Ada di Dalam Quiz
+                </h2>
+                <span class="text-xs font-black px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    {{ $quiz->soal->groupBy(fn($s) => $s->jenisSoal->nama_jenis ?? 'Pilihan Ganda')->count() }} Format Soal
+                </span>
+            </div>
+
+            @if($quiz->soal->isEmpty())
+                <p class="text-xs text-slate-400 italic py-3 text-center">Belum ada rincian soal untuk kuis ini.</p>
+            @else
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    @foreach($quiz->soal->groupBy(fn($s) => $s->jenisSoal->nama_jenis ?? 'Pilihan Ganda') as $namaJenis => $items)
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700 text-sm font-bold">
+                                    ✓
+                                </span>
+                                <div>
+                                    <p class="text-xs font-extrabold text-slate-800">{{ $namaJenis }}</p>
+                                    <p class="text-[11px] text-slate-500 font-medium">Format pertanyaan</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-black px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
+                                {{ $items->count() }} Soal
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200/80 text-xs text-amber-900 flex items-center gap-2.5">
+                    <span class="text-base">🔒</span>
+                    <span>Detail pertanyaan kuis ini dirahasiakan oleh pengajar dan akan ditampilkan langsung begitu Anda menekan tombol <strong>Mulai Kerjakan</strong>.</span>
+                </div>
+            @endif
+        </div>
+    @else
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                    <span>📋</span> Daftar Soal yang Ada di Dalam Quiz
+                </h2>
+                <span class="text-xs font-black px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    {{ $quiz->soal->count() }} Pertanyaan
+                </span>
+            </div>
+
+            @if($quiz->soal->isEmpty())
+                <p class="text-xs text-slate-400 italic py-3 text-center">Belum ada rincian soal untuk kuis ini.</p>
+            @else
+                <div class="divide-y divide-slate-100 max-h-96 overflow-y-auto pr-1">
+                    @foreach($quiz->soal as $idx => $s)
+                        <div class="py-3 flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white mt-0.5 shadow-sm">
+                                    {{ $idx + 1 }}
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-bold text-slate-800 line-clamp-2 leading-snug">
+                                        {{ Str::limit(trim(strip_tags($s->pertanyaan)), 130) ?: ('Pertanyaan #' . ($idx + 1)) }}
+                                    </p>
+                                    <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                                            🏷️ {{ $s->jenisSoal->nama_jenis ?? 'Pilihan Ganda' }}
+                                        </span>
+                                        @if($s->durasi_detik)
+                                            <span>• ⏱️ {{ $s->durasi_detik }} detik</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="shrink-0 text-right">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                    +{{ $s->poin ?? 10 }} Poin
+                                </span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
+
+    {{-- Banner Riwayat Penyelesaian Kuis --}}
+    @if(isset($hasilSiswa) && $hasilSiswa->poin_didapat > 0)
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/90 shadow-sm flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md text-xl">
+                    🏆
+                </div>
+                <div>
+                    <h3 class="text-sm font-extrabold text-emerald-950">Anda Telah Berhasil Menyelesaikan Kuis Ini</h3>
+                    <p class="text-xs text-emerald-800 mt-0.5 font-medium leading-relaxed">
+                        Skor perolehan terbaik: <strong>{{ $hasilSiswa->poin_didapat }} Poin</strong>
+                        @if($hasilSiswa->waktu_dapat)
+                            <span> • {{ \Carbon\Carbon::parse($hasilSiswa->waktu_dapat)->translatedFormat('d M Y, H:i') }}</span>
+                        @endif
+                        . Anda tetap dapat mengerjakannya kembali untuk mengasah pemahaman materi.
+                    </p>
+                </div>
+            </div>
+            <img src="{{ asset('assets/widget/quizBerhasilStempel.webp') }}"
+                 alt="Stempel Selesai"
+                 class="w-16 h-16 object-contain shrink-0 hidden sm:block transform -rotate-6 drop-shadow">
+        </div>
+    @endif
 
     {{-- Form Mulai Kuis & Token --}}
     <form action="{{ route('siswa.quiz.mulai', $quiz->id_quiz) }}" method="POST" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">

@@ -16,23 +16,31 @@
     @include('components.page-loader')
     <x-level-up-modal />
 
+    @php
+        $sidebarHidden = ($hideSidebar ?? false) || View::hasSection('hideSidebar');
+    @endphp
+
     <div class="flex min-h-screen">
 
         <!-- SIDEBAR -->
-        <x-sidebar />
+        @unless($sidebarHidden)
+            <x-sidebar />
+        @endunless
 
         <!-- MAIN CONTENT AREA -->
         <main class="flex-1 min-w-0 flex flex-col">
 
             <!-- TOPBAR / NAVBAR -->
-            <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-20">
+            <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <!-- Tombol Garis 3 (Hamburger Menu) untuk Layar Kecil -->
-                    <button data-sidebar-toggle type="button" class="lg:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-slate-600 hover:bg-slate-50 transition" aria-label="Buka Menu">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                    </button>
+                    @unless($sidebarHidden)
+                        <button data-sidebar-toggle type="button" class="lg:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-slate-600 hover:bg-slate-50 transition" aria-label="Buka Menu">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+                    @endunless
 
                     <div class="flex-1 min-w-0">
                         @yield('header')

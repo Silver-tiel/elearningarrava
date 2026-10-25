@@ -116,7 +116,11 @@ class SiswaController extends Controller
             })
             // Siswa hanya melihat kuis untuk jenjangnya sendiri.
             ->when($user && $user->id_jenjang, fn($q) => $q->where('id_jenjang', $user->id_jenjang))
-            ->with(['tipeQuiz', 'tingkatQuiz'])
+            ->with([
+                'tipeQuiz',
+                'tingkatQuiz',
+                'hasil' => fn($q) => $user ? $q->where('id_user', $user->id_user) : $q,
+            ])
             ->withCount('soal')
             ->latest()
             ->get();
@@ -146,9 +150,16 @@ class SiswaController extends Controller
             'sort' => ['nullable', 'in:terbaru,terlama'],
         ]);
 
-        $query = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz', 'jenjang']);
-
         $user = Auth::user();
+
+        $query = Quiz::with([
+            'tipeQuiz',
+            'tingkatQuiz',
+            'jenjang',
+            'soal.jenisSoal',
+            'hasil' => fn($q) => $user ? $q->where('id_user', $user->id_user) : $q,
+        ]);
+
         if ($user && $user->id_jenjang) {
             $query->where('id_jenjang', $user->id_jenjang);
         }
@@ -181,10 +192,16 @@ class SiswaController extends Controller
             return $tolak;
         }
 
+        $user = Auth::user();
+        $hasilSiswa = $user ? HasilQuizModul::where('id_user', $user->id_user)
+            ->where('id_quiz', $quiz->id_quiz)
+            ->orderByDesc('poin_didapat')
+            ->first() : null;
+
         $totalPoin = $quiz->soal->sum('poin');
         $totalSoal = $quiz->soal->count();
 
-        return view('siswa.quiz-detail', compact('quiz', 'totalPoin', 'totalSoal'));
+        return view('siswa.quiz-detail', compact('quiz', 'totalPoin', 'totalSoal', 'hasilSiswa'));
     }
 
     public function mulaiQuiz(Request $request, $id_quiz)
@@ -549,6 +566,7 @@ class SiswaController extends Controller
     {
         return Quiz::with([
             'soal' => fn($q) => $q->orderBy('id_soal'),
+            'soal.jenisSoal',
             'soal.pilihanSoal' => fn($q) => $q->orderBy('label'),
         ])->where(function ($q) use ($identifier) {
             if (is_numeric($identifier)) {

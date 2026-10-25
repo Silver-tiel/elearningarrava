@@ -24,9 +24,16 @@
                 @php
                     $expired = $quiz->sudahKadaluarsa();
                 @endphp
-                <div class="hover-frame group rounded-xl border border-[#dfe6ef] bg-white transition {{ $expired ? 'cursor-not-allowed opacity-60 grayscale' : 'hover:-translate-y-0.5 hover:shadow-md' }}">
+                <div class="hover-frame group rounded-xl border border-[#dfe6ef] bg-white transition {{ ($expired && !$quiz->perluToken()) ? 'cursor-not-allowed opacity-60 grayscale' : 'hover:-translate-y-0.5 hover:shadow-md' }}">
                     <div class="relative h-[120px] overflow-hidden rounded-t-xl bg-slate-900">
                         <img src="{{ $quiz->cover_url }}" alt="{{ $quiz->judul }}" class="h-full w-full object-cover">
+                        @if($expired && !$quiz->perluToken())
+                            <div class="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40 backdrop-blur-[0.5px]">
+                                <img src="{{ asset('assets/widget/expiredQuiz.webp') }}"
+                                     alt="Kuis Kadaluarsa"
+                                     class="w-full h-full object-cover [image-rendering:pixelated] opacity-90 drop-shadow-md">
+                            </div>
+                        @endif
                     </div>
                     <div class="p-4">
                         <span class="inline-flex rounded-md {{ $expired ? 'bg-slate-200 text-slate-500' : 'bg-[#edf5ff] text-[#3180f7]' }} px-2 py-1 text-[11px] font-medium">

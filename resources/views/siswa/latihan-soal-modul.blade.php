@@ -24,19 +24,30 @@
 
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         @forelse($quizzes as $quiz)
+            @php
+                $sudahSelesai = $quiz->hasil && $quiz->hasil->contains(fn($h) => (int) $h->poin_didapat > 0);
+            @endphp
             <a href="{{ route('siswa.quiz.detail', $quiz->id_quiz) }}"
-               class="rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+               class="relative overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+                @if($sudahSelesai)
+                    <div class="absolute top-2 right-2 z-10 pointer-events-none select-none">
+                        <img src="{{ asset('assets/widget/quizBerhasilStempel.webp') }}"
+                             alt="Stempel Selesai"
+                             class="w-16 h-16 object-contain drop-shadow transform -rotate-12">
+                    </div>
+                @endif
                 <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#edf5ff] text-xl font-bold text-[#3180f7]">
                     ?
                 </div>
                 <h2 class="mt-4 text-[16px] font-bold text-[#172033]">{{ $quiz->judul }}</h2>
                 <p class="mt-2 text-[13px] text-[#718098]">
-                    {{ $quiz->jenjang->nama_tipe ?? 'Semua jenjang' }} ·
                     {{ $quiz->tingkatQuiz->nama_tingkat ?? 'Tingkat umum' }}
                 </p>
                 <div class="mt-5 flex items-center justify-between border-t border-[#edf0f4] pt-4">
                     <span class="text-[12px] text-[#8a97a9]">{{ $quiz->soal_count ?? 0 }} soal</span>
-                    <span class="rounded-lg bg-[#3d82f6] px-3 py-2 text-[12px] font-semibold text-white">Mulai</span>
+                    <span class="rounded-lg {{ $sudahSelesai ? 'bg-emerald-600' : 'bg-[#3d82f6]' }} px-3 py-2 text-[12px] font-semibold text-white">
+                        {{ $sudahSelesai ? 'Selesai ✓' : 'Mulai' }}
+                    </span>
                 </div>
             </a>
         @empty

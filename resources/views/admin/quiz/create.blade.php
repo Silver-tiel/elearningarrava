@@ -419,6 +419,36 @@
                             </div>
                         </div>
 
+                        {{-- OPSI PREVIEW KUIS UNTUK SISWA --}}
+                        <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-200">
+                            <label class="block text-xs font-bold text-indigo-950 mb-1 flex items-center gap-1.5">
+                                <span>👁️</span> Tampilan Info Kuis Siswa
+                            </label>
+                            <p class="text-[10px] text-indigo-800/80 mb-2 leading-relaxed">
+                                Pilih rincian yang dapat dilihat siswa pada modal/halaman info sebelum kuis dimulai:
+                            </p>
+                            <div class="space-y-1.5">
+                                <label class="flex items-start gap-2.5 p-2 rounded-lg bg-white border border-indigo-200/70 hover:border-indigo-400 cursor-pointer transition select-none">
+                                    <input type="radio" name="opsi_preview" value="lengkap"
+                                        @checked(old('opsi_preview', $quiz->opsi_preview ?? 'lengkap') === 'lengkap')
+                                        class="mt-0.5 text-indigo-600 focus:ring-indigo-500">
+                                    <div class="text-xs">
+                                        <span class="font-bold text-slate-800 block">Preview Soal Lengkap</span>
+                                        <span class="text-[10px] text-slate-500 block leading-tight mt-0.5">Siswa dapat melihat cuplikan pertanyaan, nomor urut, jenis soal, dan poin.</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-start gap-2.5 p-2 rounded-lg bg-white border border-indigo-200/70 hover:border-indigo-400 cursor-pointer transition select-none">
+                                    <input type="radio" name="opsi_preview" value="tipe_saja"
+                                        @checked(old('opsi_preview', $quiz->opsi_preview ?? 'lengkap') === 'tipe_saja')
+                                        class="mt-0.5 text-indigo-600 focus:ring-indigo-500">
+                                    <div class="text-xs">
+                                        <span class="font-bold text-slate-800 block">Hanya Tipe Soal Saja</span>
+                                        <span class="text-[10px] text-slate-500 block leading-tight mt-0.5">Hanya menampilkan ringkasan jenis soal. Soal dirahasiakan sebelum mulai kuis.</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
                         {{-- 2. WAKTU KADALUARSA (BISA TIDAK PERNAH) --}}
                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
                             <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
