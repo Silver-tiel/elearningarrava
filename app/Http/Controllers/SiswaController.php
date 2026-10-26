@@ -80,16 +80,21 @@ class SiswaController extends Controller
         $modul = Modul::with([
             'tipeModul',
             'jenjang',
-            'materiVideo' => fn($q) => $q->orderBy('urutan', 'asc'),
             'catatan',
+            'quiz',
         ])->findOrFail($id_modul);
 
-        $selectedVideoId = $request->get('v');
-        $selectedVideo = $selectedVideoId
-            ? $modul->materiVideo->firstWhere('id_materi', $selectedVideoId)
-            : $modul->materiVideo->first();
+        // Ambil modul lain untuk navigasi daftar materi sejenjang
+        $modulLain = Modul::with(['tipeModul', 'jenjang'])
+            ->where('id_jenjang', $modul->id_jenjang)
+            ->where('id_modul', '!=', $modul->id_modul)
+            ->latest()
+            ->take(8)
+            ->get();
 
-        return view('siswa.materi-video', compact('modul', 'selectedVideo'));
+        $selectedVideo = $modul;
+
+        return view('siswa.materi-video', compact('modul', 'selectedVideo', 'modulLain'));
     }
 
     /* ---------------------------------------------------------------------

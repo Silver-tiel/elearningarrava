@@ -48,7 +48,7 @@ class MateriPembelajaranController extends Controller
         $searchQuery = $request->input('q');
 
         /* --- Query modul sesuai jenjang siswa --- */
-        $modulQuery = Modul::with(['tipeModul', 'jenjang', 'quiz', 'materiVideo'])
+        $modulQuery = Modul::with(['tipeModul', 'jenjang', 'quiz'])
             ->where('id_jenjang', $siswa->id_jenjang);
 
         if ($tipeAktif) {

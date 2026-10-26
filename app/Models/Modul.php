@@ -39,11 +39,6 @@ class Modul extends Model
         return $this->belongsTo(Quiz::class, 'id_quiz', 'id_quiz');
     }
 
-    // Relasi ke materi video
-    public function materiVideo()
-    {
-        return $this->hasMany(MateriVideo::class, 'id_modul', 'id_modul');
-    }
     // Helper accessor untuk mendapatkan URL lengkap file materi
 
     public function catatan()
@@ -104,5 +99,27 @@ class Modul extends Model
     {
         $id = $this->youtube_id;
         return $id ? "https://www.youtube.com/embed/{$id}" : null;
+    }
+
+    // Helper accessor pengecekan apakah materi ini berformat video
+    public function getIsVideoAttribute(): bool
+    {
+        return $this->id_tipemodul == 1 
+            || !empty($this->youtube_id) 
+            || in_array(strtolower($this->tipe_file ?? ''), ['mp4', 'webm', 'video']);
+    }
+
+    // Helper accessor pengecekan apakah materi ini berformat PDF/Dokumen
+    public function getIsPdfAttribute(): bool
+    {
+        return $this->id_tipemodul == 2 
+            || strtolower($this->tipe_file ?? '') === 'pdf'
+            || str_ends_with(strtolower($this->file_materi ?? ''), '.pdf');
+    }
+
+    // Helper accessor pengecekan apakah materi ini berupa tautan eksternal
+    public function getIsLinkAttribute(): bool
+    {
+        return $this->tipe_file === 'link' && !$this->is_video;
     }
 }
