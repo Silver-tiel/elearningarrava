@@ -220,29 +220,94 @@
                     </section>
 
                     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                        <h2 class="text-base font-bold text-slate-900">Statistik Capaian Akademik</h2>
-                        <div class="mt-5 flex items-center gap-4 border-b border-slate-100 pb-5">
-                            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-50 text-lg font-bold text-blue-600">
-                                {{ $averageScore !== null ? $averageScore . '%' : '—' }}
-                            </div>
+                        <div class="flex items-start justify-between gap-3">
                             <div>
-                                <p class="text-sm font-semibold text-slate-800">Rata-rata nilai kuis</p>
-                                @if ($averageScore !== null)
-                                    <p class="mt-1 text-xs leading-relaxed text-slate-400">
-                                        Berdasarkan {{ $scoreSummary->jumlah_kuis }} hasil kuis yang tersimpan.
-                                    </p>
-                                @else
-                                    <p class="mt-1 text-xs leading-relaxed text-slate-400">Nilai akan tampil setelah Anda menyelesaikan kuis.</p>
-                                @endif
+                                <h2 class="text-base font-bold text-slate-900">Perkembangan Pengerjaan Kuis</h2>
+                                <p class="mt-1 text-xs text-slate-400">Jumlah kuis yang dikerjakan setiap hari.</p>
                             </div>
+                            <button type="button" data-open-quiz-history class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-blue-100 px-3 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50">
+                                <span class="hidden sm:inline">Lihat selengkapnya</span>
+                                <span class="sm:hidden">Riwayat</span>
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                    <path d="M5 12h14m-7-7 7 7-7 7"/>
+                                </svg>
+                            </button>
                         </div>
-                        <div class="mt-4 flex items-center justify-between text-sm">
-                            <span class="text-slate-500">Kuis diselesaikan</span>
-                            <span class="font-semibold text-slate-700">{{ $scoreSummary->kuis_lulus ?? $scoreSummary->jumlah_kuis }}</span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-between text-sm">
-                            <span class="text-slate-500">Total poin (EXP)</span>
-                            <span class="font-semibold text-slate-700">{{ number_format($user->total_poin ?? 0) }} EXP</span>
+
+                        @if ($scoreTrend->isNotEmpty())
+                            @php
+                                $chartWidth = 600;
+                                $chartLeft = 52;
+                                $chartRight = 20;
+                                $chartTop = 26;
+                                $chartBottom = 190;
+                                $plotWidth = $chartWidth - $chartLeft - $chartRight;
+                                $plotHeight = $chartBottom - $chartTop;
+                                $maxAttempts = max(1, (int) $scoreTrend->max('jumlah_pengerjaan'));
+                                $tickStep = max(1, (int) ceil($maxAttempts / 5));
+                                $yTicks = range(0, $maxAttempts, $tickStep);
+                                if (end($yTicks) !== $maxAttempts) {
+                                    $yTicks[] = $maxAttempts;
+                                }
+                            @endphp
+                            <div class="mt-5 w-full" role="region" aria-label="Grafik jumlah kuis yang dikerjakan per tanggal">
+                                <svg
+                                    class="block h-auto w-full"
+                                    viewBox="0 0 {{ $chartWidth }} 250"
+                                    role="img"
+                                    aria-label="Grafik jumlah pengerjaan kuis per hari"
+                                >
+                                    @foreach ($yTicks as $tick)
+                                        @php $y = $chartBottom - ($tick / $maxAttempts * $plotHeight); @endphp
+                                        <line x1="{{ $chartLeft }}" y1="{{ $y }}" x2="{{ $chartWidth - $chartRight }}" y2="{{ $y }}" stroke="#e2e8f0" stroke-dasharray="{{ $tick === 0 ? '0' : '3 4' }}"/>
+                                        <text x="{{ $chartLeft - 8 }}" y="{{ $y + 4 }}" text-anchor="end" fill="#94a3b8" font-size="11">{{ $tick }}</text>
+                                    @endforeach
+                                    <text x="14" y="{{ $chartTop + ($plotHeight / 2) }}" transform="rotate(-90 14 {{ $chartTop + ($plotHeight / 2) }})" text-anchor="middle" fill="#64748b" font-size="11">Jumlah pengerjaan</text>
+
+                                    @foreach ($scoreTrend as $index => $point)
+                                        @php
+                                            $x = $chartLeft + ($scoreTrend->count() === 1 ? $plotWidth / 2 : $index / ($scoreTrend->count() - 1) * $plotWidth);
+                                            $y = $chartBottom - ($point['jumlah_pengerjaan'] / $maxAttempts * $plotHeight);
+                                            $previous = $index > 0 ? $scoreTrend[$index - 1] : null;
+                                            $previousX = $index > 0
+                                                ? $chartLeft + ($scoreTrend->count() === 1 ? $plotWidth / 2 : ($index - 1) / ($scoreTrend->count() - 1) * $plotWidth)
+                                                : null;
+                                            $previousY = $previous
+                                                ? $chartBottom - ($previous['jumlah_pengerjaan'] / $maxAttempts * $plotHeight)
+                                                : null;
+                                        @endphp
+                                        @if ($y !== null && $previousY !== null)
+                                            <line x1="{{ $previousX }}" y1="{{ $previousY }}" x2="{{ $x }}" y2="{{ $y }}" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
+                                        @endif
+                                        <circle cx="{{ $x }}" cy="{{ $y }}" r="5" fill="#2563eb" stroke="white" stroke-width="2">
+                                            <title>{{ $point['detail'] }}: {{ $point['jumlah_pengerjaan'] }} pengerjaan</title>
+                                        </circle>
+                                        <text x="{{ $x }}" y="{{ $y - 11 }}" text-anchor="middle" fill="#1e40af" font-size="11" font-weight="600">{{ $point['jumlah_pengerjaan'] }}</text>
+                                        @if ($scoreTrend->count() <= 7 || $index % max(1, (int) ceil($scoreTrend->count() / 6)) === 0 || $index === $scoreTrend->count() - 1)
+                                            <text x="{{ $x }}" y="218" text-anchor="middle" fill="#64748b" font-size="11">{{ $point['tanggal'] }}</text>
+                                        @endif
+                                    @endforeach
+                                    <text x="{{ $chartLeft + ($plotWidth / 2) }}" y="244" text-anchor="middle" fill="#64748b" font-size="11">Tanggal</text>
+                                </svg>
+                            </div>
+                            <p class="mt-2 text-xs text-slate-400">Beberapa kuis yang dikerjakan pada tanggal yang sama dihitung sebagai satu titik.</p>
+                        @else
+                            <p class="mt-5 rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+                                Data pengerjaan akan tampil setelah Anda menyelesaikan kuis.
+                            </p>
+                        @endif
+
+                        <div class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="grid flex-1 gap-3 text-sm sm:grid-cols-2">
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-slate-500">Kuis diselesaikan</span>
+                                    <span class="font-semibold text-slate-700">{{ $scoreSummary->kuis_lulus ?? $scoreSummary->jumlah_kuis }}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-4">
+                                    <span class="text-slate-500">Total poin (EXP)</span>
+                                    <span class="font-semibold text-slate-700">{{ number_format($user->total_poin ?? 0) }} EXP</span>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
@@ -287,6 +352,61 @@
             </div>
         </div>
     </div>
+
+    <dialog
+        id="quiz-history-modal"
+        aria-labelledby="quiz-history-title"
+        class="m-auto max-h-[85vh] w-[calc(100%-2rem)] max-w-3xl overflow-hidden rounded-2xl p-0 shadow-2xl backdrop:bg-slate-900/50"
+    >
+        <div class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+            <div>
+                <h2 id="quiz-history-title" class="text-lg font-bold text-slate-900">Riwayat Nilai Kuis</h2>
+                <p class="mt-1 text-sm text-slate-500">Semua nilai kuis yang pernah kamu kerjakan.</p>
+            </div>
+            <button type="button" data-close-quiz-history aria-label="Tutup riwayat nilai" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="m6 6 12 12M18 6 6 18"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="max-h-[calc(85vh-5rem)] overflow-y-auto px-5 py-4 sm:px-6">
+            @if ($quizResults->isEmpty())
+                <p class="rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+                    Belum ada riwayat nilai kuis.
+                </p>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[520px] text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-100">
+                                <th class="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Tanggal</th>
+                                <th class="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Nama kuis</th>
+                                <th class="pb-3 pr-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Nilai</th>
+                                <th class="pb-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Poin</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach ($quizResults->reverse() as $hasil)
+                                <tr>
+                                    <td class="py-3 pr-4 text-slate-500">
+                                        {{ \Illuminate\Support\Carbon::parse($hasil->waktu_dapat)->translatedFormat('d M Y, H:i') }}
+                                    </td>
+                                    <td class="py-3 pr-4 font-medium text-slate-800">{{ $hasil->quiz?->judul ?? 'Kuis' }}</td>
+                                    <td class="py-3 pr-4 text-right font-bold text-slate-800">
+                                        {{ $hasil->nilai !== null ? number_format($hasil->nilai, 1) . '%' : '—' }}
+                                    </td>
+                                    <td class="py-3 text-right text-slate-500">
+                                        {{ $hasil->poin_didapat }}/{{ $hasil->total_poin }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </dialog>
 
     <dialog
         id="profile-edit-modal"
@@ -422,17 +542,30 @@
 @push('scripts')
     <script>
         const profileEditModal = document.getElementById('profile-edit-modal');
+        const quizHistoryModal = document.getElementById('quiz-history-modal');
 
         document.querySelectorAll('[data-open-profile-modal]').forEach((button) => {
             button.addEventListener('click', () => profileEditModal.showModal());
+        });
+
+        document.querySelectorAll('[data-open-quiz-history]').forEach((button) => {
+            button.addEventListener('click', () => quizHistoryModal.showModal());
         });
 
         document.querySelectorAll('[data-close-profile-modal]').forEach((button) => {
             button.addEventListener('click', () => profileEditModal.close());
         });
 
+        document.querySelectorAll('[data-close-quiz-history]').forEach((button) => {
+            button.addEventListener('click', () => quizHistoryModal.close());
+        });
+
         profileEditModal.addEventListener('click', (event) => {
             if (event.target === profileEditModal) profileEditModal.close();
+        });
+
+        quizHistoryModal.addEventListener('click', (event) => {
+            if (event.target === quizHistoryModal) quizHistoryModal.close();
         });
 
         if (profileEditModal.dataset.openOnLoad === 'true') profileEditModal.showModal();

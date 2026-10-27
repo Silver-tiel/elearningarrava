@@ -47,6 +47,12 @@ class SiswaProfileTest extends TestCase
             $table->integer('total_poin')->default(0);
             $table->integer('poin_didapat')->default(0);
             $table->boolean('is_lulus')->default(false);
+            $table->dateTime('waktu_dapat')->nullable();
+        });
+
+        Schema::create('quiz', function (Blueprint $table) {
+            $table->increments('id_quiz');
+            $table->string('judul');
         });
 
         Schema::create('pencapaianuser', function (Blueprint $table) {
@@ -131,5 +137,55 @@ class SiswaProfileTest extends TestCase
             ->assertSeeHtml('data-open-on-load="true"');
 
         $this->assertSame('namabaru', $student->fresh()->username);
+    }
+
+    public function test_profile_graph_groups_quiz_attempts_by_completion_date(): void
+    {
+        $student = User::create([
+            'nama' => 'Siswa Grafik',
+            'username' => 'siswagrafik',
+            'email' => 'grafik@example.com',
+            'password' => bcrypt('password123'),
+            'nisn' => '0011111111',
+            'id_tipeuser' => 3,
+            'id_jenjang' => 1,
+        ]);
+
+        DB::table('quiz')->insert([
+            ['id_quiz' => 1, 'judul' => 'Kuis Matematika'],
+            ['id_quiz' => 2, 'judul' => 'Kuis Bahasa'],
+            ['id_quiz' => 3, 'judul' => 'Kuis IPA'],
+            ['id_quiz' => 4, 'judul' => 'Kuis Sejarah'],
+            ['id_quiz' => 5, 'judul' => 'Kuis Geografi'],
+            ['id_quiz' => 6, 'judul' => 'Kuis Seni'],
+        ]);
+
+        foreach ([0, 0, 0, 1, 1, 2] as $index => $dayOffset) {
+            $quizId = $index + 1;
+            DB::table('hasilquizmodul')->insert([
+                'id_user' => $student->id_user,
+                'id_quiz' => $quizId,
+                'total_poin' => 10,
+                'poin_didapat' => 10,
+                'is_lulus' => false,
+                'waktu_dapat' => now()->startOfDay()->addDays($dayOffset),
+            ]);
+        }
+
+        $this->actingAs($student)
+            ->get(route('siswa.profil'))
+            ->assertOk()
+            ->assertSee('Jumlah pengerjaan', false)
+            ->assertSee('Tanggal')
+            ->assertSee('3 pengerjaan')
+            ->assertSee('2 pengerjaan')
+            ->assertSee('1 pengerjaan')
+            ->assertSee('viewBox="0 0 600 250"', false)
+            ->assertSee('class="block h-auto w-full"', false)
+            ->assertSee(\Illuminate\Support\Carbon::now()->startOfDay()->translatedFormat('d M'))
+            ->assertSee('Lihat selengkapnya')
+            ->assertSee('data-open-quiz-history', false)
+            ->assertSee('id="quiz-history-modal"', false)
+            ->assertSee('Beberapa kuis yang dikerjakan pada tanggal yang sama dihitung sebagai satu titik.');
     }
 }

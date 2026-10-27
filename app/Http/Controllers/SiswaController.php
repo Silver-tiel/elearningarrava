@@ -905,9 +905,30 @@ class SiswaController extends Controller
             ->selectRaw("COUNT(*) as total_percobaan, {$kuisLulusExpr}, COUNT(*) as jumlah_kuis, COALESCE(SUM(total_poin), 0) as total_poin_maks, COALESCE(SUM(poin_didapat), 0) as poin_didapat")
             ->first();
 
-        $averageScore = (int) ($scoreSummary->total_poin_maks ?? 0) > 0
-            ? (int) round($scoreSummary->poin_didapat / $scoreSummary->total_poin_maks * 100)
-            : null;
+        $quizResults = HasilQuizModul::query()
+            ->where('id_user', $user->id_user)
+            ->with('quiz:id_quiz,judul')
+            ->orderBy('waktu_dapat')
+            ->orderBy('id_hasil')
+            ->get(['id_hasil', 'id_quiz', 'waktu_dapat', 'total_poin', 'poin_didapat'])
+            ->map(function ($hasil) {
+                $hasil->nilai = (int) $hasil->total_poin > 0
+                    ? round($hasil->poin_didapat / $hasil->total_poin * 100, 1)
+                    : null;
+
+                return $hasil;
+            });
+        $scoreTrend = $quizResults->groupBy(function ($hasil) {
+            return \Illuminate\Support\Carbon::parse($hasil->waktu_dapat)->toDateString();
+        })->map(function ($dailyResults, $date) {
+            $tanggal = \Illuminate\Support\Carbon::parse($date);
+
+            return [
+                'tanggal' => $tanggal->translatedFormat('d M'),
+                'detail' => $tanggal->translatedFormat('d M Y'),
+                'jumlah_pengerjaan' => $dailyResults->count(),
+            ];
+        })->values();
         $achievements = PencapaianUser::with('achievement')
             ->where('id_user', $user->id_user)
             ->orderByDesc('waktu_pencapaian')
@@ -918,7 +939,8 @@ class SiswaController extends Controller
             'user',
             'jenjangs',
             'scoreSummary',
-            'averageScore',
+            'scoreTrend',
+            'quizResults',
             'achievements'
         ));
     }
