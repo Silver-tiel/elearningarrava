@@ -39,6 +39,29 @@ class Modul extends Model
         return $this->belongsTo(Quiz::class, 'id_quiz', 'id_quiz');
     }
 
+    public function isDraft(): bool
+    {
+        return strcasecmp((string) $this->progressModul, 'Draft') === 0;
+    }
+
+    public function isPublished(): bool
+    {
+        return !$this->isDraft();
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('progressModul')
+              ->orWhere('progressModul', '!=', 'Draft');
+        });
+    }
+
+    public function scopeDraft($query)
+    {
+        return $query->where('progressModul', 'Draft');
+    }
+
     // Helper accessor untuk mendapatkan URL lengkap file materi
 
     public function catatan()

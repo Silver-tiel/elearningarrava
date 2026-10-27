@@ -78,6 +78,29 @@ class Quiz extends Model
         return $this->hasMany(HasilQuizModul::class, 'id_quiz', 'id_quiz');
     }
 
+    public function isDraft(): bool
+    {
+        return strtolower((string) ($this->proggressQuiz ?? '')) === 'draft';
+    }
+
+    public function isPublished(): bool
+    {
+        return !$this->isDraft();
+    }
+
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where(function (Builder $sub) {
+            $sub->where('proggressQuiz', '!=', 'Draft')
+                ->orWhereNull('proggressQuiz');
+        });
+    }
+
+    public function scopeDraft(Builder $query): Builder
+    {
+        return $query->whereRaw("LOWER(COALESCE(proggressQuiz, '')) = ?", ['draft']);
+    }
+
     public function scopeBelumKadaluarsa(Builder $query): Builder
     {
         return $query->where(function (Builder $query) {

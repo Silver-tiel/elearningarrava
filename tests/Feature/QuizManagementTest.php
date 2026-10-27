@@ -38,6 +38,11 @@ class QuizManagementTest extends TestCase
             $table->increments('id_tingkatquiz');
             $table->string('nama_tingkat');
         });
+        Schema::create('jenis_soal', function (Blueprint $table) {
+            $table->increments('id_jenis_soal');
+            $table->string('nama_jenis');
+            $table->timestamps();
+        });
         Schema::create('quiz', function (Blueprint $table) {
             $table->increments('id_quiz');
             $table->string('kode_quiz')->nullable();
@@ -51,6 +56,7 @@ class QuizManagementTest extends TestCase
             $table->integer('durasi_total_menit')->nullable();
             $table->string('token')->nullable();
             $table->string('foto_quiz')->nullable();
+            $table->string('opsi_preview')->default('lengkap');
             $table->string('proggressQuiz')->nullable();
             $table->timestamps();
         });
@@ -73,6 +79,16 @@ class QuizManagementTest extends TestCase
             $table->string('label');
             $table->text('teks_pilihan');
             $table->boolean('is_correct')->default(false);
+            $table->timestamps();
+        });
+        Schema::create('hasilquizmodul', function (Blueprint $table) {
+            $table->increments('id_hasil');
+            $table->unsignedInteger('id_user');
+            $table->unsignedInteger('id_quiz');
+            $table->integer('total_poin')->default(0);
+            $table->integer('poin_didapat')->default(0);
+            $table->boolean('is_lulus')->default(false);
+            $table->dateTime('waktu_dapat')->nullable();
             $table->timestamps();
         });
 
@@ -336,17 +352,17 @@ class QuizManagementTest extends TestCase
             ->assertSee('Quiz Bergambar')
             ->assertSee($quiz->foto_quiz);
 
-        // Quiz without custom photo uses default cover (latarQuizDefault.png)
+        // Quiz without custom photo uses default cover (latarQuizDefault.webp)
         $quizTanpaCover = Quiz::create([
             'judul' => 'Quiz Standar Default',
             'id_jenjang' => 1,
             'mode_pengerjaan' => 'wayground',
         ]);
-        $this->assertStringContainsString('assets/widget/latarQuizDefault.png', $quizTanpaCover->cover_url);
+        $this->assertStringContainsString('assets/widget/latarQuizDefault.webp', $quizTanpaCover->cover_url);
         $this->get(route('siswa.quiz'))
             ->assertOk()
             ->assertSee('Quiz Standar Default')
-            ->assertSee('assets/widget/latarQuizDefault.png');
+            ->assertSee('assets/widget/latarQuizDefault.webp');
     }
 
     private function makeAdmin(): User

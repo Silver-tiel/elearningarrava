@@ -21,6 +21,7 @@ class QuizController extends Controller
         $filters = $request->validate([
             'jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
             'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
+            'status' => ['nullable', 'in:all,published,draft,kadaluarsa'],
             'sort' => ['nullable', 'in:terbaru,terlama'],
         ]);
 
@@ -32,6 +33,23 @@ class QuizController extends Controller
 
         if (!empty($filters['tingkat'])) {
             $query->where('id_tingkatquiz', $filters['tingkat']);
+        }
+
+        if (!empty($filters['status']) && $filters['status'] !== 'all') {
+            if ($filters['status'] === 'draft') {
+                $query->draft();
+            } elseif ($filters['status'] === 'published') {
+                $query->published()->where(function ($sub) {
+                    $sub->whereNull('waktu_kadaluarsa')
+                        ->orWhere('waktu_kadaluarsa', '>', now());
+                });
+            } elseif ($filters['status'] === 'kadaluarsa') {
+                $query->whereNotNull('waktu_kadaluarsa')
+                    ->where('waktu_kadaluarsa', '<=', now())
+                    ->where(function ($sub) {
+                        $sub->whereNull('token')->orWhere('token', '');
+                    });
+            }
         }
 
         if (isset($filters['sort']) && $filters['sort'] === 'terlama') {
@@ -99,36 +117,69 @@ class QuizController extends Controller
     // Menyimpan kuis baru beserta soal dan pilihan jawaban ke database.
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'judul'            => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
-            'deskripsi'        => 'nullable|string|max:3000',
-            'id_jenjang'       => 'required|integer',
-            'id_tipequiz'      => 'nullable|integer',
-            'id_tingkatquiz'   => 'nullable|integer',
-            'waktu_kadaluarsa' => ['nullable', 'date', 'after_or_equal:now'],
-            'mode_pengerjaan' => 'required|in:wayground,biasa',
-            'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
-            'opsi_preview'     => 'nullable|in:lengkap,tipe_saja',
-            'use_token'        => 'nullable|boolean',
-            'token'            => 'nullable|required_if:use_token,1|string|max:50',
-            'foto_quiz'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'soal'             => 'required|array|min:1',
-            'soal.*.pertanyaan' => 'required|string',
-            'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
-            'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
-            'soal.*.poin' => 'nullable|integer|min:0',
-            'soal.*.durasi_detik' => 'nullable|required_if:mode_pengerjaan,wayground|integer|in:10,20,30,60',
-            'soal.*.pilihan' => 'nullable|array',
-            'soal.*.pilihan.*.label' => 'required|in:A,B,C,D',
-            'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
-            'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
-            'soal_foto' => 'nullable|array',
-            'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ], $this->quizValidationMessages());
-        $questions = $this->normalizeQuestionAnswers($validated['soal']);
+        $isDraft = $request->input('action_type') === 'draft';
 
-        if ($request->filled('waktu_kadaluarsa')) {
+        if ($isDraft) {
+            $validated = $request->validate([
+                'judul'            => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
+                'deskripsi'        => 'nullable|string|max:3000',
+                'id_jenjang'       => 'required|integer',
+                'id_tipequiz'      => 'nullable|integer',
+                'id_tingkatquiz'   => 'nullable|integer',
+                'waktu_kadaluarsa' => ['nullable', 'date'],
+                'mode_pengerjaan'  => 'nullable|in:wayground,biasa',
+                'durasi_total_menit' => 'nullable|integer|min:1|max:360',
+                'opsi_preview'     => 'nullable|in:lengkap,tipe_saja',
+                'use_token'        => 'nullable|boolean',
+                'token'            => 'nullable|string|max:50',
+                'foto_quiz'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal'             => 'nullable|array',
+                'soal.*.pertanyaan' => 'nullable|string',
+                'soal.*.jenis_soal' => 'nullable|in:kuis,true_false,isian_singkat',
+                'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
+                'soal.*.poin'      => 'nullable|integer|min:0',
+                'soal.*.durasi_detik' => 'nullable|integer',
+                'soal.*.pilihan'   => 'nullable|array',
+                'soal.*.pilihan.*.label' => 'nullable|in:A,B,C,D',
+                'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
+                'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
+                'soal_foto'        => 'nullable|array',
+                'soal_foto.*'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            ], $this->quizValidationMessages());
+            $questions = $this->normalizeQuestionAnswers($validated['soal'] ?? [], true);
+        } else {
+            $validated = $request->validate([
+                'judul'            => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
+                'deskripsi'        => 'nullable|string|max:3000',
+                'id_jenjang'       => 'required|integer',
+                'id_tipequiz'      => 'nullable|integer',
+                'id_tingkatquiz'   => 'nullable|integer',
+                'waktu_kadaluarsa' => ['nullable', 'date', 'after_or_equal:now'],
+                'mode_pengerjaan'  => 'required|in:wayground,biasa',
+                'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
+                'opsi_preview'     => 'nullable|in:lengkap,tipe_saja',
+                'use_token'        => 'nullable|boolean',
+                'token'            => 'nullable|required_if:use_token,1|string|max:50',
+                'foto_quiz'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal'             => 'required|array|min:1',
+                'soal.*.pertanyaan' => 'required|string',
+                'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
+                'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
+                'soal.*.poin'      => 'nullable|integer|min:0',
+                'soal.*.durasi_detik' => 'nullable|required_if:mode_pengerjaan,wayground|integer|in:10,20,30,60',
+                'soal.*.pilihan'   => 'nullable|array',
+                'soal.*.pilihan.*.label' => 'required|in:A,B,C,D',
+                'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
+                'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
+                'soal_foto'        => 'nullable|array',
+                'soal_foto.*'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            ], $this->quizValidationMessages());
+            $questions = $this->normalizeQuestionAnswers($validated['soal'], false);
+        }
+
+        if (!$isDraft && $request->filled('waktu_kadaluarsa')) {
             $waktuKadaluarsa = \Carbon\Carbon::parse($request->waktu_kadaluarsa);
             if ($waktuKadaluarsa->lt(now())) {
                 return redirect()->back()->withErrors([
@@ -146,7 +197,7 @@ class QuizController extends Controller
             $fotoQuizPath = $request->file('foto_quiz')->store('quiz/cover', 'public');
         }
 
-        DB::transaction(function () use ($request, $questions, $token, $fotoQuizPath) {
+        DB::transaction(function () use ($request, $questions, $token, $fotoQuizPath, $isDraft) {
             // 1. Simpan quiz
             $quiz = Quiz::create([
                 'judul'            => $request->judul,
@@ -155,12 +206,12 @@ class QuizController extends Controller
                 'id_tipequiz'      => $request->id_tipequiz ?? 1,
                 'id_tingkatquiz'   => $request->id_tingkatquiz ?? 1,
                 'waktu_kadaluarsa' => $request->waktu_kadaluarsa ?: null,
-                'mode_pengerjaan' => $request->mode_pengerjaan,
+                'mode_pengerjaan'  => $request->mode_pengerjaan ?: 'wayground',
                 'durasi_total_menit' => $request->mode_pengerjaan === 'biasa' ? $request->durasi_total_menit : null,
                 'opsi_preview'     => $request->input('opsi_preview', 'lengkap'),
                 'token'            => $token,
                 'foto_quiz'        => $fotoQuizPath,
-                'proggressQuiz'    => 'Tersedia',
+                'proggressQuiz'    => $isDraft ? 'Draft' : 'Tersedia',
             ]);
 
             // 2. Simpan setiap soal
@@ -198,41 +249,77 @@ class QuizController extends Controller
             }
         });
 
-        return redirect()->route('admin.quiz')->with('success', 'Quiz berhasil dibuat! 🎉');
+        return redirect()->route('admin.quiz')->with('success', $isDraft ? 'Draf quiz berhasil disimpan! 📝' : 'Quiz berhasil dipublikasikan! 🎉');
     }
 
     public function update(Request $request, $id)
     {
         $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
-        $validated = $request->validate([
-            'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
-            'deskripsi' => 'nullable|string|max:3000',
-            'id_jenjang' => 'required|integer',
-            'id_tipequiz' => 'nullable|integer',
-            'id_tingkatquiz' => 'nullable|integer',
-            'waktu_kadaluarsa' => ['nullable', 'date'],
-            'mode_pengerjaan' => 'required|in:wayground,biasa',
-            'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
-            'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
-            'use_token' => 'nullable|boolean',
-            'token' => 'nullable|required_if:use_token,1|string|max:50',
-            'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'hapus_foto_quiz' => 'nullable|boolean',
-            'soal' => 'required|array|min:1',
-            'soal.*.pertanyaan' => 'required|string',
-            'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
-            'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
-            'soal.*.poin' => 'nullable|integer|min:0',
-            'soal.*.durasi_detik' => 'nullable|required_if:mode_pengerjaan,wayground|integer|in:10,20,30,60',
-            'soal.*.pilihan' => 'nullable|array',
-            'soal.*.pilihan.*.label' => 'required|in:A,B,C,D',
-            'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
-            'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
-            'soal_foto' => 'nullable|array',
-            'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ], $this->quizValidationMessages());
-        $questions = $this->normalizeQuestionAnswers($validated['soal']);
+        $isDraft = $request->input('action_type') === 'draft';
+
+        if ($isDraft) {
+            $validated = $request->validate([
+                'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
+                'deskripsi' => 'nullable|string|max:3000',
+                'id_jenjang' => 'required|integer',
+                'id_tipequiz' => 'nullable|integer',
+                'id_tingkatquiz' => 'nullable|integer',
+                'waktu_kadaluarsa' => ['nullable', 'date'],
+                'mode_pengerjaan' => 'nullable|in:wayground,biasa',
+                'durasi_total_menit' => 'nullable|integer|min:1|max:360',
+                'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
+                'use_token' => 'nullable|boolean',
+                'token' => 'nullable|string|max:50',
+                'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'hapus_foto_quiz' => 'nullable|boolean',
+                'soal' => 'nullable|array',
+                'soal.*.pertanyaan' => 'nullable|string',
+                'soal.*.jenis_soal' => 'nullable|in:kuis,true_false,isian_singkat',
+                'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
+                'soal.*.poin' => 'nullable|integer|min:0',
+                'soal.*.durasi_detik' => 'nullable|integer',
+                'soal.*.pilihan' => 'nullable|array',
+                'soal.*.pilihan.*.label' => 'nullable|in:A,B,C,D',
+                'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
+                'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
+                'soal_foto' => 'nullable|array',
+                'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            ], $this->quizValidationMessages());
+
+            $questions = $this->normalizeQuestionAnswers($validated['soal'] ?? [], true);
+        } else {
+            $validated = $request->validate([
+                'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
+                'deskripsi' => 'nullable|string|max:3000',
+                'id_jenjang' => 'required|integer',
+                'id_tipequiz' => 'nullable|integer',
+                'id_tingkatquiz' => 'nullable|integer',
+                'waktu_kadaluarsa' => ['nullable', 'date'],
+                'mode_pengerjaan' => 'required|in:wayground,biasa',
+                'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
+                'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
+                'use_token' => 'nullable|boolean',
+                'token' => 'nullable|required_if:use_token,1|string|max:50',
+                'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'hapus_foto_quiz' => 'nullable|boolean',
+                'soal' => 'required|array|min:1',
+                'soal.*.pertanyaan' => 'required|string',
+                'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
+                'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
+                'soal.*.poin' => 'nullable|integer|min:0',
+                'soal.*.durasi_detik' => 'nullable|required_if:mode_pengerjaan,wayground|integer|in:10,20,30,60',
+                'soal.*.pilihan' => 'nullable|array',
+                'soal.*.pilihan.*.label' => 'required|in:A,B,C,D',
+                'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
+                'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
+                'soal_foto' => 'nullable|array',
+                'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            ], $this->quizValidationMessages());
+
+            $questions = $this->normalizeQuestionAnswers($validated['soal'], false);
+        }
 
         // Cegah unggah gambar yang sama persis pada soal yang sama saat edit kuis
         $oldSoalList = $quiz->soal()->orderBy('id_soal')->get();
@@ -281,25 +368,26 @@ class QuizController extends Controller
             $fotoQuizPath = $request->file('foto_quiz')->store('quiz/cover', 'public');
         }
 
-        DB::transaction(function () use ($quiz, $validated, $questions, $request, $token, $fotoQuizPath) {
+        DB::transaction(function () use ($quiz, $validated, $questions, $request, $token, $fotoQuizPath, $isDraft) {
             $quiz->update([
                 'judul' => $validated['judul'],
                 'deskripsi' => $request->deskripsi ?: null,
                 'id_jenjang' => $validated['id_jenjang'],
                 'id_tipequiz' => $validated['id_tipequiz'] ?? $quiz->id_tipequiz,
                 'id_tingkatquiz' => $validated['id_tingkatquiz'] ?? $quiz->id_tingkatquiz,
-                'waktu_kadaluarsa' => $validated['waktu_kadaluarsa'] ?: null,
-                'mode_pengerjaan' => $validated['mode_pengerjaan'],
-                'durasi_total_menit' => $validated['mode_pengerjaan'] === 'biasa' ? $validated['durasi_total_menit'] : null,
+                'waktu_kadaluarsa' => $validated['waktu_kadaluarsa'] ?? null,
+                'mode_pengerjaan' => $validated['mode_pengerjaan'] ?? $quiz->mode_pengerjaan,
+                'durasi_total_menit' => ($validated['mode_pengerjaan'] ?? $quiz->mode_pengerjaan) === 'biasa' ? ($validated['durasi_total_menit'] ?? $quiz->durasi_total_menit) : null,
                 'opsi_preview' => $validated['opsi_preview'] ?? 'lengkap',
                 'token' => $token,
                 'foto_quiz' => $fotoQuizPath,
+                'proggressQuiz' => $isDraft ? 'Draft' : 'Tersedia',
             ]);
 
             $this->replaceQuestions($quiz, $questions, (int) $validated['id_jenjang'], $request);
         });
 
-        return redirect()->route('admin.quiz')->with('success', 'Quiz berhasil diperbarui.');
+        return redirect()->route('admin.quiz')->with('success', $isDraft ? 'Draf quiz berhasil diperbarui! 📝' : 'Quiz berhasil dipublikasikan! 🎉');
     }
 
     public function destroy($id)
@@ -379,7 +467,7 @@ class QuizController extends Controller
         }
     }
 
-    private function normalizeQuestionAnswers(array $questions): array
+    private function normalizeQuestionAnswers(array $questions, bool $isDraft = false): array
     {
         $normalized = [];
         $errors = [];
@@ -391,19 +479,24 @@ class QuizController extends Controller
 
             if ($pertanyaanKey !== '') {
                 if (in_array($pertanyaanKey, $seenQuestions, true)) {
-                    $errors["soal.$index.pertanyaan"] = 'Pertanyaan tidak boleh sama dengan soal lain dalam quiz ini.';
+                    if (!$isDraft) {
+                        $errors["soal.$index.pertanyaan"] = 'Pertanyaan tidak boleh sama dengan soal lain dalam quiz ini.';
+                    }
                 } else {
                     $seenQuestions[] = $pertanyaanKey;
                 }
+            } elseif ($isDraft) {
+                $pertanyaanRaw = '(Draf Soal #' . ($index + 1) . ')';
             }
 
-            $type = $question['jenis_soal'];
+            $type = $question['jenis_soal'] ?? 'kuis';
             $choices = [];
             $correctChoice = null;
+            $answer = '';
 
             if ($type === 'isian_singkat') {
                 $answer = trim($question['jawaban_singkat'] ?? '');
-                if ($answer === '') {
+                if ($answer === '' && !$isDraft) {
                     $errors["soal.$index.jawaban_singkat"] = 'Kunci jawaban isian singkat wajib diisi.';
                 }
                 $idJenisSoal = 2;
@@ -416,73 +509,89 @@ class QuizController extends Controller
                     }
                 }
 
-                if (count($correctIndexes) !== 1) {
+                if (count($correctIndexes) !== 1 && !$isDraft) {
                     $errors["soal.$index.pilihan"] = 'Pilih tepat satu jawaban benar untuk soal Benar/Salah.';
                 }
 
                 $choices = [
-                    ['label' => 'A', 'teks_pilihan' => 'Benar', 'is_correct' => ($correctIndexes[0] ?? null) === 0],
-                    ['label' => 'B', 'teks_pilihan' => 'Salah', 'is_correct' => ($correctIndexes[0] ?? null) === 1],
+                    ['label' => 'A', 'teks_pilihan' => 'Benar', 'is_correct' => in_array(0, $correctIndexes, true)],
+                    ['label' => 'B', 'teks_pilihan' => 'Salah', 'is_correct' => in_array(1, $correctIndexes, true)],
                 ];
-                $correctChoice = $choices[$correctIndexes[0] ?? -1] ?? null;
-                $answer = $correctChoice['label'] ?? '';
+                $correctChoice = $choices[$correctIndexes[0] ?? 0] ?? null;
+                $answer = in_array(1, $correctIndexes, true) ? 'B' : 'A';
                 $idJenisSoal = 3;
             } else {
                 $submittedChoices = array_values($question['pilihan'] ?? []);
                 $seenLabels = [];
                 $seenTexts = [];
                 foreach ($submittedChoices as $choice) {
-                    $label = strtoupper(trim($choice['label']));
+                    $label = strtoupper(trim($choice['label'] ?? ''));
                     $text = trim($choice['teks_pilihan'] ?? '');
                     $isCorrect = in_array($choice['is_correct'] ?? null, [1, '1', true], true);
 
                     if ($text === '') {
-                        if ($isCorrect) {
+                        if ($isCorrect && !$isDraft) {
                             $errors["soal.$index.pilihan"] = 'Jawaban benar tidak boleh menunjuk pilihan kosong.';
                         }
-                        continue;
+                        if (!$isDraft) {
+                            continue;
+                        }
                     }
 
-                    if (in_array($label, $seenLabels, true)) {
+                    if (in_array($label, $seenLabels, true) && !$isDraft) {
                         $errors["soal.$index.pilihan"] = 'Label pilihan jawaban tidak boleh berulang.';
                     }
                     $seenLabels[] = $label;
 
                     $textKey = mb_strtolower($text);
-                    if (in_array($textKey, $seenTexts, true)) {
+                    if ($textKey !== '' && in_array($textKey, $seenTexts, true) && !$isDraft) {
                         $errors["soal.$index.pilihan"] = 'Teks pilihan jawaban tidak boleh sama dalam satu soal.';
                     }
-                    $seenTexts[] = $textKey;
+                    if ($textKey !== '') {
+                        $seenTexts[] = $textKey;
+                    }
 
-                    $choices[] = ['label' => $label, 'teks_pilihan' => $text, 'is_correct' => $isCorrect];
-                    if ($isCorrect) {
+                    $choices[] = ['label' => $label ?: 'A', 'teks_pilihan' => $text, 'is_correct' => $isCorrect];
+                    if ($isCorrect && !$correctChoice) {
                         $correctChoice = $choices[array_key_last($choices)];
                     }
                 }
 
-                $correctCount = count(array_filter($choices, fn (array $choice): bool => $choice['is_correct']));
-                if (count($choices) < 2) {
-                    $errors["soal.$index.pilihan"] = 'Soal pilihan ganda wajib memiliki minimal dua pilihan terisi.';
-                }
-                if ($correctCount !== 1) {
-                    $errors["soal.$index.pilihan"] = 'Pilih tepat satu jawaban benar dari pilihan yang terisi.';
+                if (!$isDraft) {
+                    $correctCount = count(array_filter($choices, fn (array $choice): bool => $choice['is_correct']));
+                    if (count($choices) < 2) {
+                        $errors["soal.$index.pilihan"] = 'Soal pilihan ganda wajib memiliki minimal dua pilihan terisi.';
+                    }
+                    if ($correctCount !== 1) {
+                        $errors["soal.$index.pilihan"] = 'Pilih tepat satu jawaban benar dari pilihan yang terisi.';
+                    }
+                } else {
+                    if (empty($choices)) {
+                        $choices = [
+                            ['label' => 'A', 'teks_pilihan' => '', 'is_correct' => true],
+                            ['label' => 'B', 'teks_pilihan' => '', 'is_correct' => false],
+                            ['label' => 'C', 'teks_pilihan' => '', 'is_correct' => false],
+                            ['label' => 'D', 'teks_pilihan' => '', 'is_correct' => false],
+                        ];
+                        $correctChoice = $choices[0];
+                    }
                 }
 
-                $answer = $correctChoice['label'] ?? '';
+                $answer = $correctChoice['label'] ?? ($choices[0]['label'] ?? 'A');
                 $idJenisSoal = 1;
             }
 
             $normalized[] = [
-                'pertanyaan' => $question['pertanyaan'],
+                'pertanyaan' => $pertanyaanRaw ?: '(Draf Soal #' . ($index + 1) . ')',
                 'id_jenis_soal' => $idJenisSoal,
-                'jawaban_benar' => $answer,
-                'poin' => $question['poin'] ?? 10,
-                'durasi_detik' => $question['durasi_detik'] ?? 20,
+                'jawaban_benar' => $answer ?: 'A',
+                'poin' => (int) ($question['poin'] ?? 10),
+                'durasi_detik' => (int) ($question['durasi_detik'] ?? 20),
                 'pilihan' => $choices,
             ];
         }
 
-        if ($errors) {
+        if ($errors && !$isDraft) {
             throw ValidationException::withMessages($errors);
         }
 

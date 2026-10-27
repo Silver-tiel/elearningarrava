@@ -8,16 +8,81 @@ use App\Models\Jenjang;
 use App\Models\Quiz;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class ModulController extends Controller
 {
-    // Menampilkan daftar seluruh modul dengan relasinya
-    public function index()
+    // Menampilkan daftar seluruh modul dengan relasinya, filter, dan sortir
+    public function index(Request $request)
     {
-        // Mengambil data modul beserta relasi tipeModul dan jenjang
-        $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->get();
+        $query = Modul::with(['tipeModul', 'jenjang', 'quiz']);
 
-        return view('admin.modul.index', compact('moduls'));
+        // Filter Status (all, published, draft)
+        $statusFilter = $request->query('status', 'all');
+        if ($statusFilter === 'draft') {
+            $query->draft();
+        } elseif ($statusFilter === 'published') {
+            $query->published();
+        }
+
+        // Filter Jenjang
+        $jenjangFilter = $request->query('jenjang', 'all');
+        if ($jenjangFilter !== 'all' && is_numeric($jenjangFilter)) {
+            $query->where('id_jenjang', (int) $jenjangFilter);
+        }
+
+        // Filter Tipe Modul
+        $tipeFilter = $request->query('tipe', 'all');
+        if ($tipeFilter !== 'all' && is_numeric($tipeFilter)) {
+            $query->where('id_tipemodul', (int) $tipeFilter);
+        }
+
+        // Pencarian Kata Kunci
+        $search = trim((string) $request->query('q', ''));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('judul_modul', 'like', '%' . $search . '%')
+                  ->orWhereHas('jenjang', function ($j) use ($search) {
+                      $j->where('nama_tipe', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('tipeModul', function ($t) use ($search) {
+                      $t->where('nama_tipe', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
+        // Sortir / Pengurutan
+        $sort = $request->query('sort', 'latest');
+        match ($sort) {
+            'oldest' => $query->oldest('id_modul'),
+            'title_asc' => $query->orderBy('judul_modul', 'asc'),
+            'title_desc' => $query->orderBy('judul_modul', 'desc'),
+            default => $query->latest('id_modul'),
+        };
+
+        $moduls = $query->get();
+
+        // Statistik
+        $totalModul = Modul::count();
+        $totalPublished = Modul::published()->count();
+        $totalDraft = Modul::draft()->count();
+
+        $masterJenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
+        $masterTipe = TipeModul::all();
+
+        return view('admin.modul.index', compact(
+            'moduls',
+            'totalModul',
+            'totalPublished',
+            'totalDraft',
+            'statusFilter',
+            'jenjangFilter',
+            'tipeFilter',
+            'search',
+            'sort',
+            'masterJenjang',
+            'masterTipe'
+        ));
     }
 
     // Menampilkan form tambah modul baru
@@ -27,109 +92,156 @@ class ModulController extends Controller
         $tipeModul = TipeModul::all();
         // Hanya ambil jenjang SD, SMP, SMA (id 1, 2, 3)
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
-        $quizzes = Quiz::all();
+        $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
 
         return view('admin.modul.create', compact('tipeModul', 'jenjang', 'quizzes'));
     }
 
-    // Menyimpan data modul baru & memproses upload file fisik
-public function store(Request $request)
-{
-    // 1. Validasi input yang lebih fleksibel
-    $request->validate([
-        'judul_modul' => 'required|string|max:255|unique:modul,judul_modul',
-        'id_tipemodul' => 'required|integer',
-        'id_jenjang' => 'required|integer',
-        'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
-        'file_link' => 'nullable|url',
-        'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-        'file' => 'required|file|mimes:pdf,doc,docx|max:2048',
-    ], );
+    // Menyimpan data modul baru & memproses upload file fisik / draf
+    public function store(Request $request)
+    {
+        $isDraft = $request->input('action_type') === 'draft';
 
-    $namaFile = $request->file('file')->getClientOriginalName();
+        $rules = [
+            'judul_modul' => 'required|string|max:255|unique:modul,judul_modul',
+            'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
+            'id_tipemodul' => $isDraft ? 'nullable|integer' : 'required|integer|exists:tipemodul,id_tipemodul',
+            'id_quiz' => 'nullable|integer|exists:quiz,id_quiz',
+            'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
+            'file_link' => 'nullable|url',
+            'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ];
 
-    $cekFile = Modul::where('file', $namaFile)->exists();
+        $messages = [
+            'judul_modul.required' => 'Judul modul wajib diisi.',
+            'judul_modul.unique' => 'Judul modul sudah digunakan, gunakan judul yang lain.',
+            'id_jenjang.required' => 'Pilih jenjang pendidikan modul.',
+            'id_jenjang.exists' => 'Jenjang pendidikan yang dipilih tidak valid.',
+            'id_tipemodul.required' => 'Pilih jenis materi modul.',
+            'file_upload.mimes' => 'Berkas materi harus berformat PDF atau PPT/PPTX.',
+            'file_upload.max' => 'Ukuran berkas materi maksimal 50MB.',
+            'file_link.url' => 'Format tautan eksternal tidak valid.',
+            'foto_modul.image' => 'Sampul modul harus berupa gambar.',
+        ];
 
-    if ($cekFile) {
-    return back()->withErrors([
-        'file' => 'File tersebut sudah digunakan pada modul lain.'
+        $validated = $request->validate($rules, $messages);
+
+        // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul
+        if (!empty($validated['id_quiz'])) {
+            $quiz = Quiz::find($validated['id_quiz']);
+            if ($quiz && $quiz->id_jenjang && (int) $quiz->id_jenjang !== (int) $validated['id_jenjang']) {
+                $namaJenjangModul = Jenjang::find($validated['id_jenjang'])?->nama_tipe ?? 'yang dipilih';
+                $namaJenjangQuiz = $quiz->jenjang?->nama_tipe ?? 'lain';
+                throw ValidationException::withMessages([
+                    'id_quiz' => "Kuis '{$quiz->judul}' berjenjang {$namaJenjangQuiz}. Modul ini berjenjang {$namaJenjangModul}. Kuis hanya dapat dikaitkan dengan modul yang memiliki jenjang yang sama.",
+                ]);
+            }
+        }
+
+        $pathFile = null;
+        $tipeFile = null;
+
+        if ($request->hasFile('file_upload')) {
+            $file = $request->file('file_upload');
+            $pathFile = $file->store('modul/files', 'public');
+            $tipeFile = $file->getClientOriginalExtension();
+        } elseif ($request->filled('file_link')) {
+            $pathFile = $request->file_link;
+            $tipeFile = 'link';
+        }
+
+        $pathFoto = null;
+        if ($request->hasFile('foto_modul')) {
+            $foto = $request->file('foto_modul');
+            $pathFoto = $foto->store('modul/covers', 'public');
+        }
+
+        Modul::create([
+            'judul_modul' => $validated['judul_modul'],
+            'file_materi' => $pathFile,
+            'tipe_file' => $tipeFile,
+            'id_tipemodul' => $validated['id_tipemodul'] ?? 1,
+            'id_jenjang' => $validated['id_jenjang'],
+            'id_quiz' => !empty($validated['id_quiz']) ? $validated['id_quiz'] : null,
+            'progressModul' => $isDraft ? 'Draft' : 'Tersedia',
+            'foto_modul' => $pathFoto,
         ]);
+
+        return redirect()->route('admin.modul')->with('success', $isDraft ? 'Draf modul berhasil disimpan! 📝' : 'Modul pembelajaran berhasil ditambahkan & dipublikasikan! 🎉');
     }
-
-    $pathFile = null;
-    $tipeFile = null;
-
-    // 2. Cek apakah pengguna mengunggah file fisik
-    if ($request->hasFile('file_upload')) {
-        $file = $request->file('file_upload');
-        $pathFile = $file->store('modul/files', 'public');
-        $tipeFile = $file->getClientOriginalExtension();
-    } 
-    // 3. Cek jika mengisi link eksternal (seperti YouTube)
-    elseif ($request->filled('file_link')) {
-        $pathFile = $request->file_link;
-        $tipeFile = 'link';
-    }
-
-    $pathFoto = null;
-    if ($request->hasFile('foto_modul')) {
-        $foto = $request->file('foto_modul');
-        $pathFoto = $foto->store('modul/covers', 'public');
-    }
-
-    Modul::create([
-        'judul_modul' => $request->judul_modul,
-        'file_materi' => $pathFile,
-        'tipe_file' => $tipeFile,
-        'id_tipemodul' => $request->id_tipemodul,
-        'id_jenjang' => $request->id_jenjang,
-        'id_quiz' => $request->id_quiz ?: null,
-        'progressModul' => 'Tersedia',
-        'foto_modul' => $pathFoto,
-    ]);
-
-    return redirect()->route('admin.modul')->with('success', 'Modul pembelajaran berhasil ditambahkan!');
-}
 
     // Menampilkan detail / preview modul
     public function show($id)
     {
         $modul = Modul::with(['tipeModul', 'jenjang', 'quiz'])->findOrFail($id);
+
+        // Jika modul draf dan yang mengakses bukan admin (tipeuser != 1)
+        if ($modul->isDraft() && auth()->check() && (int) auth()->user()->id_tipeuser !== 1) {
+            return redirect()->route('siswa.modul')->withErrors([
+                'modul' => 'Modul ini masih dalam bentuk draf dan belum tersedia untuk dipelajari.',
+            ]);
+        }
+
         return view('modul.show', compact('modul'));
     }
 
     // Menampilkan form edit modul
     public function edit($id)
     {
-        $module = Modul::findOrFail($id); // Variabel menggunakan $module sesuai pemanggilan di view
+        $module = Modul::findOrFail($id);
         $tipeModul = TipeModul::all();
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
-        $quizzes = Quiz::all();
+        $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
 
         return view('admin.modul.edit', compact('module', 'tipeModul', 'jenjang', 'quizzes'));
     }
 
-    // Memproses update data modul
+    // Memproses update data modul (bisa simpan draf atau publikasikan)
     public function update(Request $request, $id)
     {
         $module = Modul::findOrFail($id);
+        $isDraft = $request->input('action_type') === 'draft';
 
-        // 1. Validasi input edit
-        $request->validate([
-            'judul_modul' => 'required|string|max:255',
-            'id_tipemodul' => 'required|integer',
-            'id_jenjang' => 'required|integer',
+        $rules = [
+            'judul_modul' => 'required|string|max:255|unique:modul,judul_modul,' . $module->id_modul . ',id_modul',
+            'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
+            'id_tipemodul' => $isDraft ? 'nullable|integer' : 'required|integer|exists:tipemodul,id_tipemodul',
+            'id_quiz' => 'nullable|integer|exists:quiz,id_quiz',
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-        ]);
+        ];
+
+        $messages = [
+            'judul_modul.required' => 'Judul modul wajib diisi.',
+            'judul_modul.unique' => 'Judul modul sudah digunakan oleh modul lain.',
+            'id_jenjang.required' => 'Pilih jenjang pendidikan modul.',
+            'id_jenjang.exists' => 'Jenjang pendidikan yang dipilih tidak valid.',
+            'id_tipemodul.required' => 'Pilih jenis materi modul.',
+            'file_upload.mimes' => 'Berkas materi harus berformat PDF atau PPT/PPTX.',
+            'file_upload.max' => 'Ukuran berkas materi maksimal 50MB.',
+            'file_link.url' => 'Format tautan eksternal tidak valid.',
+            'foto_modul.image' => 'Sampul modul harus berupa gambar.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
+
+        // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul
+        if (!empty($validated['id_quiz'])) {
+            $quiz = Quiz::find($validated['id_quiz']);
+            if ($quiz && $quiz->id_jenjang && (int) $quiz->id_jenjang !== (int) $validated['id_jenjang']) {
+                $namaJenjangModul = Jenjang::find($validated['id_jenjang'])?->nama_tipe ?? 'yang dipilih';
+                $namaJenjangQuiz = $quiz->jenjang?->nama_tipe ?? 'lain';
+                throw ValidationException::withMessages([
+                    'id_quiz' => "Kuis '{$quiz->judul}' berjenjang {$namaJenjangQuiz}. Modul ini berjenjang {$namaJenjangModul}. Kuis hanya dapat dikaitkan dengan modul yang memiliki jenjang yang sama.",
+                ]);
+            }
+        }
 
         $pathFile = $module->file_materi;
         $tipeFile = $module->tipe_file;
 
-        // 2. Cek update file materi / link baru
         if ($request->hasFile('file_upload')) {
-            // Hapus file lama jika ada dan bukan link
             if ($module->file_materi && $module->tipe_file !== 'link' && Storage::disk('public')->exists($module->file_materi)) {
                 Storage::disk('public')->delete($module->file_materi);
             }
@@ -145,7 +257,6 @@ public function store(Request $request)
             $tipeFile = 'link';
         }
 
-        // 3. Cek update foto cover baru
         $pathFoto = $module->foto_modul;
         if ($request->hasFile('foto_modul')) {
             if ($module->foto_modul && Storage::disk('public')->exists($module->foto_modul)) {
@@ -155,18 +266,18 @@ public function store(Request $request)
             $pathFoto = $foto->store('modul/covers', 'public');
         }
 
-        // 4. Update data ke database
         $module->update([
-            'judul_modul' => $request->judul_modul,
+            'judul_modul' => $validated['judul_modul'],
             'file_materi' => $pathFile,
             'tipe_file' => $tipeFile,
-            'id_tipemodul' => $request->id_tipemodul,
-            'id_jenjang' => $request->id_jenjang,
-            'id_quiz' => $request->id_quiz ?: null,
+            'id_tipemodul' => $validated['id_tipemodul'] ?? $module->id_tipemodul ?? 1,
+            'id_jenjang' => $validated['id_jenjang'],
+            'id_quiz' => !empty($validated['id_quiz']) ? $validated['id_quiz'] : null,
+            'progressModul' => $isDraft ? 'Draft' : 'Tersedia',
             'foto_modul' => $pathFoto,
         ]);
 
-        return redirect()->route('admin.modul')->with('success', 'Modul pembelajaran berhasil diperbarui!');
+        return redirect()->route('admin.modul')->with('success', $isDraft ? 'Draf modul berhasil diperbarui! 📝' : 'Modul pembelajaran berhasil diperbarui & dipublikasikan! 🎉');
     }
 
     // Menghapus data modul dan file fisik terkait dari storage

@@ -47,9 +47,9 @@ class SiswaController extends Controller
             Achievement::syncForUser($user);
         }
 
-        $modulCount = Modul::count();
-        $quizCount = Quiz::count();
-        $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->take(4)->get();
+        $modulCount = Modul::published()->count();
+        $quizCount = Quiz::published()->count();
+        $moduls = Modul::published()->with(['tipeModul', 'jenjang'])->latest()->take(4)->get();
 
         return view('siswa.dashboard', [
             'user' => $user,
@@ -61,16 +61,16 @@ class SiswaController extends Controller
 
     public function belajar()
     {
-        // Menampilkan daftar modul untuk belajar.
-        $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->get();
+        // Menampilkan daftar modul untuk belajar (hanya yang sudah dipublikasikan)
+        $moduls = Modul::published()->with(['tipeModul', 'jenjang'])->latest()->get();
 
         return view('siswa.modul', compact('moduls'));
     }
 
     public function materiVideo()
     {
-        // Menampilkan daftar modul yang ada videonya.
-        $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->get();
+        // Menampilkan daftar modul yang ada videonya (hanya yang sudah dipublikasikan)
+        $moduls = Modul::published()->with(['tipeModul', 'jenjang'])->latest()->get();
 
         return view('siswa.materi-video-list', compact('moduls'));
     }
@@ -84,8 +84,14 @@ class SiswaController extends Controller
             'quiz',
         ])->findOrFail($id_modul);
 
-        // Ambil modul lain untuk navigasi daftar materi sejenjang
-        $modulLain = Modul::with(['tipeModul', 'jenjang'])
+        if ($modul->isDraft()) {
+            return redirect()->route('siswa.modul')->withErrors([
+                'modul' => 'Materi modul ini masih dalam bentuk draf dan belum tersedia.',
+            ]);
+        }
+
+        // Ambil modul lain untuk navigasi daftar materi sejenjang (hanya yang dipublikasikan)
+        $modulLain = Modul::published()->with(['tipeModul', 'jenjang'])
             ->where('id_jenjang', $modul->id_jenjang)
             ->where('id_modul', '!=', $modul->id_modul)
             ->latest()
@@ -104,6 +110,13 @@ class SiswaController extends Controller
     public function latihanSoalModul($id_modul)
     {
         $modul = Modul::with(['tipeModul', 'jenjang'])->findOrFail($id_modul);
+
+        if ($modul->isDraft()) {
+            return redirect()->route('siswa.modul')->withErrors([
+                'modul' => 'Latihan soal untuk modul ini belum tersedia karena modul masih dalam bentuk draf.',
+            ]);
+        }
+
         $user = Auth::user();
 
         // Tanpa kuis terkait dan tanpa jenjang, tidak ada yang bisa ditampilkan.
@@ -114,7 +127,8 @@ class SiswaController extends Controller
             return view('siswa.latihan-soal-modul', compact('modul', 'quizzes'));
         }
 
-        $quizzes = Quiz::belumKadaluarsa()
+        $quizzes = Quiz::published()
+            ->belumKadaluarsa()
             ->where(function ($q) use ($modul) {
                 $q->when($modul->id_quiz, fn($qq) => $qq->where('id_quiz', $modul->id_quiz))
                     ->when($modul->id_jenjang, fn($qq) => $qq->orWhere('id_jenjang', $modul->id_jenjang));
@@ -137,7 +151,7 @@ class SiswaController extends Controller
     {
         $user = Auth::user();
 
-        $query = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz']);
+        $query = Quiz::published()->belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz']);
 
         if ($user && $user->id_jenjang) {
             $query->where('id_jenjang', $user->id_jenjang);
@@ -157,7 +171,7 @@ class SiswaController extends Controller
 
         $user = Auth::user();
 
-        $query = Quiz::with([
+        $query = Quiz::published()->with([
             'tipeQuiz',
             'tingkatQuiz',
             'jenjang',
@@ -200,6 +214,8 @@ class SiswaController extends Controller
         $user = Auth::user();
         $hasilSiswa = $user ? HasilQuizModul::where('id_user', $user->id_user)
             ->where('id_quiz', $quiz->id_quiz)
+            ->where('is_lulus', true)
+            ->where('poin_didapat', '>', 0)
             ->orderByDesc('poin_didapat')
             ->first() : null;
 
@@ -583,9 +599,15 @@ class SiswaController extends Controller
     }
 
     // Hanya siswa dengan jenjang yang sama yang boleh mengerjakan kuis.
-    // Kuis tanpa jenjang (null) terbuka untuk semua.
+    // Kuis tanpa jenjang (null) terbuka untuk semua. Kuis draf ditolak.
     private function tolakJikaBukanJenjangnya(Quiz $quiz, string $routeDaftar)
     {
+        if ($quiz->isDraft()) {
+            return redirect()->route($routeDaftar)->withErrors([
+                'quiz' => 'Kuis masih dalam bentuk draf dan belum dipublikasikan.',
+            ]);
+        }
+
         $user = Auth::user();
 
         if (

@@ -98,6 +98,7 @@
 
         {{-- Hidden fields for form submissions --}}
         <input type="hidden" name="id_tipequiz" value="{{ old('id_tipequiz', $quiz->id_tipequiz ?? 1) }}">
+        <input type="hidden" name="action_type" id="input-action-type" value="publish">
 
         {{-- ==================== TOP BAR ==================== --}}
         <header
@@ -117,27 +118,39 @@
                 </div>
 
                 <div class="hidden md:flex items-center gap-1.5 text-xs text-gray-500 ml-2">
-                    <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd"
-                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                            clip-rule="evenodd" />
-                    </svg>
-                    <span>Draf tersimpan</span>
+                    @if(isset($quiz) && $quiz->isDraft())
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            📝 Draf
+                        </span>
+                    @elseif(isset($quiz))
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            ✓ Tersedia
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 text-slate-400 text-xs">
+                            Kuis Baru
+                        </span>
+                    @endif
                 </div>
             </div>
 
             {{-- Kanan: Aksi --}}
             <div class="flex items-center gap-2">
                 <a href="{{ route('admin.quiz') }}"
-                    class="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition">
+                    class="px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
                     Keluar
                 </a>
+                <button type="button" id="btn-save-draft"
+                    class="px-4 py-2 text-sm font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition flex items-center gap-1.5 shadow-xs">
+                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <span>Simpan Draf</span>
+                </button>
                 <button type="submit" id="btn-submit-form"
                     class="px-5 py-2 text-sm font-bold text-white bg-[#1368CE] hover:bg-[#0B4FB3] rounded-lg shadow-md transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
-                    {{ isset($quiz) ? 'Perbarui Quiz' : 'Simpan Quiz' }}
+                    <span>{{ (isset($quiz) && !$quiz->isDraft()) ? 'Perbarui Quiz' : 'Publikasikan' }}</span>
                 </button>
             </div>
         </header>
@@ -1130,8 +1143,40 @@ Tingkat Quiz
         });
 
         // Prepare Submit Form (Populate hidden inputs)
-        document.getElementById('form-quiz').addEventListener('submit', (e) => {
+        const formQuiz = document.getElementById('form-quiz');
+        const inputActionType = document.getElementById('input-action-type');
+        const btnSaveDraft = document.getElementById('btn-save-draft');
+        const btnSubmitForm = document.getElementById('btn-submit-form');
+
+        if (btnSaveDraft) {
+            btnSaveDraft.addEventListener('click', () => {
+                inputActionType.value = 'draft';
+                if (typeof formQuiz.requestSubmit === 'function') {
+                    formQuiz.requestSubmit();
+                } else {
+                    formQuiz.submit();
+                }
+            });
+        }
+
+        if (btnSubmitForm) {
+            btnSubmitForm.addEventListener('click', () => {
+                inputActionType.value = 'publish';
+            });
+        }
+
+        formQuiz.addEventListener('submit', (e) => {
             saveCurrentState();
+            const isDraft = inputActionType.value === 'draft';
+
+            // Check Judul
+            const judul = document.getElementById('judul-quiz').value.trim();
+            if (!judul) {
+                alert('Harap isi judul kuis!');
+                document.getElementById('judul-quiz').focus();
+                e.preventDefault();
+                return;
+            }
 
             // Check Jenjang
             const selectJenjang = document.getElementById('select-jenjang');
@@ -1142,57 +1187,61 @@ Tingkat Quiz
                 return;
             }
 
-            // Check Judul
-            const judul = document.getElementById('judul-quiz').value.trim();
-            if (!judul) {
-                alert('Harap isi judul kuis!');
-                e.preventDefault();
-                return;
-            }
+            if (!isDraft) {
+                // Check Token
+                if (checkUseToken && checkUseToken.checked) {
+                    if (!inputToken || !inputToken.value.trim()) {
+                        alert('Harap masukkan token kuis atau matikan opsi token!');
+                        if (inputToken) inputToken.focus();
+                        e.preventDefault();
+                        return;
+                    }
+                }
 
-            // Check Token
-            if (checkUseToken && checkUseToken.checked) {
-                if (!inputToken || !inputToken.value.trim()) {
-                    alert('Harap masukkan token kuis atau matikan opsi token!');
-                    if (inputToken) inputToken.focus();
+                // Check mode biasa durasi
+                if (selectModeQuiz && selectModeQuiz.value === 'biasa') {
+                    if (!inputTotalDuration || !inputTotalDuration.value || parseInt(inputTotalDuration.value) < 1) {
+                        alert('Harap tentukan total durasi pengerjaan kuis!');
+                        if (inputTotalDuration) inputTotalDuration.focus();
+                        e.preventDefault();
+                        return;
+                    }
+                }
+
+                let valid = true;
+                soalList.forEach((s, i) => {
+                    if (!s.pertanyaan.trim()) {
+                        alert(`Soal #${i + 1} belum memiliki teks pertanyaan!`);
+                        valid = false;
+                        return;
+                    }
+                    if (s.jenis_soal === 'isian_singkat') {
+                        if (!s.jawaban_singkat.trim()) {
+                            alert(`Soal #${i + 1} (Isian Singkat) belum diisi kunci jawabannya!`);
+                            valid = false;
+                            return;
+                        }
+                    } else {
+                        const availableChoices = s.jenis_soal === 'true_false' ? s.pilihan.slice(0, 2) : s.pilihan;
+                        const filledChoices = availableChoices.filter(p => p.teks.trim());
+                        const correctChoices = filledChoices.filter(p => p.is_correct === 1);
+                        if (s.jenis_soal === 'kuis' && filledChoices.length < 2) {
+                            alert(`Soal #${i + 1} harus memiliki minimal dua pilihan yang terisi.`);
+                            valid = false;
+                            return;
+                        }
+                        if (correctChoices.length !== 1) {
+                            alert(`Soal #${i + 1} harus memiliki tepat satu jawaban benar pada pilihan yang terisi.`);
+                            valid = false;
+                            return;
+                        }
+                    }
+                });
+
+                if (!valid) {
                     e.preventDefault();
                     return;
                 }
-            }
-
-            let valid = true;
-            soalList.forEach((s, i) => {
-                if (!s.pertanyaan.trim()) {
-                    alert(`Soal #${i + 1} belum memiliki teks pertanyaan!`);
-                    valid = false;
-                    return;
-                }
-                if (s.jenis_soal === 'isian_singkat') {
-                    if (!s.jawaban_singkat.trim()) {
-                        alert(`Soal #${i + 1} (Isian Singkat) belum diisi kunci jawabannya!`);
-                        valid = false;
-                        return;
-                    }
-                } else {
-                    const availableChoices = s.jenis_soal === 'true_false' ? s.pilihan.slice(0, 2) : s.pilihan;
-                    const filledChoices = availableChoices.filter(p => p.teks.trim());
-                    const correctChoices = filledChoices.filter(p => p.is_correct === 1);
-                    if (s.jenis_soal === 'kuis' && filledChoices.length < 2) {
-                        alert(`Soal #${i + 1} harus memiliki minimal dua pilihan yang terisi.`);
-                        valid = false;
-                        return;
-                    }
-                    if (correctChoices.length !== 1) {
-                        alert(`Soal #${i + 1} harus memiliki tepat satu jawaban benar pada pilihan yang terisi.`);
-                        valid = false;
-                        return;
-                    }
-                }
-            });
-
-            if (!valid) {
-                e.preventDefault();
-                return;
             }
 
             // Generate hidden input fields
