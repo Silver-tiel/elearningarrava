@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\HasilQuizModul;
 use App\Models\Jenjang;
 use App\Models\Modul;
+use App\Models\OrangtuaSiswa;
 use App\Models\PencapaianUser;
 use App\Models\Achievement;
 use App\Models\Quiz;
 use App\Models\TingkatQuiz;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -768,6 +770,128 @@ class SiswaController extends Controller
             'totalNonaktif',
             'totalPerluDitinjau',
             'listKelas',
+            'jenjangs'
+        ));
+    }
+
+    public function adminLihatProfilSiswa($id)
+    {
+        $siswa = User::where('id_tipeuser', 3)
+            ->with(['jenjang', 'tipeUser'])
+            ->findOrFail($id);
+
+        // Sinkronkan capaian penghargaan siswa sesuai poin yang diperoleh
+        if (class_exists(Achievement::class)) {
+            Achievement::syncForUser($siswa);
+        }
+
+        // Leaderboard rank pada jenjang yang sama
+        $peringkat = User::where('id_tipeuser', 3)
+            ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
+            ->where('total_poin', '>', (int) $siswa->total_poin)
+            ->count() + 1;
+
+        $totalSiswaJenjang = User::where('id_tipeuser', 3)
+            ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
+            ->count();
+
+        // Modul statistics
+        $totalModulJenjang = Modul::published()
+            ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
+            ->count();
+
+        // Riwayat pengerjaan kuis siswa
+        $quizResults = HasilQuizModul::where('id_user', $siswa->id_user)
+            ->with('quiz')
+            ->orderByDesc('waktu_dapat')
+            ->get();
+
+        $totalPercobaan = $quizResults->count();
+        $kuisLulus = $quizResults->where('is_lulus', true)->count();
+        $kuisGagal = $totalPercobaan - $kuisLulus;
+        $uniqueQuizLulus = $quizResults->where('is_lulus', true)->pluck('id_quiz')->unique()->count();
+
+        $nilaiList = $quizResults->map(function ($hasil) {
+            return (float) $hasil->total_poin > 0
+                ? round(($hasil->poin_didapat / $hasil->total_poin) * 100, 1)
+                : 0;
+        });
+
+        $rataRataNilai = $nilaiList->isNotEmpty() ? round($nilaiList->avg(), 1) : 0;
+        $nilaiTertinggi = $nilaiList->isNotEmpty() ? $nilaiList->max() : 0;
+
+        // Modul selesai berdasarkan kuis modul yang lulus
+        $quizLulusIds = $quizResults->where('is_lulus', true)->pluck('id_quiz')->unique();
+        $modulSelesai = $quizLulusIds->isNotEmpty()
+            ? Modul::whereIn('id_quiz', $quizLulusIds)->distinct()->count('id_modul')
+            : 0;
+
+        $progresModulPersen = $totalModulJenjang > 0
+            ? min(100, (int) round(($modulSelesai / $totalModulJenjang) * 100))
+            : 0;
+
+        // Data untuk Grafik Tren Nilai (Urut dari waktu terlama ke terbaru)
+        $chartDataTrend = $quizResults->sortBy('waktu_dapat')->values()->map(function ($hasil) {
+            $nilai = (float) $hasil->total_poin > 0
+                ? round(($hasil->poin_didapat / $hasil->total_poin) * 100, 1)
+                : 0;
+            return [
+                'judul' => $hasil->quiz?->judul ?? ('Kuis #' . $hasil->id_quiz),
+                'tanggal' => $hasil->waktu_dapat ? Carbon::parse($hasil->waktu_dapat)->format('d M H:i') : '-',
+                'nilai' => $nilai,
+                'poin' => (int) $hasil->poin_didapat,
+                'total_poin' => (int) $hasil->total_poin,
+                'is_lulus' => (bool) $hasil->is_lulus,
+            ];
+        });
+
+        // Data untuk Grafik Aktivitas Harian
+        $chartAktivitas = $quizResults->groupBy(function ($hasil) {
+            return $hasil->waktu_dapat ? Carbon::parse($hasil->waktu_dapat)->toDateString() : 'Lainnya';
+        })->map(function ($group, $date) {
+            return [
+                'tanggal' => $date !== 'Lainnya' ? Carbon::parse($date)->translatedFormat('d M') : 'Lainnya',
+                'jumlah' => $group->count(),
+            ];
+        })->values()->take(10);
+
+        // Pencapaian / Achievements
+        $achievementsUnlocked = PencapaianUser::with('achievement')
+            ->where('id_user', $siswa->id_user)
+            ->orderByDesc('waktu_pencapaian')
+            ->get();
+
+        $allAchievements = Achievement::where('is_active', true)
+            ->orderBy('minimal_poin_achivement')
+            ->get();
+
+        // Orang tua terhubung
+        $orangtuaList = OrangtuaSiswa::with('orangtua')
+            ->where('id_siswa', $siswa->id_user)
+            ->get();
+
+        // Semua jenjang
+        $jenjangs = Jenjang::orderBy('nama_tipe')->get();
+
+        return view('admin.daftar_siswa.profil_siswa', compact(
+            'siswa',
+            'peringkat',
+            'totalSiswaJenjang',
+            'totalModulJenjang',
+            'totalPercobaan',
+            'kuisLulus',
+            'kuisGagal',
+            'uniqueQuizLulus',
+            'rataRataNilai',
+            'nilaiTertinggi',
+            'modulSelesai',
+            'progresModulPersen',
+            'quizResults',
+            'chartDataTrend',
+            'chartAktivitas',
+            'achievementsUnlocked',
+            'allAchievements',
+            'orangtuaList',
             'jenjangs'
         ));
     }
