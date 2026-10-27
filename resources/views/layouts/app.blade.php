@@ -13,6 +13,7 @@
 </head>
 <body class="bg-[#F8FAFC] text-slate-800 antialiased">
     @include('components.page-loader')
+    @include('components.nav-buttons-sprite')
 
     <div class="flex min-h-screen">
 

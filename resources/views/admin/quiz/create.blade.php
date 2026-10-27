@@ -365,13 +365,74 @@
                     {{-- Form Controls --}}
                     <div class="p-4 space-y-5">
 
+                        {{-- ==================== PROPERTI SOAL AKTIF (PALING ATAS) ==================== --}}
+                        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/90 shadow-sm space-y-3">
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                                <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 text-[#1368CE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    Pengaturan Soal
+                                </span>
+                                <span class="text-[10px] font-bold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded">
+                                    Soal Aktif
+                                </span>
+                            </div>
+
+                            {{-- 1. JENIS SOAL --}}
+                            <div>
+                                <label for="select-jenis-soal" class="block text-xs font-bold text-gray-700 mb-1.5">
+                                    Jenis soal
+                                </label>
+                                <select id="select-jenis-soal"
+                                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold text-gray-800 focus:ring-2 focus:ring-blue-500 transition">
+                                    <option value="kuis">Kuis (Pilihan Ganda)</option>
+                                    <option value="true_false">Benar atau Salah</option>
+                                    <option value="isian_singkat">Isian Singkat</option>
+                                </select>
+                            </div>
+
+                            {{-- 2. BATAS WAKTU --}}
+                            <div id="question-timer-wrapper">
+                                <label for="select-timer" class="block text-xs font-bold text-gray-700 mb-1.5">
+                                    Batas waktu
+                                </label>
+                                <select id="select-timer"
+                                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 transition">
+                                    <option value="5">5 Detik</option>
+                                    <option value="10">10 Detik</option>
+                                    <option value="20" selected>20 Detik</option>
+                                    <option value="30">30 Detik</option>
+                                    <option value="60">1 Menit</option>
+                                    <option value="90">1.5 Menit</option>
+                                    <option value="120">2 Menit</option>
+                                    <option value="240">4 Menit</option>
+                                </select>
+                            </div>
+
+                            {{-- 3. POIN --}}
+                            <div>
+                                <label for="input-poin" class="block text-xs font-bold text-gray-700 mb-1.5">
+                                    Poin
+                                </label>
+                                <input type="number" id="input-poin" value="10" min="0" required
+                                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-semibold text-gray-800 focus:ring-2 focus:ring-blue-500 transition">
+                            </div>
+                        </div>
+
+                        <div class="relative flex py-1 items-center">
+                            <div class="flex-grow border-t border-slate-200"></div>
+                            <span class="flex-shrink mx-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pengaturan Kuis</span>
+                            <div class="flex-grow border-t border-slate-200"></div>
+                        </div>
+
                         {{-- 1. JENJANG QUIZ (WAJIB) --}}
-                        <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100">
-                            <label class="block text-xs font-bold text-indigo-900 mb-1.5 flex items-center gap-1.5">
-                                <span>🎓</span> Jenjang Quiz <span class="text-red-500 font-extrabold">*</span>
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
+                            <label class="block text-xs font-bold text-blue-900 mb-1.5 flex items-center gap-1.5">
+                                Jenjang Quiz <span class="text-red-500 font-extrabold">*</span>
                             </label>
                             <select name="id_jenjang" id="select-jenjang" required
-                                class="w-full bg-white border border-indigo-200 rounded-lg px-3 py-2 text-xs font-bold text-indigo-950 focus:ring-2 focus:ring-indigo-500">
+                                class="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500">
                                 <option value="" disabled @selected(!old('id_jenjang', $quiz->id_jenjang ?? null))>-- Pilih Jenjang (Wajib) --</option>
                                 @if(isset($jenjangList) && count($jenjangList) > 0)
                                     @foreach($jenjangList as $j)
@@ -389,7 +450,7 @@
                         {{-- 1.5 TINGKAT QUIZ --}}
                         <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
                             <label class="block text-xs font-bold text-blue-900 mb-1.5 flex items-center gap-1.5">
-                                <span>📈</span> Tingkat Quiz
+Tingkat Quiz
                             </label>
                             <select name="id_tingkatquiz" id="select-tingkat" required
                                 class="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500">
@@ -405,10 +466,10 @@
                             </select>
                         </div>
 
-                        <div class="bg-cyan-50/70 p-3 rounded-xl border border-cyan-100">
-                            <label for="select-mode-quiz" class="block text-xs font-bold text-cyan-950 mb-1.5">Mode pengerjaan</label>
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
+                            <label for="select-mode-quiz" class="block text-xs font-bold text-blue-950 mb-1.5">Mode pengerjaan</label>
                             <select name="mode_pengerjaan" id="select-mode-quiz" required
-                                class="w-full bg-white border border-cyan-200 rounded-lg px-3 py-2 text-xs font-bold text-cyan-950">
+                                class="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-950">
                                 <option value="wayground" @selected(old('mode_pengerjaan', $quiz->mode_pengerjaan ?? 'wayground') === 'wayground')>Wayground</option>
                                 <option value="biasa" @selected(old('mode_pengerjaan', $quiz->mode_pengerjaan ?? 'wayground') === 'biasa')>Kuis biasa</option>
                             </select>
@@ -420,11 +481,11 @@
                         </div>
 
                         {{-- OPSI PREVIEW KUIS UNTUK SISWA --}}
-                        <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-200">
-                            <label class="block text-xs font-bold text-indigo-950 mb-1 flex items-center gap-1.5">
-                                <span>👁️</span> Tampilan Info Kuis Siswa
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-200">
+                            <label class="block text-xs font-bold text-blue-950 mb-1 flex items-center gap-1.5">
+                             Tampilan Info Kuis Siswa
                             </label>
-                            <p class="text-[10px] text-indigo-800/80 mb-2 leading-relaxed">
+                            <p class="text-[10px] text-blue-800/80 mb-2 leading-relaxed">
                                 Pilih rincian yang dapat dilihat siswa pada modal/halaman info sebelum kuis dimulai:
                             </p>
                             <div class="space-y-1.5">
@@ -452,7 +513,7 @@
                         {{-- 2. WAKTU KADALUARSA (BISA TIDAK PERNAH) --}}
                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
                             <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                                <span>⏳</span> Waktu Kadaluarsa Quiz
+                             Batas Waktu Pengerjaan Quiz
                             </label>
                             
                             <div class="flex items-center gap-2 mb-2">
@@ -469,23 +530,23 @@
                         </div>
 
                         {{-- DESKRIPSI QUIZ --}}
-                        <div class="bg-amber-50/70 p-3 rounded-xl border border-amber-200">
-                            <label class="block text-xs font-bold text-amber-950 mb-1.5 flex items-center justify-between">
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-200">
+                            <label class="block text-xs font-bold text-blue-950 mb-1.5 flex items-center justify-between">
                                 <span class="flex items-center gap-1.5">
-                                    <span>📝</span> Deskripsi / Petunjuk
+                                 Deskripsi / Petunjuk
                                 </span>
-                                <span class="text-[10px] text-amber-700 font-semibold bg-amber-100 px-1.5 py-0.5 rounded">Opsional</span>
+                                <span class="text-[10px] text-blue-700 font-semibold bg-blue-100 px-1.5 py-0.5 rounded">Opsional</span>
                             </label>
                             <textarea name="deskripsi" id="input-deskripsi" rows="3" placeholder="Tuliskan gambaran materi, aturan pengerjaan, atau petunjuk untuk siswa..."
-                                class="w-full bg-white border border-amber-300 rounded-lg p-2.5 text-xs font-medium text-amber-950 placeholder-amber-400 focus:ring-2 focus:ring-amber-500 transition resize-none">{{ old('deskripsi', $quiz->deskripsi ?? '') }}</textarea>
-                            <p class="text-[10px] text-amber-800/80 mt-1">Ditampilkan di halaman preview sebelum siswa mulai mengerjakan kuis.</p>
+                                class="w-full bg-white border border-blue-300 rounded-lg p-2.5 text-xs font-medium text-blue-950 placeholder-blue-400 focus:ring-2 focus:ring-blue-500 transition resize-none">{{ old('deskripsi', $quiz->deskripsi ?? '') }}</textarea>
+                            <p class="text-[10px] text-blue-800/80 mt-1">Ditampilkan di halaman preview sebelum siswa mulai mengerjakan kuis.</p>
                         </div>
 
                         {{-- COVER / FOTO QUIZ --}}
                         <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-200">
                             <label class="block text-xs font-bold text-blue-950 mb-1.5 flex items-center justify-between">
                                 <span class="flex items-center gap-1.5">
-                                    <span>🖼️</span> Foto Cover Quiz
+                                 Foto Cover Quiz
                                 </span>
                                 <span class="text-[10px] text-blue-700 font-semibold bg-blue-100 px-1.5 py-0.5 rounded">Opsional</span>
                             </label>
@@ -519,76 +580,38 @@
                         </div>
 
                         {{-- OPSI TOKEN MASUK --}}
-                        <div class="bg-purple-50/70 p-3 rounded-xl border border-purple-200">
-                            <label class="block text-xs font-bold text-purple-950 mb-1.5 flex items-center justify-between">
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
+                            <label class="block text-xs font-bold text-blue-950 mb-1.5 flex items-center justify-between">
                                 <span class="flex items-center gap-1.5">
-                                    <span>🔐</span> Token Masuk Quiz
+                                Token Masuk Quiz
                                 </span>
                             </label>
                             
                             <div class="flex items-center gap-2 mb-2">
                                 <input type="checkbox" name="use_token" value="1" id="check-use-token" @checked(old('use_token', isset($quiz) && $quiz->token))
-                                    class="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 cursor-pointer">
-                                <label for="check-use-token" class="text-xs font-semibold text-purple-900 cursor-pointer select-none">
+                                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                                <label for="check-use-token" class="text-xs font-semibold text-blue-900 cursor-pointer select-none">
                                     Pakaikan Token Kuis
                                 </label>
                             </div>
 
-                            <div id="token-input-wrapper" class="{{ (old('use_token') || (isset($quiz) && $quiz->token)) ? '' : 'hidden' }} space-y-2 pt-2 border-t border-purple-100">
+                            <div id="token-input-wrapper" class="{{ (old('use_token') || (isset($quiz) && $quiz->token)) ? '' : 'hidden' }} space-y-2 pt-2 border-t border-blue-100">
                                 <div class="flex items-center gap-2">
                                     <div class="relative flex-1">
                                         <input type="text" name="token" id="input-token"
                                             value="{{ old('token', $quiz->token ?? '') }}"
                                             placeholder="Contoh: KUIS123"
                                             maxlength="50"
-                                            class="w-full uppercase font-mono tracking-wider bg-white border border-purple-300 rounded-lg px-3 py-1.5 text-xs font-bold text-purple-950 focus:ring-2 focus:ring-purple-500">
+                                            class="w-full uppercase font-mono tracking-wider bg-white border border-blue-300 rounded-lg px-3 py-1.5 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500">
                                     </div>
                                     <button type="button" id="btn-generate-token"
-                                        class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 shadow-sm"
+                                        class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 shadow-sm"
                                         title="Buat token acak otomatis">
-                                        <span>🎲 Acak</span>
+                                        Acak
                                     </button>
                                 </div>
-                                <p class="text-[10px] text-purple-700 leading-tight">Siswa wajib mengisi token ini saat preview sebelum tombol mulai mengerjakan kuis dapat ditekan.</p>
+                                <p class="text-[10px] text-blue-700 leading-tight">Siswa wajib mengisi token ini saat preview sebelum tombol mulai mengerjakan kuis dapat ditekan.</p>
                             </div>
-                        </div>
-
-                        <hr class="border-gray-100">
-
-                        {{-- 3. JENIS SOAL (Kuis, Benar/Salah, Isian Singkat) --}}
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                                <span>❓</span> Jenis soal
-                            </label>
-                            <select id="select-jenis-soal"
-                                class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold text-gray-800">
-                                <option value="kuis">Kuis (Pilihan Ganda)</option>
-                                <option value="true_false">Benar atau Salah</option>
-                                <option value="isian_singkat">Isian Singkat</option>
-                            </select>
-                        </div>
-
-                        {{-- Batas Waktu --}}
-                        <div id="question-timer-wrapper">
-                            <label class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                                <span>⏱️</span> Batas waktu
-                            </label>
-                            <select id="select-timer"
-                                class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs font-semibold text-gray-800">
-                                <option value="10">10 detik</option>
-                                <option value="20" selected>20 detik</option>
-                                <option value="30">30 detik</option>
-                                <option value="60">1 menit</option>
-                            </select>
-                        </div>
-
-                        {{-- Poin --}}
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
-                                <span>🎖️</span> Poin
-                            </label>
-                            <input type="number" id="input-poin" value="10" min="0" required
-                                class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-xs font-semibold text-gray-800">
                         </div>
 
                     </div>
@@ -943,6 +966,9 @@
         function loadCurrentState() {
             const currentSoal = soalList[currentIndex];
             if (!currentSoal) return;
+
+            const labelSoalAktif = document.getElementById('label-soal-aktif');
+            if (labelSoalAktif) labelSoalAktif.textContent = `Soal #${currentIndex + 1}`;
 
             inputPertanyaan.value = currentSoal.pertanyaan || '';
             selectTimer.value = currentSoal.timer || '20';

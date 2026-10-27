@@ -15,6 +15,7 @@
 <body class="bg-[#F8FAFC] text-slate-800 antialiased">
     @include('components.page-loader')
     <x-level-up-modal />
+    @include('components.nav-buttons-sprite')
 
     @php
         $sidebarHidden = ($hideSidebar ?? false) || View::hasSection('hideSidebar');

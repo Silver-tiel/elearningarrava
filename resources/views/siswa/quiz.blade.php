@@ -2,6 +2,21 @@
 
 @section('title', 'Daftar Quiz — Arrava E-Learning')
 
+@push('styles')
+    <style>
+        @keyframes quizCardFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+@endpush
+
 @section('header')
     <div class="relative w-full max-w-[420px]">
         <svg class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a98ad]" viewBox="0 0 24 24" fill="none"
@@ -204,7 +219,7 @@
                                 <div class="absolute top-3 left-3 z-10">
                                     <span
                                         class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-purple-950/85 backdrop-blur-md text-purple-200 border border-purple-400/40 shadow-md">
-                                        🔒 Token
+                                        Token
                                     </span>
                                 </div>
                             @endif
@@ -240,41 +255,16 @@
                             {{-- Ringkasan Soal di dalam Quiz --}}
                             @if($quiz->soal->isNotEmpty())
                                 <div class="mt-3 flex flex-wrap items-center gap-1.5">
-                                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Tipe
-                                        Soal:</span>
                                     @foreach($quiz->soal->pluck('jenisSoal.nama_jenis')->filter()->unique() as $namaJenis)
                                         <span
                                             class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
-                                            ✓ {{ $namaJenis }}
+                                            {{ $namaJenis }}
                                         </span>
                                     @endforeach
                                 </div>
                             @endif
 
-                            {{-- Mini Stats Bar --}}
-                            <div
-                                class="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-slate-50/90 p-2.5 border border-slate-100 text-center">
-                                <div class="flex flex-col items-center justify-center">
-                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Soal</span>
-                                    <span class="text-xs font-black text-slate-800 flex items-center gap-0.5 mt-0.5">
-                                        <span>📝</span> {{ $soalCount }}
-                                    </span>
-                                </div>
-                                <div class="flex flex-col items-center justify-center border-x border-slate-200/60 px-1">
-                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Durasi</span>
-                                    <span
-                                        class="text-xs font-black text-slate-800 flex items-center gap-0.5 mt-0.5 truncate max-w-full">
-                                        <span>⏱️</span>
-                                        {{ $quiz->durasi_total_menit ? ($quiz->durasi_total_menit . ' mnt') : 'Fleksibel' }}
-                                    </span>
-                                </div>
-                                <div class="flex flex-col items-center justify-center">
-                                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Poin</span>
-                                    <span class="text-xs font-black text-indigo-600 flex items-center gap-0.5 mt-0.5">
-                                        <span>🏆</span> {{ $totalPoin }}
-                                    </span>
-                                </div>
-                            </div>
+                        
                         </div>
                     </div>
 
@@ -323,6 +313,38 @@
                 </div>
             @endforelse
         </div>
+
+        {{-- Dynamic Search Empty State (saat pencarian tidak menemukan hasil) --}}
+        <div id="quiz-empty-search"
+            class="hidden rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-12 text-center text-sm text-[#7c899c]">
+            Tidak ada kuis yang cocok dengan kata kunci pencarian Anda.
+        </div>
+
+        {{-- Pagination (Minimalis Retro: Tombol Kiri, Nomor & Titik di Tengah, Tombol Kanan) --}}
+        @if($quizzes->isNotEmpty())
+            <div id="quiz-pagination-container"
+                class="mt-12 mb-6 flex items-center justify-center gap-6 sm:gap-8 select-none">
+                {{-- Tombol Previous --}}
+                <button type="button" class="nav-btn" id="quiz-btn-prev" aria-label="Previous" title="Halaman Sebelumnya">
+                    <svg><use href="#btn-left"/></svg>
+                </button>
+
+                {{-- Indikator Nomor & Titik Halaman --}}
+                <div class="flex flex-col items-center justify-center min-w-[50px]">
+                    <span id="quiz-page-current" class="text-3xl sm:text-4xl font-black text-blue-600 tracking-tight leading-none">
+                        1
+                    </span>
+                    <div id="quiz-pagination-dots" class="mt-2 flex items-center justify-center gap-1.5">
+                        <!-- Dots di-render dinamis oleh JavaScript -->
+                    </div>
+                </div>
+
+                {{-- Tombol Next --}}
+                <button type="button" class="nav-btn" id="quiz-btn-next" aria-label="Next" title="Halaman Selanjutnya">
+                    <svg><use href="#btn-right"/></svg>
+                </button>
+            </div>
+        @endif
     </div>
 
     {{-- ==================== MODAL PREVIEW QUIZ ==================== --}}
@@ -494,18 +516,145 @@
 
     @push('scripts')
         <script>
-            // Live Search Filter for Quiz Cards
+            // =========================================================================
+            // Client-side Pagination (Batasan 8 card per halaman) & Live Search
+            // =========================================================================
+            const CARDS_PER_PAGE = 8;
+            let currentQuizPage = 1;
+
+            const quizCards = Array.from(document.querySelectorAll('.quiz-card-item'));
             const searchInput = document.getElementById('quiz-search-input');
-            if (searchInput) {
-                searchInput.addEventListener('input', function () {
-                    const query = this.value.toLowerCase().trim();
-                    const cards = document.querySelectorAll('.quiz-card-item');
-                    cards.forEach(card => {
-                        const title = card.getAttribute('data-title') || '';
-                        card.style.display = title.includes(query) ? '' : 'none';
-                    });
+            const emptySearchEl = document.getElementById('quiz-empty-search');
+            const paginationContainer = document.getElementById('quiz-pagination-container');
+            const pageCurrentEl = document.getElementById('quiz-page-current');
+            const dotsContainerEl = document.getElementById('quiz-pagination-dots');
+            const btnPrev = document.getElementById('quiz-btn-prev');
+            const btnNext = document.getElementById('quiz-btn-next');
+
+            function getFilteredQuizCards() {
+                const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+                if (!query) return quizCards;
+                return quizCards.filter(card => {
+                    const title = (card.getAttribute('data-title') || '').toLowerCase();
+                    return title.includes(query);
                 });
             }
+
+            function renderQuizDots(totalPages, currentPage) {
+                if (!dotsContainerEl) return;
+                dotsContainerEl.innerHTML = '';
+                const count = Math.max(1, totalPages);
+                for (let p = 1; p <= count; p++) {
+                    const dot = document.createElement('button');
+                    dot.type = 'button';
+                    dot.setAttribute('aria-label', `Halaman ${p}`);
+                    if (p === currentPage) {
+                        dot.className = 'w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-600 scale-125 transition-transform duration-150 pointer-events-none shadow-xs';
+                    } else {
+                        dot.className = 'w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-200 hover:bg-blue-500 transition-colors duration-150 cursor-pointer';
+                        dot.addEventListener('click', function () {
+                            currentQuizPage = p;
+                            renderQuizPagination(true);
+                            const grid = document.getElementById('quiz-grid');
+                            if (grid && window.scrollY > grid.offsetTop) {
+                                grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                        });
+                    }
+                    dotsContainerEl.appendChild(dot);
+                }
+            }
+
+            function renderQuizPagination(animate = false) {
+                const filtered = getFilteredQuizCards();
+                const totalItems = filtered.length;
+                const totalPages = Math.max(1, Math.ceil(totalItems / CARDS_PER_PAGE));
+
+                if (currentQuizPage > totalPages) {
+                    currentQuizPage = totalPages;
+                }
+                if (currentQuizPage < 1) {
+                    currentQuizPage = 1;
+                }
+
+                const startIndex = (currentQuizPage - 1) * CARDS_PER_PAGE;
+                const endIndex = Math.min(startIndex + CARDS_PER_PAGE, totalItems);
+
+                // Sembunyikan semua kartu terlebih dahulu
+                quizCards.forEach(card => {
+                    card.style.display = 'none';
+                });
+
+                if (totalItems === 0) {
+                    if (emptySearchEl) emptySearchEl.classList.remove('hidden');
+                    if (paginationContainer) paginationContainer.classList.add('hidden');
+                } else {
+                    if (emptySearchEl) emptySearchEl.classList.add('hidden');
+                    if (paginationContainer) paginationContainer.classList.remove('hidden');
+
+                    // Tampilkan hanya kartu di halaman saat ini
+                    for (let i = startIndex; i < endIndex; i++) {
+                        filtered[i].style.display = '';
+                        if (animate) {
+                            filtered[i].style.animation = 'none';
+                            void filtered[i].offsetWidth; // trigger reflow
+                            filtered[i].style.animation = 'quizCardFadeIn 0.28s ease-out forwards';
+                        }
+                    }
+
+                    if (pageCurrentEl) pageCurrentEl.textContent = currentQuizPage;
+                    renderQuizDots(totalPages, currentQuizPage);
+
+                    // Update status tombol navigasi
+                    if (btnPrev) {
+                        const disabled = currentQuizPage <= 1;
+                        btnPrev.disabled = disabled;
+                        btnPrev.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+                    }
+                    if (btnNext) {
+                        const disabled = currentQuizPage >= totalPages;
+                        btnNext.disabled = disabled;
+                        btnNext.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+                    }
+                }
+            }
+
+            if (btnPrev) {
+                btnPrev.addEventListener('click', function () {
+                    if (currentQuizPage > 1) {
+                        currentQuizPage--;
+                        renderQuizPagination(true);
+                        const grid = document.getElementById('quiz-grid');
+                        if (grid && window.scrollY > grid.offsetTop) {
+                            grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }
+                });
+            }
+
+            if (btnNext) {
+                btnNext.addEventListener('click', function () {
+                    const totalPages = Math.ceil(getFilteredQuizCards().length / CARDS_PER_PAGE);
+                    if (currentQuizPage < totalPages) {
+                        currentQuizPage++;
+                        renderQuizPagination(true);
+                        const grid = document.getElementById('quiz-grid');
+                        if (grid && window.scrollY > grid.offsetTop) {
+                            grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', function () {
+                    currentQuizPage = 1;
+                    renderQuizPagination(false);
+                });
+            }
+
+            // Jalankan pagination saat inisialisasi awal
+            renderQuizPagination(false);
 
             // Modal Control Functions
             const modalEl = document.getElementById('quizPreviewModal');

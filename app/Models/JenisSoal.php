@@ -13,4 +13,9 @@ class JenisSoal extends Model
     protected $fillable = [
         'nama_jenis_soal',
     ];
+
+    public function getNamaJenisAttribute()
+    {
+        return $this->attributes['nama_jenis'] ?? $this->attributes['nama_jenis_soal'] ?? null;
+    }
 }

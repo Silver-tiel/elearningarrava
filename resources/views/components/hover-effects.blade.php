@@ -511,11 +511,11 @@
       }
     }
 
-    // Event Delegation Terpusat untuk Sidebar Menu Item (Hover & Focus)
+    // Event Delegation Terpusat untuk Sidebar Menu Item & Navigation Buttons (Hover & Focus)
     let currentHoveredSidebarItem = null;
 
     document.addEventListener('pointerover', function (e) {
-      const item = e.target.closest('.sidebar-menu-item');
+      const item = e.target.closest('.sidebar-menu-item, .nav-btn');
       if (item && item !== currentHoveredSidebarItem) {
         currentHoveredSidebarItem = item;
         playMenuClick(0, 0.75);
@@ -523,7 +523,7 @@
     }, { passive: true });
 
     document.addEventListener('pointerout', function (e) {
-      const item = e.target.closest('.sidebar-menu-item');
+      const item = e.target.closest('.sidebar-menu-item, .nav-btn');
       if (item && (!e.relatedTarget || !item.contains(e.relatedTarget))) {
         if (currentHoveredSidebarItem === item) {
           currentHoveredSidebarItem = null;
@@ -532,7 +532,7 @@
     }, { passive: true });
 
     document.addEventListener('focusin', function (e) {
-      const item = e.target.closest('.sidebar-menu-item');
+      const item = e.target.closest('.sidebar-menu-item, .nav-btn');
       if (item && item !== currentHoveredSidebarItem) {
         currentHoveredSidebarItem = item;
         if (item.matches(':focus-visible')) {
@@ -542,15 +542,15 @@
     }, { passive: true });
 
     document.addEventListener('focusout', function (e) {
-      const item = e.target.closest('.sidebar-menu-item');
+      const item = e.target.closest('.sidebar-menu-item, .nav-btn');
       if (item && currentHoveredSidebarItem === item) {
         currentHoveredSidebarItem = null;
       }
     }, { passive: true });
 
-    // Event Delegation Terpusat untuk Sidebar Menu Item (Click)
+    // Event Delegation Terpusat untuk Sidebar Menu Item & Navigation Buttons (Click)
     document.addEventListener('click', function (e) {
-      const item = e.target.closest('.sidebar-menu-item');
+      const item = e.target.closest('.sidebar-menu-item, .nav-btn');
       if (!item) return;
 
       playMenuClick(0, 0.88);
@@ -650,7 +650,7 @@
     let currentHoveredCard = null;
 
     document.addEventListener('pointerover', function (e) {
-      if (e.target.closest('#mainSidebar, .sidebar-menu-item')) return;
+      if (e.target.closest('#mainSidebar, .sidebar-menu-item, .nav-btn')) return;
       const card = e.target.closest('.hover-frame, [data-hover-sound]');
       if (card && card !== currentHoveredCard) {
         currentHoveredCard = card;
@@ -669,7 +669,7 @@
 
     // Keyboard navigation focus
     document.addEventListener('focusin', function (e) {
-      if (e.target.closest('#mainSidebar, .sidebar-menu-item')) return;
+      if (e.target.closest('#mainSidebar, .sidebar-menu-item, .nav-btn')) return;
       const card = e.target.closest('.hover-frame, [data-hover-sound]');
       if (card && card !== currentHoveredCard) {
         currentHoveredCard = card;
