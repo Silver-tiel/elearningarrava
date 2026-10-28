@@ -122,12 +122,58 @@
         </form>
     </div>
 
+    <form id="bulk-jenjang-form" method="POST" action="{{ route('admin.siswa.jenjang.massal') }}">
+        @csrf
+        <input type="hidden" name="search" value="{{ request('search') }}">
+        <input type="hidden" name="kelas" value="{{ request('kelas') }}">
+        <input type="hidden" name="status" value="{{ request('status') }}">
+        <input id="all-filtered-input" type="hidden" name="all_filtered" value="0">
+
+        <div class="mb-4 flex flex-col gap-4 rounded-2xl border border-blue-100 bg-blue-50/60 p-4 md:flex-row md:items-end md:justify-between">
+            <div class="space-y-3">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-800">Ubah jenjang siswa secara massal</h2>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Pilih siswa pada halaman ini, atau terapkan ke semua {{ $filteredStudentCount }} siswa yang cocok dengan filter.
+                    </p>
+                </div>
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                    <input id="all-filtered-checkbox" type="checkbox" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                    Terapkan ke semua hasil filter ({{ $filteredStudentCount }} siswa)
+                </label>
+            </div>
+
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <label class="text-xs font-medium text-slate-600">
+                    Jenjang tujuan
+                    <select id="bulk-jenjang-select" name="id_jenjang" required disabled
+                        class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Pilih jenjang</option>
+                        @foreach ($jenjangs as $jenjang)
+                            <option value="{{ $jenjang->id_jenjang }}">{{ $jenjang->nama_tipe }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <div>
+                    <p id="bulk-selection-count" class="mb-1 text-xs text-slate-500">Pilih siswa terlebih dahulu</p>
+                    <button id="bulk-jenjang-submit" type="submit" disabled
+                        class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+                    Ubah jenjang
+                    </button>
+                </div>
+            </div>
+        </div>
+
     {{-- Tabel --}}
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="text-xs text-slate-400 font-medium border-b border-slate-100 bg-slate-50/50">
+                        <th class="py-3.5 px-4 w-12 text-center">
+                            <input id="select-page-students" type="checkbox" aria-label="Pilih semua siswa di halaman ini"
+                                class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        </th>
                         <th class="py-3.5 px-4 w-12 text-center">No</th>
                         <th class="py-3.5 px-4">Nama Siswa</th>
                         <th class="py-3.5 px-4">Email</th>
@@ -141,6 +187,11 @@
                 <tbody class="text-sm divide-y divide-slate-100">
                     @forelse($siswas as $index =>$siswa)
                     <tr class="hover:bg-slate-50/60 transition-colors">
+                        <td class="py-4 px-4 text-center">
+                            <input type="checkbox" name="student_ids[]" value="{{ $siswa->id_user }}"
+                                aria-label="Pilih {{ $siswa->nama }}" data-student-checkbox
+                                class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        </td>
                         <td class="py-4 px-4 text-center text-slate-400">
                             {{ method_exists($siswas, 'firstItem') ?$siswas->firstItem() + $index :$index + 1 }}
                         </td>
@@ -154,21 +205,7 @@
                         </td>
                         <td class="py-4 px-4 text-slate-500">{{ $siswa->email }}</td>
                         <td class="py-4 px-4 text-slate-600">
-                            <select
-                                data-student-jenjang
-                                data-id="{{ $siswa->id_user }}"
-                                data-current-value="{{ $siswa->id_jenjang }}"
-                                aria-label="Ubah jenjang {{ $siswa->nama }}"
-                                onchange="updateStudentJenjang(this)"
-                                class="max-w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                            >
-                                <option value="">Belum ditentukan</option>
-                                @foreach ($jenjangs as $jenjang)
-                                    <option value="{{ $jenjang->id_jenjang }}" {{ $siswa->id_jenjang == $jenjang->id_jenjang ? 'selected' : '' }}>
-                                        {{ $jenjang->nama_tipe }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            {{ $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? 'Belum ditentukan' }}
                         </td>
                         <td class="py-4 px-4 text-slate-500">{{ $siswa->nisn ?? '-' }}</td>
                         <td class="py-4 px-4 text-slate-500">{{ $siswa->nomor_hp ?? '-' }}</td>
@@ -197,7 +234,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="py-12 text-center text-slate-400">
+                        <td colspan="9" class="py-12 text-center text-slate-400">
                             Tidak ada data siswa ditemukan.
                         </td>
                     </tr>
@@ -222,7 +259,36 @@
             </div>
         </div>
     </div>
+    </form>
 
+</div>
+
+{{-- MODAL KONFIRMASI UBAH JENJANG MASSAL --}}
+<div id="bulkJenjangModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/50 px-4 backdrop-blur-sm transition-opacity">
+    <div class="w-full max-w-md space-y-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-xl">
+        <div class="flex items-center gap-3">
+            <div class="rounded-full bg-amber-50 p-3 text-amber-600">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-800">Konfirmasi Ubah Jenjang</h3>
+                <p class="text-xs text-slate-500">Pastikan pilihan siswa dan jenjang tujuan sudah benar.</p>
+            </div>
+        </div>
+
+        <p id="bulkJenjangModalDescription" class="text-sm leading-relaxed text-slate-600"></p>
+
+        <div class="flex justify-end gap-3 pt-2">
+            <button id="cancelBulkJenjang" type="button" class="rounded-xl px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">
+                Batal
+            </button>
+            <button id="confirmBulkJenjang" type="button" class="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700">
+                Ya, Ubah Jenjang
+            </button>
+        </div>
+    </div>
 </div>
 
 {{-- MODAL PERINGATAN KONFIRMASI UBAH STATUS --}}
@@ -255,39 +321,6 @@
 
 <script>
     let pendingData = null;
-
-    async function updateStudentJenjang(select) {
-        const previousValue = select.dataset.currentValue;
-        select.disabled = true;
-
-        try {
-            const url = "{{ route('admin.siswa.jenjang', ':id') }}".replace(':id', select.dataset.id);
-            const response = await fetch(url, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    id_jenjang: select.value || null
-                })
-            });
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                throw new Error(data.message || 'Gagal mengubah jenjang siswa.');
-            }
-
-            select.dataset.currentValue = select.value;
-            showToast('success', data.message);
-        } catch (error) {
-            select.value = previousValue;
-            showToast('error', error.message || 'Terjadi kesalahan saat mengubah jenjang siswa.');
-        } finally {
-            select.disabled = false;
-        }
-    }
 
     function filterData(select) {
         const form = select.form;
@@ -414,5 +447,79 @@
     function hideToast() {
         document.getElementById('toast-notification').classList.add('hidden');
     }
+
+    const bulkForm = document.getElementById('bulk-jenjang-form');
+    const allFilteredCheckbox = document.getElementById('all-filtered-checkbox');
+    const allFilteredInput = document.getElementById('all-filtered-input');
+    const bulkJenjangSelect = document.getElementById('bulk-jenjang-select');
+    const bulkJenjangSubmit = document.getElementById('bulk-jenjang-submit');
+    const bulkSelectionCount = document.getElementById('bulk-selection-count');
+    const studentCheckboxes = Array.from(document.querySelectorAll('[data-student-checkbox]'));
+    const selectPageStudents = document.getElementById('select-page-students');
+    const bulkJenjangModal = document.getElementById('bulkJenjangModal');
+    const bulkJenjangModalDescription = document.getElementById('bulkJenjangModalDescription');
+    const confirmBulkJenjang = document.getElementById('confirmBulkJenjang');
+    const cancelBulkJenjang = document.getElementById('cancelBulkJenjang');
+
+    function updateBulkJenjangButton() {
+        const hasSelection = allFilteredCheckbox.checked || studentCheckboxes.some(checkbox => checkbox.checked);
+        const selectedCount = studentCheckboxes.filter(checkbox => checkbox.checked).length;
+        const countLabel = allFilteredCheckbox.checked
+            ? `Semua {{ $filteredStudentCount }} siswa hasil filter dipilih`
+            : `${selectedCount} siswa dipilih`;
+
+        bulkJenjangSelect.disabled = !hasSelection;
+        bulkJenjangSubmit.disabled = !hasSelection || !bulkJenjangSelect.value;
+        allFilteredInput.value = allFilteredCheckbox.checked ? '1' : '0';
+        bulkSelectionCount.textContent = hasSelection ? countLabel : 'Pilih siswa terlebih dahulu';
+    }
+
+    studentCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            selectPageStudents.checked = studentCheckboxes.length > 0 && studentCheckboxes.every(item => item.checked);
+            selectPageStudents.indeterminate = studentCheckboxes.some(item => item.checked) && !selectPageStudents.checked;
+            updateBulkJenjangButton();
+        });
+    });
+
+    selectPageStudents.addEventListener('change', () => {
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectPageStudents.checked;
+        });
+        updateBulkJenjangButton();
+    });
+
+    allFilteredCheckbox.addEventListener('change', updateBulkJenjangButton);
+    bulkJenjangSelect.addEventListener('change', updateBulkJenjangButton);
+
+    bulkForm.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const applyToAll = allFilteredCheckbox.checked;
+        const count = applyToAll
+            ? {{ $filteredStudentCount }}
+            : studentCheckboxes.filter(checkbox => checkbox.checked).length;
+        const destination = bulkJenjangSelect.selectedOptions[0].text;
+        const scope = applyToAll ? 'semua siswa yang sesuai dengan filter' : `${count} siswa terpilih`;
+
+        bulkJenjangModalDescription.textContent = `Anda akan mengubah jenjang ${scope} menjadi ${destination}. Perubahan ini tidak dapat dibatalkan dari halaman ini.`;
+        bulkJenjangModal.classList.remove('hidden');
+    });
+
+    cancelBulkJenjang.addEventListener('click', () => {
+        bulkJenjangModal.classList.add('hidden');
+    });
+
+    confirmBulkJenjang.addEventListener('click', () => {
+        confirmBulkJenjang.disabled = true;
+        confirmBulkJenjang.textContent = 'Memproses...';
+        bulkForm.submit();
+    });
+
+    @if (session('success'))
+        showToast('success', @json(session('success')));
+    @elseif ($errors->any())
+        showToast('error', @json($errors->first()));
+    @endif
 </script>
 @endsection
