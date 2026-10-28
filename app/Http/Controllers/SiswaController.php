@@ -49,9 +49,17 @@ class SiswaController extends Controller
             Achievement::syncForUser($user);
         }
 
-        $modulCount = Modul::published()->count();
-        $quizCount = Quiz::published()->count();
-        $moduls = Modul::published()->with(['tipeModul', 'jenjang'])->latest()->take(4)->get();
+        $modulQuery = Modul::published();
+        $quizQuery = Quiz::published()->belumKadaluarsa();
+
+        if ($user && $user->id_jenjang) {
+            $modulQuery->where('id_jenjang', $user->id_jenjang);
+            $quizQuery->where('id_jenjang', $user->id_jenjang);
+        }
+
+        $modulCount = $modulQuery->count();
+        $quizCount = $quizQuery->count();
+        $moduls = $modulQuery->with(['tipeModul', 'jenjang'])->latest()->take(4)->get();
 
         return view('siswa.dashboard', [
             'user' => $user,
@@ -63,18 +71,34 @@ class SiswaController extends Controller
 
     public function belajar()
     {
-        // Menampilkan daftar modul untuk belajar (hanya yang sudah dipublikasikan)
-        $moduls = Modul::published()->with(['tipeModul', 'jenjang'])->latest()->get();
+        $user = Auth::user();
 
-        return view('siswa.modul', compact('moduls'));
+        // Menampilkan daftar modul untuk belajar sesuai jenjang siswa (hanya yang sudah dipublikasikan)
+        $query = Modul::published()->with(['tipeModul', 'jenjang']);
+
+        if ($user && $user->id_jenjang) {
+            $query->where('id_jenjang', $user->id_jenjang);
+        }
+
+        $moduls = $query->latest()->get();
+
+        return view('siswa.modul', compact('moduls', 'user'));
     }
 
     public function materiVideo()
     {
-        // Menampilkan daftar modul yang ada videonya (hanya yang sudah dipublikasikan)
-        $moduls = Modul::published()->with(['tipeModul', 'jenjang'])->latest()->get();
+        $user = Auth::user();
 
-        return view('siswa.materi-video-list', compact('moduls'));
+        // Menampilkan daftar modul yang ada videonya (hanya yang sudah dipublikasikan dan sesuai jenjang)
+        $query = Modul::published()->with(['tipeModul', 'jenjang']);
+
+        if ($user && $user->id_jenjang) {
+            $query->where('id_jenjang', $user->id_jenjang);
+        }
+
+        $moduls = $query->latest()->get();
+
+        return view('siswa.materi-video-list', compact('moduls', 'user'));
     }
 
     public function materiVideoDetail(Request $request, $id_modul)
@@ -89,6 +113,13 @@ class SiswaController extends Controller
         if ($modul->isDraft()) {
             return redirect()->route('siswa.modul')->withErrors([
                 'modul' => 'Materi modul ini masih dalam bentuk draf dan belum tersedia.',
+            ]);
+        }
+
+        $user = Auth::user();
+        if ($user && $user->id_jenjang && $modul->id_jenjang && $modul->id_jenjang != $user->id_jenjang) {
+            return redirect()->route('siswa.modul')->withErrors([
+                'modul' => 'Materi modul ini tidak tersedia untuk jenjang Anda.',
             ]);
         }
 
@@ -120,6 +151,12 @@ class SiswaController extends Controller
         }
 
         $user = Auth::user();
+
+        if ($user && $user->id_jenjang && $modul->id_jenjang && $modul->id_jenjang != $user->id_jenjang) {
+            return redirect()->route('siswa.modul')->withErrors([
+                'modul' => 'Latihan soal modul ini tidak tersedia untuk jenjang Anda.',
+            ]);
+        }
 
         // Tanpa kuis terkait dan tanpa jenjang, tidak ada yang bisa ditampilkan.
         // (Grup where kosong akan diabaikan Eloquent dan menampilkan SEMUA kuis.)

@@ -337,6 +337,72 @@ class ModulDraftAndSyncTest extends TestCase
             ->assertSessionHasErrors('modul');
     }
 
+    public function test_siswa_only_sees_modul_matching_their_jenjang(): void
+    {
+        $siswaSD = User::create([
+            'nama' => 'Siswa SD Jenjang 1',
+            'email' => 'siswa-sd-' . uniqid() . '@example.com',
+            'password' => bcrypt('password123'),
+            'id_tipeuser' => 3,
+            'id_jenjang' => 1,
+        ]);
+
+        $modulSD = Modul::create([
+            'judul_modul' => 'Matematika Dasar SD Khusus',
+            'id_jenjang' => 1,
+            'progressModul' => 'Tersedia',
+        ]);
+
+        $modulSMP = Modul::create([
+            'judul_modul' => 'Biologi Ekosistem SMP Khusus',
+            'id_jenjang' => 2,
+            'progressModul' => 'Tersedia',
+        ]);
+
+        $this->actingAs($siswaSD);
+
+        // Halaman modul / belajar
+        $this->get(route('siswa.modul'))
+            ->assertOk()
+            ->assertSee('Matematika Dasar SD Khusus')
+            ->assertDontSee('Biologi Ekosistem SMP Khusus');
+
+        // Dashboard siswa
+        $this->get(route('siswa.dashboard'))
+            ->assertOk()
+            ->assertSee('Matematika Dasar SD Khusus')
+            ->assertDontSee('Biologi Ekosistem SMP Khusus');
+    }
+
+    public function test_siswa_cannot_access_different_jenjang_modul_detail_or_latihan(): void
+    {
+        $siswaSD = User::create([
+            'nama' => 'Siswa SD Penasaran',
+            'email' => 'siswa-sd-penasaran-' . uniqid() . '@example.com',
+            'password' => bcrypt('password123'),
+            'id_tipeuser' => 3,
+            'id_jenjang' => 1,
+        ]);
+
+        $modulSMA = Modul::create([
+            'judul_modul' => 'Fisika Kuantum SMA',
+            'id_jenjang' => 3,
+            'progressModul' => 'Tersedia',
+        ]);
+
+        $this->actingAs($siswaSD);
+
+        // Akses materi modul beda jenjang langsung via URL
+        $this->get(route('siswa.modul.materi', $modulSMA->id_modul))
+            ->assertRedirect(route('siswa.modul'))
+            ->assertSessionHasErrors('modul');
+
+        // Akses latihan soal modul beda jenjang langsung via URL
+        $this->get(route('siswa.modul.latihan', $modulSMA->id_modul))
+            ->assertRedirect(route('siswa.modul'))
+            ->assertSessionHasErrors('modul');
+    }
+
     private function makeAdmin(): User
     {
         return User::create([

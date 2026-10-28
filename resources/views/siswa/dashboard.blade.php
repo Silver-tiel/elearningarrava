@@ -189,7 +189,13 @@
                 </div>
             </a>
         @empty
-            <div class="col-span-full rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-10 text-center text-sm text-[#7c899c]">Belum ada materi.</div>
+            <div class="col-span-full rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-10 text-center text-sm text-[#7c899c]">
+                @if(isset($user) && $user?->jenjang)
+                    Belum ada materi untuk jenjang {{ $user->jenjang->nama_tipe }}.
+                @else
+                    Belum ada materi.
+                @endif
+            </div>
         @endforelse
     </div>
 </div>

@@ -28,10 +28,23 @@
 
 @section('content')
 <div class="px-4 sm:px-8 py-8 max-w-7xl mx-auto space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-[#172033]">Belajar Asikk</h1>
-            <p class="mt-1 text-sm text-[#687892]">Pilih materi dan modul pembelajaran untuk meningkatkan pemahamanmu.</p>
+            <div class="flex flex-wrap items-center gap-3">
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-[#172033]">Belajar Asikk</h1>
+                @if(Auth::user()?->jenjang)
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full border border-blue-200 shadow-sm">
+                        <span>🎓</span> Jenjang {{ Auth::user()->jenjang->nama_tipe }}
+                    </span>
+                @endif
+            </div>
+            <p class="mt-1 text-sm text-[#687892]">
+                @if(Auth::user()?->jenjang)
+                    Menampilkan modul dan materi khusus untuk jenjang <strong>{{ Auth::user()->jenjang->nama_tipe }}</strong>.
+                @else
+                    Pilih materi dan modul pembelajaran untuk meningkatkan pemahamanmu.
+                @endif
+            </p>
         </div>
     </div>
 
@@ -83,7 +96,13 @@
                 </div>
             </div>
         @empty
-            <div class="col-span-full rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-12 text-center text-sm text-[#7c899c]">Belum ada modul yang tersedia.</div>
+            <div class="col-span-full rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-12 text-center text-sm text-[#7c899c]">
+                @if(Auth::user()?->jenjang)
+                    Belum ada modul yang tersedia untuk jenjang {{ Auth::user()->jenjang->nama_tipe }}.
+                @else
+                    Belum ada modul yang tersedia.
+                @endif
+            </div>
         @endforelse
     </div>
 
