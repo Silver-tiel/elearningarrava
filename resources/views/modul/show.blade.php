@@ -47,7 +47,7 @@
                                 class="text-gray-700">{{ basename($modul->file_materi ?? '') }}</strong></span>
                         <span id="scroll-status"
                             class="text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                            ↓ Gulir ke bawah untuk menyelesaikan modul
+                            📖 Buka hingga halaman terakhir untuk menyelesaikan modul
                         </span>
                     @endif
                 </div>
@@ -74,8 +74,13 @@
                             </a>
                         </div>
                     @else
-                        <iframe src="{{ asset('storage/' . $modul->file_materi) }}"
-                            class="w-full h-[650px] bg-white rounded-lg shadow border border-gray-200" id="pdf-frame"></iframe>
+                        <div class="w-full h-full flex flex-col justify-center">
+                            <x-custom-pdf-viewer 
+                                :url="asset('storage/' . $modul->file_materi)" 
+                                :title="$modul->judul_modul" 
+                                height="h-[620px]" 
+                                onComplete="enableButton" />
+                        </div>
                     @endif
                 </div>
 
@@ -156,6 +161,7 @@
                 }
             }
         }
+        window.enableButton = enableButton;
 
         if (btnSelesai) {
             btnSelesai.addEventListener('click', function () {

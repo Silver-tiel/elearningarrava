@@ -522,6 +522,8 @@
                     placeholderEl.classList.remove('hidden');
                 }
             }
+        }
+
         // ---- SINKRONISASI JENJANG & SORTIR KUIS ----
         let allQuizOptions = [];
 

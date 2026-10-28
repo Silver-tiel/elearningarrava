@@ -36,27 +36,20 @@
                 </div>
 
             @elseif($modul->is_pdf)
-                {{-- Viewer Dokumen PDF --}}
-                <div class="w-full rounded-2xl border border-[#dce4ed] bg-white shadow-sm overflow-hidden flex flex-col">
-                    <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex justify-between items-center text-xs text-gray-600 font-medium">
-                        <span class="flex items-center gap-2">
-                            <span class="text-base">📄</span> Dokumen: <strong>{{ basename($modul->file_materi ?? 'materi.pdf') }}</strong>
-                        </span>
-                        @if($modul->file_materi && Storage::disk('public')->exists($modul->file_materi))
-                            <a href="{{ Storage::url($modul->file_materi) }}" target="_blank"
-                               class="px-3 py-1 bg-white border border-[#cfd9e5] rounded-lg text-[11px] font-bold text-[#3180f7] hover:bg-blue-50 transition">
-                                ↗ Buka Layar Penuh
-                            </a>
-                        @endif
+                {{-- Custom Viewer Dokumen PDF (Slide per Halaman, Non-scrollable, Next/Prev Center, Zoom & Fullscreen) --}}
+                @if($modul->file_materi && Storage::disk('public')->exists($modul->file_materi))
+                    <x-custom-pdf-viewer 
+                        :url="Storage::url($modul->file_materi)" 
+                        :title="$modul->judul_modul" 
+                        height="h-[600px]" />
+                @else
+                    <div class="w-full rounded-2xl border border-[#dce4ed] bg-white p-12 text-center text-slate-400 shadow-sm">
+                        <svg class="mx-auto h-12 w-12 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p class="text-sm font-semibold">Berkas PDF belum tersedia atau belum diunggah.</p>
                     </div>
-                    @if($modul->file_materi && Storage::disk('public')->exists($modul->file_materi))
-                        <iframe src="{{ Storage::url($modul->file_materi) }}" class="w-full h-[520px] bg-slate-50" frameborder="0"></iframe>
-                    @else
-                        <div class="p-12 text-center text-slate-400">
-                            <p class="text-sm font-semibold">Berkas PDF belum tersedia atau belum diunggah.</p>
-                        </div>
-                    @endif
-                </div>
+                @endif
 
             @elseif($modul->is_link)
                 {{-- Tautan Materi Eksternal --}}
