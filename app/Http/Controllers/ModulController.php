@@ -53,10 +53,23 @@ class ModulController extends Controller
 
         // Sortir / Pengurutan
         $sort = $request->query('sort', 'latest');
+        $idPdf = TipeModul::where('nama_tipe', 'like', '%pdf%')->value('id_tipemodul') ?? 2;
+        $idVideo = TipeModul::where('nama_tipe', 'like', '%video%')->value('id_tipemodul') ?? 1;
+        $idArtikel = TipeModul::where('nama_tipe', 'like', '%artikel%')->value('id_tipemodul') ?? 3;
+
         match ($sort) {
             'oldest' => $query->oldest('id_modul'),
             'title_asc' => $query->orderBy('judul_modul', 'asc'),
             'title_desc' => $query->orderBy('judul_modul', 'desc'),
+            'type_pdf' => $query->orderByRaw("CASE WHEN modul.id_tipemodul = {$idPdf} THEN 0 ELSE 1 END")->latest('modul.id_modul'),
+            'type_video' => $query->orderByRaw("CASE WHEN modul.id_tipemodul = {$idVideo} THEN 0 ELSE 1 END")->latest('modul.id_modul'),
+            'type_artikel' => $query->orderByRaw("CASE WHEN modul.id_tipemodul = {$idArtikel} THEN 0 ELSE 1 END")->latest('modul.id_modul'),
+            'type_asc' => $query->leftJoin('tipemodul', 'modul.id_tipemodul', '=', 'tipemodul.id_tipemodul')
+                                ->orderBy('tipemodul.nama_tipe', 'asc')
+                                ->select('modul.*'),
+            'type_desc' => $query->leftJoin('tipemodul', 'modul.id_tipemodul', '=', 'tipemodul.id_tipemodul')
+                                 ->orderBy('tipemodul.nama_tipe', 'desc')
+                                 ->select('modul.*'),
             default => $query->latest('id_modul'),
         };
 
