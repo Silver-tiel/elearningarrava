@@ -110,7 +110,7 @@
                 <div class="bg-blue-600 text-white font-bold rounded-xl text-xl flex items-center justify-center w-10 h-10 shrink-0 shadow-md shadow-blue-500/20">
                     eB
                 </div>
-                <span class="text-xl font-bold text-gray-900 tracking-tight">eBooks</span>
+                <span class="text-xl font-bold text-gray-900 tracking-tight">Arrava</span>
             </div>
 
             <!-- Tombol Tutup Sidebar di Layar Kecil -->

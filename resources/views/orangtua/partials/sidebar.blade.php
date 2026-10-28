@@ -121,7 +121,7 @@
             <p class="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Pengaturan &amp; Akun</p>
         </div>
 
-        {{-- Notifikasi --}}
+        <!-- {{-- Notifikasi --}}
         <a href="#"
            class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition text-slate-500 hover:bg-slate-50 hover:text-slate-700">
             <span class="flex items-center gap-3">
@@ -132,7 +132,7 @@
                 Notifikasi
             </span>
             <span class="h-2 w-2 rounded-full bg-red-500"></span>
-        </a>
+        </a> -->
 
         {{-- Pengaturan --}}
         <a href="{{ route('orangtua.pengaturan') }}"

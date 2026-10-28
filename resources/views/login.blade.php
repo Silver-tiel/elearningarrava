@@ -6,7 +6,7 @@
     <div>
         <h1 class="mb-2 text-[26px] font-extrabold leading-tight tracking-[-0.8px] sm:text-[28px]">Selamat Datang!</h1>
         <p class="mb-7 text-[14px] leading-6 text-[#53647D]">
-            Silakan masuk ke akun Anda untuk memulai proses belajar terbaik bersama eBooks.
+            Silakan masuk ke akun Anda untuk memulai proses belajar terbaik bersama Arrava.
         </p>
 
         @if (session('success'))
