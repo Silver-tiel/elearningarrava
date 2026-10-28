@@ -25,7 +25,7 @@
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         @forelse($quizzes as $quiz)
             @php
-                $sudahSelesai = $quiz->hasil && $quiz->hasil->contains(fn($h) => (int) $h->poin_didapat > 0);
+                $sudahSelesai = $quiz->hasil && $quiz->hasil->contains(fn($h) => $h->is_lulus && (int) $h->poin_didapat > 0);
             @endphp
             <a href="{{ route('siswa.quiz.detail', $quiz->id_quiz) }}"
                class="relative overflow-hidden rounded-2xl border border-[#dfe6ef] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">

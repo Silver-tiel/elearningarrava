@@ -78,12 +78,9 @@
         ====================================================== --}}
         @php
             $moduleCollection = isset($moduls) ? collect($moduls) : collect();
-
-            $totalModul = $moduleCollection->count();
-
-            $totalPublished = $moduleCollection->where('status', 'published')->count();
-
-            $totalReview = $moduleCollection->whereIn('status', ['draft', 'review', 'ditinjau'])->count();
+            $statTotal = $totalModul ?? $moduleCollection->count();
+            $statPublished = $totalPublished ?? $moduleCollection->filter(fn($m) => !$m->isDraft())->count();
+            $statDraft = $totalDraft ?? $moduleCollection->filter(fn($m) => $m->isDraft())->count();
         @endphp
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -104,7 +101,7 @@
                 <div>
                     <p class="text-xs text-slate-400 font-medium">Total Modul</p>
                     <p class="text-[22px] font-extrabold text-slate-900 leading-tight">
-                        {{ $totalModul ?: 128 }}
+                        {{ $statTotal }}
                     </p>
                 </div>
             </div>
@@ -123,32 +120,98 @@
                 </div>
 
                 <div>
-                    <p class="text-xs text-slate-400 font-medium">Publish</p>
+                    <p class="text-xs text-slate-400 font-medium">Modul Terbit</p>
                     <p class="text-[22px] font-extrabold text-slate-900 leading-tight">
-                        {{ $totalPublished ?: 96 }}
+                        {{ $statPublished }}
                     </p>
                 </div>
             </div>
 
-            {{-- Review --}}
+            {{-- Draft --}}
             <div
                 class="bg-white border border-slate-200 rounded-2xl px-4 py-4 flex items-center gap-4 shadow-sm">
                 <div
-                    class="w-11 h-11 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+                    class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="8.5" stroke-width="1.8" />
-                        <path stroke-linecap="round" stroke-width="1.8" d="M12 7.5v5l3 1.5" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                 </div>
 
                 <div>
-                    <p class="text-xs text-slate-400 font-medium">Perlu Ditinjau</p>
+                    <p class="text-xs text-slate-400 font-medium">Draf Modul</p>
                     <p class="text-[22px] font-extrabold text-slate-900 leading-tight">
-                        {{ $totalReview ?: 18 }}
+                        {{ $statDraft }}
                     </p>
                 </div>
             </div>
 
+        </div>
+
+        {{-- =====================================================
+            FILTER & SORTIR TOOLBAR
+        ====================================================== --}}
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm mb-6">
+            <form action="{{ route('admin.modul') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+                {{-- Pencarian --}}
+                <div class="lg:col-span-4 relative">
+                    <input type="text" name="q" id="searchModule" value="{{ request('q', $search ?? '') }}"
+                        placeholder="Cari judul modul..."
+                        class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+
+                {{-- Filter Status --}}
+                <div class="lg:col-span-2">
+                    <select name="status" onchange="this.form.submit()"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        <option value="all" {{ ($statusFilter ?? 'all') === 'all' ? 'selected' : '' }}>Semua Status</option>
+                        <option value="published" {{ ($statusFilter ?? '') === 'published' ? 'selected' : '' }}>✓ Terbit</option>
+                        <option value="draft" {{ ($statusFilter ?? '') === 'draft' ? 'selected' : '' }}>📝 Draf</option>
+                    </select>
+                </div>
+
+                {{-- Filter Jenjang --}}
+                <div class="lg:col-span-2">
+                    <select name="jenjang" onchange="this.form.submit()"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        <option value="all" {{ ($jenjangFilter ?? 'all') === 'all' ? 'selected' : '' }}>Semua Jenjang</option>
+                        @foreach(($masterJenjang ?? \App\Models\Jenjang::whereIn('id_jenjang', [1,2,3])->get()) as $j)
+                            <option value="{{ $j->id_jenjang }}" {{ ($jenjangFilter ?? '') == $j->id_jenjang ? 'selected' : '' }}>Jenjang {{ $j->nama_tipe }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Sortir --}}
+                <div class="lg:col-span-2">
+                    <select name="sort" onchange="this.form.submit()"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        <option value="latest" {{ ($sort ?? 'latest') === 'latest' ? 'selected' : '' }}>Urut: Terbaru</option>
+                        <option value="oldest" {{ ($sort ?? '') === 'oldest' ? 'selected' : '' }}>Urut: Terlama</option>
+                        <option value="title_asc" {{ ($sort ?? '') === 'title_asc' ? 'selected' : '' }}>Judul (A - Z)</option>
+                        <option value="title_desc" {{ ($sort ?? '') === 'title_desc' ? 'selected' : '' }}>Judul (Z - A)</option>
+                    </select>
+                </div>
+
+                {{-- Aksi Filter & Reset --}}
+                <div class="lg:col-span-2 flex items-center gap-2">
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition shadow-sm text-center">
+                        Terapkan
+                    </button>
+                    @if(request()->hasAny(['q', 'status', 'jenjang', 'tipe', 'sort']))
+                        <a href="{{ route('admin.modul') }}"
+                            title="Reset Filter"
+                            class="p-2 rounded-xl border border-slate-300 text-slate-500 hover:bg-slate-100 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </a>
+                    @endif
+                </div>
+            </form>
         </div>
 
         {{-- =====================================================
@@ -159,28 +222,12 @@
             @forelse($moduleCollection as $module)
 
                 @php
-                    $status = strtolower($module->status ?? 'published');
-
-                    $statusClass = match ($status) {
-                        'published', 'publish' =>
-                            'bg-emerald-100 text-emerald-600',
-                        'draft' =>
-                            'bg-amber-100 text-amber-600',
-                        'review', 'ditinjau' =>
-                            'bg-orange-100 text-orange-600',
-                        default =>
-                            'bg-slate-100 text-slate-600',
-                    };
-
-                    $statusText = match ($status) {
-                        'published', 'publish' => 'Published',
-                        'draft' => 'Draft',
-                        'review', 'ditinjau' => 'Review',
-                        default => ucfirst($status),
-                    };
-
+                    $isDraft = $module->isDraft();
+                    $statusClass = $isDraft
+                        ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                        : 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+                    $statusText = $isDraft ? '📝 Draf' : '✓ Terbit';
                     $image = $module->foto_url ?? 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=700&q=80';
-
                 @endphp
 
                 <article
@@ -277,8 +324,13 @@
 
                             </div>
 
-                            <h3 class="font-extrabold text-[16px] text-slate-900 mt-3 leading-tight">
-                                {{ $module->judul_modul ?? 'Judul Modul' }}
+                            <h3 class="font-extrabold text-[16px] text-slate-900 mt-3 leading-tight flex items-center gap-2">
+                                <span>{{ $module->judul_modul ?? 'Judul Modul' }}</span>
+                                @if($isDraft)
+                                    <span class="inline-flex items-center text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                                        Draf
+                                    </span>
+                                @endif
                             </h3>
 
                             <p class="text-xs text-slate-500 leading-relaxed mt-1.5 line-clamp-2">

@@ -164,6 +164,7 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru']
 
     // Route untuk Halaman Utama/Tabel Daftar Siswa
     Route::get('/data', [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
+    Route::get('/data/{id}/profil', [SiswaController::class, 'adminLihatProfilSiswa'])->name('admin.siswa.profil');
     Route::patch('/data/{id}', [SiswaController::class, 'updateStudentData'])->name('admin.siswa.update');
     Route::patch('/data/{id}/jenjang', [SiswaController::class, 'updateStudentJenjang'])->name('admin.siswa.jenjang');
     Route::post('/data/jenjang-massal', [SiswaController::class, 'updateStudentJenjangMassal'])->name('admin.siswa.jenjang.massal');

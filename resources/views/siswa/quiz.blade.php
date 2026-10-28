@@ -60,7 +60,7 @@
         @if(session('quiz_result'))
             @php $result = session('quiz_result'); @endphp
             <div class="relative overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-                @if(($result['poin_didapat'] ?? 0) > 0)
+                @if(($result['poin_diberikan'] ?? 0) > 0)
                     <div class="absolute -top-3 -right-3 z-10 pointer-events-none select-none hidden sm:block">
                         <img src="{{ asset('assets/widget/quizBerhasilStempel.webp') }}" alt="Stempel Berhasil"
                             class="w-28 h-28 object-contain drop-shadow-xl transform -rotate-12">
@@ -79,7 +79,14 @@
                 <div class="mt-4 grid gap-3 sm:grid-cols-3">
                     <div class="rounded-xl bg-white px-4 py-3 shadow-sm border border-emerald-100">
                         <div class="text-[11px] uppercase tracking-[0.08em] font-semibold text-slate-500">Poin Didapat</div>
-                        <div class="mt-1 text-2xl font-black text-indigo-600">{{ $result['poin_didapat'] }}</div>
+                        <div class="mt-1 text-2xl font-black {{ ($result['poin_diberikan'] ?? 0) > 0 ? 'text-indigo-600' : 'text-slate-400' }}">
+                            {{ ($result['poin_diberikan'] ?? 0) > 0 ? '+' . $result['poin_diberikan'] : '0' }}
+                        </div>
+                        @if(($result['poin_diberikan'] ?? 0) === 0)
+                            <p class="text-[10px] text-slate-400 mt-1">
+                                {{ $result['is_lulus'] ? 'Poin sudah pernah didapat sebelumnya' : 'Kuis belum mencapai batas kelulusan' }}
+                            </p>
+                        @endif
                     </div>
                     <div class="rounded-xl bg-white px-4 py-3 shadow-sm border border-emerald-100">
                         <div class="text-[11px] uppercase tracking-[0.08em] font-semibold text-slate-500">Jawaban Benar</div>
@@ -148,10 +155,10 @@
                         default => 'bg-slate-700/90 text-white',
                     };
 
-                    // Cek apakah siswa berhasil menyelesaikan kuis dan mendapatkan poin
-                    $hasilSiswa = $quiz->hasil->sortByDesc('poin_didapat')->first();
-                    $sudahSelesaiDanDapatPoin = $quiz->hasil->contains(fn($h) => (int) $h->poin_didapat > 0);
-                    $poinDidapatTertinggi = $hasilSiswa ? (int) $hasilSiswa->poin_didapat : 0;
+                    // Cek apakah siswa berhasil menyelesaikan kuis dan kuis memberikan poin (lulus & poin > 0)
+                    $hasilSiswaLulus = $quiz->hasil->where('is_lulus', true)->where('poin_didapat', '>', 0)->sortByDesc('poin_didapat')->first();
+                    $sudahSelesaiDanDapatPoin = (bool) $hasilSiswaLulus;
+                    $poinDidapatTertinggi = $hasilSiswaLulus ? (int) $hasilSiswaLulus->poin_didapat : 0;
 
                     $soalList = $quiz->soal->map(function ($s, $idx) {
                         return [

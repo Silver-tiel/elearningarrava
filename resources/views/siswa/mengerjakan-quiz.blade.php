@@ -89,7 +89,7 @@
                 <p class="text-sm text-slate-500 mb-6">Berikut adalah hasil pencapaian Anda</p>
                 
                 <div class="bg-slate-50 rounded-2xl p-6 mb-6">
-                    <div class="text-5xl font-black text-indigo-600 mb-2">{{ session('quiz_result')['poin_didapat'] }}</div>
+                    <div class="text-5xl font-black text-indigo-600 mb-2">{{ session('quiz_result')['poin_diberikan'] ?? (session('quiz_result')['is_lulus'] ? session('quiz_result')['poin_didapat'] : 0) }}</div>
                     <div class="text-xs font-bold text-slate-400 uppercase tracking-wide">Poin Didapat</div>
                 </div>
 

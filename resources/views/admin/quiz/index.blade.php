@@ -126,6 +126,15 @@
                         </select>
                     </div>
                     <div class="flex-1">
+                        <label for="filter-status" class="mb-1 block text-xs font-semibold text-slate-500">Status</label>
+                        <select id="filter-status" name="status" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <option value="">Semua status</option>
+                            <option value="published" @selected(request('status') == 'published')>Publikasi (Tersedia)</option>
+                            <option value="draft" @selected(request('status') == 'draft')>Draf (Draft)</option>
+                            <option value="kadaluarsa" @selected(request('status') == 'kadaluarsa')>Kadaluarsa</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
                         <label for="filter-sort" class="mb-1 block text-xs font-semibold text-slate-500">Urutkan</label>
                         <select id="filter-sort" name="sort" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                             <option value="terbaru" @selected(request('sort') == 'terbaru')>Terbaru</option>
@@ -192,8 +201,14 @@
                         <tbody class="divide-y divide-slate-100 font-medium">
                             @foreach ($quizzes as $quiz)
                                 @php
+                                    $isDraft = $quiz->isDraft();
                                     $expired = $quiz->sudahKadaluarsa();
-                                    $status = $expired ? 'Kadaluarsa' : ($quiz->proggressQuiz ?: 'Tersedia');
+                                    $status = $isDraft ? 'Draft' : ($expired ? 'Kadaluarsa' : ($quiz->proggressQuiz ?: 'Tersedia'));
+                                    $badgeClass = match ($status) {
+                                        'Draft' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                        'Kadaluarsa' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                        default => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    };
                                 @endphp
                                 <tr class="hover:bg-slate-50/80 transition">
                                     {{-- Judul --}}
@@ -211,6 +226,12 @@
                                                     <span>ID: #{{ $quiz->id_quiz }}</span>
                                                     <span>•</span>
                                                     <span>{{ $quiz->jenjang->nama_tipe ?? 'Semua jenjang' }}</span>
+                                                    @if($isDraft)
+                                                        <span>•</span>
+                                                        <span class="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 text-[10px]">
+                                                            📝 Draf
+                                                        </span>
+                                                    @endif
                                                     @if($quiz->token)
                                                         <span>•</span>
                                                         <span class="inline-flex items-center gap-1 font-mono font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200 text-[11px]" title="Token Masuk Kuis">
@@ -233,7 +254,7 @@
                                     {{-- Status --}}
                                     <td class="py-4 px-4">
                                         <span
-                                            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border {{ $expired ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200' }}">
+                                            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border {{ $badgeClass }}">
                                             {{ $status }}
                                         </span>
                                     </td>

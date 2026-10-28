@@ -54,7 +54,7 @@
                     </div>
                 @endif
 
-                @if(isset($hasilSiswa) && $hasilSiswa->poin_didapat > 0)
+                @if(isset($hasilSiswa) && $hasilSiswa->is_lulus && $hasilSiswa->poin_didapat > 0)
                     <div class="absolute top-2 right-2 z-10 pointer-events-none select-none">
                         <img src="{{ asset('assets/widget/quizBerhasilStempel.webp') }}"
                              alt="Stempel Selesai"
@@ -88,7 +88,7 @@
                             </span>
                         @endif
 
-                        @if(isset($hasilSiswa) && $hasilSiswa->poin_didapat > 0)
+                        @if(isset($hasilSiswa) && $hasilSiswa->is_lulus && $hasilSiswa->poin_didapat > 0)
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-black bg-amber-100 text-amber-900 border border-amber-300">
                                Selesai (+{{ $hasilSiswa->poin_didapat }} Poin)
                             </span>
@@ -195,8 +195,8 @@
         </div>
     </div>
 
-    {{-- RIWAYAT PENYELESAIAN SISWA (JIKA SUDAH PERNAH SELESAI) --}}
-    @if(isset($hasilSiswa) && $hasilSiswa->poin_didapat > 0)
+    {{-- RIWAYAT PENYELESAIAN SISWA (JIKA SUDAH PERNAH SELESAI & DAPAT POIN) --}}
+    @if(isset($hasilSiswa) && $hasilSiswa->is_lulus && $hasilSiswa->poin_didapat > 0)
         <div class="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50/70 border border-blue-200 shadow-sm flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B4FB3] to-[#1368CE] text-white shadow-md text-lg">

@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\HasilQuizModul;
 use App\Models\Jenjang;
 use App\Models\Modul;
+use App\Models\OrangtuaSiswa;
 use App\Models\PencapaianUser;
 use App\Models\Achievement;
 use App\Models\Quiz;
 use App\Models\TingkatQuiz;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -47,9 +49,9 @@ class SiswaController extends Controller
             Achievement::syncForUser($user);
         }
 
-        $modulCount = Modul::count();
-        $quizCount = Quiz::count();
-        $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->take(4)->get();
+        $modulCount = Modul::published()->count();
+        $quizCount = Quiz::published()->count();
+        $moduls = Modul::published()->with(['tipeModul', 'jenjang'])->latest()->take(4)->get();
 
         return view('siswa.dashboard', [
             'user' => $user,
@@ -61,16 +63,16 @@ class SiswaController extends Controller
 
     public function belajar()
     {
-        // Menampilkan daftar modul untuk belajar.
-        $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->get();
+        // Menampilkan daftar modul untuk belajar (hanya yang sudah dipublikasikan)
+        $moduls = Modul::published()->with(['tipeModul', 'jenjang'])->latest()->get();
 
         return view('siswa.modul', compact('moduls'));
     }
 
     public function materiVideo()
     {
-        // Menampilkan daftar modul yang ada videonya.
-        $moduls = Modul::with(['tipeModul', 'jenjang'])->latest()->get();
+        // Menampilkan daftar modul yang ada videonya (hanya yang sudah dipublikasikan)
+        $moduls = Modul::published()->with(['tipeModul', 'jenjang'])->latest()->get();
 
         return view('siswa.materi-video-list', compact('moduls'));
     }
@@ -84,8 +86,14 @@ class SiswaController extends Controller
             'quiz',
         ])->findOrFail($id_modul);
 
-        // Ambil modul lain untuk navigasi daftar materi sejenjang
-        $modulLain = Modul::with(['tipeModul', 'jenjang'])
+        if ($modul->isDraft()) {
+            return redirect()->route('siswa.modul')->withErrors([
+                'modul' => 'Materi modul ini masih dalam bentuk draf dan belum tersedia.',
+            ]);
+        }
+
+        // Ambil modul lain untuk navigasi daftar materi sejenjang (hanya yang dipublikasikan)
+        $modulLain = Modul::published()->with(['tipeModul', 'jenjang'])
             ->where('id_jenjang', $modul->id_jenjang)
             ->where('id_modul', '!=', $modul->id_modul)
             ->latest()
@@ -104,6 +112,13 @@ class SiswaController extends Controller
     public function latihanSoalModul($id_modul)
     {
         $modul = Modul::with(['tipeModul', 'jenjang'])->findOrFail($id_modul);
+
+        if ($modul->isDraft()) {
+            return redirect()->route('siswa.modul')->withErrors([
+                'modul' => 'Latihan soal untuk modul ini belum tersedia karena modul masih dalam bentuk draf.',
+            ]);
+        }
+
         $user = Auth::user();
 
         // Tanpa kuis terkait dan tanpa jenjang, tidak ada yang bisa ditampilkan.
@@ -114,7 +129,8 @@ class SiswaController extends Controller
             return view('siswa.latihan-soal-modul', compact('modul', 'quizzes'));
         }
 
-        $quizzes = Quiz::belumKadaluarsa()
+        $quizzes = Quiz::published()
+            ->belumKadaluarsa()
             ->where(function ($q) use ($modul) {
                 $q->when($modul->id_quiz, fn($qq) => $qq->where('id_quiz', $modul->id_quiz))
                     ->when($modul->id_jenjang, fn($qq) => $qq->orWhere('id_jenjang', $modul->id_jenjang));
@@ -137,7 +153,7 @@ class SiswaController extends Controller
     {
         $user = Auth::user();
 
-        $query = Quiz::belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz']);
+        $query = Quiz::published()->belumKadaluarsa()->with(['tipeQuiz', 'tingkatQuiz']);
 
         if ($user && $user->id_jenjang) {
             $query->where('id_jenjang', $user->id_jenjang);
@@ -157,7 +173,7 @@ class SiswaController extends Controller
 
         $user = Auth::user();
 
-        $query = Quiz::with([
+        $query = Quiz::published()->with([
             'tipeQuiz',
             'tingkatQuiz',
             'jenjang',
@@ -200,6 +216,8 @@ class SiswaController extends Controller
         $user = Auth::user();
         $hasilSiswa = $user ? HasilQuizModul::where('id_user', $user->id_user)
             ->where('id_quiz', $quiz->id_quiz)
+            ->where('is_lulus', true)
+            ->where('poin_didapat', '>', 0)
             ->orderByDesc('poin_didapat')
             ->first() : null;
 
@@ -583,9 +601,15 @@ class SiswaController extends Controller
     }
 
     // Hanya siswa dengan jenjang yang sama yang boleh mengerjakan kuis.
-    // Kuis tanpa jenjang (null) terbuka untuk semua.
+    // Kuis tanpa jenjang (null) terbuka untuk semua. Kuis draf ditolak.
     private function tolakJikaBukanJenjangnya(Quiz $quiz, string $routeDaftar)
     {
+        if ($quiz->isDraft()) {
+            return redirect()->route($routeDaftar)->withErrors([
+                'quiz' => 'Kuis masih dalam bentuk draf dan belum dipublikasikan.',
+            ]);
+        }
+
         $user = Auth::user();
 
         if (
@@ -717,82 +741,130 @@ class SiswaController extends Controller
             'totalNonaktif',
             'totalPerluDitinjau',
             'listKelas',
-            'jenjangs',
-            'filteredStudentCount'
+            'jenjangs'
         ));
     }
 
-    private function filteredStudentsQuery(Request $request)
+    public function adminLihatProfilSiswa($id)
     {
-        $query = User::where('id_tipeuser', 3);
+        $siswa = User::where('id_tipeuser', 3)
+            ->with(['jenjang', 'tipeUser'])
+            ->findOrFail($id);
 
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-
-            $query->where(function ($q) use ($search) {
-                $q->where('nama', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%');
-            });
+        // Sinkronkan capaian penghargaan siswa sesuai poin yang diperoleh
+        if (class_exists(Achievement::class)) {
+            Achievement::syncForUser($siswa);
         }
 
-        if ($request->filled('kelas')) {
-            $kelas = $request->input('kelas');
-            $query->whereHas('jenjang', function ($q) use ($kelas) {
-                $q->where('nama_tipe', $kelas);
-            });
-        }
+        // Leaderboard rank pada jenjang yang sama
+        $peringkat = User::where('id_tipeuser', 3)
+            ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
+            ->where('total_poin', '>', (int) $siswa->total_poin)
+            ->count() + 1;
 
-        if ($request->filled('status')) {
-            $status = $request->input('status');
+        $totalSiswaJenjang = User::where('id_tipeuser', 3)
+            ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
+            ->count();
 
-            $query->where(function ($q) use ($status) {
-                $q->where('status_akun', $status);
+        // Modul statistics
+        $totalModulJenjang = Modul::published()
+            ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
+            ->count();
 
-                if ($status === 'Aktif') {
-                    $q->orWhereNull('status_akun');
-                }
-            });
-        }
+        // Riwayat pengerjaan kuis siswa
+        $quizResults = HasilQuizModul::where('id_user', $siswa->id_user)
+            ->with('quiz')
+            ->orderByDesc('waktu_dapat')
+            ->get();
 
-        return $query;
-    }
+        $totalPercobaan = $quizResults->count();
+        $kuisLulus = $quizResults->where('is_lulus', true)->count();
+        $kuisGagal = $totalPercobaan - $kuisLulus;
+        $uniqueQuizLulus = $quizResults->where('is_lulus', true)->pluck('id_quiz')->unique()->count();
 
-    public function updateStudentJenjangMassal(Request $request)
-    {
-        $data = $request->validate([
-            'id_jenjang' => ['required', 'integer', 'exists:jenjang,id_jenjang'],
-            'all_filtered' => ['required', 'boolean'],
-            'student_ids' => ['nullable', 'array', 'max:5000'],
-            'student_ids.*' => ['integer', 'distinct', 'exists:user,id_user'],
-            'search' => ['nullable', 'string', 'max:255'],
-            'kelas' => ['nullable', 'string', 'max:50'],
-            'status' => ['nullable', 'in:Aktif,Nonaktif'],
-        ]);
-
-        if (!$data['all_filtered'] && empty($data['student_ids'])) {
-            return back()
-                ->withInput()
-                ->withErrors(['student_ids' => 'Pilih setidaknya satu siswa atau terapkan ke semua hasil filter.']);
-        }
-
-        $query = $data['all_filtered']
-            ? $this->filteredStudentsQuery($request)
-            : User::where('id_tipeuser', 3)->whereIn('id_user', $data['student_ids']);
-
-        $query->where(function ($q) use ($data) {
-            $q->whereNull('id_jenjang')
-                ->orWhere('id_jenjang', '!=', $data['id_jenjang']);
+        $nilaiList = $quizResults->map(function ($hasil) {
+            return (float) $hasil->total_poin > 0
+                ? round(($hasil->poin_didapat / $hasil->total_poin) * 100, 1)
+                : 0;
         });
 
-        $updatedCount = DB::transaction(function () use ($query, $data) {
-            return $query->update(['id_jenjang' => $data['id_jenjang']]);
+        $rataRataNilai = $nilaiList->isNotEmpty() ? round($nilaiList->avg(), 1) : 0;
+        $nilaiTertinggi = $nilaiList->isNotEmpty() ? $nilaiList->max() : 0;
+
+        // Modul selesai berdasarkan kuis modul yang lulus
+        $quizLulusIds = $quizResults->where('is_lulus', true)->pluck('id_quiz')->unique();
+        $modulSelesai = $quizLulusIds->isNotEmpty()
+            ? Modul::whereIn('id_quiz', $quizLulusIds)->distinct()->count('id_modul')
+            : 0;
+
+        $progresModulPersen = $totalModulJenjang > 0
+            ? min(100, (int) round(($modulSelesai / $totalModulJenjang) * 100))
+            : 0;
+
+        // Data untuk Grafik Tren Nilai (Urut dari waktu terlama ke terbaru)
+        $chartDataTrend = $quizResults->sortBy('waktu_dapat')->values()->map(function ($hasil) {
+            $nilai = (float) $hasil->total_poin > 0
+                ? round(($hasil->poin_didapat / $hasil->total_poin) * 100, 1)
+                : 0;
+            return [
+                'judul' => $hasil->quiz?->judul ?? ('Kuis #' . $hasil->id_quiz),
+                'tanggal' => $hasil->waktu_dapat ? Carbon::parse($hasil->waktu_dapat)->format('d M H:i') : '-',
+                'nilai' => $nilai,
+                'poin' => (int) $hasil->poin_didapat,
+                'total_poin' => (int) $hasil->total_poin,
+                'is_lulus' => (bool) $hasil->is_lulus,
+            ];
         });
 
-        $jenjang = Jenjang::findOrFail($data['id_jenjang']);
+        // Data untuk Grafik Aktivitas Harian
+        $chartAktivitas = $quizResults->groupBy(function ($hasil) {
+            return $hasil->waktu_dapat ? Carbon::parse($hasil->waktu_dapat)->toDateString() : 'Lainnya';
+        })->map(function ($group, $date) {
+            return [
+                'tanggal' => $date !== 'Lainnya' ? Carbon::parse($date)->translatedFormat('d M') : 'Lainnya',
+                'jumlah' => $group->count(),
+            ];
+        })->values()->take(10);
 
-        return redirect()
-            ->route('admin.daftar_siswa', $request->only(['search', 'kelas', 'status', 'page']))
-            ->with('success', "Jenjang {$jenjang->nama_tipe} berhasil diterapkan pada {$updatedCount} siswa.");
+        // Pencapaian / Achievements
+        $achievementsUnlocked = PencapaianUser::with('achievement')
+            ->where('id_user', $siswa->id_user)
+            ->orderByDesc('waktu_pencapaian')
+            ->get();
+
+        $allAchievements = Achievement::where('is_active', true)
+            ->orderBy('minimal_poin_achivement')
+            ->get();
+
+        // Orang tua terhubung
+        $orangtuaList = OrangtuaSiswa::with('orangtua')
+            ->where('id_siswa', $siswa->id_user)
+            ->get();
+
+        // Semua jenjang
+        $jenjangs = Jenjang::orderBy('nama_tipe')->get();
+
+        return view('admin.daftar_siswa.profil_siswa', compact(
+            'siswa',
+            'peringkat',
+            'totalSiswaJenjang',
+            'totalModulJenjang',
+            'totalPercobaan',
+            'kuisLulus',
+            'kuisGagal',
+            'uniqueQuizLulus',
+            'rataRataNilai',
+            'nilaiTertinggi',
+            'modulSelesai',
+            'progresModulPersen',
+            'quizResults',
+            'chartDataTrend',
+            'chartAktivitas',
+            'achievementsUnlocked',
+            'allAchievements',
+            'orangtuaList',
+            'jenjangs'
+        ));
     }
 
     public function updateStudentData(Request $request, $id)
