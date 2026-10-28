@@ -292,4 +292,121 @@ class OrangtuaController extends Controller
         return redirect()->route('orangtua.pengaturan')
             ->with('success', 'Perubahan berhasil disimpan.');
     }
+
+    public function riwayatQuiz(Request $request)
+    {
+        $siswaIds = $this->getSiswaIds();
+
+        if (empty($siswaIds)) {
+            return view('orangtua.riwayat_quiz', [
+                'siswa' => null,
+                'siswaList' => collect(),
+                'hasilQuiz' => collect(),
+                'stats' => [
+                    'total_poin' => 0,
+                    'rata_rata' => 0,
+                    'total_kuis' => 0,
+                    'kuis_lulus' => 0,
+                    'kuis_belum_lulus' => 0,
+                    'nilai_tertinggi' => 0,
+                    'nilai_terbaru' => null,
+                ],
+                'trenNilai' => collect(),
+                'kuisPerluPerhatian' => collect(),
+            ]);
+        }
+
+        $activeSiswaId = (int) $request->get('siswa_id', $siswaIds[0]);
+
+        if (!in_array($activeSiswaId, $siswaIds)) {
+            $activeSiswaId = $siswaIds[0];
+        }
+
+        $siswa = $this->getSiswaOrFail($activeSiswaId);
+
+        $siswaList = User::whereIn('id_user', $siswaIds)
+            ->select('id_user', 'nama', 'id_jenjang')
+            ->with('jenjang')
+            ->get();
+
+        $queryHasil = HasilQuizModul::where('id_user', $activeSiswaId)
+            ->with(['quiz.tipeQuiz']);
+
+        $semuaHasil = (clone $queryHasil)
+            ->orderBy('waktu_dapat')
+            ->get();
+
+        $nilaiKuis = $semuaHasil->map(function ($hasil) {
+            $totalPoin = (float) ($hasil->total_poin ?? 0);
+            $poinDidapat = (float) ($hasil->poin_didapat ?? 0);
+
+            return $totalPoin > 0
+                ? round(($poinDidapat / $totalPoin) * 100, 1)
+                : 0;
+        });
+
+        $stats = [
+            'total_poin' => $semuaHasil->sum('poin_didapat'),
+            'rata_rata' => $nilaiKuis->count() > 0
+                ? round($nilaiKuis->avg(), 1)
+                : 0,
+            'total_kuis' => $semuaHasil->count(),
+            'kuis_lulus' => $semuaHasil->where('is_lulus', true)->count(),
+            'kuis_belum_lulus' => $semuaHasil->where('is_lulus', false)->count(),
+            'nilai_tertinggi' => $nilaiKuis->count() > 0
+                ? $nilaiKuis->max()
+                : 0,
+            'nilai_terbaru' => $nilaiKuis->count() > 0
+                ? $nilaiKuis->last()
+                : null,
+        ];
+
+        $trenNilai = $semuaHasil->map(function ($hasil) {
+            $totalPoin = (float) ($hasil->total_poin ?? 0);
+            $poinDidapat = (float) ($hasil->poin_didapat ?? 0);
+
+            return [
+                'tanggal' => $hasil->waktu_dapat
+                    ? \Carbon\Carbon::parse($hasil->waktu_dapat)->format('d/m/y')
+                    : '-',
+                'judul' => $hasil->quiz?->judul ?? 'Kuis',
+                'nilai' => $totalPoin > 0
+                    ? round(($poinDidapat / $totalPoin) * 100, 1)
+                    : 0,
+            ];
+        })->values();
+
+        $kuisPerluPerhatian = $semuaHasil
+            ->filter(function ($hasil) {
+                $totalPoin = (float) ($hasil->total_poin ?? 0);
+                $nilai = $totalPoin > 0
+                    ? (($hasil->poin_didapat / $totalPoin) * 100)
+                    : 0;
+
+                return !$hasil->is_lulus || $nilai < 70;
+            })
+            ->sortBy(function ($hasil) {
+                $totalPoin = (float) ($hasil->total_poin ?? 0);
+
+                return $totalPoin > 0
+                    ? ($hasil->poin_didapat / $totalPoin) * 100
+                    : 0;
+            })
+            ->take(5)
+            ->values();
+
+        $hasilQuiz = (clone $queryHasil)
+            ->orderByDesc('waktu_dapat')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('orangtua.riwayat_quiz', compact(
+            'siswa',
+            'siswaList',
+            'hasilQuiz',
+            'stats',
+            'trenNilai',
+            'kuisPerluPerhatian'
+        ));
+    }
 }

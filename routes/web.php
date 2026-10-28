@@ -87,6 +87,8 @@ Route::prefix('orangtua')
 
         Route::get('/materi-pembelajaran', [MateriPembelajaranController::class, 'index'])->name('materi-pembelajaran');
         Route::get('/pencapaian', [PencapaianController::class, 'index'])->name('pencapaian');
+        Route::get('/riwayat-quiz', [OrangtuaController::class, 'riwayatQuiz'])
+        ->name('riwayat-quiz');
     });
 
 // Global Route untuk semua user login
