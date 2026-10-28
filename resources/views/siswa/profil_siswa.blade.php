@@ -1,6 +1,6 @@
 @extends('layouts.siswa')
 
-@section('title', 'Profil Pengguna - eBooks')
+@section('title', 'Profil Pengguna - Arrava')
 
 @section('header')
     <div class="flex items-center justify-between gap-4">

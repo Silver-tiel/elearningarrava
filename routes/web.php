@@ -167,6 +167,7 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru']
     Route::get('/data/{id}/profil', [SiswaController::class, 'adminLihatProfilSiswa'])->name('admin.siswa.profil');
     Route::patch('/data/{id}', [SiswaController::class, 'updateStudentData'])->name('admin.siswa.update');
     Route::patch('/data/{id}/jenjang', [SiswaController::class, 'updateStudentJenjang'])->name('admin.siswa.jenjang');
+    Route::post('/data/jenjang-massal', [SiswaController::class, 'updateStudentJenjangMassal'])->name('admin.siswa.jenjang.massal');
     Route::patch('/data/{id}/status', [SiswaController::class, 'updateStatus'])->name('admin.siswa.status');
 
     // Route Guru
