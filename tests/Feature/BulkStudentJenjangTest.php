@@ -32,10 +32,33 @@ class BulkStudentJenjangTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('tipeuser', function (Blueprint $table) {
+            $table->increments('id_tipeUser');
+            $table->string('nama_tipe');
+            $table->timestamps();
+        });
+
         DB::table('jenjang')->insert([
             ['id_jenjang' => 1, 'nama_tipe' => 'SD'],
             ['id_jenjang' => 2, 'nama_tipe' => 'SMP'],
         ]);
+        DB::table('tipeuser')->insert([
+            ['id_tipeUser' => 1, 'nama_tipe' => 'Admin'],
+            ['id_tipeUser' => 3, 'nama_tipe' => 'Siswa'],
+        ]);
+    }
+
+    public function test_admin_can_load_student_list_with_filter_count(): void
+    {
+        $this->createUser('Siswa SD', 3, 1);
+        $admin = $this->createUser('Admin', 1, 1);
+
+        $this->withViewErrors([])
+            ->actingAs($admin)
+            ->get(route('admin.daftar_siswa'))
+            ->assertOk()
+            ->assertSee('Terapkan ke semua hasil filter (1 siswa)')
+            ->assertSee('Jenjang tujuan');
     }
 
     public function test_admin_can_update_only_selected_student_accounts(): void

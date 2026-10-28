@@ -741,8 +741,82 @@ class SiswaController extends Controller
             'totalNonaktif',
             'totalPerluDitinjau',
             'listKelas',
-            'jenjangs'
+            'jenjangs',
+            'filteredStudentCount'
         ));
+    }
+
+    private function filteredStudentsQuery(Request $request)
+    {
+        $query = User::where('id_tipeuser', 3);
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', '%' . $search . '%')
+                    ->orWhere('email', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($request->filled('kelas')) {
+            $kelas = $request->input('kelas');
+            $query->whereHas('jenjang', function ($q) use ($kelas) {
+                $q->where('nama_tipe', $kelas);
+            });
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->input('status');
+
+            $query->where(function ($q) use ($status) {
+                $q->where('status_akun', $status);
+
+                if ($status === 'Aktif') {
+                    $q->orWhereNull('status_akun');
+                }
+            });
+        }
+
+        return $query;
+    }
+
+    public function updateStudentJenjangMassal(Request $request)
+    {
+        $data = $request->validate([
+            'id_jenjang' => ['required', 'integer', 'exists:jenjang,id_jenjang'],
+            'all_filtered' => ['required', 'boolean'],
+            'student_ids' => ['nullable', 'array', 'max:5000'],
+            'student_ids.*' => ['integer', 'distinct', 'exists:user,id_user'],
+            'search' => ['nullable', 'string', 'max:255'],
+            'kelas' => ['nullable', 'string', 'max:50'],
+            'status' => ['nullable', 'in:Aktif,Nonaktif'],
+        ]);
+
+        if (!$data['all_filtered'] && empty($data['student_ids'])) {
+            return back()
+                ->withInput()
+                ->withErrors(['student_ids' => 'Pilih setidaknya satu siswa atau terapkan ke semua hasil filter.']);
+        }
+
+        $query = $data['all_filtered']
+            ? $this->filteredStudentsQuery($request)
+            : User::where('id_tipeuser', 3)->whereIn('id_user', $data['student_ids']);
+
+        $updatedCount = DB::transaction(function () use ($query, $data) {
+            return $query
+                ->where(function ($q) use ($data) {
+                    $q->whereNull('id_jenjang')
+                        ->orWhere('id_jenjang', '!=', $data['id_jenjang']);
+                })
+                ->update(['id_jenjang' => $data['id_jenjang']]);
+        });
+
+        $jenjang = Jenjang::findOrFail($data['id_jenjang']);
+
+        return redirect()
+            ->route('admin.daftar_siswa', $request->only(['search', 'kelas', 'status', 'page']))
+            ->with('success', "Jenjang {$jenjang->nama_tipe} berhasil diterapkan pada {$updatedCount} siswa.");
     }
 
     public function adminLihatProfilSiswa($id)
