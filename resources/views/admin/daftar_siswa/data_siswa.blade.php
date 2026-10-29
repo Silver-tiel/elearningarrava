@@ -414,5 +414,79 @@
     function hideToast() {
         document.getElementById('toast-notification').classList.add('hidden');
     }
+
+    const bulkForm = document.getElementById('bulk-jenjang-form');
+    const allFilteredCheckbox = document.getElementById('all-filtered-checkbox');
+    const allFilteredInput = document.getElementById('all-filtered-input');
+    const bulkJenjangSelect = document.getElementById('bulk-jenjang-select');
+    const bulkJenjangSubmit = document.getElementById('bulk-jenjang-submit');
+    const bulkSelectionCount = document.getElementById('bulk-selection-count');
+    const studentCheckboxes = Array.from(document.querySelectorAll('[data-student-checkbox]'));
+    const selectPageStudents = document.getElementById('select-page-students');
+    const bulkJenjangModal = document.getElementById('bulkJenjangModal');
+    const bulkJenjangModalDescription = document.getElementById('bulkJenjangModalDescription');
+    const confirmBulkJenjang = document.getElementById('confirmBulkJenjang');
+    const cancelBulkJenjang = document.getElementById('cancelBulkJenjang');
+
+    function updateBulkJenjangButton() {
+        const hasSelection = allFilteredCheckbox.checked || studentCheckboxes.some(checkbox => checkbox.checked);
+        const selectedCount = studentCheckboxes.filter(checkbox => checkbox.checked).length;
+        const countLabel = allFilteredCheckbox.checked
+            ? `Semua {{ $filteredStudentCount }} siswa hasil filter dipilih`
+            : `${selectedCount} siswa dipilih`;
+
+        bulkJenjangSelect.disabled = !hasSelection;
+        bulkJenjangSubmit.disabled = !hasSelection || !bulkJenjangSelect.value;
+        allFilteredInput.value = allFilteredCheckbox.checked ? '1' : '0';
+        bulkSelectionCount.textContent = hasSelection ? countLabel : 'Pilih siswa terlebih dahulu';
+    }
+
+    studentCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            selectPageStudents.checked = studentCheckboxes.length > 0 && studentCheckboxes.every(item => item.checked);
+            selectPageStudents.indeterminate = studentCheckboxes.some(item => item.checked) && !selectPageStudents.checked;
+            updateBulkJenjangButton();
+        });
+    });
+
+    selectPageStudents.addEventListener('change', () => {
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectPageStudents.checked;
+        });
+        updateBulkJenjangButton();
+    });
+
+    allFilteredCheckbox.addEventListener('change', updateBulkJenjangButton);
+    bulkJenjangSelect.addEventListener('change', updateBulkJenjangButton);
+
+    bulkForm.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const applyToAll = allFilteredCheckbox.checked;
+        const count = applyToAll
+            ? {{ $filteredStudentCount }}
+            : studentCheckboxes.filter(checkbox => checkbox.checked).length;
+        const destination = bulkJenjangSelect.selectedOptions[0].text;
+        const scope = applyToAll ? 'semua siswa yang sesuai dengan filter' : `${count} siswa terpilih`;
+
+        bulkJenjangModalDescription.textContent = `Anda akan mengubah jenjang ${scope} menjadi ${destination}. Perubahan ini tidak dapat dibatalkan dari halaman ini.`;
+        bulkJenjangModal.classList.remove('hidden');
+    });
+
+    cancelBulkJenjang.addEventListener('click', () => {
+        bulkJenjangModal.classList.add('hidden');
+    });
+
+    confirmBulkJenjang.addEventListener('click', () => {
+        confirmBulkJenjang.disabled = true;
+        confirmBulkJenjang.textContent = 'Memproses...';
+        bulkForm.submit();
+    });
+
+    @if (session('success'))
+        showToast('success', @json(session('success')));
+    @elseif (isset($errors) && $errors->any())
+        showToast('error', @json($errors->first()));
+    @endif
 </script>
 @endsection
