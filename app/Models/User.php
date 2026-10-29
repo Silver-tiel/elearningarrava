@@ -182,4 +182,9 @@ class User extends Authenticatable
         $this->memoizedRankTier = null;
         return $this->getRankTierInfo(true);
     }
+
+    public function progresModul()
+    {
+        return $this->hasMany(ProgresModulSiswa::class, 'id_user', 'id_user');
+    }
 }

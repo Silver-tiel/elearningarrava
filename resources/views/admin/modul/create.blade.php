@@ -97,61 +97,137 @@
                         </select>
                     </div>
 
-                    <!-- Hubungkan Quiz Terkait (Dengan Sinkronisasi Jenjang & Sortir) -->
-                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-                            <label for="id_quiz" class="block text-sm font-semibold text-slate-700">
-                                Hubungkan ke Kuis <span class="text-slate-400 font-normal">(Opsional)</span>
-                            </label>
-                            <span id="quiz_jenjang_info" class="text-xs font-semibold text-blue-700 bg-blue-100/70 border border-blue-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 w-fit">
-                                <span>🎯</span> <span id="quiz_jenjang_text">Kuis Jenjang: -</span>
+                    <!-- 4. Kuis Evaluasi Modul & Poin Kelulusan (In-Module Quiz) -->
+                    <div class="p-5 rounded-xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/40 space-y-5 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-indigo-100/80 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="p-2 rounded-lg bg-indigo-600 text-white shadow-sm">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                </span>
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-800">Kuis Evaluasi Modul & Poin Kelulusan</h3>
+                                    <p class="text-xs text-slate-500">Kuis in-modul ini dikerjakan siswa langsung di halaman modul untuk menyelesaikan modul.</p>
+                                </div>
+                            </div>
+                            <span id="soal_badge_count" class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 w-fit">
+                                0 Soal
                             </span>
                         </div>
 
-                        <p class="text-xs text-slate-500">
-                            Kuis disaring otomatis agar memiliki jenjang yang sama dengan modul ini.
-                        </p>
-
-                        <!-- Bar Pencarian & Sortir Kuis -->
-                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
-                            <div class="sm:col-span-7 relative">
-                                <input type="text" id="search_quiz_input" placeholder="Cari nama kuis..." oninput="filterAndSortQuizzes()"
-                                    class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
-                                <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                </svg>
+                        <!-- Pengaturan Bobot EXP & Standar KKM Kuis -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="poin_modul" class="block text-xs font-bold text-slate-700 mb-1">
+                                    Poin / EXP Kelulusan Modul <span class="text-indigo-600 font-normal">(Default: 50)</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="poin_modul" name="poin_modul" min="0" max="1000" value="{{ old('poin_modul', 50) }}"
+                                        class="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+                                    <span class="absolute left-3 top-2 text-indigo-600 text-sm">⭐</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 mt-1">EXP yang diterima siswa saat menuntaskan materi & kuis modul.</p>
                             </div>
-                            <div class="sm:col-span-5">
-                                <select id="sort_quiz_select" onchange="filterAndSortQuizzes()"
-                                    class="w-full px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
-                                    <option value="name_asc">Urutkan: A - Z</option>
-                                    <option value="name_desc">Urutkan: Z - A</option>
-                                    <option value="latest">Urutkan: Terbaru</option>
-                                </select>
+
+                            <div>
+                                <label for="kkm_quiz" class="block text-xs font-bold text-slate-700 mb-1">
+                                    Nilai KKM Kuis Evaluasi (0 - 100) <span class="text-indigo-600 font-normal">(Default: 70)</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="kkm_quiz" name="kkm_quiz" min="0" max="100" value="{{ old('kkm_quiz', 70) }}"
+                                        class="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+                                    <span class="absolute left-3 top-2 text-indigo-600 text-sm">🎯</span>
+                                </div>
+                                <p class="text-[11px] text-slate-500 mt-1">Standar nilai kelulusan kuis agar modul dianggap tuntas.</p>
                             </div>
                         </div>
 
-                        <!-- Dropdown Utama Kuis -->
-                        <select id="id_quiz" name="id_quiz"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition font-medium">
-                            <option value="" data-jenjang="" data-judul="" data-nama="">-- Tanpa Kuis Terikat --</option>
-                            @foreach ($quizzes as $quiz)
-                                <option value="{{ $quiz->id_quiz }}"
-                                    data-jenjang="{{ $quiz->id_jenjang }}"
-                                    data-judul="{{ strtolower($quiz->judul) }}"
-                                    data-nama="{{ $quiz->judul }}"
-                                    data-draft="{{ $quiz->isDraft() ? '1' : '0' }}"
-                                    data-created="{{ $quiz->created_at ? $quiz->created_at->timestamp : 0 }}"
-                                    data-jenjang-nama="{{ $quiz->jenjang->nama_tipe ?? '-' }}"
-                                    {{ old('id_quiz') == $quiz->id_quiz ? 'selected' : '' }}>
-                                    [{{ $quiz->jenjang->nama_tipe ?? 'Umum' }}] {{ $quiz->judul }}{{ $quiz->isDraft() ? ' (Draf)' : '' }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <p id="quiz_empty_notice" class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
-                            ⚠️ Belum ada kuis untuk jenjang ini. Anda tetap bisa menyimpan modul tanpa mengaitkan kuis.
-                        </p>
+                        <!-- Daftar Butir Soal Builder -->
+                        <div class="space-y-3 pt-2 border-t border-indigo-100/60">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                    Daftar Soal Kuis Modul
+                                </label>
+                                <button type="button" onclick="tambahSoal()"
+                                    class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                    Tambah Soal
+                                </button>
+                            </div>
+
+                            <!-- Empty state notice jika belum ada soal -->
+                            <div id="soal_empty_state" class="p-6 text-center rounded-xl border-2 border-dashed border-slate-200 bg-white/70 text-slate-500 space-y-1">
+                                <span class="text-2xl">📝</span>
+                                <p class="text-xs font-semibold text-slate-700">Belum ada butir soal kuis modul.</p>
+                                <p class="text-[11px] text-slate-400">Klik tombol <strong>"+ Tambah Soal"</strong> di atas untuk membuat pertanyaan kuis evaluasi. Jika dikosongkan, modul dapat dituntaskan hanya dengan mempelajari materi.</p>
+                            </div>
+
+                            <!-- Container Kartu Soal Dinamis -->
+                            <div id="soal_container" class="space-y-4"></div>
+                        </div>
                     </div>
+
+                    <!-- Opsi Tambahan: Hubungkan Quiz Eksternal (Kompatibilitas Legacy) -->
+                    <details class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 text-xs">
+                        <summary class="font-semibold text-slate-700 cursor-pointer flex items-center justify-between select-none">
+                            <span>🔗 Opsi Lanjutan: Kaitkan Kuis Eksternal (Opsional / Kompatibilitas)</span>
+                            <span class="text-[11px] text-slate-400 font-normal">Klik untuk buka/tutup</span>
+                        </summary>
+
+                        <div class="mt-3 pt-3 border-t border-slate-200 space-y-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+                                <label for="id_quiz" class="block text-xs font-semibold text-slate-600">
+                                    Pilih Kuis Eksternal
+                                </label>
+                                <span id="quiz_jenjang_info" class="text-[11px] font-semibold text-blue-700 bg-blue-100/70 border border-blue-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1 w-fit">
+                                    <span>🎯</span> <span id="quiz_jenjang_text">Kuis Jenjang: -</span>
+                                </span>
+                            </div>
+
+                            <p class="text-[11px] text-slate-500">
+                                Kuis eksternal disaring otomatis agar memiliki jenjang yang sama dengan modul ini.
+                            </p>
+
+                            <!-- Bar Pencarian & Sortir Kuis -->
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
+                                <div class="sm:col-span-7 relative">
+                                    <input type="text" id="search_quiz_input" placeholder="Cari nama kuis..." oninput="filterAndSortQuizzes()"
+                                        class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                                <div class="sm:col-span-5">
+                                    <select id="sort_quiz_select" onchange="filterAndSortQuizzes()"
+                                        class="w-full px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                                        <option value="name_asc">Urutkan: A - Z</option>
+                                        <option value="name_desc">Urutkan: Z - A</option>
+                                        <option value="latest">Urutkan: Terbaru</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown Utama Kuis -->
+                            <select id="id_quiz" name="id_quiz"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-xs transition font-medium">
+                                <option value="" data-jenjang="" data-judul="" data-nama="">-- Tanpa Kuis Eksternal --</option>
+                                @foreach ($quizzes as $quiz)
+                                    <option value="{{ $quiz->id_quiz }}"
+                                        data-jenjang="{{ $quiz->id_jenjang }}"
+                                        data-judul="{{ strtolower($quiz->judul) }}"
+                                        data-nama="{{ $quiz->judul }}"
+                                        data-draft="{{ $quiz->isDraft() ? '1' : '0' }}"
+                                        data-created="{{ $quiz->created_at ? $quiz->created_at->timestamp : 0 }}"
+                                        data-jenjang-nama="{{ $quiz->jenjang->nama_tipe ?? '-' }}"
+                                        {{ old('id_quiz') == $quiz->id_quiz ? 'selected' : '' }}>
+                                        [{{ $quiz->jenjang->nama_tipe ?? 'Umum' }}] {{ $quiz->judul }}{{ $quiz->isDraft() ? ' (Draf)' : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p id="quiz_empty_notice" class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+                                ⚠️ Belum ada kuis untuk jenjang ini. Anda tetap bisa menyimpan modul tanpa mengaitkan kuis.
+                            </p>
+                        </div>
+                    </details>
 
                     <!-- 4. Upload File Materi (Dokumen PDF/PPT) -->
                     <div id="container_file">
@@ -632,6 +708,124 @@
             }
         }
 
+        // ---- QUESTION BUILDER (KUIS EVALUASI IN-MODUL) ----
+        let soalCounter = 0;
+        const initialSoalData = @json(old('soal', []));
+
+        function tambahSoal(data = null) {
+            const container = document.getElementById('soal_container');
+            const emptyState = document.getElementById('soal_empty_state');
+            if (emptyState) emptyState.classList.add('hidden');
+
+            const idx = soalCounter++;
+            const pertanyaan = data?.pertanyaan || '';
+            const kunci = parseInt(data?.kunci ?? 0, 10);
+            const pilihanList = data?.pilihan || ['', '', '', ''];
+
+            const letters = ['A', 'B', 'C', 'D'];
+            let pilihanHtml = '';
+
+            letters.forEach((letter, pIdx) => {
+                const teksPilihan = typeof pilihanList[pIdx] === 'object' && pilihanList[pIdx] !== null 
+                    ? (pilihanList[pIdx].teks || '') 
+                    : (pilihanList[pIdx] || '');
+                const isChecked = pIdx === kunci ? 'checked' : '';
+
+                pilihanHtml += `
+                    <div class="pilihan-item flex items-center gap-2 p-2.5 rounded-lg border border-slate-200 bg-white hover:border-indigo-300 transition">
+                        <label class="flex items-center gap-2 cursor-pointer shrink-0" title="Tandai sebagai kunci jawaban yang benar">
+                            <input type="radio" name="soal[${idx}][kunci]" value="${pIdx}" ${isChecked} required
+                                class="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-slate-300 transition">
+                            <span class="w-6 h-6 rounded bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200">${letter}</span>
+                        </label>
+                        <input type="text" name="soal[${idx}][pilihan][${pIdx}][teks]" value="${escapeHtml(teksPilihan)}" required
+                            placeholder="Jawaban opsi ${letter}..."
+                            class="w-full px-2 py-1 text-xs border border-transparent hover:border-slate-300 focus:border-indigo-500 rounded bg-transparent focus:bg-white focus:outline-none transition">
+                    </div>
+                `;
+            });
+
+            const card = document.createElement('div');
+            card.className = 'soal-card p-4 rounded-xl border border-indigo-200/80 bg-white shadow-sm space-y-3 transition';
+            card.id = `soal_card_${idx}`;
+            card.innerHTML = `
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center soal-badge-number">1</span>
+                        <span class="text-xs font-bold text-slate-800 soal-title">Pertanyaan Kuis</span>
+                    </div>
+                    <button type="button" onclick="hapusSoal(this)" class="px-2 py-1 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Hapus Soal
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">
+                        Teks Pertanyaan <span class="text-rose-500">*</span>
+                    </label>
+                    <textarea name="soal[${idx}][pertanyaan]" rows="2" required placeholder="Tuliskan soal pertanyaan di sini..."
+                        class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">${escapeHtml(pertanyaan)}</textarea>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-semibold text-slate-700">Pilihan Jawaban</label>
+                        <span class="text-[11px] text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            Pilih radio hijau untuk menentukan kunci jawaban yang benar
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        ${pilihanHtml}
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(card);
+            renumberSoal();
+        }
+
+        function hapusSoal(btn) {
+            const card = btn.closest('.soal-card');
+            if (card) {
+                card.remove();
+                renumberSoal();
+            }
+        }
+
+        function renumberSoal() {
+            const container = document.getElementById('soal_container');
+            const emptyState = document.getElementById('soal_empty_state');
+            const badgeCount = document.getElementById('soal_badge_count');
+            const cards = container.querySelectorAll('.soal-card');
+
+            cards.forEach((card, i) => {
+                const num = i + 1;
+                const badge = card.querySelector('.soal-badge-number');
+                const title = card.querySelector('.soal-title');
+                if (badge) badge.textContent = num;
+                if (title) title.textContent = `Pertanyaan #${num}`;
+            });
+
+            if (badgeCount) {
+                badgeCount.textContent = `${cards.length} Soal`;
+            }
+
+            if (emptyState) {
+                emptyState.classList.toggle('hidden', cards.length > 0);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // ---- SUBMIT DRAF VS PUBLIKASI ----
         function submitModul(actionType) {
             const inputAction = document.getElementById('input-action-type');
@@ -663,6 +857,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             initQuizOptions();
             filterAndSortQuizzes();
+
+            // Inisialisasi data soal lama jika ada
+            if (Array.isArray(initialSoalData) && initialSoalData.length > 0) {
+                initialSoalData.forEach(s => tambahSoal(s));
+            }
         });
     </script>
 </body>

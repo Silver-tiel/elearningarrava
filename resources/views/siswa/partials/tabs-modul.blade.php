@@ -1,31 +1,34 @@
-@php $activeTab = $activeTab ?? 'overview'; @endphp
+@php
+    $activeTab = $activeTab ?? 'overview';
+    $soalCount = isset($modul->soalModul) ? $modul->soalModul->count() : 0;
+    $isQuizLulus = isset($progres) && $progres->quiz_lulus;
+@endphp
 <div class="mt-5 border-b border-[#dce4ed]">
     <div class="flex gap-7">
-        <a href="{{ route('siswa.modul.materi', $modul->id_modul) }}"
-           class="relative py-3 text-[13px] font-bold transition
-                  {{ $activeTab === 'overview' ? 'text-[#3180f7]' : 'text-[#52617a] hover:text-[#3180f7]' }}">
+        <button type="button" data-tab="overview"
+                class="tab-btn tab-btn-overview relative py-3 text-[13px] font-bold transition
+                       {{ $activeTab === 'overview' ? 'text-[#3180f7]' : 'text-[#52617a] hover:text-[#3180f7]' }}">
             Overview
-            @if($activeTab === 'overview')
-                <span class="absolute bottom-0 left-0 right-0 h-[2px] bg-[#3180f7]"></span>
-            @endif
-        </a>
-
-        <button type="button" data-tab="catatan"
-                class="tab-catatan relative py-3 text-[13px] font-bold transition
-                       {{ $activeTab === 'catatan' ? 'text-[#3180f7]' : 'text-[#52617a] hover:text-[#3180f7]' }}">
-            Catatan
-            @if($activeTab === 'catatan')
-                <span class="absolute bottom-0 left-0 right-0 h-[2px] bg-[#3180f7]"></span>
-            @endif
+            <span class="tab-indicator absolute bottom-0 left-0 right-0 h-[2px] bg-[#3180f7] {{ $activeTab === 'overview' ? '' : 'hidden' }}"></span>
         </button>
 
-        <a href="{{ route('siswa.modul.latihan', $modul->id_modul) }}"
-           class="relative py-3 text-[13px] font-bold transition
-                  {{ $activeTab === 'latihan' ? 'text-[#3180f7]' : 'text-[#52617a] hover:text-[#3180f7]' }}">
-            Latihan Soal
-            @if($activeTab === 'latihan')
-                <span class="absolute bottom-0 left-0 right-0 h-[2px] bg-[#3180f7]"></span>
+        <button type="button" data-tab="catatan"
+                class="tab-btn tab-btn-catatan relative py-3 text-[13px] font-bold transition
+                       {{ $activeTab === 'catatan' ? 'text-[#3180f7]' : 'text-[#52617a] hover:text-[#3180f7]' }}">
+            Catatan
+            <span class="tab-indicator absolute bottom-0 left-0 right-0 h-[2px] bg-[#3180f7] {{ $activeTab === 'catatan' ? '' : 'hidden' }}"></span>
+        </button>
+
+        <button type="button" data-tab="kuis"
+                class="tab-btn tab-btn-kuis relative py-3 text-[13px] font-bold transition flex items-center gap-1.5
+                       {{ $activeTab === 'kuis' ? 'text-[#3180f7]' : 'text-[#52617a] hover:text-[#3180f7]' }}">
+            <span>Kuis Modul</span>
+            @if($isQuizLulus)
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">✓ Lulus</span>
+            @elseif($soalCount > 0)
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">{{ $soalCount }} Soal</span>
             @endif
-        </a>
+            <span class="tab-indicator absolute bottom-0 left-0 right-0 h-[2px] bg-[#3180f7] {{ $activeTab === 'kuis' ? '' : 'hidden' }}"></span>
+        </button>
     </div>
 </div>

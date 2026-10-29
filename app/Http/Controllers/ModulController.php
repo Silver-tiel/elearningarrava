@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Modul;
+use App\Models\ModulSoal;
+use App\Models\ModulSoalPilihan;
 use App\Models\TipeModul;
 use App\Models\Jenjang;
 use App\Models\Quiz;
@@ -126,6 +128,8 @@ class ModulController extends Controller
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'kkm_quiz' => 'nullable|integer|min:0|max:100',
+            'poin_modul' => 'nullable|integer|min:0|max:1000',
         ];
 
         $messages = [
@@ -185,7 +189,7 @@ class ModulController extends Controller
             $pathFoto = $foto->store('modul/covers', 'public');
         }
 
-        Modul::create([
+        $modulBaru = Modul::create([
             'judul_modul' => $validated['judul_modul'],
             'file_materi' => $pathFile,
             'tipe_file' => $tipeFile,
@@ -194,7 +198,11 @@ class ModulController extends Controller
             'id_quiz' => !empty($validated['id_quiz']) ? $validated['id_quiz'] : null,
             'progressModul' => $isDraft ? 'Draft' : 'Tersedia',
             'foto_modul' => $pathFoto,
+            'kkm_quiz' => $request->filled('kkm_quiz') ? (int) $request->kkm_quiz : 70,
+            'poin_modul' => $request->filled('poin_modul') ? (int) $request->poin_modul : 50,
         ]);
+
+        $this->saveSoalModul($modulBaru, $request->input('soal'));
 
         return redirect()->route('admin.modul')->with('success', $isDraft ? 'Draf modul berhasil disimpan! 📝' : 'Modul pembelajaran berhasil ditambahkan & dipublikasikan! 🎉');
     }
@@ -217,7 +225,7 @@ class ModulController extends Controller
     // Menampilkan form edit modul
     public function edit($id)
     {
-        $module = Modul::findOrFail($id);
+        $module = Modul::with(['soalModul.pilihan'])->findOrFail($id);
         $tipeModul = TipeModul::all();
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
@@ -242,6 +250,8 @@ class ModulController extends Controller
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'kkm_quiz' => 'nullable|integer|min:0|max:100',
+            'poin_modul' => 'nullable|integer|min:0|max:1000',
         ];
 
         $messages = [
@@ -323,9 +333,61 @@ class ModulController extends Controller
             'id_quiz' => !empty($validated['id_quiz']) ? $validated['id_quiz'] : null,
             'progressModul' => $isDraft ? 'Draft' : 'Tersedia',
             'foto_modul' => $pathFoto,
+            'kkm_quiz' => $request->filled('kkm_quiz') ? (int) $request->kkm_quiz : ($module->kkm_quiz ?? 70),
+            'poin_modul' => $request->filled('poin_modul') ? (int) $request->poin_modul : ($module->poin_modul ?? 50),
         ]);
 
+        $this->saveSoalModul($module, $request->input('soal'));
+
         return redirect()->route('admin.modul')->with('success', $isDraft ? 'Draf modul berhasil diperbarui! 📝' : 'Modul pembelajaran berhasil diperbarui & dipublikasikan! 🎉');
+    }
+
+    /**
+     * Menyimpan butir soal dan pilihan jawaban kuis modul
+     */
+    protected function saveSoalModul(Modul $module, ?array $soalList): void
+    {
+        if ($soalList === null) {
+            return;
+        }
+
+        // Hapus soal lama modul (cascade menghapus pilihan)
+        $module->soalModul()->delete();
+
+        $urutan = 1;
+        foreach ($soalList as $s) {
+            $pertanyaan = trim((string) ($s['pertanyaan'] ?? ''));
+            if ($pertanyaan === '') {
+                continue;
+            }
+
+            $soal = ModulSoal::create([
+                'id_modul' => $module->id_modul,
+                'pertanyaan' => $pertanyaan,
+                'poin' => !empty($s['poin']) ? (int) $s['poin'] : 10,
+                'urutan' => $urutan++,
+            ]);
+
+            $pilihanList = $s['pilihan'] ?? [];
+            $kunciIndex = (int) ($s['kunci'] ?? 0);
+            $labels = ['A', 'B', 'C', 'D', 'E'];
+
+            if (is_array($pilihanList)) {
+                $pIdx = 0;
+                foreach ($pilihanList as $p) {
+                    $teks = is_array($p) ? trim((string) ($p['teks'] ?? '')) : trim((string) $p);
+                    if ($teks === '') continue;
+
+                    ModulSoalPilihan::create([
+                        'id_soal' => $soal->id_soal,
+                        'label' => $labels[$pIdx] ?? chr(65 + $pIdx),
+                        'teks_pilihan' => $teks,
+                        'is_benar' => ($pIdx === $kunciIndex),
+                    ]);
+                    $pIdx++;
+                }
+            }
+        }
     }
 
     /**

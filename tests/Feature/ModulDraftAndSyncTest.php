@@ -76,8 +76,45 @@ class ModulDraftAndSyncTest extends TestCase
             $table->unsignedInteger('id_jenjang');
             $table->unsignedInteger('id_quiz')->nullable();
             $table->string('progressModul')->nullable();
+            $table->integer('kkm_quiz')->default(70);
+            $table->integer('poin_modul')->default(50);
             $table->string('foto_modul')->nullable();
             $table->timestamps();
+        });
+
+        Schema::create('modul_soal', function (Blueprint $table) {
+            $table->increments('id_soal');
+            $table->unsignedInteger('id_modul');
+            $table->text('pertanyaan');
+            $table->integer('poin')->default(10);
+            $table->integer('urutan')->default(1);
+            $table->timestamps();
+        });
+
+        Schema::create('modul_soal_pilihan', function (Blueprint $table) {
+            $table->increments('id_pilihan');
+            $table->unsignedInteger('id_soal');
+            $table->string('label', 10)->nullable();
+            $table->text('teks_pilihan');
+            $table->boolean('is_benar')->default(false);
+            $table->timestamps();
+        });
+
+        Schema::create('progres_modul_siswa', function (Blueprint $table) {
+            $table->increments('id_progres');
+            $table->unsignedInteger('id_user');
+            $table->unsignedInteger('id_modul');
+            $table->boolean('materi_selesai')->default(false);
+            $table->boolean('quiz_selesai')->default(false);
+            $table->boolean('quiz_lulus')->default(false);
+            $table->integer('nilai_quiz')->default(0);
+            $table->boolean('is_tuntas')->default(false);
+            $table->integer('poin_didapat')->default(0);
+            $table->dateTime('waktu_materi_selesai')->nullable();
+            $table->dateTime('waktu_quiz_selesai')->nullable();
+            $table->dateTime('waktu_tuntas')->nullable();
+            $table->timestamps();
+            $table->unique(['id_user', 'id_modul']);
         });
 
         Schema::create('catatan_modul', function (Blueprint $table) {
@@ -401,6 +438,24 @@ class ModulDraftAndSyncTest extends TestCase
         $this->get(route('siswa.modul.latihan', $modulSMA->id_modul))
             ->assertRedirect(route('siswa.modul'))
             ->assertSessionHasErrors('modul');
+    }
+
+    protected function tearDown(): void
+    {
+        Schema::dropIfExists('progres_modul_siswa');
+        Schema::dropIfExists('modul_soal_pilihan');
+        Schema::dropIfExists('modul_soal');
+        Schema::dropIfExists('hasilquizmodul');
+        Schema::dropIfExists('catatan_modul');
+        Schema::dropIfExists('modul');
+        Schema::dropIfExists('quiz');
+        Schema::dropIfExists('tingkatquiz');
+        Schema::dropIfExists('tipequiz');
+        Schema::dropIfExists('tipemodul');
+        Schema::dropIfExists('jenjang');
+        Schema::dropIfExists('user');
+
+        parent::tearDown();
     }
 
     private function makeAdmin(): User
