@@ -23,9 +23,9 @@
     @stack('styles')
 </head>
 <body class="bg-[#F4F6F9] text-slate-800 antialiased">
+    @include('components.parallax-pixel-effect', ['sidebarOffset' => '15rem'])
 
-
-<div class="flex min-h-screen">
+<div class="flex min-h-screen relative z-10">
 
     {{-- SIDEBAR ORANG TUA --}}
     @include('orangtua.partials.sidebar')

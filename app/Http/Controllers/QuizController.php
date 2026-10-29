@@ -6,6 +6,8 @@ use App\Models\Quiz;
 use App\Models\Soal;
 use App\Models\PilihanSoal;
 use App\Models\Jenjang;
+use App\Models\User;
+use App\Models\HasilQuizModul;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -702,6 +704,586 @@ class QuizController extends Controller
             'soal.*.pilihan.*.label.in' => 'Label pilihan harus A, B, C, atau D.',
             'soal.*.pilihan.*.teks_pilihan.max' => 'Teks pilihan maksimal 1000 karakter.',
             'soal.*.pilihan.*.is_correct.boolean' => 'Penanda jawaban benar tidak valid.',
+        ];
+    }
+
+    // =========================================================================
+    // API ENDPOINTS FOR MOBILE APP (ARRAVA MOBILE)
+    // =========================================================================
+
+    public function apiIndex(Request $request)
+    {
+        $query = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang'])
+            ->withCount(['soal', 'hasil as participants_count']);
+
+        if ($request->filled('jenjang')) {
+            $query->where('id_jenjang', $request->jenjang);
+        }
+
+        if ($request->filled('tingkat')) {
+            $query->where('id_tingkatquiz', $request->tingkat);
+        }
+
+        if ($request->filled('status')) {
+            $status = strtolower($request->status);
+            if ($status === 'draft') {
+                $query->draft();
+            } elseif ($status === 'tersedia' || $status === 'published') {
+                $query->published();
+            } elseif ($status === 'kadaluarsa') {
+                $query->where('waktu_kadaluarsa', '<=', now());
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%")
+                  ->orWhere('kode_quiz', 'like', "%{$search}%");
+            });
+        }
+
+        $sort = $request->get('sort', 'terbaru');
+        $query->orderBy('id_quiz', $sort === 'terlama' ? 'asc' : 'desc');
+
+        $quizzes = $query->get()->map(function ($quiz) {
+            return $this->formatQuizResource($quiz);
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $quizzes,
+        ]);
+    }
+
+    public function apiShow($id)
+    {
+        $quiz = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'])
+            ->withCount(['soal', 'hasil as participants_count'])
+            ->find($id);
+
+        if (!$quiz) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Quiz tidak ditemukan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $this->formatQuizResource($quiz),
+        ]);
+    }
+
+    public function apiStore(Request $request)
+    {
+        $isDraft = $request->input('action_type') === 'draft';
+
+        $rules = [
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string|max:3000',
+            'id_jenjang' => 'required|integer',
+            'id_tipequiz' => 'nullable|integer',
+            'id_tingkatquiz' => 'nullable|integer',
+            'waktu_kadaluarsa' => 'nullable|date',
+            'mode_pengerjaan' => 'nullable|in:wayground,biasa',
+            'durasi_total_menit' => 'nullable|integer|min:1|max:360',
+            'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
+            'use_token' => 'nullable|boolean',
+            'token' => 'nullable|string|max:50',
+            'soal' => $isDraft ? 'nullable|array' : 'required|array|min:1',
+            'soal.*.pertanyaan' => $isDraft ? 'nullable|string' : 'required|string',
+            'soal.*.jenis_soal' => 'nullable|in:kuis,true_false,isian_singkat',
+            'soal.*.poin' => 'nullable|integer|min:0',
+            'soal.*.durasi_detik' => 'nullable|integer',
+            'soal.*.pilihan' => 'nullable|array',
+            'soal.*.pilihan.*.label' => 'nullable|string',
+            'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
+            'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
+        ];
+
+        $validated = $request->validate($rules, $this->quizValidationMessages());
+
+        $token = $request->boolean('use_token')
+            ? ($request->filled('token') ? trim($request->input('token')) : strtoupper(Str::random(6)))
+            : null;
+
+        $quiz = DB::transaction(function () use ($request, $validated, $token, $isDraft) {
+            $quiz = Quiz::create([
+                'judul' => $validated['judul'],
+                'deskripsi' => $validated['deskripsi'] ?? null,
+                'id_jenjang' => $validated['id_jenjang'],
+                'id_tipequiz' => $validated['id_tipequiz'] ?? 1,
+                'id_tingkatquiz' => $validated['id_tingkatquiz'] ?? 1,
+                'waktu_kadaluarsa' => $validated['waktu_kadaluarsa'] ?? null,
+                'mode_pengerjaan' => $validated['mode_pengerjaan'] ?? 'wayground',
+                'durasi_total_menit' => ($validated['mode_pengerjaan'] ?? 'wayground') === 'biasa' ? ($validated['durasi_total_menit'] ?? 30) : null,
+                'opsi_preview' => $validated['opsi_preview'] ?? 'lengkap',
+                'token' => $token,
+                'foto_quiz' => null,
+                'proggressQuiz' => $isDraft ? 'Draft' : 'Tersedia',
+            ]);
+
+            $soalInput = $request->input('soal', []);
+            if (is_array($soalInput)) {
+                foreach ($soalInput as $index => $soalData) {
+                    $typeStr = $soalData['jenis_soal'] ?? 'kuis';
+                    $idJenisSoal = $typeStr === 'true_false' ? 3 : ($typeStr === 'isian_singkat' ? 2 : 1);
+                    $pertanyaan = trim($soalData['pertanyaan'] ?? '') ?: 'Pertanyaan ' . ($index + 1);
+                    $poin = (int) ($soalData['poin'] ?? 10);
+                    $durasiDetik = (int) ($soalData['durasi_detik'] ?? 20);
+
+                    $jawabanBenar = 'A';
+                    if ($typeStr === 'isian_singkat') {
+                        $jawabanBenar = trim($soalData['jawaban_singkat'] ?? '');
+                    }
+
+                    $pilihanList = $soalData['pilihan'] ?? [];
+                    if (!empty($pilihanList) && is_array($pilihanList)) {
+                        foreach ($pilihanList as $p) {
+                            if (!empty($p['is_correct'])) {
+                                $jawabanBenar = $p['label'] ?? 'A';
+                                break;
+                            }
+                        }
+                    }
+
+                    $soal = Soal::create([
+                        'id_quiz' => $quiz->id_quiz,
+                        'id_jenjang' => $quiz->id_jenjang,
+                        'pertanyaan' => $pertanyaan,
+                        'id_jenis_soal' => $idJenisSoal,
+                        'jawaban_benar' => $jawabanBenar,
+                        'poin' => $poin,
+                        'durasi_detik' => $durasiDetik,
+                        'foto_soal' => null,
+                    ]);
+
+                    if ($idJenisSoal === 1 || $idJenisSoal === 3) {
+                        $defaultChoices = $idJenisSoal === 3
+                            ? [['label' => 'A', 'teks_pilihan' => 'Benar', 'is_correct' => $jawabanBenar === 'A'], ['label' => 'B', 'teks_pilihan' => 'Salah', 'is_correct' => $jawabanBenar === 'B']]
+                            : [
+                                ['label' => 'A', 'teks_pilihan' => '', 'is_correct' => $jawabanBenar === 'A'],
+                                ['label' => 'B', 'teks_pilihan' => '', 'is_correct' => $jawabanBenar === 'B'],
+                                ['label' => 'C', 'teks_pilihan' => '', 'is_correct' => $jawabanBenar === 'C'],
+                                ['label' => 'D', 'teks_pilihan' => '', 'is_correct' => $jawabanBenar === 'D'],
+                            ];
+
+                        $choicesToSave = !empty($pilihanList) ? $pilihanList : $defaultChoices;
+
+                        foreach ($choicesToSave as $choice) {
+                            PilihanSoal::create([
+                                'id_soal' => $soal->id_soal,
+                                'label' => $choice['label'] ?? 'A',
+                                'teks_pilihan' => $choice['teks_pilihan'] ?? '',
+                                'is_correct' => !empty($choice['is_correct']),
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            return $quiz;
+        });
+
+        $quiz->load(['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'])->loadCount(['soal', 'hasil as participants_count']);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Quiz berhasil dibuat.',
+            'data' => $this->formatQuizResource($quiz),
+        ], 201);
+    }
+
+    public function apiUpdate(Request $request, $id)
+    {
+        $quiz = Quiz::find($id);
+        if (!$quiz) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Quiz tidak ditemukan.',
+            ], 404);
+        }
+
+        $isDraft = $request->input('action_type') === 'draft' || ($request->has('action_type') ? false : $quiz->isDraft());
+
+        $rules = [
+            'judul' => 'sometimes|required|string|max:255',
+            'deskripsi' => 'nullable|string|max:3000',
+            'id_jenjang' => 'sometimes|required|integer',
+            'id_tipequiz' => 'nullable|integer',
+            'id_tingkatquiz' => 'nullable|integer',
+            'waktu_kadaluarsa' => 'nullable|date',
+            'mode_pengerjaan' => 'nullable|in:wayground,biasa',
+            'durasi_total_menit' => 'nullable|integer|min:1|max:360',
+            'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
+            'use_token' => 'nullable|boolean',
+            'token' => 'nullable|string|max:50',
+            'soal' => 'nullable|array',
+        ];
+
+        $validated = $request->validate($rules, $this->quizValidationMessages());
+
+        DB::transaction(function () use ($quiz, $request, $validated, $isDraft) {
+            $updateData = [];
+            if ($request->has('judul')) $updateData['judul'] = $validated['judul'];
+            if ($request->has('deskripsi')) $updateData['deskripsi'] = $validated['deskripsi'];
+            if ($request->has('id_jenjang')) $updateData['id_jenjang'] = $validated['id_jenjang'];
+            if ($request->has('id_tipequiz')) $updateData['id_tipequiz'] = $validated['id_tipequiz'];
+            if ($request->has('id_tingkatquiz')) $updateData['id_tingkatquiz'] = $validated['id_tingkatquiz'];
+            if ($request->has('waktu_kadaluarsa')) $updateData['waktu_kadaluarsa'] = $validated['waktu_kadaluarsa'];
+            if ($request->has('mode_pengerjaan')) $updateData['mode_pengerjaan'] = $validated['mode_pengerjaan'];
+            if ($request->has('durasi_total_menit')) $updateData['durasi_total_menit'] = $validated['durasi_total_menit'];
+            if ($request->has('opsi_preview')) $updateData['opsi_preview'] = $validated['opsi_preview'];
+            if ($request->has('action_type')) {
+                $updateData['proggressQuiz'] = $isDraft ? 'Draft' : 'Tersedia';
+            }
+            if ($request->has('use_token')) {
+                $updateData['token'] = $request->boolean('use_token')
+                    ? ($request->filled('token') ? trim($request->input('token')) : strtoupper(Str::random(6)))
+                    : null;
+            }
+
+            $quiz->update($updateData);
+
+            if ($request->has('soal') && is_array($request->input('soal'))) {
+                $existingSoalIds = $quiz->soal()->pluck('id_soal');
+                PilihanSoal::whereIn('id_soal', $existingSoalIds)->delete();
+                $quiz->soal()->delete();
+
+                foreach ($request->input('soal') as $index => $soalData) {
+                    $typeStr = $soalData['jenis_soal'] ?? 'kuis';
+                    $idJenisSoal = $typeStr === 'true_false' ? 3 : ($typeStr === 'isian_singkat' ? 2 : 1);
+                    $pertanyaan = trim($soalData['pertanyaan'] ?? '') ?: 'Pertanyaan ' . ($index + 1);
+                    $poin = (int) ($soalData['poin'] ?? 10);
+                    $durasiDetik = (int) ($soalData['durasi_detik'] ?? 20);
+
+                    $jawabanBenar = 'A';
+                    if ($typeStr === 'isian_singkat') {
+                        $jawabanBenar = trim($soalData['jawaban_singkat'] ?? '');
+                    }
+
+                    $pilihanList = $soalData['pilihan'] ?? [];
+                    if (!empty($pilihanList) && is_array($pilihanList)) {
+                        foreach ($pilihanList as $p) {
+                            if (!empty($p['is_correct'])) {
+                                $jawabanBenar = $p['label'] ?? 'A';
+                                break;
+                            }
+                        }
+                    }
+
+                    $soal = Soal::create([
+                        'id_quiz' => $quiz->id_quiz,
+                        'id_jenjang' => $quiz->id_jenjang,
+                        'pertanyaan' => $pertanyaan,
+                        'id_jenis_soal' => $idJenisSoal,
+                        'jawaban_benar' => $jawabanBenar,
+                        'poin' => $poin,
+                        'durasi_detik' => $durasiDetik,
+                        'foto_soal' => null,
+                    ]);
+
+                    if ($idJenisSoal === 1 || $idJenisSoal === 3) {
+                        $defaultChoices = $idJenisSoal === 3
+                            ? [['label' => 'A', 'teks_pilihan' => 'Benar', 'is_correct' => $jawabanBenar === 'A'], ['label' => 'B', 'teks_pilihan' => 'Salah', 'is_correct' => $jawabanBenar === 'B']]
+                            : [
+                                ['label' => 'A', 'teks_pilihan' => '', 'is_correct' => $jawabanBenar === 'A'],
+                                ['label' => 'B', 'teks_pilihan' => '', 'is_correct' => $jawabanBenar === 'B'],
+                                ['label' => 'C', 'teks_pilihan' => '', 'is_correct' => $jawabanBenar === 'C'],
+                                ['label' => 'D', 'teks_pilihan' => '', 'is_correct' => $jawabanBenar === 'D'],
+                            ];
+
+                        $choicesToSave = !empty($pilihanList) ? $pilihanList : $defaultChoices;
+
+                        foreach ($choicesToSave as $choice) {
+                            PilihanSoal::create([
+                                'id_soal' => $soal->id_soal,
+                                'label' => $choice['label'] ?? 'A',
+                                'teks_pilihan' => $choice['teks_pilihan'] ?? '',
+                                'is_correct' => !empty($choice['is_correct']),
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
+
+        $quiz->load(['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'])->loadCount(['soal', 'hasil as participants_count']);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Quiz berhasil diperbarui.',
+            'data' => $this->formatQuizResource($quiz),
+        ]);
+    }
+
+    public function apiDestroy($id)
+    {
+        $quiz = Quiz::find($id);
+        if (!$quiz) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Quiz tidak ditemukan.',
+            ], 404);
+        }
+
+        DB::transaction(function () use ($quiz) {
+            $soalIds = $quiz->soal()->pluck('id_soal');
+            PilihanSoal::whereIn('id_soal', $soalIds)->delete();
+
+            $soals = $quiz->soal()->get();
+            foreach ($soals as $soal) {
+                if ($soal->foto_soal && Storage::disk('public')->exists($soal->foto_soal)) {
+                    Storage::disk('public')->delete($soal->foto_soal);
+                }
+            }
+            $quiz->soal()->delete();
+
+            if ($quiz->foto_quiz && Storage::disk('public')->exists($quiz->foto_quiz)) {
+                Storage::disk('public')->delete($quiz->foto_quiz);
+            }
+
+            $quiz->delete();
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Quiz berhasil dihapus.',
+        ]);
+    }
+
+    public function apiQuestionBank(Request $request)
+    {
+        $query = Soal::with(['pilihanSoal', 'jenjang', 'jenisSoal', 'quiz']);
+
+        if ($request->filled('jenjang')) {
+            $query->where('id_jenjang', $request->jenjang);
+        }
+
+        if ($request->filled('search')) {
+            $query->where('pertanyaan', 'like', "%{$request->search}%");
+        }
+
+        $questions = $query->latest('id_soal')->paginate($request->get('per_page', 20));
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $questions,
+        ]);
+    }
+
+    public function apiVerifyToken(Request $request, $id)
+    {
+        $quiz = Quiz::find($id);
+        if (!$quiz) {
+            return response()->json(['status' => 'error', 'message' => 'Quiz tidak ditemukan.'], 404);
+        }
+
+        if (!$quiz->perluToken()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Quiz tidak memerlukan token.',
+                'data' => ['valid' => true],
+            ]);
+        }
+
+        $tokenInput = trim((string) $request->input('token', ''));
+        if ($tokenInput === '' || strcasecmp($tokenInput, (string) $quiz->token) !== 0) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Token kuis salah. Silakan tanyakan token kepada guru Anda.',
+                'data' => ['valid' => false],
+            ], 422);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Token valid.',
+            'data' => ['valid' => true],
+        ]);
+    }
+
+    public function apiSubmitQuiz(Request $request, $id)
+    {
+        $quiz = Quiz::with('soal.pilihanSoal')->find($id);
+        if (!$quiz) {
+            return response()->json(['status' => 'error', 'message' => 'Quiz tidak ditemukan.'], 404);
+        }
+
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $jawabanSiswa = $request->input('jawaban', []);
+        $normalizedAnswers = [];
+        if (is_array($jawabanSiswa)) {
+            foreach ($jawabanSiswa as $key => $val) {
+                if (is_array($val) && isset($val['id_soal'])) {
+                    $normalizedAnswers[$val['id_soal']] = $val['jawaban'] ?? null;
+                } else {
+                    $normalizedAnswers[$key] = $val;
+                }
+            }
+        }
+
+        $totalPoinQuiz = (int) $quiz->soal->sum('poin');
+        $poinDidapat = 0;
+        $totalBenar = 0;
+        $totalSalah = 0;
+        $detailEvaluasi = [];
+
+        foreach ($quiz->soal as $soal) {
+            $jawaban = $normalizedAnswers[$soal->id_soal] ?? null;
+            $isBenar = false;
+
+            if ($soal->id_jenis_soal == 2) {
+                $isBenar = !empty($jawaban) && strcasecmp(trim((string) $jawaban), trim((string) $soal->jawaban_benar)) === 0;
+            } else {
+                $pilihanBenar = $soal->pilihanSoal->firstWhere('is_correct', true);
+                if ($pilihanBenar) {
+                    $isBenar = !empty($jawaban) && (
+                        strcasecmp(trim((string) $jawaban), trim((string) $pilihanBenar->label)) === 0
+                        || (string) $jawaban === (string) $pilihanBenar->id_pilihan
+                        || strcasecmp(trim((string) $jawaban), trim((string) $pilihanBenar->teks_pilihan)) === 0
+                    );
+                } else {
+                    $isBenar = !empty($jawaban) && strcasecmp(trim((string) $jawaban), trim((string) $soal->jawaban_benar)) === 0;
+                }
+            }
+
+            if ($isBenar) {
+                $poinDidapat += (int) ($soal->poin ?? 10);
+                $totalBenar++;
+            } else {
+                $totalSalah++;
+            }
+
+            $detailEvaluasi[] = [
+                'id_soal' => (int) $soal->id_soal,
+                'jawaban_siswa' => $jawaban,
+                'jawaban_benar' => $soal->jawaban_benar,
+                'is_correct' => $isBenar,
+                'poin' => $isBenar ? (int) ($soal->poin ?? 10) : 0,
+            ];
+        }
+
+        $persentase = $totalPoinQuiz > 0 ? round(($poinDidapat / $totalPoinQuiz) * 100, 1) : 0;
+        $isLulus = $persentase >= 60;
+
+        $sudahLulusSebelumnya = HasilQuizModul::where('id_user', $user->id_user)
+            ->where('id_quiz', $quiz->id_quiz)
+            ->where('is_lulus', true)
+            ->exists();
+
+        $poinDiberikan = ($isLulus && !$sudahLulusSebelumnya) ? $poinDidapat : 0;
+
+        $hasil = HasilQuizModul::create([
+            'id_user' => $user->id_user,
+            'id_quiz' => $quiz->id_quiz,
+            'total_poin' => $totalPoinQuiz,
+            'poin_didapat' => $poinDidapat,
+            'is_lulus' => $isLulus,
+            'waktu_dapat' => now(),
+        ]);
+
+        if ($poinDiberikan > 0) {
+            User::whereKey($user->id_user)->increment('total_poin', $poinDiberikan);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Hasil kuis berhasil disimpan.',
+            'data' => [
+                'id_hasil' => $hasil->id_hasil,
+                'id_quiz' => $quiz->id_quiz,
+                'judul' => $quiz->judul,
+                'poin_didapat' => $poinDidapat,
+                'total_poin' => $totalPoinQuiz,
+                'persentase' => $persentase,
+                'benar' => $totalBenar,
+                'salah' => $totalSalah,
+                'total_soal' => $quiz->soal->count(),
+                'is_lulus' => $isLulus,
+                'poin_diberikan' => $poinDiberikan,
+                'evaluasi' => $quiz->opsi_preview === 'lengkap' ? $detailEvaluasi : [],
+            ],
+        ]);
+    }
+
+    private function formatQuizResource(Quiz $quiz): array
+    {
+        $totalPoints = $quiz->relationLoaded('soal')
+            ? (int) $quiz->soal->sum('poin')
+            : (int) $quiz->soal()->sum('poin');
+
+        $user = request()->user();
+        $userResult = null;
+        if ($user) {
+            $latestHasil = HasilQuizModul::where('id_quiz', $quiz->id_quiz)
+                ->where('id_user', $user->id_user)
+                ->orderByDesc('id_hasil')
+                ->first();
+            if ($latestHasil) {
+                $userResult = [
+                    'id_hasil' => (int) $latestHasil->id_hasil,
+                    'total_poin' => (int) $latestHasil->total_poin,
+                    'poin_didapat' => (int) $latestHasil->poin_didapat,
+                    'is_lulus' => (bool) $latestHasil->is_lulus,
+                    'waktu_dapat' => $latestHasil->waktu_dapat ? $latestHasil->waktu_dapat->toIso8601String() : null,
+                ];
+            }
+        }
+
+        return [
+            'id_quiz' => (int) $quiz->id_quiz,
+            'kode_quiz' => $quiz->kode_quiz,
+            'judul' => $quiz->judul,
+            'deskripsi' => $quiz->deskripsi,
+            'id_jenjang' => $quiz->id_jenjang ? (int) $quiz->id_jenjang : null,
+            'nama_jenjang' => $quiz->jenjang->nama_tipe ?? $quiz->jenjang->nama_jenjang ?? null,
+            'id_tingkatquiz' => $quiz->id_tingkatquiz ? (int) $quiz->id_tingkatquiz : null,
+            'nama_tingkat' => $quiz->tingkatQuiz->nama_tingkat ?? $quiz->tingkatQuiz->nama_tingkatquiz ?? null,
+            'id_tipequiz' => $quiz->id_tipequiz ? (int) $quiz->id_tipequiz : null,
+            'nama_tipe' => $quiz->tipeQuiz->nama_tipe ?? $quiz->tipeQuiz->nama_tipequiz ?? null,
+            'mode_pengerjaan' => $quiz->mode_pengerjaan ?? 'wayground',
+            'durasi_total_menit' => $quiz->durasi_total_menit ? (int) $quiz->durasi_total_menit : null,
+            'waktu_kadaluarsa' => $quiz->waktu_kadaluarsa ? $quiz->waktu_kadaluarsa->toIso8601String() : null,
+            'is_expired' => $quiz->sudahKadaluarsa(),
+            'token' => $quiz->token,
+            'requires_token' => $quiz->perluToken(),
+            'proggressQuiz' => $quiz->proggressQuiz ?? 'Draft',
+            'is_draft' => $quiz->isDraft(),
+            'foto_quiz' => $quiz->foto_quiz,
+            'cover_url' => $quiz->cover_url,
+            'opsi_preview' => $quiz->opsi_preview ?? 'lengkap',
+            'questions_count' => (int) ($quiz->soal_count ?? ($quiz->relationLoaded('soal') ? $quiz->soal->count() : 0)),
+            'participants_count' => (int) ($quiz->participants_count ?? 0),
+            'total_points' => $totalPoints,
+            'user_result' => $userResult,
+            'soal' => $quiz->relationLoaded('soal') ? $quiz->soal->map(function ($s) {
+                return [
+                    'id_soal' => (int) $s->id_soal,
+                    'kode_soal' => $s->kode_soal,
+                    'pertanyaan' => $s->pertanyaan,
+                    'id_jenis_soal' => (int) $s->id_jenis_soal,
+                    'jenis_soal' => $s->id_jenis_soal == 3 ? 'true_false' : ($s->id_jenis_soal == 2 ? 'isian_singkat' : 'kuis'),
+                    'jawaban_benar' => $s->jawaban_benar,
+                    'poin' => (int) ($s->poin ?? 10),
+                    'durasi_detik' => (int) ($s->durasi_detik ?? 20),
+                    'foto_soal' => $s->foto_soal ? asset('storage/' . $s->foto_soal) : null,
+                    'pilihan' => $s->relationLoaded('pilihanSoal') ? $s->pilihanSoal->map(function ($p) {
+                        return [
+                            'id_pilihan' => (int) $p->id_pilihan,
+                            'label' => $p->label,
+                            'teks_pilihan' => $p->teks_pilihan,
+                            'is_correct' => (bool) $p->is_correct,
+                        ];
+                    })->values()->all() : [],
+                ];
+            })->values()->all() : [],
         ];
     }
 }

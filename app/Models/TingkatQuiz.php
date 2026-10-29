@@ -13,4 +13,9 @@ class TingkatQuiz extends Model
     protected $fillable = [
         'nama_tingkat',
     ];
+
+    public function getNamaTingkatquizAttribute()
+    {
+        return $this->nama_tingkat;
+    }
 }

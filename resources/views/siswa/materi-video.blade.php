@@ -75,54 +75,57 @@
                 </div>
             @endif
 
-            {{-- Judul & Meta --}}
-            <div class="mt-5 flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <h1 class="text-[22px] font-extrabold text-[#172033]">
-                        {{ $modul->judul_modul }}
-                    </h1>
-                    <p class="mt-1 text-[12px] text-[#687892]">
-                        <span class="font-semibold text-[#172033]">{{ $modul->tipeModul->nama_tipe ?? ($modul->is_video ? 'Video' : 'Dokumen') }}</span>
-                        • {{ $modul->jenjang->nama_tipe ?? 'Semua Jenjang' }}
-                        • {{ $modul->is_video ? 'Video Pembelajaran' : ($modul->is_pdf ? 'Bahan Bacaan PDF' : 'Materi Pembelajaran') }}
+            {{-- Card Detail & Konten Modul --}}
+            <div class="mt-6 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
+                {{-- Judul & Meta --}}
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <h1 class="text-[22px] font-extrabold text-[#172033]">
+                            {{ $modul->judul_modul }}
+                        </h1>
+                        <p class="mt-1 text-[12px] text-[#687892]">
+                            <span class="font-semibold text-[#172033]">{{ $modul->tipeModul->nama_tipe ?? ($modul->is_video ? 'Video' : 'Dokumen') }}</span>
+                            • {{ $modul->jenjang->nama_tipe ?? 'Semua Jenjang' }}
+                            • {{ $modul->is_video ? 'Video Pembelajaran' : ($modul->is_pdf ? 'Bahan Bacaan PDF' : 'Materi Pembelajaran') }}
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="{{ route('siswa.modul') }}"
+                           class="rounded-lg border border-[#dce4ed] bg-white px-4 py-2 text-[12px] font-semibold text-[#52617a] hover:bg-slate-50 transition shadow-xs">
+                            Kembali
+                        </a>
+                        @if($modul->id_quiz)
+                            <a href="{{ route('siswa.quiz.detail', $modul->id_quiz) }}"
+                               class="rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-emerald-700 shadow-sm transition">
+                                Lanjut ke Kuis →
+                            </a>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- TABS --}}
+                @include('siswa.partials.tabs-modul', ['activeTab' => 'overview'])
+
+                {{-- KONTEN OVERVIEW --}}
+                <div id="tab-content-overview" class="pt-5">
+                    <p class="max-w-[850px] text-[13px] leading-6 text-[#52617a]">
+                        Pelajari materi <strong>{{ $modul->judul_modul }}</strong> ini dengan seksama. Kamu dapat berpindah antar materi sejenjang melalui menu di sebelah kiri, membaca ringkasan pada tab catatan, atau menyelesaikan kuis setelah selesai mempelajari materi.
                     </p>
                 </div>
-                <div class="flex gap-2">
-                    <a href="{{ route('siswa.modul') }}"
-                       class="rounded-lg border border-[#dce4ed] bg-white px-4 py-2 text-[12px] font-semibold text-[#52617a] hover:bg-gray-50">
-                        Kembali
-                    </a>
-                    @if($modul->id_quiz)
-                        <a href="{{ route('siswa.quiz.detail', $modul->id_quiz) }}"
-                           class="rounded-lg bg-emerald-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-emerald-700 shadow-sm transition">
-                            Lanjut ke Kuis →
-                        </a>
-                    @endif
+
+                {{-- KONTEN CATATAN (hidden default) --}}
+                <div id="tab-content-catatan" class="pt-5 hidden">
+                    @forelse($modul->catatan as $item)
+                        <article class="mb-4 rounded-xl border border-slate-200 bg-slate-50/70 p-5 shadow-xs">
+                            <h2 class="text-[15px] font-extrabold text-[#172033]">{{ $item->judul }}</h2>
+                            <p class="mt-2 text-[13px] leading-6 text-[#52617a] whitespace-pre-line">{{ $item->isi }}</p>
+                        </article>
+                    @empty
+                        <div class="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-10 text-center text-sm text-[#7c899c]">
+                            Belum ada catatan untuk modul ini.
+                        </div>
+                    @endforelse
                 </div>
-            </div>
-
-            {{-- TABS --}}
-            @include('siswa.partials.tabs-modul', ['activeTab' => 'overview'])
-
-            {{-- KONTEN OVERVIEW --}}
-            <div id="tab-content-overview" class="pt-4">
-                <p class="max-w-[850px] text-[13px] leading-6 text-[#52617a]">
-                    Pelajari materi <strong>{{ $modul->judul_modul }}</strong> ini dengan seksama. Kamu dapat berpindah antar materi sejenjang melalui menu di sebelah kiri, membaca ringkasan pada tab catatan, atau menyelesaikan kuis setelah selesai mempelajari materi.
-                </p>
-            </div>
-
-            {{-- KONTEN CATATAN (hidden default) --}}
-            <div id="tab-content-catatan" class="pt-4 hidden">
-                @forelse($modul->catatan as $item)
-                    <article class="mb-4 rounded-2xl border border-[#e4eaf1] bg-white p-5">
-                        <h2 class="text-[15px] font-extrabold text-[#172033]">{{ $item->judul }}</h2>
-                        <p class="mt-2 text-[13px] leading-6 text-[#52617a] whitespace-pre-line">{{ $item->isi }}</p>
-                    </article>
-                @empty
-                    <div class="rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-12 text-center text-sm text-[#7c899c]">
-                        Belum ada catatan untuk modul ini.
-                    </div>
-                @endforelse
             </div>
         </section>
     </div>
