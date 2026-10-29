@@ -33,29 +33,48 @@ class LoginController extends Controller
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'
+                    ], 403);
+                }
+
                 return back()->withErrors([
                     'email' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.',
                 ])->onlyInput('email');
             }
 
-            // Jika tipe akun admin (1) atau guru (2), arahkan langsung ke halaman admin
+            // Tentukan tujuan redirect berdasarkan tipe akun
+            $redirectUrl = '/siswa/dashboard';
             if ($user && ($user->id_tipeuser == 1 || $user->id_tipeuser == 2)) {
-                return redirect()->intended('/admin');
+                $redirectUrl = '/admin';
+            } elseif ($user && $user->id_tipeuser == 4) {
+                $redirectUrl = '/orangtua/dashboard';
             }
 
-            // Jika tipe akun orangtua (4), arahkan ke portal orang tua
-            if ($user && $user->id_tipeuser == 4) {
-                return redirect()->intended('/orangtua/dashboard');
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'name' => $user->nama ?? 'Siswa',
+                    'redirect' => url($redirectUrl),
+                ]);
             }
 
-            // Redirect ke halaman dashboard untuk siswa/user biasa.
-            return redirect()->intended('/siswa/dashboard');
+            return redirect()->intended($redirectUrl);
+        }
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email atau password salah.'
+            ], 422);
         }
 
         // Jika gagal, tampilkan pesan error dan tetap mempertahankan input email.
         return back()->withErrors([
-    'email' => 'Email atau password salah.',
-])->onlyInput('email');
+            'email' => 'Email atau password salah.',
+        ])->onlyInput('email');
 }
 
 public function logout(Request $request)

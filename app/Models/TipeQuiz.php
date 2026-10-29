@@ -13,4 +13,9 @@ class TipeQuiz extends Model
     protected $fillable = [
         'nama_tipe',
     ];
+
+    public function getNamaTipequizAttribute()
+    {
+        return $this->nama_tipe;
+    }
 }

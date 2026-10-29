@@ -14,8 +14,9 @@
 <body class="bg-[#F8FAFC] text-slate-800 antialiased">
     @include('components.page-loader')
     @include('components.nav-buttons-sprite')
+    @include('components.parallax-pixel-effect', ['sidebarOffset' => '16rem'])
 
-    <div class="flex min-h-screen">
+    <div class="flex min-h-screen relative z-10">
 
         <!-- SIDEBAR -->
         <x-sidebar />

@@ -1,3 +1,6 @@
+@php
+    $sidebarHidden = ($hideSidebar ?? false) || View::hasSection('hideSidebar');
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -12,16 +15,13 @@
     </style>
     @stack('styles')
 </head>
-<body class="bg-[#F8FAFC] text-slate-800 antialiased">
+<body class="bg-[#F8FAFC] text-slate-800 antialiased {{ $sidebarHidden ? 'sidebar-hidden' : '' }}">
     @include('components.page-loader')
     <x-level-up-modal />
     @include('components.nav-buttons-sprite')
+    @include('components.parallax-pixel-effect', ['sidebarOffset' => '16rem'])
 
-    @php
-        $sidebarHidden = ($hideSidebar ?? false) || View::hasSection('hideSidebar');
-    @endphp
-
-    <div class="flex min-h-screen">
+    <div class="flex min-h-screen relative z-10">
 
         <!-- SIDEBAR -->
         @unless($sidebarHidden)
@@ -29,7 +29,7 @@
         @endunless
 
         <!-- MAIN CONTENT AREA -->
-        <main class="flex-1 min-w-0 flex flex-col">
+        <main class="flex-1 min-w-0 flex flex-col relative z-10">
 
             <!-- TOPBAR / NAVBAR -->
             <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30">
@@ -51,7 +51,7 @@
             </header>
 
             <!-- KONTEN UTAMA -->
-            <div class="flex-1">
+            <div class="flex-1 relative z-10">
                 @yield('content')
             </div>
 
