@@ -35,17 +35,40 @@
             
             <!-- KOLOM KIRI: FORMULIR (Span 7) -->
             <div class="lg:col-span-7 bg-white rounded-xl shadow-md border border-slate-200 p-6 sm:p-8">
-                <form action="{{ route('admin.modul.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                @if ($errors->any())
+                    <div class="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm">
+                        <div class="flex items-center gap-2 font-bold mb-1 text-rose-900">
+                            <svg class="w-5 h-5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                            <span>Terjadi kesalahan input:</span>
+                        </div>
+                        <ul class="list-disc list-inside space-y-0.5 text-xs text-rose-700">
+                            @foreach ($errors->all() as $err)
+                                <li>{{ $err }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <form id="formModul" action="{{ route('admin.modul.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
+                    <input type="hidden" name="action_type" id="input-action-type" value="publish">
 
                     <!-- 1. Judul Modul -->
                     <div>
                         <label for="judul_modul" class="block text-sm font-medium text-slate-700 mb-1">
                             Judul Modul Pembelajaran <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="judul_modul" name="judul_modul" required oninput="updatePreview()"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
+                        <input type="text" id="judul_modul" name="judul_modul" value="{{ old('judul_modul') }}" required oninput="updatePreview()"
+                            class="w-full px-4 py-2.5 rounded-lg border @error('judul_modul') border-rose-500 ring-1 ring-rose-500 @else border-slate-300 @enderror focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
                             placeholder="Masukkan judul modul...">
+                        @error('judul_modul')
+                            <p class="mt-1 text-xs text-rose-600 font-semibold flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     <!-- 2. Pilihan Jenis Modul -->
@@ -56,7 +79,7 @@
                         <select id="id_tipemodul" name="id_tipemodul" onchange="toggleInputType(); updatePreview();" required
                             class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
                             @foreach ($tipeModul as $tipe)
-                                <option value="{{ $tipe->id_tipemodul }}" data-name="{{ $tipe->nama_tipe }}" {{ strtolower($tipe->nama_tipe) === 'pdf' ? 'selected' : '' }}>{{ $tipe->nama_tipe }}</option>
+                                <option value="{{ $tipe->id_tipemodul }}" data-name="{{ $tipe->nama_tipe }}" {{ old('id_tipemodul', strtolower($tipe->nama_tipe) === 'pdf' ? $tipe->id_tipemodul : '') == $tipe->id_tipemodul ? 'selected' : '' }}>{{ $tipe->nama_tipe }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -66,26 +89,68 @@
                         <label for="id_jenjang" class="block text-sm font-medium text-slate-700 mb-1">
                             Jenjang <span class="text-red-500">*</span>
                         </label>
-                        <select id="id_jenjang" name="id_jenjang" onchange="updatePreview()" required
+                        <select id="id_jenjang" name="id_jenjang" onchange="updatePreview(); filterAndSortQuizzes();" required
                             class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
                             @foreach ($jenjang as $j)
-                                <option value="{{ $j->id_jenjang }}" data-name="{{ $j->nama_tipe }}">{{ $j->nama_tipe }}</option>
+                                <option value="{{ $j->id_jenjang }}" data-name="{{ $j->nama_tipe }}" {{ old('id_jenjang') == $j->id_jenjang ? 'selected' : '' }}>{{ $j->nama_tipe }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    <!-- Hubungkan Quiz Terkait -->
-                    <div>
-                        <label for="id_quiz" class="block text-sm font-medium text-slate-700 mb-1">
-                            Hubungkan ke Kuis <span class="text-slate-400 font-normal">(Opsional)</span>
-                        </label>
+                    <!-- Hubungkan Quiz Terkait (Dengan Sinkronisasi Jenjang & Sortir) -->
+                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+                            <label for="id_quiz" class="block text-sm font-semibold text-slate-700">
+                                Hubungkan ke Kuis <span class="text-slate-400 font-normal">(Opsional)</span>
+                            </label>
+                            <span id="quiz_jenjang_info" class="text-xs font-semibold text-blue-700 bg-blue-100/70 border border-blue-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 w-fit">
+                                <span>🎯</span> <span id="quiz_jenjang_text">Kuis Jenjang: -</span>
+                            </span>
+                        </div>
+
+                        <p class="text-xs text-slate-500">
+                            Kuis disaring otomatis agar memiliki jenjang yang sama dengan modul ini.
+                        </p>
+
+                        <!-- Bar Pencarian & Sortir Kuis -->
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
+                            <div class="sm:col-span-7 relative">
+                                <input type="text" id="search_quiz_input" placeholder="Cari nama kuis..." oninput="filterAndSortQuizzes()"
+                                    class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                                <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="sm:col-span-5">
+                                <select id="sort_quiz_select" onchange="filterAndSortQuizzes()"
+                                    class="w-full px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                                    <option value="name_asc">Urutkan: A - Z</option>
+                                    <option value="name_desc">Urutkan: Z - A</option>
+                                    <option value="latest">Urutkan: Terbaru</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Dropdown Utama Kuis -->
                         <select id="id_quiz" name="id_quiz"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
-                            <option value="">-- Tanpa Kuis Terikat --</option>
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition font-medium">
+                            <option value="" data-jenjang="" data-judul="" data-nama="">-- Tanpa Kuis Terikat --</option>
                             @foreach ($quizzes as $quiz)
-                                <option value="{{ $quiz->id_quiz }}">{{ $quiz->judul }}{{ $quiz->isDraft() ? ' (Draf)' : '' }}</option>
+                                <option value="{{ $quiz->id_quiz }}"
+                                    data-jenjang="{{ $quiz->id_jenjang }}"
+                                    data-judul="{{ strtolower($quiz->judul) }}"
+                                    data-nama="{{ $quiz->judul }}"
+                                    data-draft="{{ $quiz->isDraft() ? '1' : '0' }}"
+                                    data-created="{{ $quiz->created_at ? $quiz->created_at->timestamp : 0 }}"
+                                    data-jenjang-nama="{{ $quiz->jenjang->nama_tipe ?? '-' }}"
+                                    {{ old('id_quiz') == $quiz->id_quiz ? 'selected' : '' }}>
+                                    [{{ $quiz->jenjang->nama_tipe ?? 'Umum' }}] {{ $quiz->judul }}{{ $quiz->isDraft() ? ' (Draf)' : '' }}
+                                </option>
                             @endforeach
                         </select>
+                        <p id="quiz_empty_notice" class="hidden text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
+                            ⚠️ Belum ada kuis untuk jenjang ini. Anda tetap bisa menyimpan modul tanpa mengaitkan kuis.
+                        </p>
                     </div>
 
                     <!-- 4. Upload File Materi (Dokumen PDF/PPT) -->
@@ -109,6 +174,12 @@
                             </div>
                         </div>
                         
+                        @error('file_upload')
+                            <p class="mt-2 text-xs text-rose-600 font-semibold flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
                         <div id="file_preview_container" class="hidden mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200 flex items-center justify-between">
                             <div class="flex items-center gap-3 overflow-hidden">
                                 <svg class="w-7 h-7 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
@@ -128,8 +199,14 @@
                         <label for="file_link" class="block text-sm font-medium text-slate-700 mb-1">
                             Tautan Video / Materi Eksternal <span class="text-red-500">*</span>
                         </label>
-                        <input type="url" id="file_link" name="file_link" placeholder="https://www.youtube.com/watch?v=..." oninput="updatePreview(); previewYoutubeLive(this.value);"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
+                        <input type="url" id="file_link" name="file_link" value="{{ old('file_link') }}" placeholder="https://www.youtube.com/watch?v=..." oninput="updatePreview(); previewYoutubeLive(this.value);"
+                            class="w-full px-4 py-2.5 rounded-lg border @error('file_link') border-rose-500 ring-1 ring-rose-500 @else border-slate-300 @enderror focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
+                        @error('file_link')
+                            <p class="mt-1 text-xs text-rose-600 font-semibold flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
                         <p class="text-xs text-slate-400 mt-1">Dapat berupa tautan YouTube (Watch, Share/youtu.be, Shorts, atau Live). Pratinjau video akan langsung muncul di panel kanan.</p>
                     </div>
 
@@ -143,12 +220,19 @@
                     </div>
 
                     <!-- Tombol Simpan -->
-                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
-                        <a href="{{ route('admin.modul') }}" class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-medium transition">
+                    <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-200">
+                        <a href="{{ route('admin.modul') }}" class="px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-medium transition text-center">
                             Batal
                         </a>
-                        <button type="submit" class="px-6 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium shadow-sm transition">
-                            Simpan & Terbitkan Modul
+                        <button type="button" onclick="submitModul('draft')"
+                            class="px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-sm font-semibold transition flex items-center justify-center gap-1.5 shadow-sm">
+                            <span>📝</span>
+                            <span>Simpan Draf</span>
+                        </button>
+                        <button type="button" onclick="submitModul('publish')"
+                            class="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition flex items-center justify-center gap-1.5">
+                            <span>🚀</span>
+                            <span>Simpan & Terbitkan Modul</span>
                         </button>
                     </div>
                 </form>
@@ -457,6 +541,129 @@
                 }
             }
         }
+
+        // ---- SINKRONISASI JENJANG & SORTIR KUIS ----
+        let allQuizOptions = [];
+
+        function initQuizOptions() {
+            const quizSelect = document.getElementById('id_quiz');
+            if (!quizSelect) return;
+            const options = Array.from(quizSelect.options);
+            allQuizOptions = options.map(opt => ({
+                value: opt.value,
+                text: opt.text,
+                jenjang: opt.getAttribute('data-jenjang') || '',
+                judul: opt.getAttribute('data-judul') || '',
+                nama: opt.getAttribute('data-nama') || opt.text,
+                draft: opt.getAttribute('data-draft') || '0',
+                created: parseInt(opt.getAttribute('data-created') || '0', 10),
+                selected: opt.selected
+            }));
+        }
+
+        function filterAndSortQuizzes() {
+            const jenjangSelect = document.getElementById('id_jenjang');
+            const quizSelect = document.getElementById('id_quiz');
+            const searchInput = document.getElementById('search_quiz_input');
+            const sortSelect = document.getElementById('sort_quiz_select');
+            const infoText = document.getElementById('quiz_jenjang_text');
+            const emptyNotice = document.getElementById('quiz_empty_notice');
+
+            if (!jenjangSelect || !quizSelect) return;
+
+            const selectedJenjangId = jenjangSelect.value;
+            const selectedJenjangName = jenjangSelect.options[jenjangSelect.selectedIndex]?.getAttribute('data-name') || jenjangSelect.options[jenjangSelect.selectedIndex]?.text || '';
+            if (infoText) {
+                infoText.textContent = `Kuis Jenjang: ${selectedJenjangName}`;
+            }
+
+            const keyword = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const sortBy = sortSelect ? sortSelect.value : 'name_asc';
+
+            const currentVal = quizSelect.value;
+
+            // Filter options: hanya jenjang yang cocok
+            let filtered = allQuizOptions.filter(opt => {
+                if (!opt.value) return true; // Option '-- Tanpa Kuis Terikat --'
+                if (opt.jenjang && opt.jenjang !== selectedJenjangId) return false;
+                if (keyword && !opt.judul.includes(keyword)) return false;
+                return true;
+            });
+
+            const emptyOpt = filtered.find(opt => !opt.value);
+            let quizOpts = filtered.filter(opt => opt.value);
+
+            if (sortBy === 'name_asc') {
+                quizOpts.sort((a, b) => a.nama.localeCompare(b.nama));
+            } else if (sortBy === 'name_desc') {
+                quizOpts.sort((a, b) => b.nama.localeCompare(a.nama));
+            } else if (sortBy === 'latest') {
+                quizOpts.sort((a, b) => b.created - a.created);
+            }
+
+            const finalOptions = emptyOpt ? [emptyOpt, ...quizOpts] : quizOpts;
+
+            quizSelect.innerHTML = '';
+            let hasSelected = false;
+
+            finalOptions.forEach(opt => {
+                const optionEl = document.createElement('option');
+                optionEl.value = opt.value;
+                optionEl.textContent = opt.text;
+                optionEl.setAttribute('data-jenjang', opt.jenjang);
+                optionEl.setAttribute('data-judul', opt.judul);
+                optionEl.setAttribute('data-nama', opt.nama);
+                optionEl.setAttribute('data-draft', opt.draft);
+                optionEl.setAttribute('data-created', opt.created);
+
+                if (opt.value && opt.value === currentVal) {
+                    optionEl.selected = true;
+                    hasSelected = true;
+                }
+                quizSelect.appendChild(optionEl);
+            });
+
+            if (!hasSelected && currentVal !== '') {
+                quizSelect.value = '';
+            }
+
+            if (emptyNotice) {
+                emptyNotice.classList.toggle('hidden', quizOpts.length > 0);
+            }
+        }
+
+        // ---- SUBMIT DRAF VS PUBLIKASI ----
+        function submitModul(actionType) {
+            const inputAction = document.getElementById('input-action-type');
+            const form = document.getElementById('formModul');
+            inputAction.value = actionType;
+
+            if (actionType === 'draft') {
+                const judul = document.getElementById('judul_modul');
+                if (!judul.value.trim()) {
+                    alert('Judul modul wajib diisi sebelum menyimpan draf.');
+                    judul.focus();
+                    return;
+                }
+                // Hapus required attribute browser untuk simpan draf
+                const requiredInputs = form.querySelectorAll('[required]');
+                requiredInputs.forEach(el => {
+                    if (el.id !== 'judul_modul' && el.id !== 'id_jenjang') {
+                        el.removeAttribute('required');
+                    }
+                });
+                form.submit();
+            } else {
+                if (form.reportValidity()) {
+                    form.submit();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initQuizOptions();
+            filterAndSortQuizzes();
+        });
     </script>
 </body>
 
