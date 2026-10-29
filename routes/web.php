@@ -90,8 +90,7 @@ Route::prefix('orangtua')
 
         Route::get('/materi-pembelajaran', [MateriPembelajaranController::class, 'index'])->name('materi-pembelajaran');
         Route::get('/pencapaian', [PencapaianController::class, 'index'])->name('pencapaian');
-        Route::get('/riwayat-quiz', [OrangtuaController::class, 'riwayatQuiz'])
-        ->name('riwayat-quiz');
+        Route::get('/riwayat-quiz', [OrangtuaController::class, 'riwayatQuiz'])->name('riwayat-quiz');
     });
 
 // Global Route untuk semua user login
@@ -124,6 +123,8 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'active.student', 'r
     Route::get('/belajar', [SiswaController::class, 'belajar'])->name('modul');
     Route::get('/belajar/{id_modul}/materi', [SiswaController::class, 'materiVideoDetail'])->name('modul.materi');
     Route::get('/belajar/{id_modul}/latihan', [SiswaController::class, 'latihanSoalModul'])->name('modul.latihan');
+    Route::post('/belajar/{id_modul}/selesai-materi', [SiswaController::class, 'tandaiMateriSelesai'])->name('modul.selesai_materi');
+    Route::post('/belajar/{id_modul}/kuis-submit', [SiswaController::class, 'submitKuisModul'])->name('modul.kuis_submit');
 
     // Quiz global
     Route::get('/quiz', [SiswaController::class, 'quiz'])->name('quiz');
@@ -169,8 +170,10 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru']
 
     // Route untuk Halaman Utama/Tabel Daftar Siswa
     Route::get('/data', [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
+    Route::get('/data/{id}/profil', [SiswaController::class, 'adminLihatProfilSiswa'])->name('admin.siswa.profil');
     Route::patch('/data/{id}', [SiswaController::class, 'updateStudentData'])->name('admin.siswa.update');
     Route::patch('/data/{id}/jenjang', [SiswaController::class, 'updateStudentJenjang'])->name('admin.siswa.jenjang');
+    Route::post('/data/jenjang-massal', [SiswaController::class, 'updateStudentJenjangMassal'])->name('admin.siswa.jenjang.massal');
     Route::patch('/data/{id}/status', [SiswaController::class, 'updateStatus'])->name('admin.siswa.status');
 
     // Route Guru

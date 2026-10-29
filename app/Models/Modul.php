@@ -21,6 +21,8 @@ class Modul extends Model
         'id_quiz',
         'progressModul',
         'foto_modul',
+        'kkm_quiz',
+        'poin_modul',
     ];
 
     // Relasi ke tabel tipe modul (1: Video, 2: PDF, 3: Artikel)
@@ -39,11 +41,55 @@ class Modul extends Model
         return $this->belongsTo(Quiz::class, 'id_quiz', 'id_quiz');
     }
 
+    public function isDraft(): bool
+    {
+        return strcasecmp((string) $this->progressModul, 'Draft') === 0;
+    }
+
+    public function isPublished(): bool
+    {
+        return !$this->isDraft();
+    }
+
+    public function scopePublished($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('progressModul')
+              ->orWhere('progressModul', '!=', 'Draft');
+        });
+    }
+
+    public function scopeDraft($query)
+    {
+        return $query->where('progressModul', 'Draft');
+    }
+
     // Helper accessor untuk mendapatkan URL lengkap file materi
 
     public function catatan()
     {
         return $this->hasMany(CatatanModul::class, 'id_modul', 'id_modul')->orderBy('urutan');
+    }
+
+    public function soalModul()
+    {
+        return $this->hasMany(ModulSoal::class, 'id_modul', 'id_modul')->orderBy('urutan');
+    }
+
+    public function progresSiswa()
+    {
+        return $this->hasMany(ProgresModulSiswa::class, 'id_modul', 'id_modul');
+    }
+
+    public function progresUser(?int $userId = null)
+    {
+        $userId = $userId ?? auth()->id();
+        return $this->hasOne(ProgresModulSiswa::class, 'id_modul', 'id_modul')->where('id_user', $userId);
+    }
+
+    public function hasQuizModul(): bool
+    {
+        return $this->soalModul()->count() > 0;
     }
 
     public function getFileUrlAttribute()
