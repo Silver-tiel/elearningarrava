@@ -45,3 +45,4 @@ class ProgresModulSiswa extends Model
         return $this->belongsTo(Modul::class, 'id_modul', 'id_modul');
     }
 }
+

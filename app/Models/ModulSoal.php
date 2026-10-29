@@ -34,3 +34,4 @@ class ModulSoal extends Model
         return $this->pilihan->firstWhere('is_benar', true);
     }
 }
+

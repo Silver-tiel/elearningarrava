@@ -27,3 +27,4 @@ class ModulSoalPilihan extends Model
         return $this->belongsTo(ModulSoal::class, 'id_soal', 'id_soal');
     }
 }
+
