@@ -20,42 +20,42 @@
 
 /* Latar belakang: diselaraskan di bawah dengan buffer dasar agar saat naik tidak bolong */
 .dash-bg {
-  bottom: -80px;
+  bottom: -50px;
   left: 0;
   right: 0;
-  height: clamp(340px, 42vh, 430px);
+  height: clamp(210px, 25vh, 280px);
   background-image: var(--dash-img-bg);
   background-position: center bottom;
   background-size: 360px 480px;
   background-repeat: repeat-x;
-  opacity: 0.68;
+  opacity: 0.45;
 }
 .dash-bg2 {
-  opacity: 0.42;
+  opacity: 0.25;
   background-position: calc(50% + 40px) bottom;
   background-size: 390px 520px;
 }
 
 /* Partikel gelombang mengambang: diselaraskan di bawah dengan buffer dasar */
 .dash-float {
-  bottom: -80px;
+  bottom: -50px;
   left: 0;
   right: 0;
-  height: clamp(340px, 42vh, 430px);
+  height: clamp(210px, 25vh, 280px);
   background-image: var(--dash-img-float);
   background-position: center bottom;
   background-size: 360px 480px;
   background-repeat: repeat-x;
 }
 .dash-f1 {
-  height: clamp(310px, 38vh, 390px);
+  height: clamp(190px, 22vh, 250px);
   background-size: 330px 440px;
-  opacity: 0.72;
+  opacity: 0.60;
 }
 .dash-f2 {
-  height: clamp(340px, 42vh, 430px);
+  height: clamp(210px, 25vh, 280px);
   background-size: 360px 480px;
-  opacity: 1;
+  opacity: 0.85;
 }
 
 /* Di layar desktop lebar (lg), posisikan agar mulai tepat di sebelah kanan sidebar */
@@ -66,13 +66,18 @@
   }
 }
 
-/* Kartu di atas background efek memiliki latar belakang putih bersih & frosted glass */
-.hover-frame {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-}
-.hover-frame:hover {
+/* Kartu di atas background efek memiliki latar belakang putih bersih solid & elevasi aman */
+.hover-frame,
+.card,
+.stat-card {
   background: #ffffff;
+  position: relative;
+  z-index: 10;
+}
+
+main, .main-content, aside, article {
+  position: relative;
+  z-index: 10;
 }
 </style>
 
@@ -122,9 +127,9 @@
     cur += (scrollY - cur) * CONFIG.smoothing;
 
     // Saat scroll ke bawah (cur > 0), efek bergerak NAIK KE ATAS (Y bernilai negatif)
-    var upBg1   = Math.min(65, cur * 0.12);
-    var upBg2   = Math.min(75, cur * 0.16);
-    var upFloat = Math.min(65, cur * 0.14);
+    var upBg1   = Math.min(45, cur * 0.08);
+    var upBg2   = Math.min(55, cur * 0.10);
+    var upFloat = Math.min(50, cur * 0.09);
 
     // (1) Latar belakang naik ke atas saat scroll ke bawah
     if (bg1) bg1.style.transform = 'translateY(' + (-upBg1) + 'px)';
