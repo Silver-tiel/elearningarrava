@@ -115,6 +115,9 @@ class ModulController extends Controller
     {
         $isDraft = $request->input('action_type') === 'draft';
 
+        $trimmedJudul = trim((string) $request->input('judul_modul'));
+        $request->merge(['judul_modul' => $trimmedJudul]);
+
         $rules = [
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul',
             'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
@@ -139,6 +142,17 @@ class ModulController extends Controller
 
         $validated = $request->validate($rules, $messages);
 
+        // Validasi keunikan judul case-insensitive & trimmed
+        $duplicateTitle = Modul::whereRaw('LOWER(TRIM(judul_modul)) = ?', [strtolower($trimmedJudul)])->first();
+        if ($duplicateTitle) {
+            throw ValidationException::withMessages([
+                'judul_modul' => "Judul modul '{$trimmedJudul}' sudah digunakan oleh modul lain. Silakan gunakan judul yang berbeda.",
+            ]);
+        }
+
+        // Validasi keunikan media (file berkas & tautan video)
+        $this->validateUniqueMedia($request);
+
         // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul
         if (!empty($validated['id_quiz'])) {
             $quiz = Quiz::find($validated['id_quiz']);
@@ -156,7 +170,9 @@ class ModulController extends Controller
 
         if ($request->hasFile('file_upload')) {
             $file = $request->file('file_upload');
-            $pathFile = $file->store('modul/files', 'public');
+            $originalName = $file->getClientOriginalName();
+            $safeName = preg_replace('/[^a-zA-Z0-9_.-]/', '_', $originalName);
+            $pathFile = $file->storeAs('modul/files', time() . '_' . $safeName, 'public');
             $tipeFile = $file->getClientOriginalExtension();
         } elseif ($request->filled('file_link')) {
             $pathFile = $request->file_link;
@@ -215,6 +231,9 @@ class ModulController extends Controller
         $module = Modul::findOrFail($id);
         $isDraft = $request->input('action_type') === 'draft';
 
+        $trimmedJudul = trim((string) $request->input('judul_modul'));
+        $request->merge(['judul_modul' => $trimmedJudul]);
+
         $rules = [
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul,' . $module->id_modul . ',id_modul',
             'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
@@ -239,6 +258,20 @@ class ModulController extends Controller
 
         $validated = $request->validate($rules, $messages);
 
+        // Validasi keunikan judul (case-insensitive & trimmed, abaikan modul ini)
+        $duplicateTitle = Modul::where('id_modul', '!=', $module->id_modul)
+            ->whereRaw('LOWER(TRIM(judul_modul)) = ?', [strtolower($trimmedJudul)])
+            ->first();
+
+        if ($duplicateTitle) {
+            throw ValidationException::withMessages([
+                'judul_modul' => "Judul modul '{$trimmedJudul}' sudah digunakan oleh modul lain. Silakan gunakan judul yang berbeda.",
+            ]);
+        }
+
+        // Validasi keunikan media (file berkas & tautan video, abaikan modul ini)
+        $this->validateUniqueMedia($request, $module->id_modul);
+
         // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul
         if (!empty($validated['id_quiz'])) {
             $quiz = Quiz::find($validated['id_quiz']);
@@ -260,7 +293,9 @@ class ModulController extends Controller
             }
 
             $file = $request->file('file_upload');
-            $pathFile = $file->store('modul/files', 'public');
+            $originalName = $file->getClientOriginalName();
+            $safeName = preg_replace('/[^a-zA-Z0-9_.-]/', '_', $originalName);
+            $pathFile = $file->storeAs('modul/files', time() . '_' . $safeName, 'public');
             $tipeFile = $file->getClientOriginalExtension();
         } elseif ($request->filled('file_link')) {
             if ($module->file_materi && $module->tipe_file !== 'link' && Storage::disk('public')->exists($module->file_materi)) {
@@ -291,6 +326,96 @@ class ModulController extends Controller
         ]);
 
         return redirect()->route('admin.modul')->with('success', $isDraft ? 'Draf modul berhasil diperbarui! 📝' : 'Modul pembelajaran berhasil diperbarui & dipublikasikan! 🎉');
+    }
+
+    /**
+     * Memvalidasi agar media materi (berkas fisik / tautan link) tidak ganda dengan modul lain.
+     */
+    protected function validateUniqueMedia(Request $request, ?int $ignoreModulId = null): void
+    {
+        // 1. Validasi Tautan Media (file_link)
+        if ($request->filled('file_link')) {
+            $inputLink = trim((string) $request->file_link);
+            $inputYoutubeId = $this->extractYoutubeId($inputLink);
+
+            $duplicateLinkQuery = Modul::query();
+            if ($ignoreModulId) {
+                $duplicateLinkQuery->where('id_modul', '!=', $ignoreModulId);
+            }
+
+            $otherModuls = $duplicateLinkQuery->whereNotNull('file_materi')->get();
+
+            foreach ($otherModuls as $other) {
+                // Periksa kesamaan tautan URL eksak
+                if ($other->tipe_file === 'link' && strcasecmp(trim($other->file_materi), $inputLink) === 0) {
+                    throw ValidationException::withMessages([
+                        'file_link' => "Tautan media ini sudah digunakan oleh modul '{$other->judul_modul}'. Setiap modul harus menggunakan media yang unik.",
+                    ]);
+                }
+
+                // Periksa kesamaan YouTube ID (mencegah link yang sama beda format watch/youtu.be)
+                if ($inputYoutubeId && $other->youtube_id && $other->youtube_id === $inputYoutubeId) {
+                    throw ValidationException::withMessages([
+                        'file_link' => "Video YouTube ini sudah digunakan pada modul '{$other->judul_modul}'. Silakan gunakan video materi yang berbeda.",
+                    ]);
+                }
+            }
+        }
+
+        // 2. Validasi Berkas Fisik (file_upload)
+        if ($request->hasFile('file_upload')) {
+            $uploadedFile = $request->file('file_upload');
+            $originalName = $uploadedFile->getClientOriginalName();
+            $uploadedHash = md5_file($uploadedFile->getRealPath());
+
+            $query = Modul::query();
+            if ($ignoreModulId) {
+                $query->where('id_modul', '!=', $ignoreModulId);
+            }
+
+            $otherModuls = $query->whereNotNull('file_materi')->where('tipe_file', '!=', 'link')->get();
+
+            foreach ($otherModuls as $other) {
+                $storedFileName = basename($other->file_materi);
+
+                // Periksa apakah nama berkas asli sama (baik exact match atau setelah prefix timestamp)
+                $strippedStoredName = preg_replace('/^\d+_/', '', $storedFileName);
+                if (strcasecmp($storedFileName, $originalName) === 0 || strcasecmp($strippedStoredName, $originalName) === 0) {
+                    throw ValidationException::withMessages([
+                        'file_upload' => "Berkas dengan nama '{$originalName}' sudah digunakan oleh modul '{$other->judul_modul}'. Silakan gunakan berkas materi lain atau ubah nama berkas.",
+                    ]);
+                }
+
+                // Periksa isi berkas fisik (MD5 hash) jika berkas ada di public storage
+                if (Storage::disk('public')->exists($other->file_materi)) {
+                    $otherFullPath = Storage::disk('public')->path($other->file_materi);
+                    if (file_exists($otherFullPath) && md5_file($otherFullPath) === $uploadedHash) {
+                        throw ValidationException::withMessages([
+                            'file_upload' => "Berkas materi yang Anda unggah identik dengan berkas materi pada modul '{$other->judul_modul}'. Setiap modul harus menggunakan media materi yang unik.",
+                        ]);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper ekstraksi YouTube ID dari string URL atau embed code
+     */
+    protected function extractYoutubeId(?string $url): ?string
+    {
+        if (!$url) return null;
+        $raw = trim($url);
+        if (preg_match('/src=["\']([^"\']+)["\']/', $raw, $srcMatch)) {
+            $raw = $srcMatch[1];
+        }
+        if (preg_match('%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?|live|shorts)/|.*[?&]v=)|youtu\.be/)([^"&?/\s]{11})%i', $raw, $match)) {
+            return $match[1];
+        }
+        if (preg_match('/^[a-zA-Z0-9_-]{11}$/', $raw)) {
+            return $raw;
+        }
+        return null;
     }
 
     // Menghapus data modul dan file fisik terkait dari storage

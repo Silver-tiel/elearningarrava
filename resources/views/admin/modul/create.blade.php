@@ -61,8 +61,14 @@
                             Judul Modul Pembelajaran <span class="text-red-500">*</span>
                         </label>
                         <input type="text" id="judul_modul" name="judul_modul" value="{{ old('judul_modul') }}" required oninput="updatePreview()"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
+                            class="w-full px-4 py-2.5 rounded-lg border @error('judul_modul') border-rose-500 ring-1 ring-rose-500 @else border-slate-300 @enderror focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition"
                             placeholder="Masukkan judul modul...">
+                        @error('judul_modul')
+                            <p class="mt-1 text-xs text-rose-600 font-semibold flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     <!-- 2. Pilihan Jenis Modul -->
@@ -168,6 +174,12 @@
                             </div>
                         </div>
                         
+                        @error('file_upload')
+                            <p class="mt-2 text-xs text-rose-600 font-semibold flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
                         <div id="file_preview_container" class="hidden mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200 flex items-center justify-between">
                             <div class="flex items-center gap-3 overflow-hidden">
                                 <svg class="w-7 h-7 text-blue-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path></svg>
@@ -187,8 +199,14 @@
                         <label for="file_link" class="block text-sm font-medium text-slate-700 mb-1">
                             Tautan Video / Materi Eksternal <span class="text-red-500">*</span>
                         </label>
-                        <input type="url" id="file_link" name="file_link" placeholder="https://www.youtube.com/watch?v=..." oninput="updatePreview(); previewYoutubeLive(this.value);"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
+                        <input type="url" id="file_link" name="file_link" value="{{ old('file_link') }}" placeholder="https://www.youtube.com/watch?v=..." oninput="updatePreview(); previewYoutubeLive(this.value);"
+                            class="w-full px-4 py-2.5 rounded-lg border @error('file_link') border-rose-500 ring-1 ring-rose-500 @else border-slate-300 @enderror focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
+                        @error('file_link')
+                            <p class="mt-1 text-xs text-rose-600 font-semibold flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                {{ $message }}
+                            </p>
+                        @enderror
                         <p class="text-xs text-slate-400 mt-1">Dapat berupa tautan YouTube (Watch, Share/youtu.be, Shorts, atau Live). Pratinjau video akan langsung muncul di panel kanan.</p>
                     </div>
 
