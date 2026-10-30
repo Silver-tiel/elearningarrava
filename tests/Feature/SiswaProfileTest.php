@@ -37,6 +37,8 @@ class SiswaProfileTest extends TestCase
             $table->string('status_akun')->default('Aktif');
             $table->unsignedInteger('id_modul')->nullable();
             $table->string('foto_profil')->nullable();
+            $table->string('qr_token', 64)->nullable()->unique();
+            $table->timestamp('qr_dibuat_pada')->nullable();
             $table->timestamps();
         });
 
@@ -187,5 +189,31 @@ class SiswaProfileTest extends TestCase
             ->assertSee('data-open-quiz-history', false)
             ->assertSee('id="quiz-history-modal"', false)
             ->assertSee('Beberapa kuis yang dikerjakan pada tanggal yang sama dihitung sebagai satu titik.');
+    }
+
+    public function test_profile_page_displays_qr_presensi_and_redirects_from_qr_route(): void
+    {
+        $student = User::create([
+            'nama' => 'Budi Siswa',
+            'username' => 'budisiswa',
+            'email' => 'budi@example.com',
+            'password' => bcrypt('password'),
+            'nisn' => '9988776655',
+            'id_tipeuser' => 3,
+            'id_jenjang' => 1,
+        ]);
+
+        $this->actingAs($student)
+            ->get(route('siswa.profil'))
+            ->assertOk()
+            ->assertSee('id="kartu-qr"', false)
+            ->assertSee('QR Presensi Saya')
+            ->assertSee('Budi Siswa')
+            ->assertSee('btn-unduh-qr', false)
+            ->assertSee('btn-cetak-qr', false);
+
+        $this->actingAs($student)
+            ->get(route('siswa.qr'))
+            ->assertRedirect(route('siswa.profil') . '#kartu-qr');
     }
 }

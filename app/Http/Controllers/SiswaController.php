@@ -13,6 +13,10 @@ use App\Models\Achievement;
 use App\Models\Quiz;
 use App\Models\TingkatQuiz;
 use App\Models\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -1336,13 +1340,26 @@ class SiswaController extends Controller
             ->take(6)
             ->get();
 
+        $qrSvg = null;
+        $kelasList = collect();
+        if (\Illuminate\Support\Facades\Schema::hasColumn('user', 'qr_token')) {
+            $renderer = new ImageRenderer(new RendererStyle(280, 1), new SvgImageBackEnd());
+            $qrSvg = (new Writer($renderer))->writeString($user->qrPayload());
+            $qrSvg = preg_replace('/^<\?xml.*?\?>\s*/s', '', $qrSvg);
+            if (\Illuminate\Support\Facades\Schema::hasTable('kelas_siswa')) {
+                $kelasList = $user->kelasDiikuti()->orderBy('nama')->pluck('nama');
+            }
+        }
+
         return view('siswa.profil_siswa', compact(
             'user',
             'jenjangs',
             'scoreSummary',
             'scoreTrend',
             'quizResults',
-            'achievements'
+            'achievements',
+            'qrSvg',
+            'kelasList'
         ));
     }
 

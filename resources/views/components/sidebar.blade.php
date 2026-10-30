@@ -343,15 +343,6 @@
                     </div>
                 </a>
 
-                @php $actSiswaQr = request()->is('siswa/qr*'); @endphp
-                <!-- QR Saya -->
-                <a href="{{ route('siswa.qr') }}"
-                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaQr ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaQr ? 'true' : 'false' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
-                    <span class="truncate">QR Saya</span>
-                </a>
-
                 <!-- Profil -->
                 <a href="{{ route('siswa.profil') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaProfil ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"

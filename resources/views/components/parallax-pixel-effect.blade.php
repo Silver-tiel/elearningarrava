@@ -20,15 +20,24 @@
 
 /* Latar belakang: diselaraskan di bawah dengan buffer dasar agar saat naik tidak bolong */
 .dash-bg {
-  bottom: -50px;
+  bottom: -100px;
   left: 0;
   right: 0;
-  height: clamp(210px, 25vh, 280px);
+  height: clamp(260px, 32vh, 360px);
   background-image: var(--dash-img-bg);
   background-position: center bottom;
   background-size: 360px 480px;
   background-repeat: repeat-x;
   opacity: 0.45;
+}
+.dash-bg::after {
+  content: '';
+  position: absolute;
+  top: 99%;
+  left: 0;
+  right: 0;
+  height: 600px;
+  background: #0e59e0;
 }
 .dash-bg2 {
   opacity: 0.25;
@@ -38,10 +47,10 @@
 
 /* Partikel gelombang mengambang: diselaraskan di bawah dengan buffer dasar */
 .dash-float {
-  bottom: -50px;
+  bottom: -100px;
   left: 0;
   right: 0;
-  height: clamp(210px, 25vh, 280px);
+  height: clamp(260px, 32vh, 360px);
   background-image: var(--dash-img-float);
   background-position: center bottom;
   background-size: 360px 480px;
