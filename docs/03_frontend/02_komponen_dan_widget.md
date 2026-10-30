@@ -42,3 +42,4 @@ Sistem menggunakan dialog modal terpadu untuk menjaga alur kerja tanpa me-*reloa
 ### C. Modal Loading & Trivia Edukasi ([`#quizSubmitLoadingModal`](file:///e:/Android/laragon/www/elearningarrava/resources/views/siswa/mengerjakan-quiz.blade.php))
 * Muncul seketika saat siswa mengirimkan jawaban kuis.
 * Menampilkan animasi maskot karakter berlari di atas progress bar dan menyajikan fakta edukatif/trivia sains acak selagi backend menghitung hasil evaluasi kuis secara atomik.
+

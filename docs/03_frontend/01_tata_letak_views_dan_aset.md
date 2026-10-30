@@ -77,3 +77,4 @@ File media pendukung disimpan di direktori `public/assets/`:
   * Opsi B: **Blue / Biru** (`bg-blue-600`, Simbol Belah Ketupat ◆)
   * Opsi C: **Amber / Kuning** (`bg-amber-500`, Simbol Lingkaran ●)
   * Opsi D: **Emerald / Hijau** (`bg-emerald-600`, Simbol Kotak ■)
+

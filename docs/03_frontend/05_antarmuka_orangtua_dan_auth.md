@@ -38,3 +38,4 @@ Portal orang tua dirancang informatif dan transparan agar wali murid dapat mendu
   * Judul kuis dan kategori (Harian atau Ulangan).
   * Status kelulusan (*Lulus KKM* berbadge hijau atau *Remedial* berbadge kuning).
   * Skor poin yang disumbangkan untuk kenaikan rank anak.
+

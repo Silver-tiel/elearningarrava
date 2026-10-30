@@ -9,6 +9,7 @@ use App\Models\TipeModul;
 use App\Models\Jenjang;
 use App\Models\Quiz;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -17,7 +18,16 @@ class ModulController extends Controller
     // Menampilkan daftar seluruh modul dengan relasinya, filter, dan sortir
     public function index(Request $request)
     {
+        if (auth()->check()) {
+            Gate::authorize('viewAny', Modul::class);
+        }
+
         $query = Modul::with(['tipeModul', 'jenjang', 'quiz']);
+
+        // Guru hanya melihat modul miliknya sendiri; admin melihat semua.
+        if ($request->user() && $request->user()->isGuru()) {
+            $query->where('id_pembuat', $request->user()->id_user);
+        }
 
         // Filter Status (all, published, draft)
         $statusFilter = $request->query('status', 'all');
@@ -103,6 +113,10 @@ class ModulController extends Controller
     // Menampilkan form tambah modul baru
     public function create()
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Modul::class);
+        }
+
         // Mengambil data master untuk dropdown
         $tipeModul = TipeModul::all();
         // Hanya ambil jenjang SD, SMP, SMA (id 1, 2, 3)
@@ -115,6 +129,10 @@ class ModulController extends Controller
     // Menyimpan data modul baru & memproses upload file fisik / draf
     public function store(Request $request)
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Modul::class);
+        }
+
         $isDraft = $request->input('action_type') === 'draft';
 
         $trimmedJudul = trim((string) $request->input('judul_modul'));
@@ -226,6 +244,9 @@ class ModulController extends Controller
     public function edit($id)
     {
         $module = Modul::with(['soalModul.pilihan'])->findOrFail($id);
+        if (auth()->check()) {
+            Gate::authorize('update', $module);
+        }
         $tipeModul = TipeModul::all();
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
@@ -237,6 +258,9 @@ class ModulController extends Controller
     public function update(Request $request, $id)
     {
         $module = Modul::findOrFail($id);
+        if (auth()->check()) {
+            Gate::authorize('update', $module);
+        }
         $isDraft = $request->input('action_type') === 'draft';
 
         $trimmedJudul = trim((string) $request->input('judul_modul'));
@@ -484,6 +508,9 @@ class ModulController extends Controller
     public function destroy($id)
     {
         $modul = Modul::findOrFail($id);
+        if (auth()->check()) {
+            Gate::authorize('delete', $modul);
+        }
 
         // Hapus file materi dari storage jika ada & bukan link eksternal
         if ($modul->file_materi && $modul->tipe_file !== 'link' && Storage::disk('public')->exists($modul->file_materi)) {
@@ -539,6 +566,10 @@ class ModulController extends Controller
     // API: menyimpan data modul baru
     public function apiStore(Request $request)
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Modul::class);
+        }
+
         $request->validate([
             'judul_modul' => 'required|string|max:255',
             'id_tipemodul' => 'required|integer',
@@ -594,6 +625,10 @@ class ModulController extends Controller
                 'success' => false,
                 'message' => 'Modul tidak ditemukan.',
             ], 404);
+        }
+
+        if (auth()->check()) {
+            Gate::authorize('update', $module);
         }
 
         $request->validate([
@@ -660,6 +695,10 @@ class ModulController extends Controller
                 'success' => false,
                 'message' => 'Modul tidak ditemukan.',
             ], 404);
+        }
+
+        if (auth()->check()) {
+            Gate::authorize('delete', $modul);
         }
 
         if ($modul->file_materi && $modul->tipe_file !== 'link' && Storage::disk('public')->exists($modul->file_materi)) {

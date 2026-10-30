@@ -109,3 +109,4 @@ erDiagram
 1. **Cascade Delete**: Menghapus baris `quiz` akan otomatis menghapus seluruh anak baris di `soal` dan `pilihan_soal`.
 2. **Pemberian Poin Atomik**: Eksekusi penambahan poin siswa dilakukan dalam blok `DB::transaction` dengan `lockForUpdate()` pada record user untuk mencegah *race conditions*.
 3. **Filter Jenjang Eksklusif**: Siswa pada jenjang SD tidak dapat mengakses modul atau kuis bertingkat SMP/SMA di tingkat query database controller.
+

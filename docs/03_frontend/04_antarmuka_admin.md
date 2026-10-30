@@ -62,3 +62,4 @@ Form pembuatan modul memadukan materi fisik/link dengan butir evaluasi internal:
 ## 4. Manajemen & Profil Siswa ([`admin/daftar_siswa/`](file:///e:/Android/laragon/www/elearningarrava/resources/views/admin/daftar_siswa/))
 * **Daftar Siswa**: Tabel paginasi berisi nama, NISN, email, kelas, jenjang, status keaktifan, dan perolehan poin.
 * **Detail Profil Siswa**: Memantau portofolio belajar siswa, modul yang telah diselesaikan, riwayat skor kuis, dan lencana rank tier yang telah diraih.
+

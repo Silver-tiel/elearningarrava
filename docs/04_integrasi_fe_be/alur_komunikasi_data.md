@@ -62,3 +62,4 @@ Pada halaman pembuat kuis admin ([`admin/quiz/create.blade.php`](file:///e:/Andr
 Pada widget pixel salju di [`sidebar.blade.php`](file:///e:/Android/laragon/www/elearningarrava/resources/views/components/sidebar.blade.php):
 * State JavaScript mengontrol elemen `<img>` dan objek `new Audio()` secara sinkron.
 * Event `audio.onended` atau pewaktu timeout durasi audio memicu pengembalian atribut `src` dari `sideSnow.gif` kembali ke gambar diam `sideSnow.webp`, memastikan memori peramban tetap ringan tanpa loop tanpa akhir.
+

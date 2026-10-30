@@ -67,3 +67,4 @@ php artisan db:seed --class=QuizSeeder
 # Menjalankan seeder modul spesifik
 php artisan db:seed --class=ModulSeeder
 ```
+

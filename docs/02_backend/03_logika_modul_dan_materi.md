@@ -56,3 +56,4 @@ Progres belajar siswa dilacak melalui model [`ProgresModulSiswa`](file:///e:/And
 
 * Modul yang sedang dirancang memiliki status `progressModul = 'Draft'`.
 * Menggunakan scope Eloquent `Modul::published()` di seluruh tampilan publik siswa, sehingga siswa tidak dapat melihat modul sebelum admin secara resmi menerbitkannya (`progressModul = 'Tersedia'`).
+

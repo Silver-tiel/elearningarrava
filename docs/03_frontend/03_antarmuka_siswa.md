@@ -60,3 +60,4 @@ Layar pengerjaan kuis dirancang fokus, bebas distraksi, dan adaptif sesuai mode 
 * **Pilihan Ganda**: Tombol berbentuk kartu interaktif bergaya Kahoot dengan ikon segitiga (A), belah ketupat (B), lingkaran (C), dan kotak (D).
 * **Isian Singkat**: Kotak input teks elegan dengan panduan pengetikan jawaban langsung.
 * **Benar / Salah**: Dua pilihan cepat (Benar atau Salah) berukuran proporsional.
+

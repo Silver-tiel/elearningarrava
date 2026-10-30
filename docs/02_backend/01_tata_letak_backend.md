@@ -71,3 +71,4 @@ elearningarrava/
 * **`Quiz::published()` & `Quiz::draft()`**: Memisahkan kuis yang siap dipelajari dengan kuis yang masih dirancang.
 * **`Quiz::belumKadaluarsa()`**: Menyeleksi kuis yang masih aktif atau kuis khusus yang memiliki token akses.
 * **`User::getRankTierAttribute()`**: Perhitungan *accessor* pintar yang menghitung nama rank, warna tema badge, dan persentase progres menuju rank berikutnya berdasarkan akumulasi `total_poin`.
+

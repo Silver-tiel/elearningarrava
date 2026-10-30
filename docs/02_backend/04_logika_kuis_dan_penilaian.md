@@ -85,3 +85,4 @@ Untuk menjamin keadilan sistem gamifikasi, poin reward kuis diatur dengan prinsi
 ```
 
 * **Dampak**: Siswa dapat mengulang kuis untuk memperbaiki nilai pribadinya kapan saja, tetapi poin XP akun tidak akan bisa di-*farming* atau digandakan secara curang.
+

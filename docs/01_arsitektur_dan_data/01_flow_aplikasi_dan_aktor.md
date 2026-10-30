@@ -81,3 +81,4 @@ Setiap poin yang berhasil diraih siswa secara otomatis diakumulasikan ke kolom `
 1. Orang tua masuk menggunakan email / nomor kontak terdaftar.
 2. Memilih anak yang berada di bawah bimbingannya.
 3. Memantau progres belajar modul yang sudah selesai dipelajari, status kelulusan kuis, nilai rata-rata, dan perolehan poin rank anak terkini.
+

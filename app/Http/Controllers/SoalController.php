@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Soal;
+use App\Models\Quiz;
 use App\Models\Jenjang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -15,7 +17,13 @@ class SoalController extends Controller
     // Menampilkan daftar soal yang ada di sistem.
     public function index()
     {
-        $soals = Soal::all();
+        if (auth()->check()) {
+            Gate::authorize('viewAny', Soal::class);
+        }
+
+        $soals = Soal::query()
+            ->when(auth()->user() && auth()->user()->isGuru(), fn ($q) => $q->whereHas('quiz', fn ($k) => $k->where('id_pembuat', auth()->id())))
+            ->get();
 
         return view('admin.soal.index', ['soals' => $soals]);
     }
@@ -23,6 +31,10 @@ class SoalController extends Controller
     // Menampilkan form untuk menambah soal baru.
     public function create()
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Soal::class);
+        }
+
         $jenjangList = Jenjang::orderBy('id_jenjang')->get();
         return view('admin.soal.create', compact('jenjangList'));
     }
@@ -30,7 +42,19 @@ class SoalController extends Controller
     // Menyimpan soal baru ke database.
     public function store(Request $request)
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Soal::class);
+        }
+
         $questionData = $this->validateQuestionData($request);
+
+        // Guru hanya boleh menambah soal ke quiz miliknya.
+        if (auth()->check() && !empty($questionData['soal']['id_quiz'])) {
+            $quizTujuan = Quiz::find($questionData['soal']['id_quiz']);
+            if ($quizTujuan) {
+                Gate::authorize('update', $quizTujuan);
+            }
+        }
 
         $request->validate([
             'foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -72,6 +96,9 @@ class SoalController extends Controller
     public function edit($id)
     {
         $soal = Soal::with('pilihanSoal')->where('id_soal', $id)->orWhere('kode_soal', $id)->firstOrFail();
+        if (auth()->check()) {
+            Gate::authorize('update', $soal);
+        }
         $jenjangList = Jenjang::orderBy('id_jenjang')->get();
         return view('admin.soal.edit', compact('soal', 'jenjangList'));
     }
@@ -80,6 +107,9 @@ class SoalController extends Controller
     public function update(Request $request, $id)
     {
         $soal = Soal::where('id_soal', $id)->orWhere('kode_soal', $id)->firstOrFail();
+        if (auth()->check()) {
+            Gate::authorize('update', $soal);
+        }
         $questionData = $this->validateQuestionData($request, $soal->id_soal);
 
         $request->validate([
@@ -267,6 +297,9 @@ class SoalController extends Controller
     public function destroy($id)
     {
         $soal = Soal::where('id_soal', $id)->orWhere('kode_soal', $id)->firstOrFail();
+        if (auth()->check()) {
+            Gate::authorize('delete', $soal);
+        }
 
         if ($soal->foto_soal && Storage::disk('public')->exists($soal->foto_soal)) {
             Storage::disk('public')->delete($soal->foto_soal);

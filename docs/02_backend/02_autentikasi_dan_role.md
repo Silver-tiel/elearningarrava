@@ -58,3 +58,4 @@ Untuk mencegah siswa SD melihat atau mengerjakan kuis SMA (atau sebaliknya), bac
    ```
 2. **Lapisan Validasi Eksekusi**:
    Saat siswa mencoba memulai kuis via URL langsung (`/siswa/quiz/{id}`), method `tolakJikaBukanJenjangnya()` memverifikasi apakah kuis tersebut sesuai dengan `id_jenjang` siswa. Jika tidak cocok, request langsung dialihkan kembali dengan pesan error larangan akses.
+
