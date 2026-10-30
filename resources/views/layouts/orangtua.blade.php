@@ -80,34 +80,37 @@
         </div>
 
     </main>
-</div>
 
-<script>
-(function () {
-    const sidebar  = document.getElementById('otSidebar');
-    const backdrop = document.getElementById('otBackdrop');
-    const toggle   = document.getElementById('otSidebarToggle');
-    const closeBtn = document.getElementById('otSidebarClose');
-    if (!sidebar || !backdrop) return;
-
-    function open() {
-        sidebar.classList.remove('-translate-x-full');
-        backdrop.classList.remove('opacity-0', 'pointer-events-none');
-        backdrop.classList.add('opacity-100', 'pointer-events-auto');
-    }
-    function close() {
-        sidebar.classList.add('-translate-x-full');
-        backdrop.classList.add('opacity-0', 'pointer-events-none');
-        backdrop.classList.remove('opacity-100', 'pointer-events-auto');
-    }
-
-    toggle?.addEventListener('click', open);
-    closeBtn?.addEventListener('click', close);
-    backdrop.addEventListener('click', close);
-    window.addEventListener('resize', () => { if (window.innerWidth >= 1024) close(); });
-})();
-</script>
+{{-- Modal Konfirmasi Logout (Reusable Component) --}}
+@include('components.logout-modal')
 
 @stack('scripts')
+
+<script>
+    // ---- Sidebar mobile toggle (Portal Orang Tua) ----
+    (function () {
+        var sidebar  = document.getElementById('otSidebar');
+        var backdrop = document.getElementById('otBackdrop');
+        var toggle   = document.getElementById('otSidebarToggle');
+        var closeBtn = document.getElementById('otSidebarClose');
+        if (!sidebar || !backdrop) return;
+
+        function openSidebar() {
+            sidebar.classList.remove('-translate-x-full');
+            backdrop.classList.remove('opacity-0', 'pointer-events-none');
+            backdrop.classList.add('opacity-100', 'pointer-events-auto');
+        }
+        function closeSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            backdrop.classList.add('opacity-0', 'pointer-events-none');
+            backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+        }
+
+        if (toggle)   toggle.addEventListener('click', openSidebar);
+        if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+        backdrop.addEventListener('click', closeSidebar);
+        window.addEventListener('resize', function () { if (window.innerWidth >= 1024) closeSidebar(); });
+    })();
+</script>
 </body>
 </html>

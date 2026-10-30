@@ -48,5 +48,6 @@
     </div>
 
     @include('components.hover-effects')
+    @include('components.logout-modal')
 </body>
 </html>
