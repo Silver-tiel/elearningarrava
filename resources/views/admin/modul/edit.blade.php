@@ -590,6 +590,25 @@
                 });
                 form.submit();
             } else {
+                const cards = document.querySelectorAll('#soal_container .soal-card');
+                for (let i = 0; i < cards.length; i++) {
+                    const card = cards[i];
+                    const noSoal = i + 1;
+                    const textarea = card.querySelector('textarea[name^="soal["]');
+                    if (textarea && !textarea.value.trim()) {
+                        alert(`⚠️ Soal Modul #${noSoal}:\nTeks pertanyaan kuis modul belum diisi!`);
+                        textarea.focus();
+                        return;
+                    }
+                    const pilihanInputs = card.querySelectorAll('input[type="text"][name*="[pilihan]"]');
+                    const filledPilihan = Array.from(pilihanInputs).filter(p => p.value.trim() !== '');
+                    if (filledPilihan.length < 2) {
+                        alert(`⚠️ Soal Modul #${noSoal}:\nHarap isi minimal 2 pilihan jawaban untuk soal ini!`);
+                        if (pilihanInputs[0]) pilihanInputs[0].focus();
+                        return;
+                    }
+                }
+
                 if (form.reportValidity()) {
                     form.submit();
                 }

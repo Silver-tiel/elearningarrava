@@ -476,19 +476,22 @@ class QuizController extends Controller
         $seenQuestions = [];
 
         foreach ($questions as $index => $question) {
+            $nomorSoal = $index + 1;
             $pertanyaanRaw = trim((string) ($question['pertanyaan'] ?? ''));
             $pertanyaanKey = mb_strtolower($pertanyaanRaw);
 
             if ($pertanyaanKey !== '') {
                 if (in_array($pertanyaanKey, $seenQuestions, true)) {
                     if (!$isDraft) {
-                        $errors["soal.$index.pertanyaan"] = 'Pertanyaan tidak boleh sama dengan soal lain dalam quiz ini.';
+                        $errors["soal.$index.pertanyaan"] = "Soal #{$nomorSoal}: Pertanyaan tidak boleh sama dengan soal lain dalam quiz ini.";
                     }
                 } else {
                     $seenQuestions[] = $pertanyaanKey;
                 }
             } elseif ($isDraft) {
-                $pertanyaanRaw = '(Draf Soal #' . ($index + 1) . ')';
+                $pertanyaanRaw = '(Draf Soal #' . $nomorSoal . ')';
+            } else {
+                $errors["soal.$index.pertanyaan"] = "Soal #{$nomorSoal}: Teks pertanyaan wajib diisi.";
             }
 
             $type = $question['jenis_soal'] ?? 'kuis';
@@ -499,7 +502,7 @@ class QuizController extends Controller
             if ($type === 'isian_singkat') {
                 $answer = trim($question['jawaban_singkat'] ?? '');
                 if ($answer === '' && !$isDraft) {
-                    $errors["soal.$index.jawaban_singkat"] = 'Kunci jawaban isian singkat wajib diisi.';
+                    $errors["soal.$index.jawaban_singkat"] = "Soal #{$nomorSoal}: Kunci jawaban isian singkat wajib diisi.";
                 }
                 $idJenisSoal = 2;
             } elseif ($type === 'true_false') {
@@ -512,7 +515,7 @@ class QuizController extends Controller
                 }
 
                 if (count($correctIndexes) !== 1 && !$isDraft) {
-                    $errors["soal.$index.pilihan"] = 'Pilih tepat satu jawaban benar untuk soal Benar/Salah.';
+                    $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Pilih tepat satu jawaban benar untuk soal Benar/Salah.";
                 }
 
                 $choices = [
@@ -533,7 +536,7 @@ class QuizController extends Controller
 
                     if ($text === '') {
                         if ($isCorrect && !$isDraft) {
-                            $errors["soal.$index.pilihan"] = 'Jawaban benar tidak boleh menunjuk pilihan kosong.';
+                            $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Jawaban benar tidak boleh menunjuk pilihan kosong.";
                         }
                         if (!$isDraft) {
                             continue;
@@ -541,13 +544,13 @@ class QuizController extends Controller
                     }
 
                     if (in_array($label, $seenLabels, true) && !$isDraft) {
-                        $errors["soal.$index.pilihan"] = 'Label pilihan jawaban tidak boleh berulang.';
+                        $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Label pilihan jawaban tidak boleh berulang.";
                     }
                     $seenLabels[] = $label;
 
                     $textKey = mb_strtolower($text);
                     if ($textKey !== '' && in_array($textKey, $seenTexts, true) && !$isDraft) {
-                        $errors["soal.$index.pilihan"] = 'Teks pilihan jawaban tidak boleh sama dalam satu soal.';
+                        $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Teks pilihan jawaban tidak boleh sama dalam satu soal.";
                     }
                     if ($textKey !== '') {
                         $seenTexts[] = $textKey;
@@ -562,10 +565,10 @@ class QuizController extends Controller
                 if (!$isDraft) {
                     $correctCount = count(array_filter($choices, fn (array $choice): bool => $choice['is_correct']));
                     if (count($choices) < 2) {
-                        $errors["soal.$index.pilihan"] = 'Soal pilihan ganda wajib memiliki minimal dua pilihan terisi.';
+                        $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Soal pilihan ganda wajib memiliki minimal dua pilihan terisi.";
                     }
                     if ($correctCount !== 1) {
-                        $errors["soal.$index.pilihan"] = 'Pilih tepat satu jawaban benar dari pilihan yang terisi.';
+                        $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Pilih tepat satu jawaban benar dari pilihan yang terisi.";
                     }
                 } else {
                     if (empty($choices)) {

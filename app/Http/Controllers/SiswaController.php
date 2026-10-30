@@ -672,6 +672,28 @@ class SiswaController extends Controller
             }
         }
 
+        // Pada mode biasa (tipe normal), jika bukan auto-submit karena waktu habis,
+        // seluruh soal wajib dijawab sebelum dapat mengumpulkan kuis.
+        if ($quiz->mode_pengerjaan === 'biasa' && !$request->boolean('is_timeout')) {
+            $nomorBelumDijawab = [];
+            foreach ($quiz->soal->values() as $idx => $s) {
+                $jawab = $jawabanSiswa[$s->id_soal] ?? null;
+                if ($jawab === null || (is_string($jawab) && trim($jawab) === '')) {
+                    $nomorBelumDijawab[] = $idx + 1;
+                }
+            }
+
+            if (!empty($nomorBelumDijawab)) {
+                $pesanNomor = count($nomorBelumDijawab) === 1
+                    ? "nomor {$nomorBelumDijawab[0]}"
+                    : "nomor " . implode(', ', array_slice($nomorBelumDijawab, 0, -1)) . " dan " . end($nomorBelumDijawab);
+
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['quiz' => "Jawaban belum lengkap! Soal {$pesanNomor} belum dijawab. Harap jawab semua soal sebelum mengumpulkan kuis."]);
+            }
+        }
+
         // ---- Penilaian ----
         [$benar, $totalPoinQuiz, $poinDidapat] = $this->hitungSkor($quiz, $jawabanSiswa);
 

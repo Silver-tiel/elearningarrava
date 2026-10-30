@@ -1209,36 +1209,59 @@ Tingkat Quiz
                 }
 
                 let valid = true;
-                soalList.forEach((s, i) => {
-                    if (!s.pertanyaan.trim()) {
-                        alert(`Soal #${i + 1} belum memiliki teks pertanyaan!`);
+                let firstErrorIdx = -1;
+                let firstErrorMsg = '';
+
+                for (let i = 0; i < soalList.length; i++) {
+                    const s = soalList[i];
+                    const noSoal = i + 1;
+
+                    if (!s.pertanyaan || !s.pertanyaan.trim()) {
+                        firstErrorMsg = `⚠️ Kesalahan pada Soal #${noSoal}:\nTeks pertanyaan wajib diisi sebelum kuis dipublikasikan!`;
+                        firstErrorIdx = i;
                         valid = false;
-                        return;
+                        break;
                     }
+
                     if (s.jenis_soal === 'isian_singkat') {
-                        if (!s.jawaban_singkat.trim()) {
-                            alert(`Soal #${i + 1} (Isian Singkat) belum diisi kunci jawabannya!`);
+                        if (!s.jawaban_singkat || !s.jawaban_singkat.trim()) {
+                            firstErrorMsg = `⚠️ Kesalahan pada Soal #${noSoal} (Isian Singkat):\nKunci jawaban isian singkat wajib diisi!`;
+                            firstErrorIdx = i;
                             valid = false;
-                            return;
+                            break;
                         }
                     } else {
                         const availableChoices = s.jenis_soal === 'true_false' ? s.pilihan.slice(0, 2) : s.pilihan;
-                        const filledChoices = availableChoices.filter(p => p.teks.trim());
+                        const filledChoices = availableChoices.filter(p => p.teks && p.teks.trim());
                         const correctChoices = filledChoices.filter(p => p.is_correct === 1);
+
                         if (s.jenis_soal === 'kuis' && filledChoices.length < 2) {
-                            alert(`Soal #${i + 1} harus memiliki minimal dua pilihan yang terisi.`);
+                            firstErrorMsg = `⚠️ Kesalahan pada Soal #${noSoal} (Pilihan Ganda):\nHarus mengisi minimal 2 pilihan jawaban yang valid!`;
+                            firstErrorIdx = i;
                             valid = false;
-                            return;
+                            break;
                         }
+
                         if (correctChoices.length !== 1) {
-                            alert(`Soal #${i + 1} harus memiliki tepat satu jawaban benar pada pilihan yang terisi.`);
+                            firstErrorMsg = `⚠️ Kesalahan pada Soal #${noSoal}:\nHarap tentukan tepat 1 jawaban yang benar (ceklis hijau) pada pilihan yang terisi!`;
+                            firstErrorIdx = i;
                             valid = false;
-                            return;
+                            break;
                         }
                     }
-                });
+                }
 
                 if (!valid) {
+                    alert(firstErrorMsg);
+                    if (firstErrorIdx !== -1) {
+                        saveCurrentState();
+                        currentIndex = firstErrorIdx;
+                        loadCurrentState();
+                        renderThumbnails();
+                        setTimeout(() => {
+                            if (inputPertanyaan) inputPertanyaan.focus();
+                        }, 100);
+                    }
                     e.preventDefault();
                     return;
                 }

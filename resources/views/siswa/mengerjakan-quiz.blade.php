@@ -115,6 +115,26 @@
         
     @endif
 
+    {{-- Modal Peringatan Soal Belum Lengkap (Khusus Mode Biasa/Normal) --}}
+    <div id="quizUnansweredModal" class="fixed inset-0 z-[210] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full text-center border-t-8 border-rose-500 animate-bounce-in relative overflow-hidden">
+            <div class="w-16 h-16 mx-auto mb-4 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-3xl shadow-inner">
+                ⚠️
+            </div>
+            <h3 class="text-lg font-extrabold text-slate-800 mb-2">
+                Jawaban Belum Lengkap!
+            </h3>
+            <p id="quizUnansweredMessage" class="text-xs text-slate-600 mb-6 leading-relaxed">
+                Anda belum dapat mengirim jawaban.
+            </p>
+            <div class="flex items-center justify-center gap-3">
+                <button type="button" id="btn-close-unanswered-modal" class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition transform hover:-translate-y-0.5">
+                    Lengkapi Jawaban Sekarang →
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{-- Modal Loading Transisi & Hiburan saat Submit Quiz --}}
     <div id="quizSubmitLoadingModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
         <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full text-center border-t-8 border-emerald-500 animate-bounce-in relative overflow-hidden">
@@ -184,6 +204,7 @@
             <form id="form-kerjakan-quiz" method="{{ $isPreview ? 'GET' : 'POST' }}" action="{{ $isPreview ? '#' : route('siswa.quiz.submit', $quiz->id_quiz) }}" data-quiz-mode="{{ $quiz->mode_pengerjaan ?? 'wayground' }}" data-preview="{{ $isPreview ? 'true' : 'false' }}" data-total-seconds="{{ $remainingSeconds ?? 0 }}" class="space-y-6" @if($isPreview) onsubmit="return false;" @endif>
                 @if(!$isPreview)
                     @csrf
+                    <input type="hidden" name="is_timeout" id="input-is-timeout" value="0">
                 @endif
                 
                 {{-- Quiz Header Card --}}
@@ -492,6 +513,9 @@
 
                 if (remaining === 0) {
                     clearInterval(totalTimer);
+                    isTimeOutSubmit = true;
+                    const inputTimeout = document.getElementById('input-is-timeout');
+                    if (inputTimeout) inputTimeout.value = '1';
                     quizForm.requestSubmit();
                 }
             };
@@ -541,12 +565,113 @@
             }
         }
 
+        let isTimeOutSubmit = false;
+
+        function getUnansweredQuestions() {
+            const unanswered = [];
+            questionPanels.forEach((panel, idx) => {
+                const questionNo = idx + 1;
+                const radios = panel.querySelectorAll('input[type="radio"]');
+                if (radios.length > 0) {
+                    const checked = Array.from(radios).some(r => r.checked);
+                    if (!checked) unanswered.push(questionNo);
+                } else {
+                    const textInput = panel.querySelector('input[type="text"], textarea');
+                    if (!textInput || !textInput.value.trim()) {
+                        unanswered.push(questionNo);
+                    }
+                }
+            });
+            return unanswered;
+        }
+
+        function updateNavigationIndicators() {
+            questionPanels.forEach((panel, idx) => {
+                const btn = questionButtons[idx];
+                if (!btn) return;
+
+                let isAnswered = false;
+                const radios = panel.querySelectorAll('input[type="radio"]');
+                if (radios.length > 0) {
+                    isAnswered = Array.from(radios).some(r => r.checked);
+                } else {
+                    const textInput = panel.querySelector('input[type="text"], textarea');
+                    isAnswered = textInput && textInput.value.trim() !== '';
+                }
+
+                if (idx !== currentQuestionIndex) {
+                    if (isAnswered) {
+                        btn.classList.add('border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
+                        btn.classList.remove('ring-2', 'ring-rose-500', 'bg-rose-50', 'text-rose-700');
+                    } else {
+                        btn.classList.remove('border-emerald-300', 'bg-emerald-50', 'text-emerald-700');
+                    }
+                }
+            });
+        }
+
+        quizForm.querySelectorAll('input[type="radio"], input[type="text"]').forEach(input => {
+            input.addEventListener('change', updateNavigationIndicators);
+            input.addEventListener('input', updateNavigationIndicators);
+        });
+
+        const btnCloseUnanswered = document.getElementById('btn-close-unanswered-modal');
+        if (btnCloseUnanswered) {
+            btnCloseUnanswered.addEventListener('click', () => {
+                const modal = document.getElementById('quizUnansweredModal');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            });
+        }
+
         if (quizForm) {
             quizForm.addEventListener('submit', function (e) {
                 if (isPreview) {
                     e.preventDefault();
                     return;
                 }
+
+                // Khusus mode biasa (tipe normal, bukan wayground/kahoot):
+                // Jika bukan karena waktu habis, cegah submit bila ada soal yang belum dijawab
+                if (quizMode === 'biasa' && !isTimeOutSubmit) {
+                    const unanswered = getUnansweredQuestions();
+                    if (unanswered.length > 0) {
+                        e.preventDefault();
+
+                        const nomorStr = unanswered.length === 1
+                            ? `nomor ${unanswered[0]}`
+                            : `nomor ${unanswered.slice(0, -1).join(', ')} dan ${unanswered[unanswered.length - 1]}`;
+
+                        const modal = document.getElementById('quizUnansweredModal');
+                        const msg = document.getElementById('quizUnansweredMessage');
+                        if (msg) {
+                            msg.innerHTML = `Mohon maaf, Anda belum dapat mengumpulkan jawaban karena <strong>soal ${nomorStr}</strong> belum dijawab.<br><br>Pada kuis mode normal ini, seluruh soal wajib dijawab sebelum dapat mengumpulkan kuis.`;
+                        }
+                        if (modal) {
+                            modal.classList.remove('hidden');
+                            modal.classList.add('flex');
+                        }
+
+                        // Beri highlight merah menyala pada nomor yang belum dijawab
+                        questionButtons.forEach((btn, idx) => {
+                            const qNum = idx + 1;
+                            if (unanswered.includes(qNum)) {
+                                btn.classList.add('ring-2', 'ring-rose-500', 'bg-rose-50', 'text-rose-700');
+                            } else {
+                                btn.classList.remove('ring-2', 'ring-rose-500');
+                            }
+                        });
+
+                        // Arahkan tampilan langsung ke soal pertama yang belum dijawab
+                        const firstUnansweredIndex = unanswered[0] - 1;
+                        showQuestion(firstUnansweredIndex);
+
+                        return false;
+                    }
+                }
+
                 showQuizSubmitModal();
             });
         }
