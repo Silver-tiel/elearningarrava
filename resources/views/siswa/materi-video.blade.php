@@ -107,7 +107,7 @@
             <div class="mt-5 rounded-2xl border {{ $isTuntas ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-200/90 bg-white' }} p-5 shadow-sm transition">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b {{ $isTuntas ? 'border-emerald-200' : 'border-slate-100' }}">
                     <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-xl {{ $isTuntas ? 'bg-emerald-600 text-white' : 'bg-blue-100 text-blue-700' }} font-bold text-sm">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-xl {{ $isTuntas ? 'bg-emerald-600 text-white' : 'bg-blue-100 text-indigo-700' }} font-bold text-sm">
                             {{ $isTuntas ? '✓' : '🎯' }}
                         </span>
                         <div>
@@ -144,7 +144,7 @@
                         @if(!$isMateriSelesai)
                             <form action="{{ route('siswa.modul.selesai_materi', $modul->id_modul) }}" method="POST" class="shrink-0">
                                 @csrf
-                                <button type="submit" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 shadow-xs transition">
+                                <button type="submit" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 shadow-xs transition">
                                     Tandai Selesai
                                 </button>
                             </form>
@@ -225,14 +225,14 @@
                     </p>
 
                     @if(!$isMateriSelesai)
-                        <div class="mt-5 p-4 rounded-xl bg-blue-50/70 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div class="text-xs text-blue-900">
+                        <div class="mt-5 p-4 rounded-xl bg-indigo-50/70 border border-indigo-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="text-xs text-indigo-900">
                                 <p class="font-bold">Sudah selesai menyimak materi ini?</p>
-                                <p class="text-blue-700">Tandai materi selesai untuk melengkapi langkah pertama penyelesaian modul.</p>
+                                <p class="text-indigo-700">Tandai materi selesai untuk melengkapi langkah pertama penyelesaian modul.</p>
                             </div>
                             <form action="{{ route('siswa.modul.selesai_materi', $modul->id_modul) }}" method="POST">
                                 @csrf
-                                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition">
+                                <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition">
                                     <span>✓</span> Tandai Selesai Menonton/Membaca
                                 </button>
                             </form>
@@ -324,7 +324,7 @@
                             @endforeach
 
                             <div class="pt-3 flex items-center justify-end">
-                                <button type="submit" class="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-extrabold text-sm shadow-md transition transform hover:-translate-y-0.5">
+                                <button type="submit" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md transition transform hover:-translate-y-0.5">
                                     🚀 Kumpulkan Jawaban Kuis Modul
                                 </button>
                             </div>
@@ -354,7 +354,7 @@
         }
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('text-[#3180f7]');
+            btn.classList.remove('text-indigo-600');
             btn.classList.add('text-[#52617a]');
             const indicator = btn.querySelector('.tab-indicator');
             if (indicator) indicator.classList.add('hidden');
@@ -363,7 +363,7 @@
         const activeBtn = document.querySelector('.tab-btn-' + tabName);
         if (activeBtn) {
             activeBtn.classList.remove('text-[#52617a]');
-            activeBtn.classList.add('text-[#3180f7]');
+            activeBtn.classList.add('text-indigo-600');
             const indicator = activeBtn.querySelector('.tab-indicator');
             if (indicator) indicator.classList.remove('hidden');
         }

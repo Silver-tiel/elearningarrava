@@ -82,3 +82,4 @@ class QuizKomprehensifSeederTest extends TestCase
         $this->assertCount(9, Quiz::all(), 'Jumlah kuis harus tetap 9 (idempotent)');
     }
 }
+
