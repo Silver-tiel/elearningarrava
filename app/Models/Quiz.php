@@ -104,13 +104,24 @@ class Quiz extends Model
     public function scopeBelumKadaluarsa(Builder $query): Builder
     {
         return $query->where(function (Builder $query) {
-            $query->where(function ($sub) {
-                $sub->whereNotNull('token')
-                    ->where('token', '!=', '');
-            })->orWhere(function ($sub) {
-                $sub->whereNull('waktu_kadaluarsa')
-                    ->orWhere('waktu_kadaluarsa', '>', now());
-            });
+            $table = $query->getModel()->getTable();
+            $hasToken = \Illuminate\Support\Facades\Schema::hasTable($table) 
+                && \Illuminate\Support\Facades\Schema::hasColumn($table, 'token');
+
+            if ($hasToken) {
+                $query->where(function ($sub) {
+                    $sub->whereNotNull('token')
+                        ->where('token', '!=', '');
+                })->orWhere(function ($sub) {
+                    $sub->whereNull('waktu_kadaluarsa')
+                        ->orWhere('waktu_kadaluarsa', '>', now());
+                });
+            } else {
+                $query->where(function ($sub) {
+                    $sub->whereNull('waktu_kadaluarsa')
+                        ->orWhere('waktu_kadaluarsa', '>', now());
+                });
+            }
         });
     }
 

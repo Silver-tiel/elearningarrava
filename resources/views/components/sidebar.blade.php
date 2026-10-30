@@ -110,7 +110,7 @@
                 <div class="bg-blue-600 text-white font-bold rounded-xl text-xl flex items-center justify-center w-10 h-10 shrink-0 shadow-md shadow-blue-500/20">
                     eB
                 </div>
-                <span class="text-xl font-bold text-gray-900 tracking-tight">Arrava</span>
+                <span class="text-xl font-bold text-gray-900 tracking-tight">eBooks</span>
             </div>
 
             <!-- Tombol Tutup Sidebar di Layar Kecil -->
@@ -150,6 +150,7 @@
                     </div>
                 </a>
 
+                @if($idTipe == 1)
                 <!-- Siswa -->
                 <a href="{{ route('admin.daftar_siswa') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminSiswa ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
@@ -164,6 +165,7 @@
                         </div>
                     </div>
                 </a>
+                @endif
 
                 <!-- Modul -->
                 <a href="{{ route('admin.modul') }}"
@@ -195,6 +197,33 @@
                     </div>
                 </a>
 
+                @php $actPresensi = request()->is('guru/presensi*'); @endphp
+                <!-- Presensi -->
+                <a href="{{ route('guru.presensi.index') }}"
+                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actPresensi ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                   data-active="{{ $actPresensi ? 'true' : 'false' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+                    <span class="truncate">Presensi</span>
+                </a>
+
+                @if($idTipe == 1)
+                @php $actKelas = request()->is('admin/kelas*'); $actQrAdmin = request()->is('admin/qr*'); @endphp
+                <!-- Kelas -->
+                <a href="{{ route('admin.kelas') }}"
+                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actKelas ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                   data-active="{{ $actKelas ? 'true' : 'false' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 100-8 4 4 0 000 8zm6 0a3 3 0 100-6M3 11a3 3 0 106 0"/></svg>
+                    <span class="truncate">Kelas</span>
+                </a>
+
+                <!-- QR Siswa -->
+                <a href="{{ route('admin.qr') }}"
+                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actQrAdmin ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                   data-active="{{ $actQrAdmin ? 'true' : 'false' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+                    <span class="truncate">QR Siswa</span>
+                </a>
+
                 <!-- Penghargaan / Achievement -->
                 <a href="{{ route('admin.achievement') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminAchieve ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
@@ -224,6 +253,7 @@
                         </div>
                     </div>
                 </a>
+                @endif
 
                 @if($idTipe == 2)
                 {{-- Menu Profil hanya untuk Guru --}}
@@ -295,6 +325,15 @@
                             <img src="{{ asset('assets/sidebar/sidebarQuizIcon.webp') }}" alt="Quiz" class="sidebar-pop-img" draggable="false">
                         </div>
                     </div>
+                </a>
+
+                @php $actSiswaQr = request()->is('siswa/qr*'); @endphp
+                <!-- QR Saya -->
+                <a href="{{ route('siswa.qr') }}"
+                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaQr ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                   data-active="{{ $actSiswaQr ? 'true' : 'false' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+                    <span class="truncate">QR Saya</span>
                 </a>
 
                 <!-- Profil -->

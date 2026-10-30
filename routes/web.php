@@ -21,6 +21,10 @@ use App\Http\Controllers\AnakSayaController;
 use App\Http\Controllers\PerkembanganNilaiController;
 use App\Http\Controllers\MateriPembelajaranController;
 use App\Http\Controllers\PencapaianController;
+use App\Http\Controllers\KelasController;
+use App\Http\Controllers\QrAdminController;
+use App\Http\Controllers\PresensiController;
+use App\Http\Controllers\SiswaQrController;
 
 
 // Halaman pendaftaran.
@@ -94,7 +98,7 @@ Route::prefix('orangtua')
     });
 
 // Global Route untuk semua user login
-Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware(['auth', 'active.student']);
+Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware(['auth', 'active.student', 'role:admin,guru,siswa']);
 
 // Admin dashboard.
 Route::get('/admin', function () {
@@ -113,7 +117,7 @@ Route::get('/admin', function () {
         'siswaTerbaru'     => User::where('id_tipeuser', 3)->latest()->take(5)->get(),
         'modulTerbaru'     => Modul::with(['jenjang'])->latest()->take(5)->get(),
     ]);
-})->middleware(['auth', 'active.student'])->name('admin');
+})->middleware(['auth', 'active.student', 'role:admin,guru'])->name('admin');
 
 // Siswa.
 Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'active.student', 'role:siswa'])->group(function () {
@@ -135,6 +139,8 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'active.student', 'r
 
     Route::get('/profil', [SiswaController::class, 'profile'])->name('profil');
     Route::put('/profil/update', [SiswaController::class, 'updateProfile'])->name('profil.update');
+
+    Route::get('/qr', [SiswaQrController::class, 'show'])->name('qr');
 });
 
 // Profil guru (hanya untuk guru yang login)
@@ -167,7 +173,11 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru']
     Route::get('/soal/{id}/edit', [SoalController::class, 'edit'])->name('soal.edit');
     Route::put('/soal/{id}',    [SoalController::class, 'update'])->name('soal.update');
     Route::delete('/soal/{id}', [SoalController::class, 'destroy'])->name('soal.destroy');
+});
 
+// ADMIN SAJA: manajemen user/data siswa, guru, penghargaan, kelas, penugasan, QR.
+// Guru TIDAK boleh mengakses grup ini.
+Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin'])->group(function () {
     // Route untuk Halaman Utama/Tabel Daftar Siswa
     Route::get('/data', [SiswaController::class, 'dataSiswa'])->name('admin.daftar_siswa');
     Route::get('/data/{id}/profil', [SiswaController::class, 'adminLihatProfilSiswa'])->name('admin.siswa.profil');
@@ -192,4 +202,30 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru']
     Route::put('/achievement/{id}', [AchievementController::class, 'update'])->name('admin.achievement.update');
     Route::delete('/achievement/{id}', [AchievementController::class, 'destroy'])->name('admin.achievement.destroy');
     Route::post('/achievement/{id}/sync', [AchievementController::class, 'sync'])->name('admin.achievement.sync');
+
+    // Kelas, keanggotaan siswa, dan penugasan guru
+    Route::get('/kelas', [KelasController::class, 'index'])->name('admin.kelas');
+    Route::post('/kelas', [KelasController::class, 'store'])->name('admin.kelas.store');
+    Route::get('/kelas/{id}', [KelasController::class, 'show'])->whereNumber('id')->name('admin.kelas.show');
+    Route::put('/kelas/{id}', [KelasController::class, 'update'])->whereNumber('id')->name('admin.kelas.update');
+    Route::delete('/kelas/{id}', [KelasController::class, 'destroy'])->whereNumber('id')->name('admin.kelas.destroy');
+    Route::post('/kelas/{id}/siswa', [KelasController::class, 'tambahSiswa'])->whereNumber('id')->name('admin.kelas.siswa.tambah');
+    Route::delete('/kelas/{id}/siswa/{siswa}', [KelasController::class, 'hapusSiswa'])->whereNumber(['id', 'siswa'])->name('admin.kelas.siswa.hapus');
+    Route::post('/kelas/{id}/guru', [KelasController::class, 'tambahGuru'])->whereNumber('id')->name('admin.kelas.guru.tambah');
+    Route::delete('/kelas/{id}/guru/{guru}', [KelasController::class, 'hapusGuru'])->whereNumber(['id', 'guru'])->name('admin.kelas.guru.hapus');
+
+    // QR siswa (generate ulang)
+    Route::get('/qr', [QrAdminController::class, 'index'])->name('admin.qr');
+    Route::post('/qr/{siswa}/regenerate', [QrAdminController::class, 'regenerate'])->whereNumber('siswa')->name('admin.qr.regenerate');
+});
+
+// PRESENSI: guru (kelas yang diampu) dan admin (semua kelas). Otorisasi akhir lewat SesiPresensiPolicy.
+Route::prefix('guru/presensi')->name('guru.presensi.')->middleware(['auth', 'active.student', 'role:admin,guru'])->group(function () {
+    Route::get('/', [PresensiController::class, 'index'])->name('index');
+    Route::post('/sesi', [PresensiController::class, 'storeSesi'])->name('sesi.store');
+    Route::get('/sesi/{id}', [PresensiController::class, 'scan'])->whereNumber('id')->name('scan');
+    Route::get('/sesi/{id}/rekap', [PresensiController::class, 'rekap'])->whereNumber('id')->name('rekap');
+    Route::post('/sesi/{id}/tutup', [PresensiController::class, 'tutup'])->whereNumber('id')->name('tutup');
+    Route::post('/sesi/{id}/scan', [PresensiController::class, 'prosesScan'])
+        ->whereNumber('id')->middleware('throttle:scan-qr')->name('proses');
 });

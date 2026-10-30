@@ -361,7 +361,7 @@ class SiswaController extends Controller
 
         $user = Auth::user();
 
-        $query = Quiz::published()->with([
+        $query = Quiz::published()->belumKadaluarsa()->with([
             'tipeQuiz',
             'tingkatQuiz',
             'jenjang',

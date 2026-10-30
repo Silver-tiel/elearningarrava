@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\HasilQuizModul;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
@@ -27,7 +28,16 @@ class QuizController extends Controller
             'sort' => ['nullable', 'in:terbaru,terlama'],
         ]);
 
+        if (auth()->check()) {
+            Gate::authorize('viewAny', Quiz::class);
+        }
+
         $query = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang'])->withCount('soal');
+
+        // Guru hanya melihat quiz miliknya sendiri; admin melihat semua.
+        if ($request->user() && $request->user()->isGuru()) {
+            $query->where('id_pembuat', $request->user()->id_user);
+        }
 
         if (!empty($filters['jenjang'])) {
             $query->where('id_jenjang', $filters['jenjang']);
@@ -70,6 +80,10 @@ class QuizController extends Controller
     // Menampilkan form untuk menambah kuis baru (bergaya Kahoot).
     public function create()
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Quiz::class);
+        }
+
         $jenjangList = Jenjang::all();
         $tingkatQuizList = \App\Models\TingkatQuiz::all();
         $questions = $this->questionEditorState(old('soal', []));
@@ -79,6 +93,9 @@ class QuizController extends Controller
     public function edit($id)
     {
         $quiz = Quiz::with('soal.pilihanSoal')->where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
+        if (auth()->check()) {
+            Gate::authorize('update', $quiz);
+        }
         $jenjangList = Jenjang::all();
         $tingkatQuizList = \App\Models\TingkatQuiz::all();
         $savedQuestions = $quiz->soal->map(function (Soal $soal) {
@@ -119,6 +136,10 @@ class QuizController extends Controller
     // Menyimpan kuis baru beserta soal dan pilihan jawaban ke database.
     public function store(Request $request)
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Quiz::class);
+        }
+
         $isDraft = $request->input('action_type') === 'draft';
 
         if ($isDraft) {
@@ -257,6 +278,9 @@ class QuizController extends Controller
     public function update(Request $request, $id)
     {
         $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
+        if (auth()->check()) {
+            Gate::authorize('update', $quiz);
+        }
         $isDraft = $request->input('action_type') === 'draft';
 
         if ($isDraft) {
@@ -395,6 +419,9 @@ class QuizController extends Controller
     public function destroy($id)
     {
         $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
+        if (auth()->check()) {
+            Gate::authorize('delete', $quiz);
+        }
 
         DB::transaction(function () use ($quiz) {
             $oldSoalList = $quiz->soal()->get();
