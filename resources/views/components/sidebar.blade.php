@@ -96,6 +96,22 @@
         transform: scale(0.92) translateY(2px);
         transition: transform 0.08s ease;
     }
+
+    /* =======================================================
+       Sidebar Pixel Snow Scene Widget (Inspired by VS Code Pets)
+       ======================================================= */
+    .sidebar-snow-card {
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .sidebar-snow-card:active {
+        transform: scale(0.98);
+    }
+    .sidebar-snow-pixel-img {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+    }
 </style>
 
 <!-- Backdrop Gelap untuk Layar Kecil (Mobile) -->
@@ -110,7 +126,7 @@
                 <div class="bg-blue-600 text-white font-bold rounded-xl text-xl flex items-center justify-center w-10 h-10 shrink-0 shadow-md shadow-blue-500/20">
                     eB
                 </div>
-                <span class="text-xl font-bold text-gray-900 tracking-tight">Arrava</span>
+                <span class="text-xl font-bold text-gray-900 tracking-tight">eBooks</span>
             </div>
 
             <!-- Tombol Tutup Sidebar di Layar Kecil -->
@@ -150,6 +166,7 @@
                     </div>
                 </a>
 
+                @if($idTipe == 1)
                 <!-- Siswa -->
                 <a href="{{ route('admin.daftar_siswa') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminSiswa ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
@@ -164,6 +181,7 @@
                         </div>
                     </div>
                 </a>
+                @endif
 
                 <!-- Modul -->
                 <a href="{{ route('admin.modul') }}"
@@ -195,6 +213,33 @@
                     </div>
                 </a>
 
+                @php $actPresensi = request()->is('guru/presensi*'); @endphp
+                <!-- Presensi -->
+                <a href="{{ route('guru.presensi.index') }}"
+                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actPresensi ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                   data-active="{{ $actPresensi ? 'true' : 'false' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+                    <span class="truncate">Presensi</span>
+                </a>
+
+                @if($idTipe == 1)
+                @php $actKelas = request()->is('admin/kelas*'); $actQrAdmin = request()->is('admin/qr*'); @endphp
+                <!-- Kelas -->
+                <a href="{{ route('admin.kelas') }}"
+                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actKelas ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                   data-active="{{ $actKelas ? 'true' : 'false' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 100-8 4 4 0 000 8zm6 0a3 3 0 100-6M3 11a3 3 0 106 0"/></svg>
+                    <span class="truncate">Kelas</span>
+                </a>
+
+                <!-- QR Siswa -->
+                <a href="{{ route('admin.qr') }}"
+                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actQrAdmin ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                   data-active="{{ $actQrAdmin ? 'true' : 'false' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+                    <span class="truncate">QR Siswa</span>
+                </a>
+
                 <!-- Penghargaan / Achievement -->
                 <a href="{{ route('admin.achievement') }}"
                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminAchieve ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
@@ -224,6 +269,7 @@
                         </div>
                     </div>
                 </a>
+                @endif
 
                 @if($idTipe == 2)
                 {{-- Menu Profil hanya untuk Guru --}}
@@ -315,25 +361,50 @@
         </nav>
     </div>
 
-    <!-- Bottom Section (User Info & Logout) -->
-    <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
-        <div class="flex items-center gap-3 overflow-hidden">
-            <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0">
-                {{ strtoupper(substr($user->nama ?? 'U', 0, 1)) }}
-            </div>
-            <div class="truncate">
-                <h4 class="text-sm font-semibold text-gray-900 leading-tight truncate">{{ $user->nama ?? 'User' }}</h4>
-                <p class="text-xs text-gray-400 capitalize truncate">{{ $role }}</p>
-            </div>
+    <!-- Bottom Section: Direct Sidebar Pixel Snow Scene + User Info & Logout -->
+    <div class="mt-auto space-y-3">
+        <!-- Direct Edge-to-Edge Pixel Snow Scene (Tanpa Card, Tanpa Tombol/Text, 1x Putar saat Diklik) -->
+        <div class="relative -mx-4 overflow-hidden h-52 sm:h-56 cursor-pointer select-none group bg-transparent transition-transform duration-150 active:scale-[0.98]"
+             id="sidebarSnowWidget"
+             role="button"
+             tabindex="0"
+             title="Klik untuk memutar animasi salju"
+             aria-label="Animasi Salju Sidebar">
+
+            <!-- 1. Gambar Diam / Normal (WEBP) - Skala diperbesar 110% agar melebihi batas sidebar namun tetap terpotong rapih -->
+            <img id="sidebarSnowStatic"
+                 src="{{ asset('assets/background/sidebar/sideSnow.webp') }}"
+                 alt="Pemandangan Salju Sidebar"
+                 class="sidebar-snow-pixel-img absolute inset-0 h-full w-full object-cover object-bottom scale-110 transition-opacity duration-200">
+
+            <!-- 2. Animasi Bergerak (GIF) - Berputar 1 kali saat diklik -->
+            <img id="sidebarSnowAnim"
+                 src="{{ asset('assets/background/sidebar/sideSnow.gif') }}"
+                 data-src="{{ asset('assets/background/sidebar/sideSnow.gif') }}"
+                 alt="Animasi Salju Sidebar Bergerak"
+                 class="sidebar-snow-pixel-img absolute inset-0 h-full w-full object-cover object-bottom scale-110 opacity-0 pointer-events-none transition-opacity duration-200">
         </div>
-        <form action="{{ route('logout') }}" method="POST" class="shrink-0">
-            @csrf
-            <button type="submit" class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition" title="Logout">
+
+        <!-- User Info & Logout Card -->
+        <div class="pt-1 flex items-center justify-between">
+            <div class="flex items-center gap-3 overflow-hidden">
+                <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0">
+                    {{ strtoupper(substr($user->nama ?? 'U', 0, 1)) }}
+                </div>
+                <div class="truncate">
+                    <h4 class="text-sm font-semibold text-gray-900 leading-tight truncate">{{ $user->nama ?? 'User' }}</h4>
+                    <p class="text-xs text-gray-400 capitalize truncate">{{ $role }}</p>
+                </div>
+            </div>
+            <!-- Tombol Logout → buka modal konfirmasi -->
+            <button type="button" id="logoutTrigger"
+                    class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition shrink-0"
+                    title="Keluar" onclick="openLogoutModal()">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                 </svg>
             </button>
-        </form>
+        </div>
     </div>
 </aside>
 
@@ -392,10 +463,99 @@
             });
         }
 
+        // Interaktivitas Widget Pixel Snow Sidebar (Putar lonceng natal & animasi salju 1 kali saat diklik)
+        function initSidebarSnowInteraction() {
+            var widget = document.getElementById('sidebarSnowWidget');
+            var staticImg = document.getElementById('sidebarSnowStatic');
+            var animImg = document.getElementById('sidebarSnowAnim');
+
+            if (!widget || !staticImg || !animImg) return;
+
+            var SOUND_FILE = "{{ asset('assets/sounds/widgets/jingleSnowSound.wav') }}";
+            var currentAudio = null;
+            var stopTimer = null;
+
+            function stopAnimation() {
+                if (stopTimer) {
+                    clearTimeout(stopTimer);
+                    stopTimer = null;
+                }
+                animImg.classList.remove('opacity-100');
+                animImg.classList.add('opacity-0');
+                staticImg.classList.remove('opacity-0');
+            }
+
+            function playOnce() {
+                // Hentikan audio sebelumnya jika ada yang sedang berbunyi agar sinkron dari awal
+                if (currentAudio) {
+                    try {
+                        currentAudio.pause();
+                        currentAudio.currentTime = 0;
+                    } catch (e) {}
+                }
+                if (stopTimer) {
+                    clearTimeout(stopTimer);
+                    stopTimer = null;
+                }
+
+                // Mulai animasi GIF dari frame pertama (refresh timestamp)
+                var baseSrc = animImg.getAttribute('data-src') || animImg.src;
+                var cleanSrc = baseSrc.split('?')[0];
+                animImg.src = cleanSrc + '?t=' + Date.now();
+
+                // Tampilkan GIF, sembunyikan gambar diam
+                staticImg.classList.add('opacity-0');
+                animImg.classList.remove('opacity-0');
+                animImg.classList.add('opacity-100');
+
+                // Putar suara lonceng jingle (jingleSnowSound.wav)
+                try {
+                    var audio = new Audio(SOUND_FILE);
+                    audio.volume = 0.85;
+                    currentAudio = audio;
+
+                    audio.onended = function() {
+                        stopAnimation();
+                    };
+
+                    audio.onerror = function() {
+                        stopTimer = setTimeout(stopAnimation, 3000);
+                    };
+
+                    var playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(function() {
+                            stopTimer = setTimeout(stopAnimation, 3000);
+                        });
+                    }
+                } catch (e) {
+                    stopTimer = setTimeout(stopAnimation, 3000);
+                }
+
+                // Fallback batas waktu maksimal 7 detik sesuai durasi file WAV ~6.2 detik
+                stopTimer = setTimeout(stopAnimation, 7000);
+            }
+
+            widget.addEventListener('click', function() {
+                playOnce();
+            });
+
+            widget.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    playOnce();
+                }
+            });
+        }
+
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initResponsiveSidebar);
+            document.addEventListener('DOMContentLoaded', function() {
+                initResponsiveSidebar();
+                initSidebarSnowInteraction();
+            });
         } else {
             initResponsiveSidebar();
+            initSidebarSnowInteraction();
         }
     })();
 </script>

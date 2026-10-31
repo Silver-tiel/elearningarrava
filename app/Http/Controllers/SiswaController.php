@@ -13,6 +13,10 @@ use App\Models\Achievement;
 use App\Models\Quiz;
 use App\Models\TingkatQuiz;
 use App\Models\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -361,7 +365,7 @@ class SiswaController extends Controller
 
         $user = Auth::user();
 
-        $query = Quiz::published()->with([
+        $query = Quiz::published()->belumKadaluarsa()->with([
             'tipeQuiz',
             'tingkatQuiz',
             'jenjang',
@@ -669,6 +673,28 @@ class SiswaController extends Controller
                 return redirect()->route('siswa.quiz')->withErrors([
                     'quiz' => 'Waktu pengerjaan kuis sudah habis.',
                 ]);
+            }
+        }
+
+        // Pada mode biasa (tipe normal), jika bukan auto-submit karena waktu habis,
+        // seluruh soal wajib dijawab sebelum dapat mengumpulkan kuis.
+        if ($quiz->mode_pengerjaan === 'biasa' && !$request->boolean('is_timeout')) {
+            $nomorBelumDijawab = [];
+            foreach ($quiz->soal->values() as $idx => $s) {
+                $jawab = $jawabanSiswa[$s->id_soal] ?? null;
+                if ($jawab === null || (is_string($jawab) && trim($jawab) === '')) {
+                    $nomorBelumDijawab[] = $idx + 1;
+                }
+            }
+
+            if (!empty($nomorBelumDijawab)) {
+                $pesanNomor = count($nomorBelumDijawab) === 1
+                    ? "nomor {$nomorBelumDijawab[0]}"
+                    : "nomor " . implode(', ', array_slice($nomorBelumDijawab, 0, -1)) . " dan " . end($nomorBelumDijawab);
+
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['quiz' => "Jawaban belum lengkap! Soal {$pesanNomor} belum dijawab. Harap jawab semua soal sebelum mengumpulkan kuis."]);
             }
         }
 
@@ -1314,13 +1340,26 @@ class SiswaController extends Controller
             ->take(6)
             ->get();
 
+        $qrSvg = null;
+        $kelasList = collect();
+        if (\Illuminate\Support\Facades\Schema::hasColumn('user', 'qr_token')) {
+            $renderer = new ImageRenderer(new RendererStyle(280, 1), new SvgImageBackEnd());
+            $qrSvg = (new Writer($renderer))->writeString($user->qrPayload());
+            $qrSvg = preg_replace('/^<\?xml.*?\?>\s*/s', '', $qrSvg);
+            if (\Illuminate\Support\Facades\Schema::hasTable('kelas_siswa')) {
+                $kelasList = $user->kelasDiikuti()->orderBy('nama')->pluck('nama');
+            }
+        }
+
         return view('siswa.profil_siswa', compact(
             'user',
             'jenjangs',
             'scoreSummary',
             'scoreTrend',
             'quizResults',
-            'achievements'
+            'achievements',
+            'qrSvg',
+            'kelasList'
         ));
     }
 

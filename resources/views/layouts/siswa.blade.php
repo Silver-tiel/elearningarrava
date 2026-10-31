@@ -59,6 +59,7 @@
     </div>
 
     @include('components.hover-effects')
+    @include('components.logout-modal')
     @stack('scripts')
 </body>
 </html>

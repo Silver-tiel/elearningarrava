@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\HasilQuizModul;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
@@ -27,7 +28,16 @@ class QuizController extends Controller
             'sort' => ['nullable', 'in:terbaru,terlama'],
         ]);
 
+        if (auth()->check()) {
+            Gate::authorize('viewAny', Quiz::class);
+        }
+
         $query = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang'])->withCount('soal');
+
+        // Guru hanya melihat quiz miliknya sendiri; admin melihat semua.
+        if ($request->user() && $request->user()->isGuru()) {
+            $query->where('id_pembuat', $request->user()->id_user);
+        }
 
         if (!empty($filters['jenjang'])) {
             $query->where('id_jenjang', $filters['jenjang']);
@@ -70,6 +80,10 @@ class QuizController extends Controller
     // Menampilkan form untuk menambah kuis baru (bergaya Kahoot).
     public function create()
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Quiz::class);
+        }
+
         $jenjangList = Jenjang::all();
         $tingkatQuizList = \App\Models\TingkatQuiz::all();
         $questions = $this->questionEditorState(old('soal', []));
@@ -79,6 +93,9 @@ class QuizController extends Controller
     public function edit($id)
     {
         $quiz = Quiz::with('soal.pilihanSoal')->where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
+        if (auth()->check()) {
+            Gate::authorize('update', $quiz);
+        }
         $jenjangList = Jenjang::all();
         $tingkatQuizList = \App\Models\TingkatQuiz::all();
         $savedQuestions = $quiz->soal->map(function (Soal $soal) {
@@ -119,6 +136,10 @@ class QuizController extends Controller
     // Menyimpan kuis baru beserta soal dan pilihan jawaban ke database.
     public function store(Request $request)
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Quiz::class);
+        }
+
         $isDraft = $request->input('action_type') === 'draft';
 
         if ($isDraft) {
@@ -257,6 +278,9 @@ class QuizController extends Controller
     public function update(Request $request, $id)
     {
         $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
+        if (auth()->check()) {
+            Gate::authorize('update', $quiz);
+        }
         $isDraft = $request->input('action_type') === 'draft';
 
         if ($isDraft) {
@@ -395,6 +419,9 @@ class QuizController extends Controller
     public function destroy($id)
     {
         $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
+        if (auth()->check()) {
+            Gate::authorize('delete', $quiz);
+        }
 
         DB::transaction(function () use ($quiz) {
             $oldSoalList = $quiz->soal()->get();
@@ -476,19 +503,22 @@ class QuizController extends Controller
         $seenQuestions = [];
 
         foreach ($questions as $index => $question) {
+            $nomorSoal = $index + 1;
             $pertanyaanRaw = trim((string) ($question['pertanyaan'] ?? ''));
             $pertanyaanKey = mb_strtolower($pertanyaanRaw);
 
             if ($pertanyaanKey !== '') {
                 if (in_array($pertanyaanKey, $seenQuestions, true)) {
                     if (!$isDraft) {
-                        $errors["soal.$index.pertanyaan"] = 'Pertanyaan tidak boleh sama dengan soal lain dalam quiz ini.';
+                        $errors["soal.$index.pertanyaan"] = "Soal #{$nomorSoal}: Pertanyaan tidak boleh sama dengan soal lain dalam quiz ini.";
                     }
                 } else {
                     $seenQuestions[] = $pertanyaanKey;
                 }
             } elseif ($isDraft) {
-                $pertanyaanRaw = '(Draf Soal #' . ($index + 1) . ')';
+                $pertanyaanRaw = '(Draf Soal #' . $nomorSoal . ')';
+            } else {
+                $errors["soal.$index.pertanyaan"] = "Soal #{$nomorSoal}: Teks pertanyaan wajib diisi.";
             }
 
             $type = $question['jenis_soal'] ?? 'kuis';
@@ -499,7 +529,7 @@ class QuizController extends Controller
             if ($type === 'isian_singkat') {
                 $answer = trim($question['jawaban_singkat'] ?? '');
                 if ($answer === '' && !$isDraft) {
-                    $errors["soal.$index.jawaban_singkat"] = 'Kunci jawaban isian singkat wajib diisi.';
+                    $errors["soal.$index.jawaban_singkat"] = "Soal #{$nomorSoal}: Kunci jawaban isian singkat wajib diisi.";
                 }
                 $idJenisSoal = 2;
             } elseif ($type === 'true_false') {
@@ -512,7 +542,7 @@ class QuizController extends Controller
                 }
 
                 if (count($correctIndexes) !== 1 && !$isDraft) {
-                    $errors["soal.$index.pilihan"] = 'Pilih tepat satu jawaban benar untuk soal Benar/Salah.';
+                    $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Pilih tepat satu jawaban benar untuk soal Benar/Salah.";
                 }
 
                 $choices = [
@@ -533,7 +563,7 @@ class QuizController extends Controller
 
                     if ($text === '') {
                         if ($isCorrect && !$isDraft) {
-                            $errors["soal.$index.pilihan"] = 'Jawaban benar tidak boleh menunjuk pilihan kosong.';
+                            $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Jawaban benar tidak boleh menunjuk pilihan kosong.";
                         }
                         if (!$isDraft) {
                             continue;
@@ -541,13 +571,13 @@ class QuizController extends Controller
                     }
 
                     if (in_array($label, $seenLabels, true) && !$isDraft) {
-                        $errors["soal.$index.pilihan"] = 'Label pilihan jawaban tidak boleh berulang.';
+                        $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Label pilihan jawaban tidak boleh berulang.";
                     }
                     $seenLabels[] = $label;
 
                     $textKey = mb_strtolower($text);
                     if ($textKey !== '' && in_array($textKey, $seenTexts, true) && !$isDraft) {
-                        $errors["soal.$index.pilihan"] = 'Teks pilihan jawaban tidak boleh sama dalam satu soal.';
+                        $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Teks pilihan jawaban tidak boleh sama dalam satu soal.";
                     }
                     if ($textKey !== '') {
                         $seenTexts[] = $textKey;
@@ -562,10 +592,10 @@ class QuizController extends Controller
                 if (!$isDraft) {
                     $correctCount = count(array_filter($choices, fn (array $choice): bool => $choice['is_correct']));
                     if (count($choices) < 2) {
-                        $errors["soal.$index.pilihan"] = 'Soal pilihan ganda wajib memiliki minimal dua pilihan terisi.';
+                        $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Soal pilihan ganda wajib memiliki minimal dua pilihan terisi.";
                     }
                     if ($correctCount !== 1) {
-                        $errors["soal.$index.pilihan"] = 'Pilih tepat satu jawaban benar dari pilihan yang terisi.';
+                        $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Pilih tepat satu jawaban benar dari pilihan yang terisi.";
                     }
                 } else {
                     if (empty($choices)) {

@@ -2,6 +2,29 @@
 
 @section('title', 'Profil Pengguna - Arrava')
 
+@push('styles')
+<style>
+    #qr-svg svg { width: 100%; height: auto; display: block; }
+    @media print {
+        body * { visibility: hidden !important; }
+        #kartu-qr, #kartu-qr * { visibility: visible !important; }
+        #kartu-qr {
+            position: absolute;
+            left: 50% !important;
+            top: 20px !important;
+            transform: translateX(-50%) !important;
+            width: 90mm !important;
+            box-shadow: none !important;
+            border: 1px solid #94a3b8 !important;
+            background: #ffffff !important;
+            border-radius: 16px !important;
+            padding: 16px !important;
+        }
+        .no-print { display: none !important; }
+    }
+</style>
+@endpush
+
 @section('header')
     <div class="flex items-center justify-between gap-4">
         <h1 class="text-lg font-bold text-slate-800">Profil Pengguna</h1>
@@ -125,6 +148,80 @@
                                 <dd class="mt-1 text-sm font-medium text-slate-700">{{ $user->nomor_hp ?: 'Belum diisi' }}</dd>
                             </div>
                         </dl>
+                    </section>
+
+                    <!-- Kartu Presensi QR Siswa -->
+                    <section id="kartu-qr" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 scroll-mt-6">
+                        <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-600">Presensi Siswa</span>
+                                    <span class="text-xs text-slate-400">Bimbel Arrava</span>
+                                </div>
+                                <h2 class="mt-1 text-base font-bold text-slate-900">QR Presensi Saya</h2>
+                                <p class="mt-0.5 text-xs text-slate-500">Tunjukkan kode QR ini kepada guru saat absensi kelas.</p>
+                            </div>
+                            <div class="no-print hidden sm:flex items-center gap-2 shrink-0">
+                                <button id="btn-unduh-qr" type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition cursor-pointer">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    <span>Unduh PNG</span>
+                                </button>
+                                <button id="btn-cetak-qr" type="button" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                    <span>Cetak</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row items-center gap-6 rounded-2xl bg-gradient-to-b from-slate-50/80 to-white p-5 border border-slate-100">
+                            <div class="w-full max-w-[200px] shrink-0 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-center">
+                                @if(!empty($qrSvg))
+                                    <div id="qr-svg" class="w-full" role="img" aria-label="QR presensi milik {{ $user->nama }}">
+                                        {!! $qrSvg !!}
+                                    </div>
+                                @else
+                                    <div class="p-6 text-center text-xs text-slate-400">QR belum tersedia</div>
+                                @endif
+                            </div>
+                            <div class="flex-1 text-center sm:text-left min-w-0">
+                                <h3 class="text-base font-bold text-slate-900 truncate">{{ $user->nama }}</h3>
+                                <p class="text-xs text-slate-500 mt-0.5">NISN: <span class="font-medium text-slate-700">{{ $user->nisn ?: '—' }}</span></p>
+                                
+                                <div class="mt-3">
+                                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Kelas Terdaftar:</span>
+                                    @if(isset($kelasList) && $kelasList->isNotEmpty())
+                                        <div class="mt-1 flex flex-wrap gap-1.5 justify-center sm:justify-start">
+                                            @foreach($kelasList as $kelasNama)
+                                                <span class="inline-block rounded-lg bg-blue-50 border border-blue-200/60 px-2.5 py-1 text-xs font-semibold text-blue-700">{{ $kelasNama }}</span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-xs text-slate-400 italic mt-0.5">Belum terdaftar di kelas manapun.</p>
+                                    @endif
+                                </div>
+
+                                <div class="mt-4 flex items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-400">
+                                    <svg class="h-3.5 w-3.5 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    <span>QR token aman &amp; otomatis tersinkron</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="no-print mt-4 grid grid-cols-2 gap-2.5 sm:hidden">
+                            <button id="btn-unduh-qr-mobile" type="button" class="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition">
+                                <span>Unduh PNG</span>
+                            </button>
+                            <button id="btn-cetak-qr-mobile" type="button" class="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+                                <span>Cetak</span>
+                            </button>
+                        </div>
+                        <p id="pesan-unduh-qr" class="no-print mt-2 text-xs text-red-600 hidden" role="alert">Gagal membuat berkas gambar. Silakan gunakan tombol cetak.</p>
                     </section>
                 </div>
 
@@ -569,5 +666,66 @@
         });
 
         if (profileEditModal.dataset.openOnLoad === 'true') profileEditModal.showModal();
+
+        // Download & Print QR Presensi
+        (function () {
+            var namaFile = 'qr-presensi-{{ \Illuminate\Support\Str::slug($user->nama) ?: 'siswa' }}.png';
+
+            function cetakQr() {
+                window.print();
+            }
+
+            function unduhQr() {
+                var svg = document.querySelector('#qr-svg svg');
+                var pesan = document.getElementById('pesan-unduh-qr');
+                if (pesan) pesan.classList.add('hidden');
+                if (!svg) {
+                    if (pesan) pesan.classList.remove('hidden');
+                    return;
+                }
+
+                svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                var xml = new XMLSerializer().serializeToString(svg);
+                var img = new Image();
+                img.onload = function () {
+                    var ukuran = 900, pad = 50;
+                    var canvas = document.createElement('canvas');
+                    canvas.width = ukuran;
+                    canvas.height = ukuran;
+                    var ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, ukuran, ukuran);
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(img, pad, pad, ukuran - pad * 2, ukuran - pad * 2);
+                    canvas.toBlob(function (blob) {
+                        if (!blob) {
+                            if (pesan) pesan.classList.remove('hidden');
+                            return;
+                        }
+                        var a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = namaFile;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+                    }, 'image/png');
+                };
+                img.onerror = function () {
+                    if (pesan) pesan.classList.remove('hidden');
+                };
+                img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+            }
+
+            var btnCetak = document.getElementById('btn-cetak-qr');
+            var btnCetakMobile = document.getElementById('btn-cetak-qr-mobile');
+            var btnUnduh = document.getElementById('btn-unduh-qr');
+            var btnUnduhMobile = document.getElementById('btn-unduh-qr-mobile');
+
+            if (btnCetak) btnCetak.addEventListener('click', cetakQr);
+            if (btnCetakMobile) btnCetakMobile.addEventListener('click', cetakQr);
+            if (btnUnduh) btnUnduh.addEventListener('click', unduhQr);
+            if (btnUnduhMobile) btnUnduhMobile.addEventListener('click', unduhQr);
+        })();
     </script>
 @endpush

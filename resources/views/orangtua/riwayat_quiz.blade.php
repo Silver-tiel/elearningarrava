@@ -93,7 +93,7 @@
                 <span class="rounded-xl bg-emerald-50 p-2 text-emerald-600">✓</span>
             </div>
             <p class="mt-4 text-3xl font-bold text-emerald-600">
-                {{ $stats['quiz_lulus'] }}
+                {{ $stats['kuis_lulus'] }}
             </p>
             <p class="mt-1 text-xs text-slate-500">Quiz berhasil dilewati</p>
         </div>
@@ -104,7 +104,7 @@
                 <span class="rounded-xl bg-amber-50 p-2 text-amber-600">!</span>
             </div>
             <p class="mt-4 text-3xl font-bold text-amber-600">
-                {{ $stats['quiz_belum_lulus'] }}
+                {{ $stats['kuis_belum_lulus'] }}
             </p>
             <p class="mt-1 text-xs text-slate-500">Perlu ditinjau kembali</p>
         </div>
@@ -130,9 +130,9 @@
         </p>
     </div>
 
-    @if ($quizPerluPerhatian->isNotEmpty())
+    @if ($kuisPerluPerhatian->isNotEmpty())
         <div class="divide-y divide-slate-100">
-            @foreach ($quizPerluPerhatian as $quiz)
+            @foreach ($kuisPerluPerhatian as $quiz)
                 @php
                     $totalPoin = (float) ($quiz->total_poin ?? 0);
                     $nilai = $totalPoin > 0
