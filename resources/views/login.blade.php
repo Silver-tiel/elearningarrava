@@ -39,7 +39,20 @@
 }
 
 /* Latar belakang (gambar 1), 2 lapisan untuk efek berlapis */
-.bg  { inset: 0; background: var(--img-bg) center / cover no-repeat; }
+.bg  {
+  inset: 0;
+  background: var(--img-bg) center bottom / 100% auto no-repeat;
+}
+/* Ekstensi warna dasar di bawah gelombang piksel agar saat transisi naik tidak ada celah putih */
+.bg::after {
+  content: '';
+  position: absolute;
+  top: 99%;
+  left: -20%;
+  right: -20%;
+  height: 1200px;
+  background: #0e59e0;
+}
 .bg2 { opacity: .55; }
 
 /* Partikel mengambang (gambar 2), 2 lapisan untuk kedalaman */
@@ -176,7 +189,7 @@
   inset: 0;
   z-index: 4;
   background: #f4f7ff;
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
   padding: 30px 24px calc(24px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 -10px 30px rgba(10, 40, 120, .2);
   transform: translateY(100%);
@@ -186,6 +199,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+.home-panel::after {
+  content: '';
+  position: absolute;
+  top: 99%;
+  left: 0;
+  right: 0;
+  height: 600px;
+  background: #f4f7ff;
 }
 .grab { width: 44px; height: 5px; border-radius: 3px; background: #b9c8ee; position: absolute; top: 14px; left: 50%; transform: translateX(-50%); }
 .success-icon-wrap {
@@ -328,8 +350,8 @@
   /* ------------------ PENGATURAN ------------------ */
   var CFG = {
     duration: 1400,   // lama transisi (ms)
-    bgBack:   0.6,    // jarak latar belakang belakang naik (x tinggi layar)
-    bgFront:  1.2,    // jarak latar belakang depan naik
+    bgBack:   1.15,   // jarak latar belakang belakang naik (x tinggi layar agar naik sempurna)
+    bgFront:  1.30,   // jarak latar belakang depan naik
     drop:     1.1,    // jarak partikel turun (x tinggi layar)
 
     floats: [

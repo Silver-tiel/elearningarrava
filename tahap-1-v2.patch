@@ -1,0 +1,1060 @@
+diff -ruN a/app/Http/Controllers/ModulController.php b/app/Http/Controllers/ModulController.php
+--- a/app/Http/Controllers/ModulController.php	2026-10-28 06:42:02.947661286 +0000
++++ b/app/Http/Controllers/ModulController.php	2026-10-28 06:42:02.944279992 +0000
+@@ -302,13 +302,18 @@
+     // API: mengambil semua modul
+     public function apiIndex()
+     {
+-        $moduls = Modul::with([
++        $query = Modul::with([
+             'tipeModul',
+             'jenjang',
+             'quiz'
+-        ])
+-        ->latest()
+-        ->get();
++        ])->latest();
++
++        // Modul draf hanya untuk admin/guru.
++        if (!$this->penggunaStaf()) {
++            $query->published();
++        }
++
++        $moduls = $query->get();
+ 
+         return response()->json([
+             'success' => true,
+@@ -322,7 +327,8 @@
+     {
+         $modul = Modul::with(['tipeModul', 'jenjang', 'quiz'])->find($id);
+ 
+-        if (!$modul) {
++        // Modul draf dianggap tidak ada bagi siswa/orang tua.
++        if (!$modul || (!$this->penggunaStaf() && $modul->isDraft())) {
+             return response()->json([
+                 'success' => false,
+                 'message' => 'Modul tidak ditemukan.',
+@@ -340,9 +346,10 @@
+     public function apiStore(Request $request)
+     {
+         $request->validate([
+-            'judul_modul' => 'required|string|max:255',
+-            'id_tipemodul' => 'required|integer',
+-            'id_jenjang' => 'required|integer',
++            'judul_modul' => 'required|string|max:255|unique:modul,judul_modul',
++            'id_tipemodul' => 'required|integer|exists:tipemodul,id_tipemodul',
++            'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
++            'id_quiz' => 'nullable|integer|exists:quiz,id_quiz',
+             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
+             'file_link' => 'nullable|url',
+             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+@@ -397,9 +404,10 @@
+         }
+ 
+         $request->validate([
+-            'judul_modul' => 'required|string|max:255',
+-            'id_tipemodul' => 'required|integer',
+-            'id_jenjang' => 'required|integer',
++            'judul_modul' => 'required|string|max:255|unique:modul,judul_modul,' . $module->id_modul . ',id_modul',
++            'id_tipemodul' => 'required|integer|exists:tipemodul,id_tipemodul',
++            'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
++            'id_quiz' => 'nullable|integer|exists:quiz,id_quiz',
+             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
+             'file_link' => 'nullable|url',
+             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+@@ -430,7 +438,7 @@
+                 Storage::disk('public')->delete($module->foto_modul);
+             }
+             $foto = $request->file('foto_modul');
+-            $pathFoto = $module->store('modul/covers', 'public');
++            $pathFoto = $foto->store('modul/covers', 'public');
+         }
+ 
+         $module->update([
+@@ -477,4 +485,10 @@
+             'message' => 'Modul berhasil dihapus.',
+         ], 200);
+     }
+-}
+\ No newline at end of file
++
++    /** Admin (1) dan guru (2) boleh melihat modul draf. */
++    private function penggunaStaf(): bool
++    {
++        return in_array((int) auth()->user()?->id_tipeuser, [1, 2], true);
++    }
++}
+diff -ruN a/app/Http/Controllers/PendaftaranController.php b/app/Http/Controllers/PendaftaranController.php
+--- a/app/Http/Controllers/PendaftaranController.php	2026-10-28 06:42:02.955113938 +0000
++++ b/app/Http/Controllers/PendaftaranController.php	2026-10-28 06:42:02.951858180 +0000
+@@ -16,94 +16,67 @@
+     }
+ 
+     // Menyimpan data user baru ke database setelah validasi berhasil.
+-   public function UserBaru(Request $request)
+-{
+-   $validated = $request->validate(
+-    [
+-        'nama' => [
+-            'required',
+-            'string',
+-            'min:2',
+-            'max:255',
+-            'unique:user,nama',
+-            'regex:/^[a-zA-Z\s]+$/',
+-        ],
+-
+-        'email' => [
+-            'required',
+-            'email',
+-            'unique:user,email',
+-            'max:255',
+-        ],
+-
+-        'nisn' => [
+-            'required',
+-            'string',
+-            'min:10',
+-            'max:10',
+-            'regex:/^\d+$/',
+-            'unique:user,nisn',
+-        ],
+-
+-        'nomor_handphone' => [
+-            'required',
+-            'string',
+-            'min:10',
+-            'max:20',
+-            'regex:/^[0-9+\-\s]+$/',
+-        ],
+-
+-        'password' => [
+-            'required',
+-            'string',
+-            'min:8',
+-            'max:255',
+-            'confirmed',
+-        ],
+-
+-        'id_jenjang' => [
+-            'required',
+-            'exists:jenjang,id_jenjang',
+-        ],
+-    ],
+-    [
+-        'nisn.unique' => 'NISN sudah terdaftar. Silakan gunakan NISN lain.',
+-        'email.unique' => 'Email sudah terdaftar. Silakan gunakan email lain.',
+-
+-        'nisn.required' => 'NISN wajib diisi.',
+-        'nisn.min' => 'NISN harus terdiri dari 10 digit.',
+-        'nisn.max' => 'NISN harus terdiri dari 10 digit.',
+-        'nisn.regex' => 'NISN hanya boleh berisi angka.',
+-
+-        'nama.required' => 'Nama lengkap wajib diisi.',
+-        'email.required' => 'Alamat email wajib diisi.',
+-        'email.email' => 'Format alamat email tidak valid.',
+-
+-        'nomor_handphone.required' => 'Nomor handphone wajib diisi.',
+-        'nomor_handphone.min' => 'Nomor handphone minimal 10 digit/karakter.',
+-        'nomor_handphone.max' => 'Nomor handphone maksimal 20 digit/karakter.',
+-        'nomor_handphone.regex' => 'Format nomor handphone tidak valid.',
+-
+-        'password.required' => 'Kata sandi wajib diisi.',
+-        'password.min' => 'Kata sandi minimal 8 karakter.',
+-        'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+-
+-        'id_jenjang.required' => 'Jenjang pendidikan wajib dipilih.',
+-        'id_jenjang.exists' => 'Jenjang pendidikan yang dipilih tidak valid.',
+-    ]
+-);
+-
+-User::create([
+-    'nisn' => $validated['nisn'],
+-    'nama' => $validated['nama'],
+-    'email' => $validated['email'],
+-    'nomor_hp' => $validated['nomor_handphone'],
+-    'password' => Hash::make($validated['password']),
+-    'id_jenjang' => $validated['id_jenjang'],
+-    'id_tipeuser' => 3,
+-]);
++    public function UserBaru(Request $request)
++    {
++        $validated = $request->validate(
++            [
++                // Huruf (termasuk huruf bertanda seperti é), spasi, titik, apostrof, dan tanda hubung.
++                // Diterima: "Ma'ruf", "Siti Nur-Aini", "Dr. Budi". Nama kembar boleh (tidak unik).
++                'nama' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[\p{L}\s.\'’-]+$/u'],
++
++                'email' => ['required', 'email', 'max:255', 'unique:user,email'],
++
++                'nisn' => ['required', 'string', 'size:10', 'regex:/^\d+$/', 'unique:user,nisn'],
++
++                // Nama field HARUS sama dengan name="nomor_hp" di form dan kolom user.nomor_hp.
++                'nomor_hp' => ['required', 'string', 'min:10', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
++
++                'password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
++
++                'id_jenjang' => ['required', 'exists:jenjang,id_jenjang'],
++            ],
++            [
++                'nama.required' => 'Nama lengkap wajib diisi.',
++                'nama.min' => 'Nama minimal 2 karakter.',
++                'nama.max' => 'Nama maksimal 255 karakter.',
++                'nama.regex' => "Nama hanya boleh berisi huruf, spasi, titik, apostrof (') dan tanda hubung (-).",
++
++                'email.required' => 'Alamat email wajib diisi.',
++                'email.email' => 'Format alamat email tidak valid. Contoh: nama@email.com',
++                'email.max' => 'Alamat email maksimal 255 karakter.',
++                'email.unique' => 'Email sudah terdaftar. Silakan gunakan email lain atau masuk dengan akun yang sudah ada.',
++
++                'nisn.required' => 'NISN wajib diisi.',
++                'nisn.size' => 'NISN harus terdiri dari 10 digit.',
++                'nisn.regex' => 'NISN hanya boleh berisi angka.',
++                'nisn.unique' => 'NISN sudah terdaftar. Silakan gunakan NISN lain atau masuk dengan akun yang sudah ada.',
++
++                'nomor_hp.required' => 'Nomor handphone wajib diisi.',
++                'nomor_hp.min' => 'Nomor handphone minimal 10 digit.',
++                'nomor_hp.max' => 'Nomor handphone maksimal 20 karakter.',
++                'nomor_hp.regex' => 'Nomor handphone hanya boleh berisi angka, spasi, tanda + dan tanda -.',
++
++                'password.required' => 'Kata sandi wajib diisi.',
++                'password.min' => 'Kata sandi minimal 8 karakter.',
++                'password.max' => 'Kata sandi maksimal 255 karakter.',
++                'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
++
++                'id_jenjang.required' => 'Jenjang pendidikan wajib dipilih.',
++                'id_jenjang.exists' => 'Jenjang pendidikan yang dipilih tidak valid.',
++            ]
++        );
++
++        User::create([
++            'nisn' => $validated['nisn'],
++            'nama' => $validated['nama'],
++            'email' => $validated['email'],
++            'nomor_hp' => $validated['nomor_hp'],
++            'password' => Hash::make($validated['password']),
++            'id_jenjang' => $validated['id_jenjang'],
++            'id_tipeuser' => 3,
++        ]);
+ 
+-    return redirect('/login')
+-        ->with('success', 'Pendaftaran berhasil! Silakan login.');
+-}
++        return redirect('/login')
++            ->with('success', 'Pendaftaran berhasil! Silakan login.');
++    }
+ }
+diff -ruN a/app/Http/Middleware/RoleMiddleware.php b/app/Http/Middleware/RoleMiddleware.php
+--- a/app/Http/Middleware/RoleMiddleware.php	2026-10-28 06:42:02.961581007 +0000
++++ b/app/Http/Middleware/RoleMiddleware.php	2026-10-28 06:42:02.958351899 +0000
+@@ -22,6 +22,13 @@
+     public function handle(Request $request, Closure $next, ...$roles): Response
+     {
+         if (!auth()->check()) {
++            if ($this->mintaJson($request)) {
++                return response()->json([
++                    'success' => false,
++                    'message' => 'Silakan login terlebih dahulu.',
++                ], 401);
++            }
++
+             return redirect()->route('login');
+         }
+ 
+@@ -34,9 +41,22 @@
+         );
+ 
+         if (!in_array((int) $user->id_tipeuser, $allowedIds, true)) {
++            // Klien API (mis. aplikasi Flutter) menerima JSON, bukan halaman HTML.
++            if ($this->mintaJson($request)) {
++                return response()->json([
++                    'success' => false,
++                    'message' => 'Anda tidak memiliki izin untuk melakukan tindakan ini.',
++                ], 403);
++            }
++
+             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
+         }
+ 
+         return $next($request);
+     }
++
++    private function mintaJson(Request $request): bool
++    {
++        return $request->is('api/*') || $request->expectsJson();
++    }
+ }
+\ No newline at end of file
+diff -ruN a/app/Models/Quiz.php b/app/Models/Quiz.php
+--- a/app/Models/Quiz.php	2026-10-28 06:42:02.967915859 +0000
++++ b/app/Models/Quiz.php	2026-10-28 06:42:02.964823320 +0000
+@@ -34,6 +34,10 @@
+         'opsi_preview',
+     ];
+ 
++    // Token kuis adalah rahasia. Jangan ikut terkirim saat model diubah jadi JSON (mis. lewat API).
++    // Membaca $quiz->token di PHP/Blade tetap berfungsi seperti biasa.
++    protected $hidden = ['token'];
++
+     public function isPreviewLengkap(): bool
+     {
+         return ($this->opsi_preview ?? 'lengkap') === 'lengkap';
+diff -ruN a/bootstrap/app.php b/bootstrap/app.php
+--- a/bootstrap/app.php	2026-10-28 06:42:02.974549201 +0000
++++ b/bootstrap/app.php	2026-10-28 06:42:02.971112339 +0000
+@@ -1,6 +1,7 @@
+ <?php
+ 
+ use Illuminate\Foundation\Application;
++use Illuminate\Http\Request;
+ use Illuminate\Foundation\Configuration\Exceptions;
+ use Illuminate\Foundation\Configuration\Middleware;
+ use App\Http\Middleware\EnsureStudentActive;
+@@ -20,6 +21,10 @@
+         ]);
+     })
+     ->withExceptions(function (Exceptions $exceptions): void {
+-        //
++        // Semua error di /api/* selalu dibalas JSON (401, 403, 404, 422, 500),
++        // walau klien lupa mengirim header "Accept: application/json".
++        $exceptions->shouldRenderJsonWhen(function (Request $request, Throwable $e) {
++            return $request->is('api/*') || $request->expectsJson();
++        });
+     })
+     ->create();
+\ No newline at end of file
+diff -ruN a/resources/views/pendaftaran.blade.php b/resources/views/pendaftaran.blade.php
+--- a/resources/views/pendaftaran.blade.php	2026-10-28 06:42:02.980759418 +0000
++++ b/resources/views/pendaftaran.blade.php	2026-10-28 06:42:02.977509304 +0000
+@@ -52,7 +52,7 @@
+ 
+             <div>
+                 <label for="nisn" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">NISN</label>
+-                <input id="nisn" name="nisn" type="tel" value="{{ old('nisn') }}" placeholder="Contoh: 0012345678"
++                <input id="nisn" name="nisn" type="tel" inputmode="numeric" maxlength="10" autocomplete="off" required value="{{ old('nisn') }}" placeholder="Contoh: 0012345678"
+                     class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
+                 @error('nisn')
+                 <p class="mt-1 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>@enderror
+@@ -60,9 +60,10 @@
+ 
+             <div>
+                 <label for="nomor_hp" class="mb-1.5 block text-[13px] font-bold text-[#4C5E78]">Nomor Handphone</label>
+-                <input id="nomor_hp" name="nomor_hp" type="tel" value="{{ old('nomor_handphone') }}"
++                <input id="nomor_hp" name="nomor_hp" type="tel" inputmode="tel" autocomplete="tel" required value="{{ old('nomor_hp') }}"
+                     placeholder="Contoh: 08123456789"
+                     class="h-11 w-full rounded-[10px] border border-[#DCE5F1] px-3.5 text-[13px] outline-none placeholder:text-[#96A7C0] focus:border-[#75A7F8] focus:ring-4 focus:ring-[#3F82F6]/10">
++                @error('nomor_hp')<p class="mt-1 text-[11px] font-semibold text-[#C52D2D]">{{ $message }}</p>@enderror
+             </div>
+ 
+             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+diff -ruN a/routes/api.php b/routes/api.php
+--- a/routes/api.php	2026-10-28 06:42:02.987151609 +0000
++++ b/routes/api.php	2026-10-28 06:42:02.983935748 +0000
+@@ -14,26 +14,33 @@
+ 
+     Route::post('/logout', [AuthController::class, 'logout']);
+ 
++    // Membaca modul: semua pengguna yang sudah login (siswa hanya melihat modul yang sudah terbit).
+     Route::get('/modules', [ModulController::class, 'apiIndex']);
+ 
+-    Route::post('/modules', [ModulController::class, 'apiStore']);
+-
+     Route::get('/modules/{id}', [ModulController::class, 'apiShow']);
+ 
+-    Route::put('/modules/{id}', [ModulController::class, 'apiUpdate']);
+-
+-    Route::delete('/modules/{id}', [ModulController::class, 'apiDestroy']);
+-
+-    // Quiz
++    // Quiz (baca)
++    // CATATAN: method api* di QuizController belum dibuat, jadi route ini masih menghasilkan error 500.
++    // Saat nanti diimplementasikan, JANGAN mengirim kunci jawaban atau token ke siswa.
+     Route::get('/quizzes', [QuizController::class, 'apiIndex']);
+-    
+-    Route::post('/quizzes', [QuizController::class, 'apiStore']);
+-    
++
+     Route::get('/quizzes/{id}', [QuizController::class, 'apiShow']);
+-    
+-    Route::put('/quizzes/{id}', [QuizController::class, 'apiUpdate']);
+-    
+-    Route::delete('/quizzes/{id}', [QuizController::class, 'apiDestroy']);
+-    
++
+     Route::get('/quizzes/questions/bank', [QuizController::class, 'apiQuestionBank']);
+-    });
+\ No newline at end of file
++
++    // Mengubah modul dan kuis: HANYA admin dan guru.
++    // Siswa/orang tua yang memegang token akan mendapat 403.
++    Route::middleware('role:admin,guru')->group(function () {
++        Route::post('/modules', [ModulController::class, 'apiStore']);
++
++        Route::put('/modules/{id}', [ModulController::class, 'apiUpdate']);
++
++        Route::delete('/modules/{id}', [ModulController::class, 'apiDestroy']);
++
++        Route::post('/quizzes', [QuizController::class, 'apiStore']);
++
++        Route::put('/quizzes/{id}', [QuizController::class, 'apiUpdate']);
++
++        Route::delete('/quizzes/{id}', [QuizController::class, 'apiDestroy']);
++    });
++});
+diff -ruN a/routes/web.php b/routes/web.php
+--- a/routes/web.php	2026-10-28 06:42:02.993510570 +0000
++++ b/routes/web.php	2026-10-28 06:42:02.990450397 +0000
+@@ -25,13 +25,13 @@
+ 
+ // Halaman pendaftaran.
+ Route::get('/pendaftaran', function () {
+-    $jenjang = App\Models\jenjang::all();
++    $jenjang = App\Models\Jenjang::all();
+     return view('pendaftaran', ['jenjang' => $jenjang]);
+ })->name('pendaftaran');
+ 
+ // Beranda diarahkan ke pendaftaran seperti project awal.
+ Route::get('/', function () {
+-    $jenjang = App\Models\jenjang::all();
++    $jenjang = App\Models\Jenjang::all();
+     return view('pendaftaran', ['jenjang' => $jenjang]);
+ });
+ 
+@@ -94,12 +94,7 @@
+ 
+ // Admin dashboard.
+ Route::get('/admin', function () {
+-    $user = Auth::user();
+-    // Siswa tidak boleh akses halaman admin
+-    if ($user && $user->id_tipeuser == 3) {
+-        return redirect()->route('siswa.dashboard');
+-    }
+-
++    // Akses dibatasi lewat middleware role:admin,guru (siswa & orang tua mendapat 403).
+     return view('admin.admin', [
+         'siswaCount'       => User::where('id_tipeuser', 3)->count(),
+         'guruCount'        => User::where('id_tipeuser', 2)->count(),
+@@ -109,7 +104,7 @@
+         'siswaTerbaru'     => User::where('id_tipeuser', 3)->latest()->take(5)->get(),
+         'modulTerbaru'     => Modul::with(['jenjang'])->latest()->take(5)->get(),
+     ]);
+-})->middleware(['auth', 'active.student'])->name('admin');
++})->middleware(['auth', 'active.student', 'role:admin,guru'])->name('admin');
+ 
+ // Siswa.
+ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'active.student', 'role:siswa'])->group(function () {
+diff -ruN a/tests/Feature/AdminAreaAccessTest.php b/tests/Feature/AdminAreaAccessTest.php
+--- a/tests/Feature/AdminAreaAccessTest.php	1970-01-01 00:00:00.000000000 +0000
++++ b/tests/Feature/AdminAreaAccessTest.php	2026-10-28 06:42:02.996778420 +0000
+@@ -0,0 +1,106 @@
++<?php
++
++namespace Tests\Feature;
++
++use App\Models\User;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\Schema;
++use Tests\TestCase;
++
++/**
++ * M4: dasbor /admin hanya untuk admin dan guru.
++ * Regresi: dulu hanya siswa yang diblokir, sehingga orang tua bisa melihat
++ * nama dan email siswa lain di dasbor admin.
++ */
++class AdminAreaAccessTest extends TestCase
++{
++    protected function setUp(): void
++    {
++        parent::setUp();
++
++        Schema::create('user', function (Blueprint $table) {
++            $table->increments('id_user');
++            $table->string('nama');
++            $table->string('email')->unique();
++            $table->string('password');
++            $table->unsignedInteger('id_tipeuser')->default(1);
++            $table->integer('total_poin')->default(0);
++            $table->string('status_akun')->default('Aktif');
++            $table->timestamps();
++        });
++
++        Schema::create('modul', function (Blueprint $table) {
++            $table->increments('id_modul');
++            $table->string('judul_modul');
++            $table->string('file_materi')->nullable();
++            $table->string('tipe_file')->nullable();
++            $table->unsignedInteger('id_tipemodul')->nullable();
++            $table->unsignedInteger('id_jenjang')->nullable();
++            $table->unsignedInteger('id_quiz')->nullable();
++            $table->string('progressModul')->nullable();
++            $table->string('foto_modul')->nullable();
++            $table->timestamps();
++        });
++
++        Schema::create('quiz', function (Blueprint $table) {
++            $table->increments('id_quiz');
++            $table->string('judul')->nullable();
++        });
++
++        Schema::create('achievements', function (Blueprint $table) {
++            $table->increments('id_achievement');
++            $table->string('nama_achivement', 255);
++            $table->unsignedInteger('minimal_poin_achivement')->default(0);
++            $table->string('gambar_achivement', 255)->nullable();
++            $table->text('deskripsi')->nullable();
++            $table->boolean('is_active')->default(true);
++            $table->timestamps();
++        });
++    }
++
++    private function buatUser(int $tipe, string $email): User
++    {
++        return User::create([
++            'nama' => "Pengguna tipe {$tipe}",
++            'email' => $email,
++            'password' => bcrypt('password'),
++            'id_tipeuser' => $tipe,
++        ]);
++    }
++
++    public function test_tamu_diarahkan_ke_halaman_login(): void
++    {
++        $this->get('/admin')->assertRedirect('/login');
++    }
++
++    public function test_siswa_tidak_boleh_membuka_dasbor_admin(): void
++    {
++        $this->actingAs($this->buatUser(3, 'siswa@example.com'))
++            ->get('/admin')
++            ->assertForbidden();
++    }
++
++    public function test_orang_tua_tidak_boleh_membuka_dasbor_admin_dan_tidak_melihat_data_siswa(): void
++    {
++        $this->buatUser(3, 'rahasia.anak.lain@example.com');
++
++        $this->actingAs($this->buatUser(4, 'orangtua@example.com'))
++            ->get('/admin')
++            ->assertForbidden()
++            ->assertDontSee('rahasia.anak.lain@example.com');
++    }
++
++    public function test_admin_boleh_membuka_dasbor_admin(): void
++    {
++        $this->actingAs($this->buatUser(1, 'admin@example.com'))
++            ->get('/admin')
++            ->assertOk();
++    }
++
++    public function test_guru_boleh_membuka_dasbor_admin(): void
++    {
++        $this->actingAs($this->buatUser(2, 'guru@example.com'))
++            ->get('/admin')
++            ->assertOk();
++    }
++}
+diff -ruN a/tests/Feature/ModulApiAuthorizationTest.php b/tests/Feature/ModulApiAuthorizationTest.php
+--- a/tests/Feature/ModulApiAuthorizationTest.php	1970-01-01 00:00:00.000000000 +0000
++++ b/tests/Feature/ModulApiAuthorizationTest.php	2026-10-28 06:42:03.000078125 +0000
+@@ -0,0 +1,259 @@
++<?php
++
++namespace Tests\Feature;
++
++use App\Models\Modul;
++use App\Models\Quiz;
++use App\Models\User;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++use Laravel\Sanctum\Sanctum;
++use Tests\TestCase;
++
++/**
++ * M2: API modul.
++ *  - Hanya admin/guru yang boleh menambah, mengubah, dan menghapus modul.
++ *  - Semua pengguna login boleh MEMBACA modul, tetapi siswa tidak boleh melihat modul draf
++ *    dan token kuis tidak boleh ikut terkirim.
++ */
++class ModulApiAuthorizationTest extends TestCase
++{
++    private int $urut = 0;
++
++    protected function setUp(): void
++    {
++        parent::setUp();
++
++        Schema::create('user', function (Blueprint $table) {
++            $table->increments('id_user');
++            $table->string('nama');
++            $table->string('email')->unique();
++            $table->string('password');
++            $table->unsignedInteger('id_tipeuser')->default(1);
++            $table->integer('total_poin')->default(0);
++            $table->string('status_akun')->default('Aktif');
++            $table->timestamps();
++        });
++
++        Schema::create('jenjang', function (Blueprint $table) {
++            $table->increments('id_jenjang');
++            $table->string('nama_tipe');
++        });
++
++        Schema::create('tipemodul', function (Blueprint $table) {
++            $table->increments('id_tipemodul');
++            $table->string('nama_tipe');
++        });
++
++        Schema::create('quiz', function (Blueprint $table) {
++            $table->increments('id_quiz');
++            $table->string('judul')->nullable();
++            $table->unsignedInteger('id_jenjang')->nullable();
++            $table->string('token')->nullable();
++        });
++
++        Schema::create('modul', function (Blueprint $table) {
++            $table->increments('id_modul');
++            $table->string('judul_modul');
++            $table->string('file_materi')->nullable();
++            $table->string('tipe_file')->nullable();
++            $table->unsignedInteger('id_tipemodul');
++            $table->unsignedInteger('id_jenjang');
++            $table->unsignedInteger('id_quiz')->nullable();
++            $table->string('progressModul')->nullable();
++            $table->string('foto_modul')->nullable();
++            $table->timestamps();
++        });
++
++        DB::table('jenjang')->insert(['nama_tipe' => 'SMA']);
++        DB::table('tipemodul')->insert(['nama_tipe' => 'Video']);
++    }
++
++    private function buatUser(int $tipe): User
++    {
++        $this->urut++;
++
++        return User::create([
++            'nama' => "Pengguna {$this->urut}",
++            'email' => "pengguna{$this->urut}@example.com",
++            'password' => bcrypt('password'),
++            'id_tipeuser' => $tipe,
++        ]);
++    }
++
++    private function dataModul(array $ganti = []): array
++    {
++        return array_merge([
++            'judul_modul' => 'Pecahan Dasar',
++            'id_tipemodul' => 1,
++            'id_jenjang' => 1,
++            'file_link' => 'https://www.youtube.com/watch?v=abc123',
++        ], $ganti);
++    }
++
++    private function buatModul(string $judul = 'Modul Awal', string $status = 'Tersedia', ?int $idQuiz = null): Modul
++    {
++        return Modul::create([
++            'judul_modul' => $judul,
++            'file_materi' => 'https://www.youtube.com/watch?v=awal',
++            'tipe_file' => 'link',
++            'id_tipemodul' => 1,
++            'id_jenjang' => 1,
++            'id_quiz' => $idQuiz,
++            'progressModul' => $status,
++        ]);
++    }
++
++    // ---------------------------------------------------------------- ditolak
++
++    public function test_siswa_tidak_boleh_menambah_modul(): void
++    {
++        Sanctum::actingAs($this->buatUser(3));
++
++        $this->postJson('/api/modules', $this->dataModul())
++            ->assertForbidden()
++            ->assertJson(['success' => false]);
++
++        $this->assertDatabaseCount('modul', 0);
++    }
++
++    public function test_orang_tua_tidak_boleh_mengubah_modul(): void
++    {
++        $modul = $this->buatModul();
++        Sanctum::actingAs($this->buatUser(4));
++
++        $this->putJson("/api/modules/{$modul->id_modul}", $this->dataModul(['judul_modul' => 'Diretas']))
++            ->assertForbidden();
++
++        $this->assertDatabaseHas('modul', ['id_modul' => $modul->id_modul, 'judul_modul' => 'Modul Awal']);
++    }
++
++    public function test_siswa_tidak_boleh_menghapus_modul(): void
++    {
++        $modul = $this->buatModul();
++        Sanctum::actingAs($this->buatUser(3));
++
++        $this->deleteJson("/api/modules/{$modul->id_modul}")->assertForbidden();
++
++        $this->assertDatabaseHas('modul', ['id_modul' => $modul->id_modul]);
++    }
++
++    public function test_tanpa_token_dibalas_401_walau_tanpa_header_accept(): void
++    {
++        // Sengaja memakai post() biasa (tanpa Accept: application/json) seperti klien yang lupa header.
++        $this->post('/api/modules', $this->dataModul())->assertUnauthorized();
++    }
++
++    // ---------------------------------------------------------------- membaca
++
++    public function test_siswa_boleh_membaca_modul_terbit_tetapi_tidak_melihat_draf(): void
++    {
++        $this->buatModul('Modul Terbit', 'Tersedia');
++        $draf = $this->buatModul('Modul Rahasia Draf', 'Draft');
++        Sanctum::actingAs($this->buatUser(3));
++
++        $respons = $this->getJson('/api/modules')->assertOk()->assertJson(['success' => true]);
++
++        $this->assertStringContainsString('Modul Terbit', $respons->getContent());
++        $this->assertStringNotContainsString('Modul Rahasia Draf', $respons->getContent());
++
++        $this->getJson("/api/modules/{$draf->id_modul}")->assertNotFound();
++    }
++
++    public function test_guru_boleh_melihat_modul_draf(): void
++    {
++        $draf = $this->buatModul('Modul Draf Guru', 'Draft');
++        Sanctum::actingAs($this->buatUser(2));
++
++        $this->getJson("/api/modules/{$draf->id_modul}")
++            ->assertOk()
++            ->assertJsonPath('data.judul_modul', 'Modul Draf Guru');
++    }
++
++    public function test_token_kuis_tidak_ikut_terkirim_lewat_api_modul(): void
++    {
++        DB::table('quiz')->insert(['id_quiz' => 1, 'judul' => 'Kuis Berpelindung', 'id_jenjang' => 1, 'token' => 'RAHASIA1']);
++        $modul = $this->buatModul('Modul Dengan Kuis', 'Tersedia', 1);
++
++        foreach ([3, 2] as $tipe) {
++            Sanctum::actingAs($this->buatUser($tipe));
++
++            $daftar = $this->getJson('/api/modules')->assertOk();
++            $detail = $this->getJson("/api/modules/{$modul->id_modul}")->assertOk();
++
++            // Kuis tetap ikut, tetapi tanpa token.
++            $this->assertStringContainsString('Kuis Berpelindung', $daftar->getContent());
++            $this->assertStringNotContainsString('RAHASIA1', $daftar->getContent());
++            $this->assertStringNotContainsString('RAHASIA1', $detail->getContent());
++        }
++    }
++
++    public function test_token_kuis_tetap_bisa_dibaca_di_php_tetapi_tidak_di_json(): void
++    {
++        DB::table('quiz')->insert(['id_quiz' => 1, 'judul' => 'Kuis X', 'id_jenjang' => 1, 'token' => 'RAHASIA1']);
++
++        $quiz = Quiz::find(1);
++
++        $this->assertSame('RAHASIA1', $quiz->token);              // dipakai SiswaController & tampilan admin
++        $this->assertArrayNotHasKey('token', $quiz->toArray());   // tidak ikut ke JSON
++    }
++
++    // ---------------------------------------------------------------- diizinkan
++
++    public function test_guru_boleh_menambah_modul(): void
++    {
++        Sanctum::actingAs($this->buatUser(2));
++
++        $this->postJson('/api/modules', $this->dataModul())->assertCreated();
++
++        $this->assertDatabaseHas('modul', ['judul_modul' => 'Pecahan Dasar', 'tipe_file' => 'link']);
++    }
++
++    public function test_admin_boleh_mengubah_modul_dan_judul_sendiri_bukan_duplikat(): void
++    {
++        $modul = $this->buatModul('Modul Awal');
++        Sanctum::actingAs($this->buatUser(1));
++
++        // Judul sama dengan judul modul itu sendiri: harus lolos.
++        $this->putJson("/api/modules/{$modul->id_modul}", $this->dataModul(['judul_modul' => 'Modul Awal']))
++            ->assertOk();
++
++        $this->putJson("/api/modules/{$modul->id_modul}", $this->dataModul(['judul_modul' => 'Modul Baru']))
++            ->assertOk();
++
++        $this->assertDatabaseHas('modul', ['id_modul' => $modul->id_modul, 'judul_modul' => 'Modul Baru']);
++    }
++
++    public function test_admin_boleh_menghapus_modul(): void
++    {
++        $modul = $this->buatModul();
++        Sanctum::actingAs($this->buatUser(1));
++
++        $this->deleteJson("/api/modules/{$modul->id_modul}")->assertOk();
++
++        $this->assertDatabaseMissing('modul', ['id_modul' => $modul->id_modul]);
++    }
++
++    // ---------------------------------------------------------------- validasi API
++
++    public function test_api_menolak_jenjang_dan_jenis_modul_yang_tidak_ada(): void
++    {
++        Sanctum::actingAs($this->buatUser(2));
++
++        // post() biasa: kegagalan validasi tetap JSON 422, bukan redirect.
++        $this->post('/api/modules', $this->dataModul(['id_jenjang' => 999, 'id_tipemodul' => 999]))
++            ->assertStatus(422)
++            ->assertJsonValidationErrors(['id_jenjang', 'id_tipemodul']);
++    }
++
++    public function test_api_menolak_judul_duplikat_saat_menambah(): void
++    {
++        $this->buatModul('Pecahan Dasar');
++        Sanctum::actingAs($this->buatUser(2));
++
++        $this->postJson('/api/modules', $this->dataModul())
++            ->assertStatus(422)
++            ->assertJsonValidationErrors('judul_modul');
++    }
++}
+diff -ruN a/tests/Feature/PendaftaranDuplicateTest.php b/tests/Feature/PendaftaranDuplicateTest.php
+--- a/tests/Feature/PendaftaranDuplicateTest.php	2026-10-28 06:42:03.006517831 +0000
++++ b/tests/Feature/PendaftaranDuplicateTest.php	2026-10-28 06:42:03.003144694 +0000
+@@ -8,6 +8,11 @@
+ use Illuminate\Support\Facades\Schema;
+ use Tests\TestCase;
+ 
++/**
++ * Aturan duplikat pendaftaran:
++ *  - email dan NISN harus unik (identitas akun),
++ *  - NAMA boleh kembar (dua siswa bernama sama itu hal biasa; kolom user.nama memang tidak unik di database).
++ */
+ class PendaftaranDuplicateTest extends TestCase
+ {
+     protected function setUp(): void
+@@ -21,37 +26,68 @@
+ 
+         Schema::create('user', function (Blueprint $table) {
+             $table->increments('id_user');
+-            $table->string('nama')->unique();
++            $table->string('nama');
+             $table->string('email')->unique();
+             $table->string('password');
+-            $table->unsignedInteger('id_jenjang');
+-            $table->unsignedInteger('id_tipeuser');
+-            $table->foreign('id_jenjang')->references('id_jenjang')->on('jenjang');
++            $table->string('nisn')->unique()->nullable();
++            $table->string('nomor_hp')->nullable();
++            $table->unsignedInteger('id_jenjang')->nullable();
++            $table->unsignedInteger('id_tipeuser')->default(1);
++            $table->integer('total_poin')->default(0);
++            $table->string('status_akun')->default('Aktif');
+             $table->timestamps();
+         });
+ 
+-        DB::table('jenjang')->insert([
+-            'nama_tipe' => 'SMA',
+-        ]);
+-    }
++        DB::table('jenjang')->insert(['nama_tipe' => 'SMA']);
+ 
+-    public function test_duplicate_name_and_email_are_rejected(): void
+-    {
+         User::create([
+-            'nama' => 'User Lama',
++            'nama' => 'Budi Santoso',
+             'email' => 'lama@example.com',
++            'nisn' => '0011111111',
+             'password' => bcrypt('password123'),
+             'id_jenjang' => 1,
+             'id_tipeuser' => 3,
+         ]);
++    }
+ 
+-        $response = $this->from('/pendaftaran')->post('/pendaftaran', [
+-            'nama' => 'User Lama',
+-            'email' => 'lama@example.com',
++    private function dataBaru(array $ganti = []): array
++    {
++        return array_merge([
++            'nama' => 'Budi Santoso',
++            'email' => 'baru@example.com',
++            'nisn' => '0022222222',
++            'nomor_hp' => '081234567890',
+             'password' => 'password123',
++            'password_confirmation' => 'password123',
+             'id_jenjang' => 1,
+-        ]);
++        ], $ganti);
++    }
++
++    public function test_nama_kembar_diperbolehkan(): void
++    {
++        $this->from('/pendaftaran')
++            ->post('/pendaftaran', $this->dataBaru())
++            ->assertSessionHasNoErrors()
++            ->assertRedirect('/login');
++
++        $this->assertSame(2, User::where('nama', 'Budi Santoso')->count());
++    }
++
++    public function test_email_kembar_ditolak(): void
++    {
++        $this->from('/pendaftaran')
++            ->post('/pendaftaran', $this->dataBaru(['email' => 'lama@example.com']))
++            ->assertSessionHasErrors('email');
++
++        $this->assertSame(1, User::count());
++    }
++
++    public function test_nisn_kembar_ditolak(): void
++    {
++        $this->from('/pendaftaran')
++            ->post('/pendaftaran', $this->dataBaru(['nisn' => '0011111111']))
++            ->assertSessionHasErrors('nisn');
+ 
+-        $response->assertSessionHasErrors(['nama', 'email']);
++        $this->assertSame(1, User::count());
+     }
+ }
+diff -ruN a/tests/Feature/PendaftaranTest.php b/tests/Feature/PendaftaranTest.php
+--- a/tests/Feature/PendaftaranTest.php	1970-01-01 00:00:00.000000000 +0000
++++ b/tests/Feature/PendaftaranTest.php	2026-10-28 06:42:03.009677950 +0000
+@@ -0,0 +1,138 @@
++<?php
++
++namespace Tests\Feature;
++
++use App\Models\User;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Hash;
++use Illuminate\Support\Facades\Schema;
++use Tests\TestCase;
++
++/**
++ * M1: pendaftaran siswa harus benar-benar bisa dipakai.
++ * Regresi utama: form mengirim "nomor_hp", sehingga controller wajib memvalidasi "nomor_hp"
++ * (dulu "nomor_handphone", akibatnya semua pendaftaran gagal).
++ */
++class PendaftaranTest extends TestCase
++{
++    protected function setUp(): void
++    {
++        parent::setUp();
++
++        Schema::create('jenjang', function (Blueprint $table) {
++            $table->increments('id_jenjang');
++            $table->string('nama_tipe');
++        });
++
++        Schema::create('user', function (Blueprint $table) {
++            $table->increments('id_user');
++            $table->string('nama');
++            $table->string('email')->unique();
++            $table->string('password');
++            $table->string('nisn')->unique()->nullable();
++            $table->string('nomor_hp')->nullable();
++            $table->unsignedInteger('id_jenjang')->nullable();
++            $table->unsignedInteger('id_tipeuser')->default(1);
++            $table->integer('total_poin')->default(0);
++            $table->string('status_akun')->default('Aktif');
++            $table->timestamps();
++        });
++
++        DB::table('jenjang')->insert(['nama_tipe' => 'SMA']);
++    }
++
++    /** Data persis seperti yang dikirim form pendaftaran. */
++    private function dataValid(array $ganti = []): array
++    {
++        return array_merge([
++            'nama' => 'Siti Nur-Aini',
++            'email' => 'siti@example.com',
++            'nisn' => '0012345678',
++            'nomor_hp' => '081234567890',
++            'password' => 'rahasia123',
++            'password_confirmation' => 'rahasia123',
++            'id_jenjang' => 1,
++        ], $ganti);
++    }
++
++    public function test_form_mengirim_field_yang_sama_dengan_yang_divalidasi(): void
++    {
++        $this->get('/pendaftaran')
++            ->assertOk()
++            ->assertSee('name="nomor_hp"', false)
++            ->assertDontSee('nomor_handphone', false);
++    }
++
++    public function test_siswa_bisa_mendaftar_dengan_data_yang_valid(): void
++    {
++        $this->from('/pendaftaran')
++            ->post('/pendaftaran', $this->dataValid())
++            ->assertRedirect('/login')
++            ->assertSessionHas('success');
++
++        $this->assertDatabaseHas('user', [
++            'email' => 'siti@example.com',
++            'nisn' => '0012345678',
++            'nomor_hp' => '081234567890',
++            'id_tipeuser' => 3,
++        ]);
++
++        $user = User::where('email', 'siti@example.com')->first();
++        $this->assertTrue(Hash::check('rahasia123', $user->password));
++    }
++
++    public function test_nama_dengan_apostrof_titik_strip_dan_huruf_bertanda_diterima(): void
++    {
++        $daftarNama = ["Ma'ruf", 'Siti Nur-Aini', 'Dr. Budi', 'José Álvarez'];
++
++        foreach ($daftarNama as $i => $nama) {
++            $this->from('/pendaftaran')
++                ->post('/pendaftaran', $this->dataValid([
++                    'nama' => $nama,
++                    'email' => "siswa{$i}@example.com",
++                    'nisn' => '00123456' . str_pad((string) $i, 2, '0', STR_PAD_LEFT),
++                ]))
++                ->assertSessionHasNoErrors()
++                ->assertRedirect('/login');
++        }
++
++        $this->assertSame(count($daftarNama), User::count());
++    }
++
++    public function test_nama_berisi_angka_atau_simbol_berbahaya_ditolak(): void
++    {
++        foreach (['Budi123', 'Budi <script>', 'Budi@home'] as $nama) {
++            $this->from('/pendaftaran')
++                ->post('/pendaftaran', $this->dataValid(['nama' => $nama]))
++                ->assertSessionHasErrors('nama');
++        }
++
++        $this->assertSame(0, User::count());
++    }
++
++    public function test_nomor_hp_kosong_menampilkan_pesan_yang_jelas(): void
++    {
++        $this->from('/pendaftaran')
++            ->post('/pendaftaran', $this->dataValid(['nomor_hp' => '']))
++            ->assertSessionHasErrors(['nomor_hp' => 'Nomor handphone wajib diisi.']);
++    }
++
++    public function test_nisn_harus_10_digit_angka(): void
++    {
++        $this->from('/pendaftaran')
++            ->post('/pendaftaran', $this->dataValid(['nisn' => '12345']))
++            ->assertSessionHasErrors(['nisn' => 'NISN harus terdiri dari 10 digit.']);
++
++        $this->from('/pendaftaran')
++            ->post('/pendaftaran', $this->dataValid(['nisn' => '12345abcde']))
++            ->assertSessionHasErrors(['nisn' => 'NISN hanya boleh berisi angka.']);
++    }
++
++    public function test_konfirmasi_kata_sandi_harus_cocok(): void
++    {
++        $this->from('/pendaftaran')
++            ->post('/pendaftaran', $this->dataValid(['password_confirmation' => 'beda12345']))
++            ->assertSessionHasErrors(['password' => 'Konfirmasi kata sandi tidak cocok.']);
++    }
++}

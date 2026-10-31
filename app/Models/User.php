@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Achievement;
 use App\Models\OrangtuaSiswa;
+use App\Support\QrToken;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\HasApiTokens;
@@ -38,11 +39,75 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'qr_token', // jangan pernah ikut terserialisasi (JSON/API)
     ];
 
     protected $casts = [
         'password' => 'hashed',
+        'qr_dibuat_pada' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        // Siswa baru otomatis mendapat token QR permanen. Dicek keberadaan kolomnya
+        // agar tetap aman pada skema minimal (test lama yang membuat tabel manual).
+        static::creating(function (User $user) {
+            if ((int) $user->id_tipeuser !== 3 || !empty($user->qr_token)) {
+                return;
+            }
+
+            if (Schema::hasColumn('user', 'qr_token')) {
+                $user->qr_token = QrToken::baru();
+                $user->qr_dibuat_pada = now();
+            }
+        });
+    }
+
+    public function isAdmin(): bool
+    {
+        return (int) $this->id_tipeuser === 1;
+    }
+
+    public function isGuru(): bool
+    {
+        return (int) $this->id_tipeuser === 2;
+    }
+
+    public function isSiswa(): bool
+    {
+        return (int) $this->id_tipeuser === 3;
+    }
+
+    /** Isi QR (ARV1.<uuid>.<sig>) milik siswa ini; membuat token bila belum ada. */
+    public function qrPayload(): string
+    {
+        return QrToken::payload($this->pastikanQrToken());
+    }
+
+    public function pastikanQrToken(): string
+    {
+        if (empty($this->qr_token)) {
+            $this->forceFill(['qr_token' => QrToken::baru(), 'qr_dibuat_pada' => now()])->save();
+        }
+
+        return $this->qr_token;
+    }
+
+    /** Cabut token lama dan buat yang baru. Token lama langsung tidak dikenali. */
+    public function regenerasiQr(): void
+    {
+        $this->forceFill(['qr_token' => QrToken::baru(), 'qr_dibuat_pada' => now()])->save();
+    }
+
+    public function kelasDiampu(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Kelas::class, 'kelas_guru', 'id_guru', 'id_kelas', 'id_user', 'id_kelas');
+    }
+
+    public function kelasDiikuti(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Kelas::class, 'kelas_siswa', 'id_siswa', 'id_kelas', 'id_user', 'id_kelas');
+    }
 
     public function jenjang(): BelongsTo
     {
