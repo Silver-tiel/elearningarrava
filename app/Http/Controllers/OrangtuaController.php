@@ -409,4 +409,44 @@ class OrangtuaController extends Controller
             'kuisPerluPerhatian'
         ));
     }
+    public function aktivitasBelajar(Request $request)
+    {
+        $siswaIds = $this->getSiswaIds();
+
+        if (empty($siswaIds)) {
+            return view('orangtua.aktivitas_belajar', [
+                'siswa' => null,
+                'siswaList' => collect(),
+                'aktivitas' => collect(),
+            ]);
+        }
+
+        // Menentukan siswa yang sedang dipilih
+        $activeSiswaId = (int) $request->get('siswa_id', $siswaIds[0]);
+
+        if (!in_array($activeSiswaId, $siswaIds)) {
+            $activeSiswaId = $siswaIds[0];
+        }
+
+        $siswa = $this->getSiswaOrFail($activeSiswaId);
+
+        // Daftar siswa yang terhubung dengan akun orang tua
+        $siswaList = User::whereIn('id_user', $siswaIds)
+            ->select('id_user', 'nama', 'id_jenjang')
+            ->with('jenjang')
+            ->get();
+
+        // Mengambil seluruh riwayat pengerjaan quiz siswa
+        $aktivitas = HasilQuizModul::where('id_user', $activeSiswaId)
+            ->with(['quiz.tipeQuiz'])
+            ->orderByDesc('waktu_dapat')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('orangtua.aktivitas_belajar', compact(
+            'siswa',
+            'siswaList',
+            'aktivitas'
+        ));
+    }
 }
