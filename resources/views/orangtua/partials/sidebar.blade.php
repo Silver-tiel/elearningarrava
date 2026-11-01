@@ -174,5 +174,4 @@ $navItems = [
         </svg>
         <span>Keluar</span>
     </button>
-    </div>
 </aside>
