@@ -5,12 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\HasilQuizModul;
 use App\Models\Jenjang;
 use App\Models\Modul;
+use App\Models\ModulSoal;
+use App\Models\ProgresModulSiswa;
 use App\Models\OrangtuaSiswa;
 use App\Models\PencapaianUser;
 use App\Models\Achievement;
 use App\Models\Quiz;
 use App\Models\TingkatQuiz;
 use App\Models\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -108,6 +114,7 @@ class SiswaController extends Controller
             'jenjang',
             'catatan',
             'quiz',
+            'soalModul.pilihan',
         ])->findOrFail($id_modul);
 
         if ($modul->isDraft()) {
@@ -123,6 +130,22 @@ class SiswaController extends Controller
             ]);
         }
 
+        // Ambil atau inisialisasi progres belajar siswa pada modul ini
+        $progres = null;
+        if ($user) {
+            $progres = ProgresModulSiswa::firstOrCreate(
+                ['id_user' => $user->id_user, 'id_modul' => $modul->id_modul],
+                [
+                    'materi_selesai' => false,
+                    'quiz_selesai' => false,
+                    'quiz_lulus' => false,
+                    'nilai_quiz' => 0,
+                    'is_tuntas' => false,
+                    'poin_didapat' => 0,
+                ]
+            );
+        }
+
         // Ambil modul lain untuk navigasi daftar materi sejenjang (hanya yang dipublikasikan)
         $modulLain = Modul::published()->with(['tipeModul', 'jenjang'])
             ->where('id_jenjang', $modul->id_jenjang)
@@ -133,7 +156,139 @@ class SiswaController extends Controller
 
         $selectedVideo = $modul;
 
-        return view('siswa.materi-video', compact('modul', 'selectedVideo', 'modulLain'));
+        return view('siswa.materi-video', compact('modul', 'selectedVideo', 'modulLain', 'progres'));
+    }
+
+    /**
+     * Tandai bahwa siswa sudah selesai mempelajari materi (menonton video / membaca PDF)
+     */
+    public function tandaiMateriSelesai(Request $request, $id_modul)
+    {
+        $user = Auth::user();
+        $modul = Modul::with('soalModul')->findOrFail($id_modul);
+
+        $progres = ProgresModulSiswa::firstOrCreate(
+            ['id_user' => $user->id_user, 'id_modul' => $modul->id_modul]
+        );
+
+        $progres->materi_selesai = true;
+        $progres->waktu_materi_selesai = $progres->waktu_materi_selesai ?? now();
+
+        $hasQuiz = $modul->hasQuizModul();
+        $wasTuntas = (bool) $progres->is_tuntas;
+
+        // Modul tuntas jika tidak punya kuis, ATAU jika punya kuis dan kuisnya sudah lulus
+        if (!$hasQuiz || ($hasQuiz && $progres->quiz_lulus)) {
+            $progres->is_tuntas = true;
+            $progres->waktu_tuntas = $progres->waktu_tuntas ?? now();
+
+            if (!$wasTuntas) {
+                $poin = (int) ($modul->poin_modul ?: 50);
+                $progres->poin_didapat = $poin;
+                $user->increment('total_poin', $poin);
+            }
+        }
+
+        $progres->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'is_tuntas' => $progres->is_tuntas,
+                'poin_diberikan' => (!$wasTuntas && $progres->is_tuntas) ? $progres->poin_didapat : 0,
+                'message' => 'Materi berhasil ditandai selesai dipelajari! 🎉',
+            ]);
+        }
+
+        return back()->with('success', 'Materi berhasil ditandai selesai dipelajari! 🎉');
+    }
+
+    /**
+     * Menilai pengerjaan kuis modul oleh siswa
+     */
+    public function submitKuisModul(Request $request, $id_modul)
+    {
+        $user = Auth::user();
+        $modul = Modul::with('soalModul.pilihan')->findOrFail($id_modul);
+
+        $soalList = $modul->soalModul;
+        $totalSoal = $soalList->count();
+
+        if ($totalSoal === 0) {
+            return back()->with('error', 'Modul ini tidak memiliki kuis.');
+        }
+
+        $jawaban = $request->input('jawaban', []);
+        $benarCount = 0;
+        $totalBobot = 0;
+        $bobotBenar = 0;
+
+        foreach ($soalList as $soal) {
+            $bobot = (int) ($soal->poin ?: 10);
+            $totalBobot += $bobot;
+
+            $chosenId = $jawaban[$soal->id_soal] ?? null;
+            if ($chosenId) {
+                $pilihan = $soal->pilihan->firstWhere('id_pilihan', (int) $chosenId);
+                if ($pilihan && $pilihan->is_benar) {
+                    $benarCount++;
+                    $bobotBenar += $bobot;
+                }
+            }
+        }
+
+        $skorPersen = $totalBobot > 0 ? (int) round(($bobotBenar / $totalBobot) * 100) : 0;
+        $kkm = (int) ($modul->kkm_quiz ?: 70);
+        $isLulus = $skorPersen >= $kkm;
+
+        $progres = ProgresModulSiswa::firstOrCreate(
+            ['id_user' => $user->id_user, 'id_modul' => $modul->id_modul]
+        );
+
+        $progres->quiz_selesai = true;
+        $progres->quiz_lulus = $isLulus;
+        $progres->nilai_quiz = max((int) $progres->nilai_quiz, $skorPersen);
+        $progres->waktu_quiz_selesai = now();
+
+        $wasTuntas = (bool) $progres->is_tuntas;
+
+        // Modul tuntas HANYA JIKA materi sudah selesai dipelajari DAN kuis lulus KKM!
+        if ($progres->materi_selesai && $isLulus) {
+            $progres->is_tuntas = true;
+            $progres->waktu_tuntas = $progres->waktu_tuntas ?? now();
+
+            if (!$wasTuntas) {
+                $poin = (int) ($modul->poin_modul ?: 50);
+                $progres->poin_didapat = $poin;
+                $user->increment('total_poin', $poin);
+            }
+        }
+
+        $progres->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'benar' => $benarCount,
+                'total_soal' => $totalSoal,
+                'skor' => $skorPersen,
+                'kkm' => $kkm,
+                'is_lulus' => $isLulus,
+                'is_tuntas' => $progres->is_tuntas,
+                'materi_selesai' => $progres->materi_selesai,
+                'poin_diberikan' => (!$wasTuntas && $progres->is_tuntas) ? $progres->poin_didapat : 0,
+            ]);
+        }
+
+        if ($progres->is_tuntas && !$wasTuntas) {
+            $pesan = "Selamat! Nilai kuis kamu {$skorPersen} (Lulus KKM). Modul tuntas sempurna dan kamu mendapatkan +{$modul->poin_modul} EXP! 🎓🎉";
+        } elseif ($isLulus) {
+            $pesan = "Hebat! Kamu lulus kuis modul dengan nilai {$skorPersen} (KKM: {$kkm}). Pastikan materi juga sudah ditandai selesai agar modul tuntas.";
+        } else {
+            $pesan = "Nilai kuis kamu: {$skorPersen} (KKM: {$kkm}). Belum mencapai KKM, silakan pelajari kembali materi dan coba lagi ya!";
+        }
+
+        return back()->with($isLulus ? 'success' : 'error', $pesan);
     }
 
     /* ---------------------------------------------------------------------
@@ -210,7 +365,7 @@ class SiswaController extends Controller
 
         $user = Auth::user();
 
-        $query = Quiz::published()->with([
+        $query = Quiz::published()->belumKadaluarsa()->with([
             'tipeQuiz',
             'tingkatQuiz',
             'jenjang',
@@ -518,6 +673,28 @@ class SiswaController extends Controller
                 return redirect()->route('siswa.quiz')->withErrors([
                     'quiz' => 'Waktu pengerjaan kuis sudah habis.',
                 ]);
+            }
+        }
+
+        // Pada mode biasa (tipe normal), jika bukan auto-submit karena waktu habis,
+        // seluruh soal wajib dijawab sebelum dapat mengumpulkan kuis.
+        if ($quiz->mode_pengerjaan === 'biasa' && !$request->boolean('is_timeout')) {
+            $nomorBelumDijawab = [];
+            foreach ($quiz->soal->values() as $idx => $s) {
+                $jawab = $jawabanSiswa[$s->id_soal] ?? null;
+                if ($jawab === null || (is_string($jawab) && trim($jawab) === '')) {
+                    $nomorBelumDijawab[] = $idx + 1;
+                }
+            }
+
+            if (!empty($nomorBelumDijawab)) {
+                $pesanNomor = count($nomorBelumDijawab) === 1
+                    ? "nomor {$nomorBelumDijawab[0]}"
+                    : "nomor " . implode(', ', array_slice($nomorBelumDijawab, 0, -1)) . " dan " . end($nomorBelumDijawab);
+
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['quiz' => "Jawaban belum lengkap! Soal {$pesanNomor} belum dijawab. Harap jawab semua soal sebelum mengumpulkan kuis."]);
             }
         }
 
@@ -1163,13 +1340,26 @@ class SiswaController extends Controller
             ->take(6)
             ->get();
 
+        $qrSvg = null;
+        $kelasList = collect();
+        if (\Illuminate\Support\Facades\Schema::hasColumn('user', 'qr_token')) {
+            $renderer = new ImageRenderer(new RendererStyle(280, 1), new SvgImageBackEnd());
+            $qrSvg = (new Writer($renderer))->writeString($user->qrPayload());
+            $qrSvg = preg_replace('/^<\?xml.*?\?>\s*/s', '', $qrSvg);
+            if (\Illuminate\Support\Facades\Schema::hasTable('kelas_siswa')) {
+                $kelasList = $user->kelasDiikuti()->orderBy('nama')->pluck('nama');
+            }
+        }
+
         return view('siswa.profil_siswa', compact(
             'user',
             'jenjangs',
             'scoreSummary',
             'scoreTrend',
             'quizResults',
-            'achievements'
+            'achievements',
+            'qrSvg',
+            'kelasList'
         ));
     }
 

@@ -59,6 +59,7 @@
             }
         }
     </style>
+    @yield('styles')
 </head>
 
 <body class="min-h-screen bg-[#F1F7FD] font-sans text-[#102B69] antialiased">
@@ -118,48 +119,52 @@
             {{-- Main content --}}
             <section class="relative z-10 flex flex-1 items-center justify-center px-4 py-5 sm:px-8 sm:py-7">
 
-                <div class="auth-register-card w-full max-w-[430px] rounded-[11px] border border-white/90 bg-white/90 px-5 py-5 shadow-[0_12px_40px_rgba(45,94,155,0.08)] backdrop-blur-sm sm:px-7 sm:py-6 lg:px-8">
+                @hasSection('auth_card')
+                    @yield('auth_card')
+                @else
+                    <div class="auth-register-card w-full max-w-[430px] rounded-[11px] border border-white/90 bg-white/90 px-5 py-5 shadow-[0_12px_40px_rgba(45,94,155,0.08)] backdrop-blur-sm sm:px-7 sm:py-6 lg:px-8">
 
-                    {{-- Logo and tagline --}}
-                    <div class="mb-5 flex flex-col items-center text-center">
+                        {{-- Logo and tagline --}}
+                        <div class="mb-5 flex flex-col items-center text-center">
 
-                        <a href="{{ url('/') }}"
-                            class="mb-1.5 inline-flex items-center justify-center gap-2 no-underline">
+                            <a href="{{ url('/') }}"
+                                class="mb-1.5 inline-flex items-center justify-center gap-2 no-underline">
 
-                            <svg viewBox="0 0 40 40" class="h-9 w-9" fill="none" aria-hidden="true">
-                                <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31"
-                                    stroke="#0875F9"
-                                    stroke-width="6"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round" />
+                                <svg viewBox="0 0 40 40" class="h-9 w-9" fill="none" aria-hidden="true">
+                                    <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31"
+                                        stroke="#0875F9"
+                                        stroke-width="6"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round" />
 
-                                <path d="M13.5 23.5 20 11.5 26.5 23.5"
-                                    stroke="#0C55C8"
-                                    stroke-width="5"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round" />
+                                    <path d="M13.5 23.5 20 11.5 26.5 23.5"
+                                        stroke="#0C55C8"
+                                        stroke-width="5"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round" />
 
-                                <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
-                            </svg>
+                                    <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
+                                </svg>
 
-                            <span class="text-[25px] font-extrabold tracking-[-0.7px] text-[#082765]">
-                                Arrava
-                            </span>
+                                <span class="text-[25px] font-extrabold tracking-[-0.7px] text-[#082765]">
+                                    Arrava
+                                </span>
 
-                        </a>
+                            </a>
 
-                        <p class="text-[10px] leading-5 text-[#536DA1] sm:text-[11px]">
-                            E-Learning untuk Masa Depan yang Lebih Baik
-                        </p>
+                            <p class="text-[10px] leading-5 text-[#536DA1] sm:text-[11px]">
+                                E-Learning untuk Masa Depan yang Lebih Baik
+                            </p>
+
+                        </div>
+
+                        {{-- Existing login/register form --}}
+                        <div class="w-full">
+                            @yield('auth_form')
+                        </div>
 
                     </div>
-
-                    {{-- Existing login/register form --}}
-                    <div class="w-full">
-                        @yield('auth_form')
-                    </div>
-
-                </div>
+                @endif
 
             </section>
 
@@ -244,6 +249,8 @@
         });
     </script>
 
+    @yield('scripts')
+    @include('components.page-loader')
     @include('components.hover-effects')
 
 </body>

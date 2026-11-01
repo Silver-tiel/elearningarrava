@@ -41,6 +41,7 @@ class QuestionIntegrityTest extends TestCase
             $table->integer('durasi_total_menit')->nullable();
             $table->string('token')->nullable();
             $table->string('foto_quiz')->nullable();
+            $table->string('opsi_preview')->default('lengkap');
             $table->string('proggressQuiz')->nullable();
             $table->timestamps();
         });

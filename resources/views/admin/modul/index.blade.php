@@ -152,9 +152,9 @@
             FILTER & SORTIR TOOLBAR
         ====================================================== --}}
         <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm mb-6">
-            <form action="{{ route('admin.modul') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+            <form action="{{ route('admin.modul') }}" method="GET" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-12 gap-3 items-center">
                 {{-- Pencarian --}}
-                <div class="lg:col-span-4 relative">
+                <div class="lg:col-span-3 relative">
                     <input type="text" name="q" id="searchModule" value="{{ request('q', $search ?? '') }}"
                         placeholder="Cari judul modul..."
                         class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
@@ -184,27 +184,52 @@
                     </select>
                 </div>
 
+                {{-- Filter Jenis Modul (PDF, Video, Artikel) --}}
+                <div class="lg:col-span-2">
+                    <select name="tipe" onchange="this.form.submit()"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        <option value="all" {{ ($tipeFilter ?? 'all') === 'all' ? 'selected' : '' }}>Semua Jenis</option>
+                        @foreach(($masterTipe ?? \App\Models\TipeModul::all()) as $t)
+                            <option value="{{ $t->id_tipemodul }}" {{ ($tipeFilter ?? '') == $t->id_tipemodul ? 'selected' : '' }}>
+                                @if(stripos($t->nama_tipe, 'pdf') !== false) 📄
+                                @elseif(stripos($t->nama_tipe, 'video') !== false) 🎬
+                                @elseif(stripos($t->nama_tipe, 'artikel') !== false) 📰
+                                @endif
+                                {{ $t->nama_tipe }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 {{-- Sortir --}}
                 <div class="lg:col-span-2">
                     <select name="sort" onchange="this.form.submit()"
                         class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                        <option value="latest" {{ ($sort ?? 'latest') === 'latest' ? 'selected' : '' }}>Urut: Terbaru</option>
-                        <option value="oldest" {{ ($sort ?? '') === 'oldest' ? 'selected' : '' }}>Urut: Terlama</option>
-                        <option value="title_asc" {{ ($sort ?? '') === 'title_asc' ? 'selected' : '' }}>Judul (A - Z)</option>
-                        <option value="title_desc" {{ ($sort ?? '') === 'title_desc' ? 'selected' : '' }}>Judul (Z - A)</option>
+                        <optgroup label="Urutan Waktu & Judul">
+                            <option value="latest" {{ ($sort ?? 'latest') === 'latest' ? 'selected' : '' }}>Urut: Terbaru</option>
+                            <option value="oldest" {{ ($sort ?? '') === 'oldest' ? 'selected' : '' }}>Urut: Terlama</option>
+                            <option value="title_asc" {{ ($sort ?? '') === 'title_asc' ? 'selected' : '' }}>Judul (A - Z)</option>
+                            <option value="title_desc" {{ ($sort ?? '') === 'title_desc' ? 'selected' : '' }}>Judul (Z - A)</option>
+                        </optgroup>
+                        <optgroup label="Urutan Berdasarkan Jenis Modul">
+                            <option value="type_pdf" {{ ($sort ?? '') === 'type_pdf' ? 'selected' : '' }}>📄 Utamakan: PDF</option>
+                            <option value="type_video" {{ ($sort ?? '') === 'type_video' ? 'selected' : '' }}>🎬 Utamakan: Video</option>
+                            <option value="type_artikel" {{ ($sort ?? '') === 'type_artikel' ? 'selected' : '' }}>📰 Utamakan: Artikel</option>
+                            <option value="type_asc" {{ ($sort ?? '') === 'type_asc' ? 'selected' : '' }}>Jenis Modul (A - Z)</option>
+                        </optgroup>
                     </select>
                 </div>
 
                 {{-- Aksi Filter & Reset --}}
-                <div class="lg:col-span-2 flex items-center gap-2">
-                    <button type="submit"
-                        class="flex-1 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition shadow-sm text-center">
-                        Terapkan
+                <div class="lg:col-span-1 flex items-center gap-1.5">
+                    <button type="submit" title="Terapkan Filter"
+                        class="flex-1 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm text-center">
+                        Filter
                     </button>
                     @if(request()->hasAny(['q', 'status', 'jenjang', 'tipe', 'sort']))
                         <a href="{{ route('admin.modul') }}"
                             title="Reset Filter"
-                            class="p-2 rounded-xl border border-slate-300 text-slate-500 hover:bg-slate-100 transition">
+                            class="p-2 rounded-xl border border-slate-300 text-slate-500 hover:bg-slate-100 transition shrink-0">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>

@@ -52,7 +52,9 @@
                     </div>
                 </div>
             @empty
-                <div class="col-span-full py-10 text-center text-[#687892]">Belum ada latihan soal tersedia.</div>
+                <div class="col-span-full rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-12 text-center text-sm text-[#7c899c]">
+                    Belum ada latihan soal tersedia.
+                </div>
             @endforelse
         </div>
     </div>

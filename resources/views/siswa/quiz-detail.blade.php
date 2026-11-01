@@ -381,7 +381,7 @@
 
     {{-- NAVIGASI BAWAH --}}
     <div class="flex items-center justify-between pt-2">
-        <a href="{{ route('siswa.quiz') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-white font-bold text-xs transition shadow-sm">
+        <a href="{{ route('siswa.quiz') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200/90 bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 font-bold text-xs transition shadow-sm">
             ← Kembali ke Daftar Quiz
         </a>
     </div>

@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Modul;
+use App\Models\ModulSoal;
+use App\Models\ModulSoalPilihan;
 use App\Models\TipeModul;
 use App\Models\Jenjang;
 use App\Models\Quiz;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -15,7 +18,16 @@ class ModulController extends Controller
     // Menampilkan daftar seluruh modul dengan relasinya, filter, dan sortir
     public function index(Request $request)
     {
+        if (auth()->check()) {
+            Gate::authorize('viewAny', Modul::class);
+        }
+
         $query = Modul::with(['tipeModul', 'jenjang', 'quiz']);
+
+        // Guru hanya melihat modul miliknya sendiri; admin melihat semua.
+        if ($request->user() && $request->user()->isGuru()) {
+            $query->where('id_pembuat', $request->user()->id_user);
+        }
 
         // Filter Status (all, published, draft)
         $statusFilter = $request->query('status', 'all');
@@ -53,10 +65,23 @@ class ModulController extends Controller
 
         // Sortir / Pengurutan
         $sort = $request->query('sort', 'latest');
+        $idPdf = TipeModul::where('nama_tipe', 'like', '%pdf%')->value('id_tipemodul') ?? 2;
+        $idVideo = TipeModul::where('nama_tipe', 'like', '%video%')->value('id_tipemodul') ?? 1;
+        $idArtikel = TipeModul::where('nama_tipe', 'like', '%artikel%')->value('id_tipemodul') ?? 3;
+
         match ($sort) {
             'oldest' => $query->oldest('id_modul'),
             'title_asc' => $query->orderBy('judul_modul', 'asc'),
             'title_desc' => $query->orderBy('judul_modul', 'desc'),
+            'type_pdf' => $query->orderByRaw("CASE WHEN modul.id_tipemodul = {$idPdf} THEN 0 ELSE 1 END")->latest('modul.id_modul'),
+            'type_video' => $query->orderByRaw("CASE WHEN modul.id_tipemodul = {$idVideo} THEN 0 ELSE 1 END")->latest('modul.id_modul'),
+            'type_artikel' => $query->orderByRaw("CASE WHEN modul.id_tipemodul = {$idArtikel} THEN 0 ELSE 1 END")->latest('modul.id_modul'),
+            'type_asc' => $query->leftJoin('tipemodul', 'modul.id_tipemodul', '=', 'tipemodul.id_tipemodul')
+                                ->orderBy('tipemodul.nama_tipe', 'asc')
+                                ->select('modul.*'),
+            'type_desc' => $query->leftJoin('tipemodul', 'modul.id_tipemodul', '=', 'tipemodul.id_tipemodul')
+                                 ->orderBy('tipemodul.nama_tipe', 'desc')
+                                 ->select('modul.*'),
             default => $query->latest('id_modul'),
         };
 
@@ -88,6 +113,10 @@ class ModulController extends Controller
     // Menampilkan form tambah modul baru
     public function create()
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Modul::class);
+        }
+
         // Mengambil data master untuk dropdown
         $tipeModul = TipeModul::all();
         // Hanya ambil jenjang SD, SMP, SMA (id 1, 2, 3)
@@ -100,7 +129,14 @@ class ModulController extends Controller
     // Menyimpan data modul baru & memproses upload file fisik / draf
     public function store(Request $request)
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Modul::class);
+        }
+
         $isDraft = $request->input('action_type') === 'draft';
+
+        $trimmedJudul = trim((string) $request->input('judul_modul'));
+        $request->merge(['judul_modul' => $trimmedJudul]);
 
         $rules = [
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul',
@@ -110,6 +146,8 @@ class ModulController extends Controller
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'kkm_quiz' => 'nullable|integer|min:0|max:100',
+            'poin_modul' => 'nullable|integer|min:0|max:1000',
         ];
 
         $messages = [
@@ -125,6 +163,17 @@ class ModulController extends Controller
         ];
 
         $validated = $request->validate($rules, $messages);
+
+        // Validasi keunikan judul case-insensitive & trimmed
+        $duplicateTitle = Modul::whereRaw('LOWER(TRIM(judul_modul)) = ?', [strtolower($trimmedJudul)])->first();
+        if ($duplicateTitle) {
+            throw ValidationException::withMessages([
+                'judul_modul' => "Judul modul '{$trimmedJudul}' sudah digunakan oleh modul lain. Silakan gunakan judul yang berbeda.",
+            ]);
+        }
+
+        // Validasi keunikan media (file berkas & tautan video)
+        $this->validateUniqueMedia($request);
 
         // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul
         if (!empty($validated['id_quiz'])) {
@@ -143,7 +192,9 @@ class ModulController extends Controller
 
         if ($request->hasFile('file_upload')) {
             $file = $request->file('file_upload');
-            $pathFile = $file->store('modul/files', 'public');
+            $originalName = $file->getClientOriginalName();
+            $safeName = preg_replace('/[^a-zA-Z0-9_.-]/', '_', $originalName);
+            $pathFile = $file->storeAs('modul/files', time() . '_' . $safeName, 'public');
             $tipeFile = $file->getClientOriginalExtension();
         } elseif ($request->filled('file_link')) {
             $pathFile = $request->file_link;
@@ -156,7 +207,7 @@ class ModulController extends Controller
             $pathFoto = $foto->store('modul/covers', 'public');
         }
 
-        Modul::create([
+        $modulBaru = Modul::create([
             'judul_modul' => $validated['judul_modul'],
             'file_materi' => $pathFile,
             'tipe_file' => $tipeFile,
@@ -165,7 +216,11 @@ class ModulController extends Controller
             'id_quiz' => !empty($validated['id_quiz']) ? $validated['id_quiz'] : null,
             'progressModul' => $isDraft ? 'Draft' : 'Tersedia',
             'foto_modul' => $pathFoto,
+            'kkm_quiz' => $request->filled('kkm_quiz') ? (int) $request->kkm_quiz : 70,
+            'poin_modul' => $request->filled('poin_modul') ? (int) $request->poin_modul : 50,
         ]);
+
+        $this->saveSoalModul($modulBaru, $request->input('soal'));
 
         return redirect()->route('admin.modul')->with('success', $isDraft ? 'Draf modul berhasil disimpan! 📝' : 'Modul pembelajaran berhasil ditambahkan & dipublikasikan! 🎉');
     }
@@ -188,7 +243,10 @@ class ModulController extends Controller
     // Menampilkan form edit modul
     public function edit($id)
     {
-        $module = Modul::findOrFail($id);
+        $module = Modul::with(['soalModul.pilihan'])->findOrFail($id);
+        if (auth()->check()) {
+            Gate::authorize('update', $module);
+        }
         $tipeModul = TipeModul::all();
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
@@ -200,7 +258,13 @@ class ModulController extends Controller
     public function update(Request $request, $id)
     {
         $module = Modul::findOrFail($id);
+        if (auth()->check()) {
+            Gate::authorize('update', $module);
+        }
         $isDraft = $request->input('action_type') === 'draft';
+
+        $trimmedJudul = trim((string) $request->input('judul_modul'));
+        $request->merge(['judul_modul' => $trimmedJudul]);
 
         $rules = [
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul,' . $module->id_modul . ',id_modul',
@@ -210,6 +274,8 @@ class ModulController extends Controller
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'kkm_quiz' => 'nullable|integer|min:0|max:100',
+            'poin_modul' => 'nullable|integer|min:0|max:1000',
         ];
 
         $messages = [
@@ -225,6 +291,20 @@ class ModulController extends Controller
         ];
 
         $validated = $request->validate($rules, $messages);
+
+        // Validasi keunikan judul (case-insensitive & trimmed, abaikan modul ini)
+        $duplicateTitle = Modul::where('id_modul', '!=', $module->id_modul)
+            ->whereRaw('LOWER(TRIM(judul_modul)) = ?', [strtolower($trimmedJudul)])
+            ->first();
+
+        if ($duplicateTitle) {
+            throw ValidationException::withMessages([
+                'judul_modul' => "Judul modul '{$trimmedJudul}' sudah digunakan oleh modul lain. Silakan gunakan judul yang berbeda.",
+            ]);
+        }
+
+        // Validasi keunikan media (file berkas & tautan video, abaikan modul ini)
+        $this->validateUniqueMedia($request, $module->id_modul);
 
         // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul
         if (!empty($validated['id_quiz'])) {
@@ -247,7 +327,9 @@ class ModulController extends Controller
             }
 
             $file = $request->file('file_upload');
-            $pathFile = $file->store('modul/files', 'public');
+            $originalName = $file->getClientOriginalName();
+            $safeName = preg_replace('/[^a-zA-Z0-9_.-]/', '_', $originalName);
+            $pathFile = $file->storeAs('modul/files', time() . '_' . $safeName, 'public');
             $tipeFile = $file->getClientOriginalExtension();
         } elseif ($request->filled('file_link')) {
             if ($module->file_materi && $module->tipe_file !== 'link' && Storage::disk('public')->exists($module->file_materi)) {
@@ -275,15 +357,160 @@ class ModulController extends Controller
             'id_quiz' => !empty($validated['id_quiz']) ? $validated['id_quiz'] : null,
             'progressModul' => $isDraft ? 'Draft' : 'Tersedia',
             'foto_modul' => $pathFoto,
+            'kkm_quiz' => $request->filled('kkm_quiz') ? (int) $request->kkm_quiz : ($module->kkm_quiz ?? 70),
+            'poin_modul' => $request->filled('poin_modul') ? (int) $request->poin_modul : ($module->poin_modul ?? 50),
         ]);
 
+        $this->saveSoalModul($module, $request->input('soal'));
+
         return redirect()->route('admin.modul')->with('success', $isDraft ? 'Draf modul berhasil diperbarui! 📝' : 'Modul pembelajaran berhasil diperbarui & dipublikasikan! 🎉');
+    }
+
+    /**
+     * Menyimpan butir soal dan pilihan jawaban kuis modul
+     */
+    protected function saveSoalModul(Modul $module, ?array $soalList): void
+    {
+        if ($soalList === null) {
+            return;
+        }
+
+        // Hapus soal lama modul (cascade menghapus pilihan)
+        $module->soalModul()->delete();
+
+        $urutan = 1;
+        foreach ($soalList as $s) {
+            $pertanyaan = trim((string) ($s['pertanyaan'] ?? ''));
+            if ($pertanyaan === '') {
+                continue;
+            }
+
+            $soal = ModulSoal::create([
+                'id_modul' => $module->id_modul,
+                'pertanyaan' => $pertanyaan,
+                'poin' => !empty($s['poin']) ? (int) $s['poin'] : 10,
+                'urutan' => $urutan++,
+            ]);
+
+            $pilihanList = $s['pilihan'] ?? [];
+            $kunciIndex = (int) ($s['kunci'] ?? 0);
+            $labels = ['A', 'B', 'C', 'D', 'E'];
+
+            if (is_array($pilihanList)) {
+                $pIdx = 0;
+                foreach ($pilihanList as $p) {
+                    $teks = is_array($p) ? trim((string) ($p['teks'] ?? '')) : trim((string) $p);
+                    if ($teks === '') continue;
+
+                    ModulSoalPilihan::create([
+                        'id_soal' => $soal->id_soal,
+                        'label' => $labels[$pIdx] ?? chr(65 + $pIdx),
+                        'teks_pilihan' => $teks,
+                        'is_benar' => ($pIdx === $kunciIndex),
+                    ]);
+                    $pIdx++;
+                }
+            }
+        }
+    }
+
+    /**
+     * Memvalidasi agar media materi (berkas fisik / tautan link) tidak ganda dengan modul lain.
+     */
+    protected function validateUniqueMedia(Request $request, ?int $ignoreModulId = null): void
+    {
+        // 1. Validasi Tautan Media (file_link)
+        if ($request->filled('file_link')) {
+            $inputLink = trim((string) $request->file_link);
+            $inputYoutubeId = $this->extractYoutubeId($inputLink);
+
+            $duplicateLinkQuery = Modul::query();
+            if ($ignoreModulId) {
+                $duplicateLinkQuery->where('id_modul', '!=', $ignoreModulId);
+            }
+
+            $otherModuls = $duplicateLinkQuery->whereNotNull('file_materi')->get();
+
+            foreach ($otherModuls as $other) {
+                // Periksa kesamaan tautan URL eksak
+                if ($other->tipe_file === 'link' && strcasecmp(trim($other->file_materi), $inputLink) === 0) {
+                    throw ValidationException::withMessages([
+                        'file_link' => "Tautan media ini sudah digunakan oleh modul '{$other->judul_modul}'. Setiap modul harus menggunakan media yang unik.",
+                    ]);
+                }
+
+                // Periksa kesamaan YouTube ID (mencegah link yang sama beda format watch/youtu.be)
+                if ($inputYoutubeId && $other->youtube_id && $other->youtube_id === $inputYoutubeId) {
+                    throw ValidationException::withMessages([
+                        'file_link' => "Video YouTube ini sudah digunakan pada modul '{$other->judul_modul}'. Silakan gunakan video materi yang berbeda.",
+                    ]);
+                }
+            }
+        }
+
+        // 2. Validasi Berkas Fisik (file_upload)
+        if ($request->hasFile('file_upload')) {
+            $uploadedFile = $request->file('file_upload');
+            $originalName = $uploadedFile->getClientOriginalName();
+            $uploadedHash = md5_file($uploadedFile->getRealPath());
+
+            $query = Modul::query();
+            if ($ignoreModulId) {
+                $query->where('id_modul', '!=', $ignoreModulId);
+            }
+
+            $otherModuls = $query->whereNotNull('file_materi')->where('tipe_file', '!=', 'link')->get();
+
+            foreach ($otherModuls as $other) {
+                $storedFileName = basename($other->file_materi);
+
+                // Periksa apakah nama berkas asli sama (baik exact match atau setelah prefix timestamp)
+                $strippedStoredName = preg_replace('/^\d+_/', '', $storedFileName);
+                if (strcasecmp($storedFileName, $originalName) === 0 || strcasecmp($strippedStoredName, $originalName) === 0) {
+                    throw ValidationException::withMessages([
+                        'file_upload' => "Berkas dengan nama '{$originalName}' sudah digunakan oleh modul '{$other->judul_modul}'. Silakan gunakan berkas materi lain atau ubah nama berkas.",
+                    ]);
+                }
+
+                // Periksa isi berkas fisik (MD5 hash) jika berkas ada di public storage
+                if (Storage::disk('public')->exists($other->file_materi)) {
+                    $otherFullPath = Storage::disk('public')->path($other->file_materi);
+                    if (file_exists($otherFullPath) && md5_file($otherFullPath) === $uploadedHash) {
+                        throw ValidationException::withMessages([
+                            'file_upload' => "Berkas materi yang Anda unggah identik dengan berkas materi pada modul '{$other->judul_modul}'. Setiap modul harus menggunakan media materi yang unik.",
+                        ]);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper ekstraksi YouTube ID dari string URL atau embed code
+     */
+    protected function extractYoutubeId(?string $url): ?string
+    {
+        if (!$url) return null;
+        $raw = trim($url);
+        if (preg_match('/src=["\']([^"\']+)["\']/', $raw, $srcMatch)) {
+            $raw = $srcMatch[1];
+        }
+        if (preg_match('%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?|live|shorts)/|.*[?&]v=)|youtu\.be/)([^"&?/\s]{11})%i', $raw, $match)) {
+            return $match[1];
+        }
+        if (preg_match('/^[a-zA-Z0-9_-]{11}$/', $raw)) {
+            return $raw;
+        }
+        return null;
     }
 
     // Menghapus data modul dan file fisik terkait dari storage
     public function destroy($id)
     {
         $modul = Modul::findOrFail($id);
+        if (auth()->check()) {
+            Gate::authorize('delete', $modul);
+        }
 
         // Hapus file materi dari storage jika ada & bukan link eksternal
         if ($modul->file_materi && $modul->tipe_file !== 'link' && Storage::disk('public')->exists($modul->file_materi)) {
@@ -339,6 +566,10 @@ class ModulController extends Controller
     // API: menyimpan data modul baru
     public function apiStore(Request $request)
     {
+        if (auth()->check()) {
+            Gate::authorize('create', Modul::class);
+        }
+
         $request->validate([
             'judul_modul' => 'required|string|max:255',
             'id_tipemodul' => 'required|integer',
@@ -394,6 +625,10 @@ class ModulController extends Controller
                 'success' => false,
                 'message' => 'Modul tidak ditemukan.',
             ], 404);
+        }
+
+        if (auth()->check()) {
+            Gate::authorize('update', $module);
         }
 
         $request->validate([
@@ -460,6 +695,10 @@ class ModulController extends Controller
                 'success' => false,
                 'message' => 'Modul tidak ditemukan.',
             ], 404);
+        }
+
+        if (auth()->check()) {
+            Gate::authorize('delete', $modul);
         }
 
         if ($modul->file_materi && $modul->tipe_file !== 'link' && Storage::disk('public')->exists($modul->file_materi)) {

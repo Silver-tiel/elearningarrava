@@ -536,7 +536,7 @@
 
     @if (session('success'))
         showToast('success', @json(session('success')));
-    @elseif ($errors->any())
+    @elseif (isset($errors) && $errors->any())
         showToast('error', @json($errors->first()));
     @endif
 </script>
