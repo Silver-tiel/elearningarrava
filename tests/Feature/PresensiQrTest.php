@@ -35,20 +35,23 @@ class PresensiQrTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('jenjang', function (Blueprint $table) {
+            $table->increments('id_jenjang');
+            $table->string('nama_tipe');
+        });
+        DB::table('jenjang')->insert(['nama_tipe' => 'SD']);
+
         Schema::create('kelas', function (Blueprint $table) {
             $table->increments('id_kelas');
             $table->string('nama');
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->string('tahun_ajaran')->nullable();
+            $table->string('hari', 20)->nullable();
+            $table->date('berlaku_dari')->nullable();
+            $table->date('berlaku_sampai')->nullable();
+            $table->time('jam_batas')->nullable();
             $table->boolean('aktif')->default(true);
             $table->timestamps();
-        });
-        Schema::create('kelas_siswa', function (Blueprint $table) {
-            $table->increments('id');
-            $table->unsignedInteger('id_kelas');
-            $table->unsignedInteger('id_siswa');
-            $table->timestamps();
-            $table->unique(['id_kelas', 'id_siswa']);
         });
         Schema::create('kelas_guru', function (Blueprint $table) {
             $table->increments('id');
@@ -66,6 +69,7 @@ class PresensiQrTest extends TestCase
             $table->date('tanggal');
             $table->dateTime('batas_tepat_waktu')->nullable();
             $table->string('status')->default('buka');
+            $table->string('kunci_otomatis', 40)->nullable()->unique();
             $table->timestamps();
         });
         Schema::create('presensi', function (Blueprint $table) {
@@ -99,23 +103,23 @@ class PresensiQrTest extends TestCase
 
     // ---------- helper ----------
 
-    private function user(int $tipe, string $nama): User
+    private function user(int $tipe, string $nama, ?int $jenjang = null): User
     {
         return User::create([
             'nama' => $nama,
             'email' => strtolower(str_replace(' ', '', $nama)) . '@example.com',
             'password' => bcrypt('password123'),
             'id_tipeuser' => $tipe,
+            'id_jenjang' => $jenjang,
         ]);
     }
 
     private function skenario(): array
     {
         $guru = $this->user(2, 'Guru A');
-        $siswa = $this->user(3, 'Siswa Satu');
-        $kelas = Kelas::create(['nama' => 'Kelas X – Matematika', 'aktif' => true]);
+        $siswa = $this->user(3, 'Siswa Satu', 1); // jenjang 1
+        $kelas = Kelas::create(['nama' => 'Kelas X – Matematika', 'id_jenjang' => 1, 'aktif' => true]);
         $kelas->guru()->attach($guru->id_user);
-        $kelas->siswa()->attach($siswa->id_user);
         $sesi = SesiPresensi::create([
             'id_kelas' => $kelas->id_kelas,
             'id_guru' => $guru->id_user,
@@ -220,7 +224,7 @@ class PresensiQrTest extends TestCase
     public function test_siswa_bukan_anggota_kelas_ditolak(): void
     {
         ['guru' => $guru, 'sesi' => $sesi] = $this->skenario();
-        $orangLuar = $this->user(3, 'Siswa Luar');
+        $orangLuar = $this->user(3, 'Siswa Luar', 2); // jenjang berbeda
 
         $this->scan($guru, $sesi, $orangLuar->qrPayload())
             ->assertStatus(422)
@@ -273,6 +277,286 @@ class PresensiQrTest extends TestCase
         $this->scan($guru, $sesi, 'acak-lagi')->assertStatus(429)->assertJsonPath('status', 'dibatasi');
     }
 
+    public function test_siswa_jenjang_sama_otomatis_peserta_tanpa_didaftarkan(): void
+    {
+        ['guru' => $guru, 'sesi' => $sesi] = $this->skenario();
+        $baru = $this->user(3, 'Siswa Baru Sejenjang', 1); // dibuat SETELAH kelas, tanpa input manual
+
+        $this->scan($guru, $sesi, $baru->qrPayload())->assertOk()->assertJsonPath('status', 'hadir');
+    }
+
+    public function test_kelas_tanpa_jenjang_tidak_punya_peserta(): void
+    {
+        ['guru' => $guru, 'siswa' => $siswa, 'kelas' => $kelas, 'sesi' => $sesi] = $this->skenario();
+        $kelas->update(['id_jenjang' => null]);
+
+        $this->scan($guru, $sesi, $siswa->qrPayload())->assertStatus(422)->assertJsonPath('status', 'bukan_anggota');
+    }
+
+    public function test_peserta_kelas_hanya_siswa_aktif_sejenjang(): void
+    {
+        ['kelas' => $kelas] = $this->skenario(); // Siswa Satu (jenjang 1, aktif)
+        $this->user(3, 'Siswa Beda', 2);
+        $nonaktif = $this->user(3, 'Siswa Nonaktif', 1);
+        $nonaktif->forceFill(['status_akun' => 'Nonaktif'])->save();
+        $this->user(2, 'Guru Sejenjang', 1);
+
+        $this->assertSame(['Siswa Satu'], $kelas->anggota()->pluck('nama')->all());
+    }
+
+    // ---------- kedaluwarsa per hari ----------
+
+    public function test_sesi_kemarin_kedaluwarsa_scan_ditolak_dan_data_tetap_ada(): void
+    {
+        ['guru' => $guru, 'siswa' => $siswa, 'sesi' => $sesi] = $this->skenario();
+
+        // Siswa sudah tercatat saat sesi masih berlaku (hari ini).
+        $this->scan($guru, $sesi, $siswa->qrPayload())->assertJsonPath('status', 'hadir');
+
+        // Besoknya: tanggal sesi menjadi "kemarin".
+        $sesi->update(['tanggal' => now()->subDay()->toDateString()]);
+        $sesi = $sesi->fresh();
+
+        $this->assertTrue($sesi->kedaluwarsa());
+        $this->assertFalse($sesi->bisaDipindai());
+        $this->assertSame('kedaluwarsa', $sesi->statusTampil());
+
+        $lain = $this->user(3, 'Siswa Terlambat Datang', 1);
+        $this->scan($guru, $sesi, $lain->qrPayload())
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'kedaluwarsa');
+
+        // Data lama tidak hilang, dan percobaan tercatat di log.
+        $this->assertDatabaseHas('presensi', ['id_sesi' => $sesi->id_sesi, 'id_siswa' => $siswa->id_user]);
+        $this->assertSame(1, DB::table('presensi')->count());
+        $this->assertDatabaseHas('log_pemindaian', ['id_sesi' => $sesi->id_sesi, 'hasil' => 'kedaluwarsa']);
+    }
+
+    public function test_halaman_scan_sesi_kedaluwarsa_dialihkan_ke_rekap(): void
+    {
+        ['guru' => $guru, 'sesi' => $sesi] = $this->skenario();
+        $sesi->update(['tanggal' => now()->subDay()->toDateString()]);
+
+        $this->actingAs($guru)
+            ->get(route('guru.presensi.scan', $sesi->id_sesi))
+            ->assertRedirect(route('guru.presensi.rekap', $sesi->id_sesi));
+    }
+
+    public function test_sesi_hari_ini_masih_bisa_dipindai_dan_berlaku_sampai_akhir_hari(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-29 23:59:00'));
+        ['guru' => $guru, 'siswa' => $siswa, 'sesi' => $sesi] = $this->skenario();
+
+        $this->assertTrue($sesi->fresh()->bisaDipindai());
+        $this->scan($guru, $sesi, $siswa->qrPayload())->assertOk();
+
+        // Lewat tengah malam: otomatis kedaluwarsa tanpa perlu ditutup manual.
+        Carbon::setTestNow(Carbon::parse('2026-10-30 00:01:00'));
+        $lain = $this->user(3, 'Siswa Lewat Tengah Malam', 1);
+        $this->scan($guru, $sesi->fresh(), $lain->qrPayload())->assertStatus(422)->assertJsonPath('status', 'kedaluwarsa');
+    }
+
+    // ---------- kelas aktif hari ini (jadwal & masa berlaku) ----------
+
+    public function test_aturan_aktif_pada_tanggal(): void
+    {
+        $kelas = new Kelas(['aktif' => true]);
+        $this->assertTrue($kelas->aktifPadaTanggal(now()), 'tanpa jadwal = setiap hari');
+
+        $kelas = new Kelas(['aktif' => true, 'hari' => '1,3', 'berlaku_dari' => '2026-11-01', 'berlaku_sampai' => '2026-11-30']);
+        $this->assertTrue($kelas->aktifPadaTanggal(Carbon::parse('2026-11-02')), 'Senin dalam masa berlaku');
+        $this->assertFalse($kelas->aktifPadaTanggal(Carbon::parse('2026-11-03')), 'Selasa bukan jadwal');
+        $this->assertFalse($kelas->aktifPadaTanggal(Carbon::parse('2026-12-07')), 'Senin tetapi di luar masa berlaku');
+        $this->assertTrue($kelas->aktifPadaTanggal(Carbon::parse('2026-11-30 23:59')), 'hari terakhir masa berlaku (Senin) masih termasuk');
+    }
+
+    // ---------- sesi presensi otomatis ----------
+
+    public function test_admin_membuat_kelas_sesi_hari_ini_langsung_dibuat_otomatis(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-04 07:00:00')); // Rabu
+        $admin = $this->user(1, 'Admin Kelas');
+
+        $this->actingAs($admin)->post(route('admin.kelas.store'), [
+            'nama' => 'Kelas Baru',
+            'id_jenjang' => 1,
+            'jam_batas' => '08:15',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $kelas = Kelas::where('nama', 'Kelas Baru')->firstOrFail();
+        $sesi = SesiPresensi::where('id_kelas', $kelas->id_kelas)->firstOrFail();
+
+        $this->assertSame('2026-11-04', $sesi->tanggal->toDateString());
+        $this->assertSame('buka', $sesi->status);
+        $this->assertSame('2026-11-04 08:15:00', $sesi->batas_tepat_waktu->format('Y-m-d H:i:s'));
+        $this->assertNotNull($sesi->kunci_otomatis);
+        $this->assertTrue($sesi->bisaDipindai());
+    }
+
+    public function test_kelas_baru_di_luar_jadwal_hari_ini_tidak_langsung_punya_sesi(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-04 07:00:00')); // Rabu = 3
+        $admin = $this->user(1, 'Admin Jadwal Lain');
+
+        $this->actingAs($admin)->post(route('admin.kelas.store'), [
+            'nama' => 'Kelas Kamis',
+            'id_jenjang' => 1,
+            'hari' => [4], // Kamis saja
+        ])->assertSessionHasNoErrors();
+
+        $kelas = Kelas::where('nama', 'Kelas Kamis')->firstOrFail();
+        $this->assertSame(0, SesiPresensi::where('id_kelas', $kelas->id_kelas)->count());
+
+        // Hari Kamis berikutnya: sesi dibuat otomatis.
+        $sesi = SesiPresensi::pastikanUntuk($kelas, Carbon::parse('2026-11-05'), $admin->id_user);
+        $this->assertNotNull($sesi);
+        $this->assertSame('2026-11-05', $sesi->tanggal->toDateString());
+    }
+
+    public function test_pastikan_sesi_idempoten_dan_tidak_menggandakan_sesi_manual(): void
+    {
+        ['guru' => $guru, 'kelas' => $kelas, 'sesi' => $manual] = $this->skenario(); // sesi hari ini (manual)
+
+        $a = SesiPresensi::pastikanUntuk($kelas, now(), $guru->id_user);
+        $b = SesiPresensi::pastikanUntuk($kelas, now(), $guru->id_user);
+
+        $this->assertSame($manual->id_sesi, $a->id_sesi);
+        $this->assertSame($manual->id_sesi, $b->id_sesi);
+        $this->assertSame(1, SesiPresensi::where('id_kelas', $kelas->id_kelas)->count());
+
+        $lain = Kelas::create(['nama' => 'Kelas Lain', 'id_jenjang' => 1, 'aktif' => true]);
+        $c = SesiPresensi::pastikanUntuk($lain, now(), $guru->id_user);
+        $d = SesiPresensi::pastikanUntuk($lain, now(), $guru->id_user);
+        $this->assertSame($c->id_sesi, $d->id_sesi);
+        $this->assertSame(1, SesiPresensi::where('id_kelas', $lain->id_kelas)->count());
+    }
+
+    public function test_sesi_otomatis_tidak_dibuat_untuk_kelas_yang_tidak_aktif_hari_ini(): void
+    {
+        ['guru' => $guru] = $this->skenario();
+        $besokHari = now()->dayOfWeekIso % 7 + 1;
+
+        $kasus = [
+            'bukan hari jadwal' => ['hari' => (string) $besokHari],
+            'masa berlaku habis' => ['berlaku_sampai' => now()->subDay()->toDateString()],
+            'belum mulai berlaku' => ['berlaku_dari' => now()->addDay()->toDateString()],
+            'nonaktif' => ['aktif' => false],
+        ];
+
+        foreach ($kasus as $nama => $atribut) {
+            $kelas = Kelas::create(array_merge(['nama' => 'Kelas ' . $nama, 'id_jenjang' => 1, 'aktif' => true], $atribut));
+            $this->assertNull(SesiPresensi::pastikanUntuk($kelas, now(), $guru->id_user), $nama);
+            $this->assertSame(0, SesiPresensi::where('id_kelas', $kelas->id_kelas)->count(), $nama);
+        }
+    }
+
+    public function test_scan_ditolak_jika_kelas_tidak_lagi_aktif_walau_sesi_hari_ini_ada(): void
+    {
+        ['guru' => $guru, 'siswa' => $siswa, 'kelas' => $kelas, 'sesi' => $sesi] = $this->skenario();
+        $kelas->update(['berlaku_sampai' => now()->subDay()->toDateString()]);
+
+        $this->assertFalse($sesi->fresh()->bisaDipindai());
+        $this->scan($guru, $sesi, $siswa->qrPayload())
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'kelas_nonaktif');
+        $this->assertSame(0, DB::table('presensi')->count());
+    }
+
+    public function test_pembuatan_sesi_manual_sudah_dihapus(): void
+    {
+        ['guru' => $guru, 'kelas' => $kelas] = $this->skenario();
+
+        $this->actingAs($guru)
+            ->post('/guru/presensi/sesi', ['id_kelas' => $kelas->id_kelas, 'judul' => 'Manual'])
+            ->assertNotFound();
+    }
+
+    // ---------- halaman Presensi: kelas hari ini + riwayat berfilter ----------
+
+    private function sesiLama(Kelas $kelas, User $guru, string $judul, string $tanggal): SesiPresensi
+    {
+        return SesiPresensi::create([
+            'id_kelas' => $kelas->id_kelas,
+            'id_guru' => $guru->id_user,
+            'judul' => $judul,
+            'tanggal' => $tanggal,
+            'status' => 'buka',
+        ]);
+    }
+
+    public function test_halaman_presensi_menampilkan_kelas_hari_ini_dan_riwayat_minggu_ini(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-04 10:00:00')); // Rabu; minggu ini mulai Senin 2 Nov
+        ['guru' => $guru, 'kelas' => $kelas] = $this->skenario();
+
+        $this->sesiLama($kelas, $guru, 'Sesi Senin Ini', '2026-11-02');
+        $this->sesiLama($kelas, $guru, 'Sesi Selasa Lalu', '2026-10-27');
+        $this->sesiLama($kelas, $guru, 'Sesi Dua Minggu Lalu', '2026-10-15');
+        $this->sesiLama($kelas, $guru, 'Sesi Terlalu Lama', '2026-09-20');
+
+        $this->actingAs($guru)->get(route('guru.presensi.index'))
+            ->assertOk()
+            ->assertSee('Kelas hari ini')
+            ->assertSee('Kelas X – Matematika')
+            ->assertSee('Sesi Senin Ini')
+            ->assertDontSee('Sesi Selasa Lalu')
+            ->assertDontSee('Sesi Dua Minggu Lalu')
+            ->assertDontSee('Sesi Terlalu Lama')
+            ->assertDontSee('Buat Sesi');
+    }
+
+    public function test_riwayat_satu_bulan_dan_filter_hari(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-04 10:00:00'));
+        ['guru' => $guru, 'kelas' => $kelas] = $this->skenario();
+
+        $this->sesiLama($kelas, $guru, 'Sesi Senin Ini', '2026-11-02');      // Senin
+        $this->sesiLama($kelas, $guru, 'Sesi Selasa Lalu', '2026-10-27');    // Selasa
+        $this->sesiLama($kelas, $guru, 'Sesi Kamis Lama', '2026-10-15');     // Kamis
+        $this->sesiLama($kelas, $guru, 'Sesi Terlalu Lama', '2026-09-20');   // > 30 hari
+
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['rentang' => 'bulan']))
+            ->assertOk()
+            ->assertSee('Sesi Senin Ini')
+            ->assertSee('Sesi Selasa Lalu')
+            ->assertSee('Sesi Kamis Lama')
+            ->assertDontSee('Sesi Terlalu Lama');
+
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['rentang' => 'bulan', 'hari' => 4]))
+            ->assertOk()
+            ->assertSee('Sesi Kamis Lama')
+            ->assertDontSee('Sesi Senin Ini')
+            ->assertDontSee('Sesi Selasa Lalu');
+
+        // Filter hari pada tampilan minggu ini.
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['hari' => 2]))
+            ->assertOk()
+            ->assertDontSee('Sesi Senin Ini')
+            ->assertSee('Tidak ada riwayat');
+    }
+
+    public function test_guru_tidak_melihat_kelas_lain_di_halaman_presensi(): void
+    {
+        ['guru' => $guru] = $this->skenario();
+        Kelas::create(['nama' => 'Kelas Rahasia Lain', 'id_jenjang' => 1, 'aktif' => true]);
+
+        $this->actingAs($guru)->get(route('guru.presensi.index'))
+            ->assertOk()
+            ->assertDontSee('Kelas Rahasia Lain');
+    }
+
+    public function test_membuka_halaman_presensi_membuat_sesi_hari_ini_untuk_kelas_yang_diampu(): void
+    {
+        $guru = $this->user(2, 'Guru Otomatis');
+        $kelas = Kelas::create(['nama' => 'Kelas Otomatis', 'id_jenjang' => 1, 'aktif' => true]);
+        $kelas->guru()->attach($guru->id_user);
+        $this->assertSame(0, SesiPresensi::count());
+
+        $this->actingAs($guru)->get(route('guru.presensi.index'))->assertOk()->assertSee('Kelas Otomatis');
+
+        $this->assertSame(1, SesiPresensi::where('id_kelas', $kelas->id_kelas)->count());
+    }
+
     // ---------- regenerate ----------
 
     public function test_regenerate_mencabut_token_lama(): void
@@ -321,18 +605,6 @@ class PresensiQrTest extends TestCase
 
         $this->actingAs($siswa)->get(route('guru.presensi.index'))->assertStatus(403);
         $this->actingAs($siswa)->get(route('guru.presensi.rekap', $sesi->id_sesi))->assertStatus(403);
-    }
-
-    public function test_guru_tidak_bisa_membuat_sesi_untuk_kelas_yang_tidak_diampu(): void
-    {
-        ['guru' => $guru] = $this->skenario();
-        $kelasLain = Kelas::create(['nama' => 'Kelas Lain', 'aktif' => true]);
-
-        $this->actingAs($guru)->post(route('guru.presensi.sesi.store'), [
-            'id_kelas' => $kelasLain->id_kelas,
-            'judul' => 'Pertemuan 1',
-            'tanggal' => now()->toDateString(),
-        ])->assertStatus(403);
     }
 
     // ---------- Policy konten ----------

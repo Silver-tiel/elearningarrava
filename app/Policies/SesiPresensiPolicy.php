@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Models\Kelas;
 use App\Models\SesiPresensi;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -12,12 +11,6 @@ class SesiPresensiPolicy
     public function viewAny(User $user): bool
     {
         return $user->isAdmin() || $user->isGuru();
-    }
-
-    /** Membuat sesi untuk sebuah kelas: admin bebas, guru hanya kelas yang ia ampu. */
-    public function create(User $user, Kelas $kelas): bool
-    {
-        return $user->isAdmin() || $this->mengampu($user, (int) $kelas->id_kelas);
     }
 
     public function view(User $user, SesiPresensi $sesi): bool
