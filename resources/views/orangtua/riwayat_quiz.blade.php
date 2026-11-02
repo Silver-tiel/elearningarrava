@@ -73,7 +73,6 @@
         </div>
     </div>
 
-
     {{-- Statistik hasil quiz --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
@@ -121,61 +120,60 @@
         </div>
     </div>
 
-{{-- Quiz yang perlu diperhatikan --}}
-<div class="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
-    <div class="border-b border-amber-100 bg-amber-50/70 px-5 py-4">
-        <h2 class="font-bold text-slate-800">Quiz yang Perlu Diperhatikan</h2>
-        <p class="mt-1 text-sm text-slate-600">
-            Quiz dengan nilai di bawah 70 atau status belum lulus.
-        </p>
-    </div>
+    {{-- Quiz yang perlu diperhatikan --}}
+    <div class="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
+        <div class="border-b border-amber-100 bg-amber-50/70 px-5 py-4">
+            <h2 class="font-bold text-slate-800">Quiz yang Perlu Diperhatikan</h2>
+            <p class="mt-1 text-sm text-slate-600">
+                Quiz dengan nilai di bawah 70 atau status belum lulus.
+            </p>
+        </div>
 
-    @if ($kuisPerluPerhatian->isNotEmpty())
+        @if ($kuisPerluPerhatian->isNotEmpty())
         <div class="divide-y divide-slate-100">
             @foreach ($kuisPerluPerhatian as $quiz)
-                @php
-                    $totalPoin = (float) ($quiz->total_poin ?? 0);
-                    $nilai = $totalPoin > 0
-                        ? round(($quiz->poin_didapat / $totalPoin) * 100, 1)
-                        : 0;
-                @endphp
+            @php
+            $totalPoin = (float) ($quiz->total_poin ?? 0);
+            $nilai = $totalPoin > 0
+            ? round(($quiz->poin_didapat / $totalPoin) * 100, 1)
+            : 0;
+            @endphp
 
-                <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p class="font-semibold text-slate-800">
-                            {{ $quiz->quiz?->judul ?? 'Quiz tidak tersedia' }}
-                        </p>
-                        <p class="mt-1 text-sm text-slate-500">
-                            Skor {{ $quiz->poin_didapat ?? 0 }}/{{ $quiz->total_poin ?? 0 }}
-                            @if ($quiz->waktu_dapat)
-                                · {{ \Carbon\Carbon::parse($quiz->waktu_dapat)->translatedFormat('d M Y') }}
-                            @endif
-                        </p>
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        <span class="text-lg font-bold {{ $nilai < 70 ? 'text-rose-600' : 'text-amber-600' }}">
-                            {{ number_format($nilai, 1, ',', '.') }}
-                        </span>
-
-                        <span class="rounded-full px-3 py-1 text-xs font-semibold
-                            {{ $quiz->is_lulus ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700' }}">
-                            {{ $quiz->is_lulus ? 'Nilai Perlu Ditingkatkan' : 'Belum Lulus' }}
-                        </span>
-                    </div>
+            <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="font-semibold text-slate-800">
+                        {{ $quiz->quiz?->judul ?? 'Quiz tidak tersedia' }}
+                    </p>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Skor {{ $quiz->poin_didapat ?? 0 }}/{{ $quiz->total_poin ?? 0 }}
+                        @if ($quiz->waktu_dapat)
+                        · {{ \Carbon\Carbon::parse($quiz->waktu_dapat)->translatedFormat('d M Y') }}
+                        @endif
+                    </p>
                 </div>
+
+                <div class="flex items-center gap-3">
+                    <span class="text-lg font-bold {{ $nilai < 70 ? 'text-rose-600' : 'text-amber-600' }}">
+                        {{ number_format($nilai, 1, ',', '.') }}
+                    </span>
+
+                    <span class="rounded-full px-3 py-1 text-xs font-semibold
+                                    {{ $quiz->is_lulus ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700' }}">
+                        {{ $quiz->is_lulus ? 'Nilai Perlu Ditingkatkan' : 'Belum Lulus' }}
+                    </span>
+                </div>
+            </div>
             @endforeach
         </div>
-    @else
+        @else
         <div class="px-5 py-8 text-center">
             <p class="font-semibold text-emerald-700">Semua hasil quiz terlihat baik!</p>
             <p class="mt-1 text-sm text-slate-500">
                 Tidak ada hasil quiz yang masuk daftar perhatian berdasarkan kriteria saat ini.
             </p>
         </div>
-    @endif
-</div>
-
+        @endif
+    </div>
 
     {{-- Tabel riwayat --}}
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
