@@ -249,7 +249,7 @@
                                     @foreach ($soal->pilihanSoal as $pIndex => $pilihan)
                                         @php
                                             $lbl = strtoupper($pilihan->label);
-                                            $style = isset($kahootStyles[$lbl]) ? $kahootStyles[$lbl] : ['bg' => 'bg-indigo-600', 'hover' => 'hover:border-indigo-600', 'icon' => '●'];
+                                             $style = isset($kahootStyles[$lbl]) ? $kahootStyles[$lbl] : ['bg' => 'bg-indigo-600', 'hover' => 'hover:border-indigo-600', 'icon' => '●'];
                                         @endphp
                                         <label class="group relative flex items-center rounded-xl border-2 border-slate-200 bg-white hover:shadow-md cursor-pointer transition overflow-hidden p-2">
                                             <input type="radio" name="jawaban[{{ $soal->id_soal }}]" value="{{ $pilihan->label }}" class="peer sr-only">
@@ -343,17 +343,6 @@
                             </button>
                         @endforeach
                     </div>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-5 shadow-sm">
-                    <h2 class="text-xs font-bold uppercase tracking-wider text-amber-800">Pencapaian Interaktif 🏆</h2>
-                    <div class="mt-3 flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-white text-xl shadow-md">🏅</div>
-                        <div>
-                            <div class="text-xs font-bold text-amber-900">Kahoot Champion</div>
-                            <div class="text-[11px] text-amber-700">Raih skor sempurna untuk mendapatkan poin lebih</div>
-                        </div>
                     </div>
                 </div>
             </aside>
