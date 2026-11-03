@@ -9,7 +9,7 @@
     $labelRiwayat = [
         'hadir' => 'Hadir', 'terlambat' => 'Terlambat', 'duplikat' => 'Sudah tercatat',
         'tidak_valid' => 'QR tidak valid', 'bukan_anggota' => 'Bukan anggota kelas',
-        'tidak_aktif' => 'Akun nonaktif', 'sesi_ditutup' => 'Sesi ditutup',
+        'tidak_aktif' => 'Akun nonaktif', 'sesi_ditutup' => 'Sesi ditutup', 'kedaluwarsa' => 'Sesi kedaluwarsa', 'kelas_nonaktif' => 'Kelas tidak aktif',
     ];
 @endphp
 

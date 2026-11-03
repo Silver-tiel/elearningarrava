@@ -53,6 +53,9 @@
 
             {{-- Right side --}}
             <div class="flex items-center gap-3">
+                {{-- Pengaturan Suara --}}
+                @include('components.sound-settings')
+
                 {{-- Notifikasi placeholder --}}
                 <button class="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,6 +86,7 @@
 
 {{-- Modal Konfirmasi Logout (Reusable Component) --}}
 @include('components.logout-modal')
+@include('components.hover-effects')
 
 @stack('scripts')
 

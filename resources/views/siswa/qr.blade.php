@@ -13,14 +13,15 @@
 </style>
 
 <div class="p-4 sm:p-8 max-w-md mx-auto">
+    <a href="{{ route('siswa.profil') }}" class="inline-block mb-3 text-sm font-medium text-blue-600 hover:underline">← Kembali ke profil</a>
     <h1 class="text-2xl font-bold text-slate-800 mb-1">QR Presensi Saya</h1>
     <p class="text-sm text-slate-500 mb-6">Tunjukkan QR ini kepada guru saat presensi. QR ini hanya untukmu dan tidak boleh dibagikan.</p>
 
     <div id="kartu-qr" class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 text-center">
         <div id="qr-svg" class="mx-auto w-full max-w-[280px] bg-white p-2" role="img" aria-label="QR presensi milik {{ $nama }}">{!! $svg !!}</div>
         <p class="mt-4 text-lg font-bold text-slate-800">{{ $nama }}</p>
-        @if($kelas->isNotEmpty())
-            <p class="text-sm text-slate-500">{{ $kelas->implode(', ') }}</p>
+        @if($jenjang)
+            <p class="text-sm text-slate-500">Jenjang {{ $jenjang }}</p>
         @endif
         <p class="mt-2 text-xs text-slate-400">Bimbel Arava · Kartu presensi</p>
     </div>

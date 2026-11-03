@@ -28,70 +28,78 @@ class PresensiController extends Controller
 
         $user = $request->user();
 
-        $kelasQuery = Kelas::where('aktif', true)->orderBy('nama');
+        $kelasQuery = Kelas::orderBy('nama');
         if ($user->isGuru()) {
             $kelasQuery->whereIn('id_kelas', $user->kelasDiampu()->pluck('kelas.id_kelas'));
         }
-        $kelasList = $kelasQuery->get();
+        $semuaKelas = $kelasQuery->get();
+        $totalKelas = $semuaKelas->count();
 
-        $sesiList = SesiPresensi::with('kelas')
-            ->withCount('presensi')
-            ->whereIn('id_kelas', $kelasList->pluck('id_kelas'))
-            ->orderByDesc('tanggal')
-            ->orderByDesc('id_sesi')
-            ->limit(20)
-            ->get();
-
-        return view('guru.presensi.index', compact('kelasList', 'sesiList'));
-    }
-
-    public function storeSesi(Request $request)
-    {
-        $data = $request->validate([
-            'id_kelas' => ['required', 'integer', 'exists:kelas,id_kelas'],
-            'judul' => ['required', 'string', 'max:150'],
-            'pertemuan_ke' => ['nullable', 'integer', 'min:1', 'max:999'],
-            'tanggal' => ['required', 'date'],
-            'jam_batas' => ['nullable', 'date_format:H:i'],
-        ], [
-            'id_kelas.required' => 'Pilih kelas terlebih dahulu.',
-            'id_kelas.exists' => 'Kelas tidak ditemukan.',
-            'judul.required' => 'Judul pertemuan wajib diisi.',
-            'tanggal.required' => 'Tanggal wajib diisi.',
-            'jam_batas.date_format' => 'Format jam batas harus JJ:MM, misalnya 08:15.',
-        ]);
-
-        $kelas = Kelas::findOrFail($data['id_kelas']);
-
-        // Anti-IDOR: guru hanya boleh membuat sesi untuk kelas yang ia ampu.
-        Gate::authorize('create', [SesiPresensi::class, $kelas]);
-
-        if (!$kelas->aktif) {
-            return back()->withInput()->withErrors(['id_kelas' => 'Kelas ini sudah tidak aktif.']);
+        // Sesi presensi dibuat OTOMATIS untuk setiap kelas yang aktif hari ini
+        // (status aktif + masa berlaku + jadwal hari). Tidak ada pembuatan manual.
+        foreach ($semuaKelas as $kelas) {
+            SesiPresensi::pastikanUntuk($kelas, now(), $user->id_user);
         }
 
-        $tanggal = Carbon::parse($data['tanggal'])->startOfDay();
-        $batas = !empty($data['jam_batas'])
-            ? Carbon::parse($tanggal->toDateString() . ' ' . $data['jam_batas'])
-            : null;
+        $dasar = fn () => SesiPresensi::with('kelas')
+            ->withCount('presensi')
+            ->whereIn('id_kelas', $semuaKelas->pluck('id_kelas'));
 
-        $sesi = SesiPresensi::create([
-            'id_kelas' => $kelas->id_kelas,
-            'id_guru' => $request->user()->id_user,
-            'judul' => $data['judul'],
-            'pertemuan_ke' => $data['pertemuan_ke'] ?? null,
-            'tanggal' => $tanggal->toDateString(),
-            'batas_tepat_waktu' => $batas,
-            'status' => 'buka',
+        $hariIni = now()->toDateString();
+
+        $sesiHariIni = $dasar()
+            ->whereDate('tanggal', $hariIni)
+            ->get()
+            ->sortBy(fn (SesiPresensi $s) => $s->kelas->nama)
+            ->values();
+
+        // Riwayat: default = minggu ini (Senin sampai kemarin); opsional 30 hari terakhir.
+        $rentang = $request->query('rentang') === 'bulan' ? 'bulan' : 'minggu';
+        $hari = (int) $request->query('hari');
+        $hari = ($hari >= 1 && $hari <= 7) ? $hari : null;
+
+        $mulai = $rentang === 'bulan'
+            ? now()->subDays(30)->toDateString()
+            : now()->startOfWeek(Carbon::MONDAY)->toDateString();
+
+        $riwayat = $dasar()
+            ->whereDate('tanggal', '>=', $mulai)
+            ->whereDate('tanggal', '<', $hariIni)
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id_sesi')
+            ->limit(300)
+            ->get();
+
+        if ($hari !== null) {
+            $riwayat = $riwayat->filter(fn (SesiPresensi $s) => $s->tanggal->dayOfWeekIso === $hari)->values();
+        }
+
+        $riwayatPerTanggal = $riwayat->groupBy(fn (SesiPresensi $s) => $s->tanggal->toDateString());
+
+        return view('guru.presensi.index', [
+            'totalKelas' => $totalKelas,
+            'sesiHariIni' => $sesiHariIni,
+            'riwayatPerTanggal' => $riwayatPerTanggal,
+            'rentang' => $rentang,
+            'hari' => $hari,
+            'namaHari' => Kelas::HARI,
         ]);
-
-        return redirect()->route('guru.presensi.scan', $sesi->id_sesi);
     }
 
     public function scan($id)
     {
         $sesi = SesiPresensi::with('kelas')->findOrFail($id);
         Gate::authorize('scan', $sesi);
+
+        if ($sesi->kedaluwarsa()) {
+            return redirect()->route('guru.presensi.rekap', $sesi->id_sesi)
+                ->withErrors(['sesi' => 'Sesi presensi ini sudah kedaluwarsa (hanya berlaku pada tanggalnya). Data kehadiran tetap bisa dilihat di sini.']);
+        }
+
+        if (!$sesi->kelas->aktifPadaTanggal($sesi->tanggal)) {
+            return redirect()->route('guru.presensi.rekap', $sesi->id_sesi)
+                ->withErrors(['sesi' => 'Kelas ini sedang tidak aktif (di luar jadwal atau masa berlaku), jadi presensi tidak bisa dipindai.']);
+        }
 
         $riwayat = LogPemindaian::with('siswa:id_user,nama')
             ->where('id_sesi', $sesi->id_sesi)
@@ -135,6 +143,17 @@ class PresensiController extends Controller
             return $this->balas('sesi_ditutup', 'Sesi presensi ini sudah ditutup.', 422);
         }
 
+        if (!$sesi->isHariIni()) {
+            $this->catat($request, $sesi, null, $token, 'kedaluwarsa');
+            return $this->balas('kedaluwarsa', 'Sesi presensi ini sudah kedaluwarsa. Presensi hanya bisa dipindai pada hari yang sama dengan tanggal sesi.', 422);
+        }
+
+        // Batas penggunaan scan mengikuti jadwal/masa berlaku kelas (bisa berubah setelah sesi dibuat).
+        if (!$sesi->kelas->aktifPadaTanggal($sesi->tanggal)) {
+            $this->catat($request, $sesi, null, $token, 'kelas_nonaktif');
+            return $this->balas('kelas_nonaktif', 'Kelas ' . $sesi->kelas->nama . ' sedang tidak aktif (di luar jadwal atau masa berlaku). Presensi tidak dapat dicatat.', 422);
+        }
+
         // 1) Cek format + tanda tangan SEBELUM menyentuh database.
         $uuid = QrToken::uuidDariPayload($token);
         if ($uuid === null) {
@@ -156,15 +175,10 @@ class PresensiController extends Controller
             return $this->balas('tidak_aktif', 'Akun siswa ini sedang nonaktif.', 422);
         }
 
-        // 3) Siswa harus anggota kelas sesi ini.
-        $anggota = DB::table('kelas_siswa')
-            ->where('id_kelas', $sesi->id_kelas)
-            ->where('id_siswa', $siswa->id_user)
-            ->exists();
-
-        if (!$anggota) {
+        // 3) Siswa harus peserta kelas sesi ini (jenjang sama dengan kelas).
+        if (!$sesi->kelas->punyaPeserta($siswa)) {
             $this->catat($request, $sesi, $siswa->id_user, $token, 'bukan_anggota');
-            return $this->balas('bukan_anggota', 'Siswa ini tidak terdaftar di kelas ' . $sesi->kelas->nama . '.', 422);
+            return $this->balas('bukan_anggota', 'Siswa ini bukan peserta kelas ' . $sesi->kelas->nama . ' (jenjangnya berbeda).', 422);
         }
 
         // 4) Catat kehadiran; unique(id_sesi, id_siswa) mencegah duplikasi.
@@ -223,11 +237,7 @@ class PresensiController extends Controller
         $sesi = SesiPresensi::with('kelas')->findOrFail($id);
         Gate::authorize('view', $sesi);
 
-        $anggota = DB::table('kelas_siswa')
-            ->join('user', 'user.id_user', '=', 'kelas_siswa.id_siswa')
-            ->where('kelas_siswa.id_kelas', $sesi->id_kelas)
-            ->orderBy('user.nama')
-            ->get(['user.id_user', 'user.nama']);
+        $anggota = $sesi->kelas->anggota()->orderBy('nama')->get(['id_user', 'nama']);
 
         $presensi = Presensi::where('id_sesi', $sesi->id_sesi)->get()->keyBy('id_siswa');
 
@@ -249,7 +259,7 @@ class PresensiController extends Controller
 
     private function ringkasan(SesiPresensi $sesi): array
     {
-        $total = DB::table('kelas_siswa')->where('id_kelas', $sesi->id_kelas)->count();
+        $total = $sesi->kelas->anggota()->count();
         $hadir = Presensi::where('id_sesi', $sesi->id_sesi)->where('status', 'hadir')->count();
         $terlambat = Presensi::where('id_sesi', $sesi->id_sesi)->where('status', 'terlambat')->count();
 

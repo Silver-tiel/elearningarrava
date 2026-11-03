@@ -46,8 +46,8 @@ Route::get('/home', function () {
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 
-// Logout
-Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
+// Logout (mendukung POST dari modal logout dan GET jika diakses langsung/refresh)
+Route::match(['get', 'post'], '/logout', [LogoutController::class, 'logout'])->name('logout');
 
 // // Lupa password - UI dan endpoint awal. Pengiriman email reset dapat disambungkan
 // // ke Laravel Password Broker ketika konfigurasi mail sudah tersedia.
@@ -227,7 +227,6 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin'])->gr
 // PRESENSI: guru (kelas yang diampu) dan admin (semua kelas). Otorisasi akhir lewat SesiPresensiPolicy.
 Route::prefix('guru/presensi')->name('guru.presensi.')->middleware(['auth', 'active.student', 'role:admin,guru'])->group(function () {
     Route::get('/', [PresensiController::class, 'index'])->name('index');
-    Route::post('/sesi', [PresensiController::class, 'storeSesi'])->name('sesi.store');
     Route::get('/sesi/{id}', [PresensiController::class, 'scan'])->whereNumber('id')->name('scan');
     Route::get('/sesi/{id}/rekap', [PresensiController::class, 'rekap'])->whereNumber('id')->name('rekap');
     Route::post('/sesi/{id}/tutup', [PresensiController::class, 'tutup'])->whereNumber('id')->name('tutup');

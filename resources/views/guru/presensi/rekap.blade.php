@@ -17,7 +17,11 @@
 
     <div class="mb-4">
         <h2 class="text-xl font-bold text-slate-800">Rekap: {{ $sesi->judul }}</h2>
-        <p class="text-sm text-slate-500">{{ $sesi->kelas->nama }} · {{ $sesi->tanggal->format('d M Y') }} · {{ $sesi->isBuka() ? 'Sesi dibuka' : 'Sesi ditutup' }}</p>
+        <p class="text-sm text-slate-500">{{ $sesi->kelas->nama }} · {{ $sesi->tanggal->format('d M Y') }} · @switch($sesi->statusTampil())
+            @case('dibuka') Sesi dibuka @break
+            @case('kedaluwarsa') Sesi kedaluwarsa @break
+            @default Sesi ditutup
+        @endswitch</p>
     </div>
 
     <div class="grid grid-cols-3 gap-2 text-center mb-6">
@@ -26,7 +30,7 @@
         <div class="rounded-xl bg-red-50 border border-red-200 p-3"><p class="text-2xl font-bold text-red-800">{{ $ringkasan['tidak_hadir'] }}</p><p class="text-xs text-red-800">Tidak hadir</p></div>
     </div>
 
-    @if($sesi->isBuka())
+    @if($sesi->bisaDipindai())
         <a href="{{ route('guru.presensi.scan', $sesi->id_sesi) }}" class="mb-4 inline-flex items-center h-12 px-5 rounded-xl bg-blue-600 text-white font-semibold">Lanjut scan</a>
     @endif
 
