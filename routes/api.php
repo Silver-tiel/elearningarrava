@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\ModulController;
 use App\Http\Controllers\QuizController;
 
@@ -13,6 +14,12 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Dashboard
+    Route::get('/student/dashboard', [DashboardController::class, 'studentDashboard']);
+    Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard']);
+    Route::get('/teachers', [DashboardController::class, 'teachers']);
+    Route::get('/students', [DashboardController::class, 'students']);
 
     // Baca: semua pengguna terautentikasi.
     Route::get('/modules', [ModulController::class, 'apiIndex']);
