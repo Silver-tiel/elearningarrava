@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\ModulController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\SiswaController;
 
 // AUTH
 Route::post('/login', [AuthController::class, 'login']);
@@ -17,6 +18,8 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
 
     // Dashboard
     Route::get('/student/dashboard', [DashboardController::class, 'studentDashboard']);
+    Route::get('/student/profile', [DashboardController::class, 'studentProfile']);
+    Route::put('/student/profile', [DashboardController::class, 'updateStudentProfile']);
     Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard']);
     Route::get('/teachers', [DashboardController::class, 'teachers']);
     Route::get('/students', [DashboardController::class, 'students']);
@@ -24,6 +27,7 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
     // Baca: semua pengguna terautentikasi.
     Route::get('/modules', [ModulController::class, 'apiIndex']);
     Route::get('/modules/{id}', [ModulController::class, 'apiShow']);
+    Route::post('/modules/{id}/complete', [SiswaController::class, 'tandaiMateriSelesai']);
     Route::get('/quizzes', [QuizController::class, 'apiIndex']);
     Route::get('/quizzes/{id}', [QuizController::class, 'apiShow']);
     Route::post('/quizzes/{id}/verify-token', [QuizController::class, 'apiVerifyToken']);
