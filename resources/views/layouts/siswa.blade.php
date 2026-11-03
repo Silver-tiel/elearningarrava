@@ -48,6 +48,12 @@
                         @yield('header-left')
                     </div>
                 </div>
+
+                <!-- Bagian Kanan Header: Pengaturan Suara & Aksi Tambahan -->
+                <div class="flex items-center gap-3 shrink-0 ml-4">
+                    @include('components.sound-settings')
+                    @yield('header-right')
+                </div>
             </header>
 
             <!-- KONTEN UTAMA -->
