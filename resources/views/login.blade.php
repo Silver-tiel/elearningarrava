@@ -304,6 +304,8 @@
         {{ $errors->first() }}
       @elseif (session('success'))
         <span style="color: #08764F;">{{ session('success') }}</span>
+      @elseif (session('error'))
+        <span style="color: #c0262d;">{{ session('error') }}</span>
       @endif
     </p>
 

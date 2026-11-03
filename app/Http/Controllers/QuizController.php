@@ -743,10 +743,15 @@ class QuizController extends Controller
 
     public function apiIndex(Request $request)
     {
-        $query = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang'])
+        $query = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'])
             ->withCount(['soal', 'hasil as participants_count']);
 
-        if ($request->filled('jenjang')) {
+        $user = $request->user();
+
+        // Siswa otomatis hanya dapat melihat kuis sesuai jenjang mereka (konsisten dengan web SiswaController)
+        if ($user && $user->isSiswa() && $user->id_jenjang) {
+            $query->where('id_jenjang', $user->id_jenjang);
+        } elseif ($request->filled('jenjang')) {
             $query->where('id_jenjang', $request->jenjang);
         }
 
@@ -798,6 +803,14 @@ class QuizController extends Controller
                 'status' => 'error',
                 'message' => 'Quiz tidak ditemukan.',
             ], 404);
+        }
+
+        $user = request()->user();
+        if ($user && $user->isSiswa() && $user->id_jenjang && $quiz->id_jenjang && (int)$quiz->id_jenjang !== (int)$user->id_jenjang) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Kuis ini tidak tersedia untuk jenjang pendidikan Anda.',
+            ], 403);
         }
 
         return response()->json([
