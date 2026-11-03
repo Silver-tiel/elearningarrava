@@ -19,6 +19,13 @@ class HasilQuizModul extends Model
         'waktu_dapat',
     ];
 
+    protected $casts = [
+        'waktu_dapat' => 'datetime',
+        'is_lulus' => 'boolean',
+        'total_poin' => 'integer',
+        'poin_didapat' => 'integer',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class, 'id_user', 'id_user');
