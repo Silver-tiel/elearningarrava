@@ -103,7 +103,7 @@
 
             <input
                 id="nomor_hp"
-                name="nomor_hp"
+                name="nomor_handphone"
                 type="tel"
                 value="{{ old('nomor_handphone') }}"
                 placeholder="Contoh: 08123456789"
