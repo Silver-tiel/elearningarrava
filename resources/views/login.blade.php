@@ -174,10 +174,14 @@
 }
 .switch-register a {
   font-weight: 700;
-  color: var(--accent);
+  color: #2563eb;
   text-decoration: none;
+  transition: color 0.15s ease;
 }
-.switch-register a:hover { text-decoration: underline; }
+.switch-register a:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
 
 /* =====================================================================
    HALAMAN SETELAH LOGIN (Transisi Naik)

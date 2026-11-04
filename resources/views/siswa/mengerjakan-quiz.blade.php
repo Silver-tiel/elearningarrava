@@ -1,9 +1,11 @@
 @extends('layouts.siswa')
 
 @section('hideSidebar', 'true')
+@section('hideNiere', 'true')
 
 @php
     $hideSidebar = true;
+    $hideNiere = true;
     $isPreview = $isPreview ?? false;
     $active = 'quiz';
     $kahootStyles = [

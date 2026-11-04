@@ -66,6 +66,9 @@
 
     @include('components.hover-effects')
     @include('components.logout-modal')
+    @if(!View::hasSection('hideNiere') && empty($hideNiere))
+        @include('components.niere-widget')
+    @endif
     @stack('scripts')
 </body>
 </html>

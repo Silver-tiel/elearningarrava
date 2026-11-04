@@ -55,5 +55,6 @@
 
     @include('components.hover-effects')
     @include('components.logout-modal')
+    @include('components.niere-widget')
 </body>
 </html>

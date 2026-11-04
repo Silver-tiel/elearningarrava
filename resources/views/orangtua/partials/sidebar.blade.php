@@ -17,15 +17,17 @@ $navItems = [
 
     {{-- Brand --}}
     <div class="flex items-center justify-between px-4 py-4 border-b border-slate-100">
-        <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md shadow-indigo-500/25">
-                A
-            </div>
+        <a href="{{ url('/') }}" class="flex items-center gap-2.5 no-underline group">
+            <svg viewBox="0 0 40 40" class="h-9 w-9 shrink-0 transition-transform duration-200 group-hover:scale-105" fill="none" aria-hidden="true">
+                <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+                <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
+            </svg>
             <div class="leading-tight">
-                <p class="text-[15px] font-bold text-slate-900">Arrava</p>
-                <p class="text-[11px] text-slate-400">Portal Orang Tua</p>
+                <p class="text-[16px] font-extrabold tracking-[-0.5px] text-[#082765]">Arrava</p>
+                <p class="text-[11px] font-medium text-slate-400">Portal Orang Tua</p>
             </div>
-        </div>
+        </a>
         <button id="otSidebarClose" type="button"
             class="lg:hidden flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -252,6 +252,7 @@
     @yield('scripts')
     @include('components.page-loader')
     @include('components.hover-effects')
+    @include('components.niere-widget')
 
 </body>
 

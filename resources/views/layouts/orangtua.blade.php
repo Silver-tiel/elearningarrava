@@ -87,6 +87,7 @@
 {{-- Modal Konfirmasi Logout (Reusable Component) --}}
 @include('components.logout-modal')
 @include('components.hover-effects')
+@include('components.niere-widget')
 
 @stack('scripts')
 
