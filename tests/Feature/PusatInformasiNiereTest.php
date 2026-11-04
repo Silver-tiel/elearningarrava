@@ -24,12 +24,17 @@ class PusatInformasiNiereTest extends TestCase
         $loginRes->assertSee('niere-widget-container');
         $loginRes->assertSee('pos-bottom');
         $loginRes->assertSee('niere-sprite');
+        $loginRes->assertSee('Belum punya akun?');
+        $loginRes->assertSee(route('pendaftaran'));
+        $loginRes->assertDontSee('Sudah punya akun?');
 
         $regRes = $this->get(route('pendaftaran'));
         $regRes->assertStatus(200);
         $regRes->assertSee('niere-widget-container');
         $regRes->assertSee('pos-top');
         $regRes->assertSee('niere-sprite');
+        $regRes->assertSee('Sudah punya akun?');
+        $regRes->assertSee(route('login'));
     }
 
     public function test_niere_widget_is_hidden_when_mengerjakan_quiz_or_viewing_quiz_detail(): void

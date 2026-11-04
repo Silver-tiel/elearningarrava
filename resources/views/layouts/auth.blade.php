@@ -105,14 +105,24 @@
 
                 </a>
 
-                {{-- Login link --}}
-                <div class="whitespace-nowrap text-sm text-[#647BA7] sm:text-base">
-                    Sudah punya akun?
-                    <a href="{{ url('/login') }}"
-                        class="font-semibold text-[#006BFA] hover:text-blue-800">
-                        Masuk
-                    </a>
-                </div>
+                {{-- Switch link (Login <-> Pendaftaran) --}}
+                @if(request()->routeIs('login') || request()->is('login'))
+                    <div class="whitespace-nowrap text-sm text-[#647BA7] sm:text-base">
+                        Belum punya akun?
+                        <a href="{{ route('pendaftaran') }}"
+                            class="font-semibold text-[#006BFA] hover:text-blue-800 transition">
+                            Daftar
+                        </a>
+                    </div>
+                @else
+                    <div class="whitespace-nowrap text-sm text-[#647BA7] sm:text-base">
+                        Sudah punya akun?
+                        <a href="{{ route('login') }}"
+                            class="font-semibold text-[#006BFA] hover:text-blue-800 transition">
+                            Masuk
+                        </a>
+                    </div>
+                @endif
 
             </header>
 
