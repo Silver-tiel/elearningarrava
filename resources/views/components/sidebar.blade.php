@@ -6,113 +6,7 @@
     $role = $isAdmin ? 'admin' : 'siswa';
 @endphp
 
-<style>
-    /* =======================================================
-       Sidebar Pop-up Icon Tween & Floating Effect
-       ======================================================= */
-    .sidebar-menu-item {
-        position: relative;
-        overflow: visible !important;
-        transition: background-color 0.18s ease, color 0.18s ease, transform 0.12s ease;
-    }
-
-    .sidebar-menu-item:active {
-        transform: scale(0.98);
-    }
-
-    /* Container pembungkus icon pop-up di sisi kanan link */
-    .sidebar-pop-wrap {
-        position: absolute;
-        right: 4px;
-        top: 50%;
-        transform: translateY(-50%);
-        pointer-events: none;
-        z-index: 20;
-        line-height: 0;
-    }
-
-    /* Kotak pop-up dengan spring tween entry (scale 0.25 -> 1) */
-    .sidebar-pop-box {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transform: scale(0.25) translateY(6px) rotate(-8deg);
-        transform-origin: center right;
-        transition: opacity 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
-                    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-        will-change: transform, opacity;
-    }
-
-    /* Tampil saat menu di-hover */
-    .sidebar-menu-item:hover .sidebar-pop-box {
-        opacity: 1;
-        transform: scale(1.08) translateY(0) rotate(0deg);
-    }
-
-    /* Tampil saat menu sedang aktif di halaman saat ini */
-    .sidebar-menu-item.is-active .sidebar-pop-box,
-    .sidebar-menu-item[data-active="true"] .sidebar-pop-box {
-        opacity: 1;
-        transform: scale(1) translateY(0) rotate(0deg);
-    }
-
-    /* Sedikit membesar jika menu aktif di-hover lagi */
-    .sidebar-menu-item.is-active:hover .sidebar-pop-box,
-    .sidebar-menu-item[data-active="true"]:hover .sidebar-pop-box {
-        transform: scale(1.08) translateY(0) rotate(0deg);
-    }
-
-    /* Gambar Icon Pixel Retro */
-    .sidebar-pop-img {
-        width: 48px;
-        height: 48px;
-        object-fit: contain;
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: pixelated;
-        filter: drop-shadow(0 4px 6px rgba(37, 99, 235, 0.18));
-        pointer-events: none;
-        user-select: none;
-    }
-
-    /* Animasi melayang / bobbing terus-menerus saat icon muncul (Opsi 4) */
-    .sidebar-menu-item:hover .sidebar-pop-img,
-    .sidebar-menu-item.is-active .sidebar-pop-img,
-    .sidebar-menu-item[data-active="true"] .sidebar-pop-img {
-        animation: sidebarIconBobFloat 2.2s ease-in-out infinite;
-    }
-
-    @keyframes sidebarIconBobFloat {
-        0%, 100% {
-            transform: translateY(0px) rotate(0deg);
-        }
-        50% {
-            transform: translateY(-4px) rotate(0.8deg);
-        }
-    }
-
-    /* Tactile press feedback pada icon pop-up saat tombol diklik */
-    .sidebar-menu-item:active .sidebar-pop-box {
-        transform: scale(0.92) translateY(2px);
-        transition: transform 0.08s ease;
-    }
-
-    /* =======================================================
-       Sidebar Pixel Snow Scene Widget (Inspired by VS Code Pets)
-       ======================================================= */
-    .sidebar-snow-card {
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
-    }
-    .sidebar-snow-card:active {
-        transform: scale(0.98);
-    }
-    .sidebar-snow-pixel-img {
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: pixelated;
-        image-rendering: -moz-crisp-edges;
-        image-rendering: crisp-edges;
-    }
-</style>
+@include('components.sidebar-effects')
 
 <!-- Backdrop Gelap untuk Layar Kecil (Mobile) -->
 <div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0 pointer-events-none lg:hidden"></div>
@@ -122,7 +16,7 @@
     <div class="space-y-6">
         <!-- Logo Brand & Tombol Close (Mobile) -->
         <div class="flex items-center justify-between px-2">
-            <a href="{{ url('/') }}" class="flex items-center gap-2.5 no-underline group">
+            <a href="{{ route($isAdmin ? 'admin' : 'siswa.dashboard') }}" class="flex items-center gap-2.5 no-underline group">
                 <svg viewBox="0 0 40 40" class="h-9 w-9 shrink-0 transition-transform duration-200 group-hover:scale-105" fill="none" aria-hidden="true">
                     <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
                     <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
@@ -366,25 +260,8 @@
     <!-- Bottom Section: Direct Sidebar Pixel Snow Scene + User Info & Logout -->
     <div class="mt-auto space-y-3">
         <!-- Direct Edge-to-Edge Pixel Snow Scene (Tanpa Card, Tanpa Tombol/Text, 1x Putar saat Diklik) -->
-        <div class="relative -mx-4 overflow-hidden h-52 sm:h-56 cursor-pointer select-none group bg-transparent transition-transform duration-150 active:scale-[0.98]"
-             id="sidebarSnowWidget"
-             role="button"
-             tabindex="0"
-             title="Klik untuk memutar animasi salju"
-             aria-label="Animasi Salju Sidebar">
-
-            <!-- 1. Gambar Diam / Normal (WEBP) - Skala diperbesar 110% agar melebihi batas sidebar namun tetap terpotong rapih -->
-            <img id="sidebarSnowStatic"
-                 src="{{ asset('assets/background/sidebar/sideSnow.webp') }}"
-                 alt="Pemandangan Salju Sidebar"
-                 class="sidebar-snow-pixel-img absolute inset-0 h-full w-full object-cover object-bottom scale-110 transition-opacity duration-200">
-
-            <!-- 2. Animasi Bergerak (GIF) - Berputar 1 kali saat diklik -->
-            <img id="sidebarSnowAnim"
-                 src="{{ asset('assets/background/sidebar/sideSnow.gif') }}"
-                 data-src="{{ asset('assets/background/sidebar/sideSnow.gif') }}"
-                 alt="Animasi Salju Sidebar Bergerak"
-                 class="sidebar-snow-pixel-img absolute inset-0 h-full w-full object-cover object-bottom scale-110 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="-mx-4">
+            @include('components.sidebar-snow')
         </div>
 
         <!-- User Info & Logout Card -->
@@ -465,99 +342,12 @@
             });
         }
 
-        // Interaktivitas Widget Pixel Snow Sidebar (Putar lonceng natal & animasi salju 1 kali saat diklik)
-        function initSidebarSnowInteraction() {
-            var widget = document.getElementById('sidebarSnowWidget');
-            var staticImg = document.getElementById('sidebarSnowStatic');
-            var animImg = document.getElementById('sidebarSnowAnim');
-
-            if (!widget || !staticImg || !animImg) return;
-
-            var SOUND_FILE = "{{ asset('assets/sounds/widgets/jingleSnowSound.wav') }}";
-            var currentAudio = null;
-            var stopTimer = null;
-
-            function stopAnimation() {
-                if (stopTimer) {
-                    clearTimeout(stopTimer);
-                    stopTimer = null;
-                }
-                animImg.classList.remove('opacity-100');
-                animImg.classList.add('opacity-0');
-                staticImg.classList.remove('opacity-0');
-            }
-
-            function playOnce() {
-                // Hentikan audio sebelumnya jika ada yang sedang berbunyi agar sinkron dari awal
-                if (currentAudio) {
-                    try {
-                        currentAudio.pause();
-                        currentAudio.currentTime = 0;
-                    } catch (e) {}
-                }
-                if (stopTimer) {
-                    clearTimeout(stopTimer);
-                    stopTimer = null;
-                }
-
-                // Mulai animasi GIF dari frame pertama (refresh timestamp)
-                var baseSrc = animImg.getAttribute('data-src') || animImg.src;
-                var cleanSrc = baseSrc.split('?')[0];
-                animImg.src = cleanSrc + '?t=' + Date.now();
-
-                // Tampilkan GIF, sembunyikan gambar diam
-                staticImg.classList.add('opacity-0');
-                animImg.classList.remove('opacity-0');
-                animImg.classList.add('opacity-100');
-
-                // Putar suara lonceng jingle (jingleSnowSound.wav)
-                try {
-                    var audio = new Audio(SOUND_FILE);
-                    audio.volume = 0.85;
-                    currentAudio = audio;
-
-                    audio.onended = function() {
-                        stopAnimation();
-                    };
-
-                    audio.onerror = function() {
-                        stopTimer = setTimeout(stopAnimation, 3000);
-                    };
-
-                    var playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(function() {
-                            stopTimer = setTimeout(stopAnimation, 3000);
-                        });
-                    }
-                } catch (e) {
-                    stopTimer = setTimeout(stopAnimation, 3000);
-                }
-
-                // Fallback batas waktu maksimal 7 detik sesuai durasi file WAV ~6.2 detik
-                stopTimer = setTimeout(stopAnimation, 7000);
-            }
-
-            widget.addEventListener('click', function() {
-                playOnce();
-            });
-
-            widget.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    playOnce();
-                }
-            });
-        }
-
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', function() {
                 initResponsiveSidebar();
-                initSidebarSnowInteraction();
             });
         } else {
             initResponsiveSidebar();
-            initSidebarSnowInteraction();
         }
     })();
 </script>
