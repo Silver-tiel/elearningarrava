@@ -103,7 +103,7 @@ Route::prefix('orangtua')
     });
 
 // Global Route untuk semua user login
-Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware(['auth', 'active.student', 'role:admin,guru,siswa']);
+Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware(['auth', 'active.student', 'role:admin,guru,siswa,orangtua']);
 
 // Admin dashboard.
 Route::get('/admin', function () {

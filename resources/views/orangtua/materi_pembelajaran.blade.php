@@ -363,7 +363,7 @@
 
                     {{-- Aksi --}}
                     <td class="px-4 py-4 text-center">
-                        <a href="{{ route('modul.show', $modul->id_modul) }}"
+                        <a href="{{ route('modul.show', ['id' => $modul->id_modul, 'siswa_id' => $siswa->id_user]) }}"
                            class="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-600 hover:text-indigo-800 transition group-hover:underline">
                             Rincian
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

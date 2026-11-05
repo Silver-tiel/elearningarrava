@@ -227,9 +227,21 @@ class ModulController extends Controller
     }
 
     // Menampilkan detail / preview modul
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $modul = Modul::with(['tipeModul', 'jenjang', 'quiz'])->findOrFail($id);
+
+        if ((int) $request->user()->id_tipeuser === 4) {
+            $siswa = \App\Models\User::where('id_tipeuser', 3)
+                ->whereIn('id_user', \App\Models\OrangtuaSiswa::where('id_orangtua', $request->user()->id_user)->select('id_siswa'))
+                ->when($request->filled('siswa_id'), fn ($query) => $query->where('id_user', $request->input('siswa_id')))
+                ->where('id_jenjang', $modul->id_jenjang)
+                ->first();
+
+            abort_unless($siswa && $modul->isPublished(), 403, 'Modul ini tidak tersedia untuk anak Anda.');
+
+            return view('modul.show', compact('modul', 'siswa'));
+        }
 
         // Jika modul draf dan yang mengakses bukan admin (tipeuser != 1)
         if ($modul->isDraft() && auth()->check() && (int) auth()->user()->id_tipeuser !== 1) {
