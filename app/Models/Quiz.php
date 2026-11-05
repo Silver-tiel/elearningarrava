@@ -46,7 +46,7 @@ class Quiz extends Model
 
     public function getCoverUrlAttribute(): string
     {
-        if (!empty($this->foto_quiz)) {
+        if (!empty($this->foto_quiz) && !str_starts_with($this->foto_quiz, 'soal/foto/')) {
             return asset('storage/' . $this->foto_quiz);
         }
 

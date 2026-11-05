@@ -8,6 +8,7 @@ use App\Models\ModulSoalPilihan;
 use App\Models\TipeModul;
 use App\Models\Jenjang;
 use App\Models\Quiz;
+use App\Models\ProgresModulSiswa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -527,15 +528,40 @@ class ModulController extends Controller
         return redirect()->route('admin.modul')->with('success', 'Modul berhasil dihapus.');
     }
     // API: mengambil semua modul
-    public function apiIndex()
+    public function apiIndex(Request $request)
     {
-        $moduls = Modul::with([
-            'tipeModul',
-            'jenjang',
-            'quiz'
-        ])
-        ->latest()
-        ->get();
+        $user = $request->user();
+        $query = Modul::with(['tipeModul', 'jenjang', 'quiz']);
+
+        // Siswa otomatis hanya dapat melihat modul published dan sesuai jenjangnya
+        if ($user && $user->isSiswa()) {
+            $query->published();
+            if ($user->id_jenjang) {
+                $query->where('id_jenjang', $user->id_jenjang);
+            }
+        } elseif ($request->filled('jenjang')) {
+            $query->where('id_jenjang', $request->jenjang);
+        }
+
+        if ($request->filled('status')) {
+            if ($request->status === 'published') {
+                $query->published();
+            } elseif ($request->status === 'draft') {
+                $query->draft();
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('judul_modul', 'like', "%{$search}%")
+                  ->orWhere('file_materi', 'like', "%{$search}%");
+            });
+        }
+
+        $moduls = $query->latest()->get()->map(function ($modul) use ($user) {
+            return $this->formatModuleResource($modul, $user);
+        });
 
         return response()->json([
             'success' => true,
@@ -545,7 +571,7 @@ class ModulController extends Controller
     }
 
     // API: menampilkan detail modul
-    public function apiShow($id)
+    public function apiShow(Request $request, $id)
     {
         $modul = Modul::with(['tipeModul', 'jenjang', 'quiz'])->find($id);
 
@@ -556,11 +582,74 @@ class ModulController extends Controller
             ], 404);
         }
 
+        $user = $request->user();
+        if ($user && $user->isSiswa() && $user->id_jenjang && $modul->id_jenjang && (int)$modul->id_jenjang !== (int)$user->id_jenjang) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Materi modul ini tidak tersedia untuk jenjang Anda.',
+            ], 403);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Detail modul berhasil diambil.',
-            'data' => $modul,
+            'data' => $this->formatModuleResource($modul, $user),
         ], 200);
+    }
+
+    private function formatModuleResource(Modul $modul, $user = null): array
+    {
+        $progres = ($user && $user->isSiswa())
+            ? ProgresModulSiswa::where('id_user', $user->id_user)->where('id_modul', $modul->id_modul)->first()
+            : null;
+
+        $fileUrl = null;
+        if ($modul->file_materi) {
+            if (filter_var($modul->file_materi, FILTER_VALIDATE_URL)) {
+                $fileUrl = $modul->file_materi;
+            } else {
+                $fileUrl = asset('storage/' . ltrim($modul->file_materi, '/'));
+            }
+        }
+
+        $fotoUrl = null;
+        if ($modul->foto_modul) {
+            $fotoUrl = asset('storage/' . ltrim($modul->foto_modul, '/'));
+        }
+
+        return [
+            'id_modul' => (int) $modul->id_modul,
+            'judul_modul' => $modul->judul_modul,
+            'file_materi' => $modul->file_materi,
+            'file_url' => $fileUrl,
+            'tipe_file' => $modul->tipe_file,
+            'id_tipemodul' => $modul->id_tipemodul ? (int) $modul->id_tipemodul : null,
+            'nama_tipe' => $modul->tipeModul->nama_tipe ?? ($modul->id_tipemodul == 1 ? 'Video' : ($modul->id_tipemodul == 2 ? 'PDF' : 'Artikel')),
+            'id_jenjang' => $modul->id_jenjang ? (int) $modul->id_jenjang : null,
+            'nama_jenjang' => $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? null,
+            'id_quiz' => $modul->id_quiz ? (int) $modul->id_quiz : null,
+            'quiz' => $modul->quiz ? [
+                'id_quiz' => (int) $modul->quiz->id_quiz,
+                'judul' => $modul->quiz->judul,
+                'durasi_total_menit' => $modul->quiz->durasi_total_menit,
+            ] : null,
+            'progressModul' => $modul->progressModul ?? 'Published',
+            'is_draft' => $modul->isDraft(),
+            'foto_modul' => $modul->foto_modul,
+            'foto_url' => $fotoUrl,
+            'poin_modul' => (int) ($modul->poin_modul ?: 50),
+            'is_video' => (bool) $modul->is_video,
+            'is_pdf' => (bool) $modul->is_pdf,
+            'youtube_id' => $modul->youtube_id,
+            'youtube_embed_url' => $modul->youtube_embed_url,
+            'progres' => $progres ? [
+                'materi_selesai' => (bool) $progres->materi_selesai,
+                'quiz_selesai' => (bool) $progres->quiz_selesai,
+                'quiz_lulus' => (bool) $progres->quiz_lulus,
+                'is_tuntas' => (bool) $progres->is_tuntas,
+                'poin_didapat' => (int) $progres->poin_didapat,
+            ] : null,
+        ];
     }
 
     // API: menyimpan data modul baru

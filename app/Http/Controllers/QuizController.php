@@ -1270,14 +1270,28 @@ class QuizController extends Controller
                 ->orderByDesc('id_hasil')
                 ->first();
             if ($latestHasil) {
+                $waktuDapat = null;
+                if ($latestHasil->waktu_dapat instanceof \DateTimeInterface) {
+                    $waktuDapat = $latestHasil->waktu_dapat->format('c');
+                } elseif (!empty($latestHasil->waktu_dapat)) {
+                    $waktuDapat = \Carbon\Carbon::parse($latestHasil->waktu_dapat)->toIso8601String();
+                }
+
                 $userResult = [
                     'id_hasil' => (int) $latestHasil->id_hasil,
                     'total_poin' => (int) $latestHasil->total_poin,
                     'poin_didapat' => (int) $latestHasil->poin_didapat,
                     'is_lulus' => (bool) $latestHasil->is_lulus,
-                    'waktu_dapat' => $latestHasil->waktu_dapat ? $latestHasil->waktu_dapat->toIso8601String() : null,
+                    'waktu_dapat' => $waktuDapat,
                 ];
             }
+        }
+
+        $waktuKadaluarsa = null;
+        if ($quiz->waktu_kadaluarsa instanceof \DateTimeInterface) {
+            $waktuKadaluarsa = $quiz->waktu_kadaluarsa->format('c');
+        } elseif (!empty($quiz->waktu_kadaluarsa)) {
+            $waktuKadaluarsa = \Carbon\Carbon::parse($quiz->waktu_kadaluarsa)->toIso8601String();
         }
 
         return [
@@ -1293,7 +1307,7 @@ class QuizController extends Controller
             'nama_tipe' => $quiz->tipeQuiz->nama_tipe ?? $quiz->tipeQuiz->nama_tipequiz ?? null,
             'mode_pengerjaan' => $quiz->mode_pengerjaan ?? 'wayground',
             'durasi_total_menit' => $quiz->durasi_total_menit ? (int) $quiz->durasi_total_menit : null,
-            'waktu_kadaluarsa' => $quiz->waktu_kadaluarsa ? $quiz->waktu_kadaluarsa->toIso8601String() : null,
+            'waktu_kadaluarsa' => $waktuKadaluarsa,
             'is_expired' => $quiz->sudahKadaluarsa(),
             'token' => $quiz->token,
             'requires_token' => $quiz->perluToken(),

@@ -122,12 +122,14 @@
     <div class="space-y-6">
         <!-- Logo Brand & Tombol Close (Mobile) -->
         <div class="flex items-center justify-between px-2">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600 text-white font-bold rounded-xl text-xl flex items-center justify-center w-10 h-10 shrink-0 shadow-md shadow-blue-500/20">
-                    eB
-                </div>
-                <span class="text-xl font-bold text-gray-900 tracking-tight">eBooks</span>
-            </div>
+            <a href="{{ url('/') }}" class="flex items-center gap-2.5 no-underline group">
+                <svg viewBox="0 0 40 40" class="h-9 w-9 shrink-0 transition-transform duration-200 group-hover:scale-105" fill="none" aria-hidden="true">
+                    <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+                    <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
+                </svg>
+                <span class="text-[22px] font-extrabold tracking-[-0.7px] text-[#082765]">Arrava</span>
+            </a>
 
             <!-- Tombol Tutup Sidebar di Layar Kecil -->
             <button id="sidebarClose" type="button" class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition lg:hidden" aria-label="Tutup Menu">

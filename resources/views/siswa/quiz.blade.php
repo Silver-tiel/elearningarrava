@@ -828,6 +828,15 @@
                     if (modalSelesaiBanner) modalSelesaiBanner.classList.add('hidden');
                 }
 
+                // Tutup dan sembunyikan Niere saat melihat pratinjau / deskripsi kuis
+                if (typeof window.closeNiereWidget === 'function') {
+                    window.closeNiereWidget();
+                }
+                const niereEl = document.getElementById('niere-widget-container');
+                if (niereEl) {
+                    niereEl.style.setProperty('display', 'none', 'important');
+                }
+
                 modalEl.classList.remove('hidden');
                 document.body.style.overflow = 'hidden';
             }
@@ -835,6 +844,12 @@
             function closeQuizPreviewModal() {
                 modalEl.classList.add('hidden');
                 document.body.style.overflow = '';
+
+                // Kembalikan tampilan Niere saat modal deskripsi ditutup
+                const niereEl = document.getElementById('niere-widget-container');
+                if (niereEl) {
+                    niereEl.style.removeProperty('display');
+                }
             }
 
             // Close on backdrop click

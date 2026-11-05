@@ -1,9 +1,11 @@
 @extends('layouts.siswa')
 
 @section('hideSidebar', 'true')
+@section('hideNiere', 'true')
 
 @php
     $hideSidebar = true;
+    $hideNiere = true;
     $isPreview = $isPreview ?? false;
     $active = 'quiz';
     $kahootStyles = [
@@ -15,14 +17,22 @@
 @endphp
 
 @section('header-left')
-    <div class="flex items-center justify-between w-full">
-        <div class="min-w-0">
-            <h1 class="text-base sm:text-lg font-extrabold text-slate-800 leading-tight truncate">
-                {{ $quiz->judul }}
-            </h1>
+    <div class="flex items-center justify-between gap-3 w-full">
+        <div class="min-w-0 flex items-center gap-2.5 sm:gap-3">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 shrink-0">
+                {{ ($quiz->mode_pengerjaan ?? 'wayground') === 'biasa' ? 'Mode Waktu Total' : 'Mode Waktu per Soal' }}
+            </span>
+            <div class="min-w-0">
+                <h1 class="text-sm sm:text-base font-extrabold text-slate-800 leading-tight truncate" title="{{ $quiz->judul }}">
+                    {{ $quiz->judul }}
+                </h1>
+                <p class="text-[11px] text-slate-500 font-medium truncate">
+                    Total: {{ $quiz->soal->count() }} Pertanyaan
+                </p>
+            </div>
         </div>
 
-        <div class="shrink-0 pl-2">
+        <div class="shrink-0">
             @if($isPreview)
                 <a href="{{ route('admin.quiz') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-xs transition">
                     <span>←</span>
@@ -198,27 +208,17 @@
             </div>
         @endif
 
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start">
             
             {{-- Main Form Kuis --}}
-            <form id="form-kerjakan-quiz" method="{{ $isPreview ? 'GET' : 'POST' }}" action="{{ $isPreview ? '#' : route('siswa.quiz.submit', $quiz->id_quiz) }}" data-quiz-mode="{{ $quiz->mode_pengerjaan ?? 'wayground' }}" data-preview="{{ $isPreview ? 'true' : 'false' }}" data-total-seconds="{{ $remainingSeconds ?? 0 }}" class="space-y-6" @if($isPreview) onsubmit="return false;" @endif>
-                @if(!$isPreview)
-                    @csrf
-                    <input type="hidden" name="is_timeout" id="input-is-timeout" value="0">
-                @endif
-                
-                {{-- Quiz Header Card --}}
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex items-center justify-between">
-                    <div>
-                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 mb-2">
-                            <span>{{ ($quiz->mode_pengerjaan ?? 'wayground') === 'biasa' ? 'Mode Waktu Total' : 'Mode Waktu per Soal' }}</span>
-                        </div>
-                        <h1 class="text-xl font-extrabold text-slate-800">{{ $quiz->judul }}</h1>
-                        <p class="text-xs text-slate-500 mt-1">Total: {{ $quiz->soal->count() }} Pertanyaan</p>
-                        <p id="quiz-total-timer" class="mt-2 text-sm font-bold text-rose-700" @if(($quiz->mode_pengerjaan ?? 'wayground') !== 'biasa') hidden @endif></p>
-                    </div>
+            <form id="form-kerjakan-quiz" method="{{ $isPreview ? 'GET' : 'POST' }}" action="{{ $isPreview ? '#' : route('siswa.quiz.submit', $quiz->id_quiz) }}" data-quiz-mode="{{ $quiz->mode_pengerjaan ?? 'wayground' }}" data-preview="{{ $isPreview ? 'true' : 'false' }}" data-total-seconds="{{ $remainingSeconds ?? 0 }}" @if($isPreview) onsubmit="return false;" @endif>
+                <div hidden>
+                    @if(!$isPreview)
+                        @csrf
+                        <input type="hidden" name="is_timeout" id="input-is-timeout" value="0">
+                    @endif
                 </div>
-
+                
                 {{-- Loop Soal --}}
                 @if($quiz->soal->count() > 0)
                     @foreach($quiz->soal as $index => $soal)
@@ -249,7 +249,7 @@
                                     @foreach ($soal->pilihanSoal as $pIndex => $pilihan)
                                         @php
                                             $lbl = strtoupper($pilihan->label);
-                                            $style = isset($kahootStyles[$lbl]) ? $kahootStyles[$lbl] : ['bg' => 'bg-indigo-600', 'hover' => 'hover:border-indigo-600', 'icon' => '●'];
+                                             $style = isset($kahootStyles[$lbl]) ? $kahootStyles[$lbl] : ['bg' => 'bg-indigo-600', 'hover' => 'hover:border-indigo-600', 'icon' => '●'];
                                         @endphp
                                         <label class="group relative flex items-center rounded-xl border-2 border-slate-200 bg-white hover:shadow-md cursor-pointer transition overflow-hidden p-2">
                                             <input type="radio" name="jawaban[{{ $soal->id_soal }}]" value="{{ $pilihan->label }}" class="peer sr-only">
@@ -287,7 +287,7 @@
                         @endif
                     @endforeach
 
-                    <div id="quiz-submit-controls" class="flex items-center justify-between pt-4 gap-3">
+                    <div id="quiz-submit-controls" class="mt-6 flex items-center justify-between pt-4 gap-3">
                         {{-- Tombol Sebelumnya (Mode biasa & Preview) --}}
                         <button type="button" id="btn-prev-question" class="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm px-6 py-3.5 shadow-xs transition">
                             ← Soal Sebelumnya
@@ -298,17 +298,7 @@
                                 <div class="inline-flex items-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-xs font-bold text-indigo-700">
                                     👁️ Mode Preview
                                 </div>
-                                <button type="button" id="btn-next-question-preview" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-6 py-3.5 shadow-md shadow-indigo-600/20 transition">
-                                    <span>Soal Selanjutnya</span>
-                                    <span>→</span>
-                                </button>
                             @else
-                                {{-- Tombol Selanjutnya untuk Mode Biasa --}}
-                                <button type="button" id="btn-next-question" class="hidden items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-7 py-3.5 shadow-md shadow-indigo-600/20 transition transform hover:-translate-y-0.5">
-                                    <span>Soal Selanjutnya</span>
-                                    <span>→</span>
-                                </button>
-
                                 {{-- Tombol Submit Kuis (Muncul di soal terakhir pada mode biasa, atau tombol kirim tiap nomor pada wayground) --}}
                                 <button type="submit" id="btn-submit-quiz" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm px-8 py-3.5 shadow-lg shadow-indigo-600/25 transition transform hover:-translate-y-0.5">
                                     <span id="submit-button-text">🚀 Kumpulkan Jawaban Saya</span>
@@ -332,27 +322,46 @@
                             <dt>Jumlah Soal</dt>
                             <dd class="font-bold text-slate-800">{{ $quiz->soal->count() }} Pertanyaan</dd>
                         </div>
+                        <div class="flex justify-between items-center text-slate-600 pt-2 border-t border-slate-100" @if(($quiz->mode_pengerjaan ?? 'wayground') !== 'biasa') hidden @endif>
+                            <dt class="flex items-center gap-1.5 font-medium text-slate-600">
+                                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span>Sisa Waktu</span>
+                            </dt>
+                            <dd id="quiz-total-timer" class="font-bold text-rose-600 text-sm font-mono">
+                                @if(($quiz->mode_pengerjaan ?? 'wayground') === 'biasa')
+                                    {{ floor(($remainingSeconds ?? 0) / 60) }}:{{ str_pad(($remainingSeconds ?? 0) % 60, 2, '0', STR_PAD_LEFT) }}
+                                @else
+                                    --:--
+                                @endif
+                            </dd>
+                        </div>
                     </dl>
                     
                     <div id="quiz-navigation" @if(($quiz->mode_pengerjaan ?? 'wayground') === 'wayground') hidden @endif>
-                    <h2 class="mt-6 text-xs font-bold uppercase tracking-wider text-slate-400">Navigasi Soal</h2>
-                    <div class="mt-3 grid grid-cols-5 gap-2">
-                        @foreach ($quiz->soal as $index => $s)
-                            <button type="button" data-question-target="{{ $index }}" class="flex h-9 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
-                                {{ $index + 1 }}
-                            </button>
-                        @endforeach
-                    </div>
-                    </div>
-                </div>
+                        <h2 class="mt-6 text-xs font-bold uppercase tracking-wider text-slate-400">Navigasi Soal</h2>
+                        <div class="mt-3 grid grid-cols-5 gap-2">
+                            @foreach ($quiz->soal as $index => $s)
+                                <button type="button" data-question-target="{{ $index }}" class="flex h-9 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition">
+                                    {{ $index + 1 }}
+                                </button>
+                            @endforeach
+                        </div>
 
-                <div class="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-5 shadow-sm">
-                    <h2 class="text-xs font-bold uppercase tracking-wider text-amber-800">Pencapaian Interaktif 🏆</h2>
-                    <div class="mt-3 flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-white text-xl shadow-md">🏅</div>
-                        <div>
-                            <div class="text-xs font-bold text-amber-900">Kahoot Champion</div>
-                            <div class="text-[11px] text-amber-700">Raih skor sempurna untuk mendapatkan poin lebih</div>
+                        {{-- Tombol Soal Selanjutnya di dalam Navigasi Soal --}}
+                        <div class="mt-4 pt-3 border-t border-slate-100">
+                            @if($isPreview)
+                                <button type="button" id="btn-next-question-preview" class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-4 py-3 shadow-md shadow-indigo-600/20 transition transform hover:-translate-y-0.5">
+                                    <span>Soal Selanjutnya</span>
+                                    <span>→</span>
+                                </button>
+                            @else
+                                <button type="button" id="btn-next-question" class="hidden w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-4 py-3 shadow-md shadow-indigo-600/20 transition transform hover:-translate-y-0.5">
+                                    <span>Soal Selanjutnya</span>
+                                    <span>→</span>
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -509,7 +518,9 @@
                 remaining = Math.max(0, Math.ceil((totalDeadline - Date.now()) / 1000));
                 const minutes = Math.floor(remaining / 60);
                 const seconds = remaining % 60;
-                totalTimerLabel.textContent = `Sisa waktu: ${minutes}:${String(seconds).padStart(2, '0')}`;
+                if (totalTimerLabel) {
+                    totalTimerLabel.textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
+                }
 
                 if (remaining === 0) {
                     clearInterval(totalTimer);

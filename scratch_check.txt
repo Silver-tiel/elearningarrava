@@ -1,1 +1,0 @@
-160x280x3xwidth="160" height="280"x8ximage/png

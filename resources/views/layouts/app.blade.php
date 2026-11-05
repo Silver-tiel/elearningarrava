@@ -37,6 +37,12 @@
                         @yield('header')
                     </div>
                 </div>
+
+                <!-- Bagian Kanan Header: Pengaturan Suara & Aksi Tambahan -->
+                <div class="flex items-center gap-3 shrink-0 ml-4">
+                    @include('components.sound-settings')
+                    @yield('header-right')
+                </div>
             </header>
 
             <!-- KONTEN UTAMA -->
@@ -49,5 +55,6 @@
 
     @include('components.hover-effects')
     @include('components.logout-modal')
+    @include('components.niere-widget')
 </body>
 </html>

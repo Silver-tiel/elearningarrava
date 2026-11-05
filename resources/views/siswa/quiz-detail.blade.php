@@ -1,5 +1,7 @@
 @extends('layouts.siswa')
 
+@section('hideNiere', 'true')
+
 @section('title', 'Detail: ' . $quiz->judul . ' — Arrava E-Learning')
 
 @section('header')
@@ -15,6 +17,7 @@
 
 @section('content')
 @php
+    $hideNiere = true;
     $expired = $quiz->sudahKadaluarsa();
     $totalSoalCount = $totalSoal ?? $quiz->soal->count();
     $totalPoinCount = $totalPoin ?? $quiz->soal->sum('poin');

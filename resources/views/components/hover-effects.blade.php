@@ -122,6 +122,16 @@
     let isMuted = false;
     let currentVolume = 0.75;
 
+    try {
+      if (localStorage.getItem('arrava_sound_muted') === 'true') {
+        isMuted = true;
+      }
+      const savedVol = localStorage.getItem('arrava_sound_volume');
+      if (savedVol !== null && !isNaN(parseFloat(savedVol))) {
+        currentVolume = Math.max(0, Math.min(1, parseFloat(savedVol)));
+      }
+    } catch (e) {}
+
     function getAudioCtx() {
       if (!ctx) {
         const AC = window.AudioContext || window.webkitAudioContext;
@@ -769,9 +779,24 @@
       playMenuClick: function (p = 0, v = 0.7) { playMenuClick(p, v); },
       playError: function (p = -8.5, v = 0.85) { playErrorSound(p, v); },
       playErrorSound: function (p = -8.5, v = 0.85) { playErrorSound(p, v); },
-      setVolume: function (v) { currentVolume = Math.max(0, Math.min(1, v)); },
-      mute: function (m) { isMuted = !!m; },
-      toggleMute: function () { isMuted = !isMuted; return isMuted; }
+      setVolume: function (v) {
+        currentVolume = Math.max(0, Math.min(1, v));
+        try { localStorage.setItem('arrava_sound_volume', currentVolume); } catch (e) {}
+        window.dispatchEvent(new CustomEvent('arrava-sound-updated', { detail: { isMuted, volume: currentVolume } }));
+      },
+      mute: function (m) {
+        isMuted = !!m;
+        try { localStorage.setItem('arrava_sound_muted', isMuted); } catch (e) {}
+        window.dispatchEvent(new CustomEvent('arrava-sound-updated', { detail: { isMuted, volume: currentVolume } }));
+      },
+      toggleMute: function () {
+        isMuted = !isMuted;
+        try { localStorage.setItem('arrava_sound_muted', isMuted); } catch (e) {}
+        window.dispatchEvent(new CustomEvent('arrava-sound-updated', { detail: { isMuted, volume: currentVolume } }));
+        return isMuted;
+      },
+      getVolume: function () { return currentVolume; },
+      isMuted: function () { return isMuted; }
     };
   })();
 </script>

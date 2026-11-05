@@ -167,17 +167,34 @@
 }
 
 .switch-register {
-  margin-top: 16px;
-  text-align: center;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 14px rgba(10, 30, 90, 0.12);
   font-size: 12px;
-  color: #53647d;
+  font-weight: 600;
+  color: #102B69;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
 }
 .switch-register a {
   font-weight: 700;
-  color: var(--accent);
-  text-decoration: none;
+  color: #0875F9;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
 }
-.switch-register a:hover { text-decoration: underline; }
+.switch-register a:hover {
+  color: #0554b7;
+}
 
 /* =====================================================================
    HALAMAN SETELAH LOGIN (Transisi Naik)
