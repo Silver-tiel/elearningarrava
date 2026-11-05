@@ -216,6 +216,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 .home-panel::after {
   content: '';
