@@ -143,6 +143,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Profil guru terkait jika akun ini bertipe guru (id_tipeuser = 2).
+     */
+    public function guru(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Guru::class, 'nik', 'nisn');
+    }
+
+    /**
      * Informasi status rank (tier penghargaan) dan progres EXP siswa berdasarkan total_poin.
      */
     public function getRankTierInfo(bool $forceRefresh = false): array

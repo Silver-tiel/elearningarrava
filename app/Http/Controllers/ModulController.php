@@ -585,7 +585,7 @@ class ModulController extends Controller
     // API: menampilkan detail modul
     public function apiShow(Request $request, $id)
     {
-        $modul = Modul::with(['tipeModul', 'jenjang', 'quiz'])->find($id);
+        $modul = Modul::with(['tipeModul', 'jenjang', 'quiz', 'catatan', 'soalModul.pilihan'])->find($id);
 
         if (!$modul) {
             return response()->json([
@@ -629,6 +629,37 @@ class ModulController extends Controller
             $fotoUrl = asset('storage/' . ltrim($modul->foto_modul, '/'));
         }
 
+        $soalModulData = [];
+        if ($modul->relationLoaded('soalModul')) {
+            $soalModulData = $modul->soalModul->map(function ($s) {
+                return [
+                    'id_soal' => (int) $s->id_soal,
+                    'pertanyaan' => $s->pertanyaan,
+                    'poin' => (int) ($s->poin ?: 10),
+                    'urutan' => (int) ($s->urutan ?: 0),
+                    'pilihan' => $s->pilihan->map(function ($p) {
+                        return [
+                            'id_pilihan' => (int) $p->id_pilihan,
+                            'label' => $p->label,
+                            'teks_pilihan' => $p->teks_pilihan,
+                        ];
+                    })->values()->all(),
+                ];
+            })->values()->all();
+        }
+
+        $catatanData = [];
+        if ($modul->relationLoaded('catatan')) {
+            $catatanData = $modul->catatan->map(function ($c) {
+                return [
+                    'id_catatan' => (int) $c->id_catatan,
+                    'judul' => $c->judul,
+                    'isi' => $c->isi,
+                    'urutan' => (int) ($c->urutan ?: 0),
+                ];
+            })->values()->all();
+        }
+
         return [
             'id_modul' => (int) $modul->id_modul,
             'judul_modul' => $modul->judul_modul,
@@ -650,14 +681,18 @@ class ModulController extends Controller
             'foto_modul' => $modul->foto_modul,
             'foto_url' => $fotoUrl,
             'poin_modul' => (int) ($modul->poin_modul ?: 50),
+            'kkm_quiz' => (int) ($modul->kkm_quiz ?: 70),
             'is_video' => (bool) $modul->is_video,
             'is_pdf' => (bool) $modul->is_pdf,
             'youtube_id' => $modul->youtube_id,
             'youtube_embed_url' => $modul->youtube_embed_url,
+            'soal_modul' => $soalModulData,
+            'catatan' => $catatanData,
             'progres' => $progres ? [
                 'materi_selesai' => (bool) $progres->materi_selesai,
                 'quiz_selesai' => (bool) $progres->quiz_selesai,
                 'quiz_lulus' => (bool) $progres->quiz_lulus,
+                'nilai_quiz' => (int) $progres->nilai_quiz,
                 'is_tuntas' => (bool) $progres->is_tuntas,
                 'poin_didapat' => (int) $progres->poin_didapat,
             ] : null,
