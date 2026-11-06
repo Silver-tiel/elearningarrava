@@ -3,7 +3,24 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id_sesi
+ * @property int $id_kelas
+ * @property int $id_guru
+ * @property string $judul
+ * @property int $pertemuan_ke
+ * @property \Illuminate\Support\Carbon|null $tanggal
+ * @property \Illuminate\Support\Carbon|null $batas_tepat_waktu
+ * @property string $status
+ * @property string|null $kunci_otomatis
+ * @property int|null $presensi_count
+ * @property-read \App\Models\Kelas|null $kelas
+ * @property-read \App\Models\User|null $guru
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Models\Presensi[] $presensi
+ */
 class SesiPresensi extends Model
 {
     protected $table = 'sesi_presensi';
@@ -18,17 +35,17 @@ class SesiPresensi extends Model
         'batas_tepat_waktu' => 'datetime',
     ];
 
-    public function kelas()
+    public function kelas(): BelongsTo
     {
         return $this->belongsTo(Kelas::class, 'id_kelas', 'id_kelas');
     }
 
-    public function guru()
+    public function guru(): BelongsTo
     {
         return $this->belongsTo(User::class, 'id_guru', 'id_user');
     }
 
-    public function presensi()
+    public function presensi(): HasMany
     {
         return $this->hasMany(Presensi::class, 'id_sesi', 'id_sesi');
     }

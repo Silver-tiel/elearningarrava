@@ -3,7 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id_kelas
+ * @property string $nama
+ * @property int|null $id_jenjang
+ * @property string|null $tahun_ajaran
+ * @property bool $aktif
+ * @property string|null $hari
+ * @property \Illuminate\Support\Carbon|null $berlaku_dari
+ * @property \Illuminate\Support\Carbon|null $berlaku_sampai
+ * @property string|null $jam_batas
+ * @property-read \App\Models\Jenjang|null $jenjang
+ */
 class Kelas extends Model
 {
     protected $table = 'kelas';
