@@ -1,4 +1,4 @@
-@extends('layouts.app') {{-- Sesuaikan dengan nama layout utama Anda yang sudah ada sidebar-nya --}}
+@extends((int) auth()->user()->id_tipeuser === 4 ? 'layouts.orangtua' : 'layouts.app')
 
 @section('content')
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
@@ -14,6 +14,11 @@
             </div>
             @if(auth()->check() && in_array(auth()->user()->id_tipeuser, [1, 2]))
                 <a href="{{ route('admin.modul') }}"
+                    class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                    &larr; Kembali
+                </a>
+            @elseif((int) auth()->user()->id_tipeuser === 4)
+                <a href="{{ route('orangtua.materi-pembelajaran', ['siswa_id' => $siswa->id_user]) }}"
                     class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
                     &larr; Kembali
                 </a>
@@ -40,14 +45,14 @@
                         </span>
                         <span id="scroll-status"
                             class="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                            ▶ Tonton video untuk menyelesaikan materi
+                            {{ (int) auth()->user()->id_tipeuser === 4 ? 'Pratinjau materi anak' : '▶ Tonton video untuk menyelesaikan materi' }}
                         </span>
                     @else
                         <span>File Materi: <strong
                                 class="text-gray-700">{{ basename($modul->file_materi ?? '') }}</strong></span>
                         <span id="scroll-status"
                             class="text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                            📖 Buka hingga halaman terakhir untuk menyelesaikan modul
+                            {{ (int) auth()->user()->id_tipeuser === 4 ? 'Pratinjau materi anak' : '📖 Buka hingga halaman terakhir untuk menyelesaikan modul' }}
                         </span>
                     @endif
                 </div>
@@ -90,6 +95,12 @@
                         <span class="text-xs text-blue-600 font-medium">ℹ️ Anda sedang berada dalam Mode Pratinjau
                             (Admin)</span>
                         <a href="{{ route('admin.modul') }}"
+                            class="px-6 py-2.5 bg-gray-800 text-white font-semibold text-sm rounded-lg hover:bg-gray-700 transition">
+                            Kembali ke Daftar Modul
+                        </a>
+                    @elseif((int) auth()->user()->id_tipeuser === 4)
+                        <span class="text-xs text-blue-600 font-medium">Materi pembelajaran {{ $siswa->nama }} — hanya baca.</span>
+                        <a href="{{ route('orangtua.materi-pembelajaran', ['siswa_id' => $siswa->id_user]) }}"
                             class="px-6 py-2.5 bg-gray-800 text-white font-semibold text-sm rounded-lg hover:bg-gray-700 transition">
                             Kembali ke Daftar Modul
                         </a>
