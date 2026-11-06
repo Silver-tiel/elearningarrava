@@ -97,9 +97,9 @@
                     </div>
                 </section>
             @empty
-                <p class="text-sm text-slate-500">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 text-slate-500 text-sm shadow-sm text-center">
                     Tidak ada riwayat{{ $hari ? ' pada hari ' . $namaHari[$hari] : '' }} {{ $rentang === 'bulan' ? 'dalam 30 hari terakhir' : 'minggu ini' }}.
-                </p>
+                </div>
             @endforelse
         </div>
     @endif
