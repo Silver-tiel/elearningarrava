@@ -70,8 +70,8 @@
     }
     @keyframes quiz-char-track {
         0% { left: 0%; transform: scaleX(1); }
-        48% { left: calc(100% - 36px); transform: scaleX(1); }
-        50% { left: calc(100% - 36px); transform: scaleX(-1); }
+        48% { left: calc(100% - 56px); transform: scaleX(1); }
+        50% { left: calc(100% - 56px); transform: scaleX(-1); }
         98% { left: 0%; transform: scaleX(-1); }
         100% { left: 0%; transform: scaleX(1); }
     }
@@ -80,7 +80,7 @@
     }
     @keyframes quiz-char-bob {
         0%, 100% { transform: translateY(0) rotate(0deg); }
-        50% { transform: translateY(-6px) rotate(4deg); }
+        50% { transform: translateY(-8px) rotate(4deg); }
     }
     .animate-quiz-char-bob {
         animation: quiz-char-bob 0.5s infinite ease-in-out;
@@ -173,12 +173,12 @@
 
                 {{-- Karakter yang bergerak bolak-balik bersamaan bar dengan efek memantul/bobbing --}}
                 {{-- PANDUAN GANTI GAMBAR: Ubah src pada tag <img> di bawah --}}
-                <div class="relative w-full h-8 mt-1.5 pointer-events-none select-none">
+                <div class="relative w-full h-14 mt-1.5 pointer-events-none select-none">
                     <div class="absolute top-0 animate-quiz-char-track will-change-[left,transform]">
                         <div class="animate-quiz-char-bob">
                             <img src="{{ asset('assets/foto_karakter/loading/silverwolfloading.png') }}" 
                                  alt="Quiz Loading Mascot" 
-                                 class="w-9 h-auto [image-rendering:pixelated] drop-shadow-[0_2px_6px_rgba(16,185,129,0.4)]">
+                                 class="w-14 sm:w-16 h-auto [image-rendering:pixelated] drop-shadow-[0_4px_10px_rgba(16,185,129,0.45)]">
                         </div>
                     </div>
                 </div>

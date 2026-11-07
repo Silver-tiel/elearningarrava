@@ -28,6 +28,7 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
     Route::get('/modules', [ModulController::class, 'apiIndex']);
     Route::get('/modules/{id}', [ModulController::class, 'apiShow']);
     Route::post('/modules/{id}/complete', [SiswaController::class, 'tandaiMateriSelesai']);
+    Route::post('/modules/{id}/quiz-submit', [SiswaController::class, 'submitKuisModul']);
     Route::get('/quizzes', [QuizController::class, 'apiIndex']);
     Route::get('/quizzes/{id}', [QuizController::class, 'apiShow']);
     Route::post('/quizzes/{id}/verify-token', [QuizController::class, 'apiVerifyToken']);

@@ -17,7 +17,7 @@
      data-url="{{ route('guru.presensi.proses', $sesi->id_sesi) }}"
      data-csrf="{{ csrf_token() }}"
      data-buka="{{ $sesi->isBuka() ? '1' : '0' }}"
-     class="p-4 sm:p-8 max-w-2xl mx-auto space-y-4">
+     class="p-4 sm:p-8 max-w-2xl mx-auto space-y-4 pb-20">
 
     <div>
         <h2 class="text-xl font-bold text-slate-800">{{ $sesi->judul }}</h2>
@@ -68,26 +68,43 @@
     </form>
 
     {{-- Riwayat --}}
-    <section aria-labelledby="judul-riwayat">
-        <h3 id="judul-riwayat" class="font-bold text-slate-800 mb-2">Riwayat scan terbaru</h3>
+    <section aria-labelledby="judul-riwayat" class="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+            <h3 id="judul-riwayat" class="font-bold text-slate-800">Riwayat scan terbaru</h3>
+            <span class="text-xs text-slate-400">Maks. 10 scan terakhir</span>
+        </div>
         <ul id="riwayat" class="space-y-2">
             @foreach($riwayat as $r)
-                <li class="flex items-center justify-between rounded-xl bg-white border border-gray-100 px-4 py-3 text-sm">
+                <li class="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200/70 px-4 py-3 text-sm">
                     <span class="font-medium text-slate-800">{{ $r['nama'] ?? 'QR tidak dikenal' }}</span>
                     <span class="text-slate-500">{{ $labelRiwayat[$r['hasil']] ?? $r['hasil'] }} · {{ $r['waktu'] }}</span>
                 </li>
             @endforeach
         </ul>
-        <p id="riwayat-kosong" class="text-sm text-slate-500 {{ $riwayat->isEmpty() ? '' : 'hidden' }}">Belum ada pemindaian.</p>
+        <p id="riwayat-kosong" class="text-sm text-slate-400 text-center py-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 {{ $riwayat->isEmpty() ? '' : 'hidden' }}">Belum ada pemindaian pada sesi ini.</p>
     </section>
 
-    @if($sesi->isBuka())
-        <form method="POST" action="{{ route('guru.presensi.tutup', $sesi->id_sesi) }}" onsubmit="return confirm('Tutup sesi presensi ini?')" class="pt-2">
-            @csrf
-            <button class="w-full h-12 rounded-xl border border-slate-300 text-slate-700 font-semibold">Tutup sesi &amp; lihat rekap</button>
-        </form>
-    @endif
-    <a href="{{ route('guru.presensi.rekap', $sesi->id_sesi) }}" class="block text-center text-blue-600 font-medium underline">Lihat rekap sesi</a>
+    {{-- Panel Aksi Sesi Presensi --}}
+    <div class="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm space-y-3">
+        @if($sesi->isBuka())
+            <form method="POST" action="{{ route('guru.presensi.tutup', $sesi->id_sesi) }}" onsubmit="return confirm('Tutup sesi presensi ini?')">
+                @csrf
+                <button type="submit" class="w-full h-12 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold transition shadow-sm flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Tutup sesi &amp; lihat rekap</span>
+                </button>
+            </form>
+        @endif
+
+        <a href="{{ route('guru.presensi.rekap', $sesi->id_sesi) }}" class="w-full h-11 inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-blue-700 font-semibold text-sm transition">
+            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span>Lihat rekap sesi</span>
+        </a>
+    </div>
 </div>
 
 @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))

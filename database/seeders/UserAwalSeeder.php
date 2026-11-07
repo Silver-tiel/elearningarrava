@@ -99,7 +99,7 @@ class UserAwalSeeder extends Seeder
 
         // GURU
         User::updateOrCreate(
-            ['nisn' => '1234567895'],
+            ['nisn' => '3201010101900001'],
             [
                 'nama'        => 'abim',
                 'email'       => 'abim@gmail.com',

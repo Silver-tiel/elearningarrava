@@ -5,7 +5,17 @@
 @endsection
 
 @section('content')
-<div class="p-4 sm:p-8 max-w-4xl">
+@php
+    /**
+     * @var int $totalKelas
+     * @var \Illuminate\Support\Collection<int, \App\Models\SesiPresensi> $sesiHariIni
+     * @var \Illuminate\Support\Collection<string, \Illuminate\Support\Collection<int, \App\Models\SesiPresensi>> $riwayatPerTanggal
+     * @var string $rentang
+     * @var int|null $hari
+     * @var array<int, string> $namaHari
+     */
+@endphp
+<div class="p-4 sm:p-8 max-w-4xl pb-24">
     @include('guru.presensi._flash')
 
     <div class="mb-6">
@@ -23,10 +33,11 @@
         <p class="text-sm text-slate-500 mb-3">{{ now()->locale('id')->translatedFormat('l, d F Y') }}</p>
         <div class="space-y-3 mb-10">
             @forelse($sesiHariIni as $sesi)
-                <div class="bg-white rounded-2xl border border-gray-100 p-4 flex flex-wrap items-center justify-between gap-3">
+                @php /** @var \App\Models\SesiPresensi $sesi */ @endphp
+                <div class="bg-white rounded-2xl border border-gray-100 p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                     <div class="min-w-0">
-                        <p class="font-semibold text-slate-800 truncate">{{ $sesi->kelas->nama }}</p>
-                        <p class="text-sm text-slate-500">{{ $sesi->kelas->ringkasJadwal() }} · {{ $sesi->presensi_count }} tercatat</p>
+                        <p class="font-semibold text-slate-800 truncate">{{ $sesi->kelas?->nama ?? '-' }}</p>
+                        <p class="text-sm text-slate-500">{{ $sesi->kelas?->ringkasJadwal() ?? '-' }} · {{ $sesi->presensi_count }} tercatat</p>
                     </div>
                     <div class="flex items-center gap-2">
                         @if(!$sesi->isBuka())
@@ -37,9 +48,9 @@
                             <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Dibuka</span>
                         @endif
                         @if($sesi->bisaDipindai())
-                            <a href="{{ route('guru.presensi.scan', $sesi->id_sesi) }}" class="h-11 px-4 inline-flex items-center rounded-xl bg-blue-600 text-white font-semibold">Scan</a>
+                            <a href="{{ route('guru.presensi.scan', $sesi->id_sesi) }}" class="h-11 px-4 inline-flex items-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition">Scan</a>
                         @endif
-                        <a href="{{ route('guru.presensi.rekap', $sesi->id_sesi) }}" class="h-11 px-4 inline-flex items-center rounded-xl border border-slate-300 text-slate-700 font-medium">Rekap</a>
+                        <a href="{{ route('guru.presensi.rekap', $sesi->id_sesi) }}" class="h-11 px-4 inline-flex items-center rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium shadow-sm transition">Rekap</a>
                     </div>
                 </div>
             @empty
@@ -59,21 +70,21 @@
             </div>
             @if($rentang === 'minggu')
                 <a href="{{ route('guru.presensi.index', ['rentang' => 'bulan', 'hari' => $hari]) }}"
-                   class="h-11 px-4 inline-flex items-center rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50">Tampilkan riwayat 1 bulan</a>
+                   class="h-11 px-4 inline-flex items-center rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium shadow-sm transition">Tampilkan riwayat 1 bulan</a>
             @else
                 <a href="{{ route('guru.presensi.index', ['hari' => $hari]) }}"
-                   class="h-11 px-4 inline-flex items-center rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50">Kembali ke minggu ini</a>
+                   class="h-11 px-4 inline-flex items-center rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium shadow-sm transition">Kembali ke minggu ini</a>
             @endif
         </div>
 
         <nav aria-label="Filter hari" class="flex flex-wrap gap-2 mb-4">
             <a href="{{ route('guru.presensi.index', ['rentang' => $rentang === 'bulan' ? 'bulan' : null]) }}"
                @if($hari === null) aria-current="page" @endif
-               class="h-10 px-4 inline-flex items-center rounded-full text-sm font-semibold border {{ $hari === null ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">Semua</a>
+               class="h-10 px-4 inline-flex items-center rounded-full text-sm font-semibold border shadow-sm transition {{ $hari === null ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">Semua</a>
             @foreach($namaHari as $angka => $nama)
                 <a href="{{ route('guru.presensi.index', ['rentang' => $rentang === 'bulan' ? 'bulan' : null, 'hari' => $angka]) }}"
                    @if($hari === $angka) aria-current="page" @endif
-                   class="h-10 px-4 inline-flex items-center rounded-full text-sm font-semibold border {{ $hari === $angka ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">{{ $nama }}</a>
+                   class="h-10 px-4 inline-flex items-center rounded-full text-sm font-semibold border shadow-sm transition {{ $hari === $angka ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50' }}">{{ $nama }}</a>
             @endforeach
         </nav>
 
@@ -83,23 +94,24 @@
                     <h4 class="text-sm font-bold text-slate-600 mb-2">{{ \Illuminate\Support\Carbon::parse($tanggal)->locale('id')->translatedFormat('l, d F Y') }}</h4>
                     <div class="space-y-2">
                         @foreach($sesiPerHari as $sesi)
-                            <div class="bg-white rounded-2xl border border-gray-100 p-4 flex flex-wrap items-center justify-between gap-3">
+                            @php /** @var \App\Models\SesiPresensi $sesi */ @endphp
+                            <div class="bg-white rounded-2xl border border-gray-100 p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
                                 <div class="min-w-0">
-                                    <p class="font-semibold text-slate-800 truncate">{{ $sesi->kelas->nama }}</p>
+                                    <p class="font-semibold text-slate-800 truncate">{{ $sesi->kelas?->nama ?? '-' }}</p>
                                     <p class="text-sm text-slate-500">{{ $sesi->judul }} · {{ $sesi->presensi_count }} tercatat</p>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span class="px-2 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">{{ $sesi->statusTampil() === 'ditutup' ? 'Ditutup' : 'Kedaluwarsa' }}</span>
-                                    <a href="{{ route('guru.presensi.rekap', $sesi->id_sesi) }}" class="h-11 px-4 inline-flex items-center rounded-xl border border-slate-300 text-slate-700 font-medium">Rekap</a>
+                                    <a href="{{ route('guru.presensi.rekap', $sesi->id_sesi) }}" class="h-11 px-4 inline-flex items-center rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium shadow-sm transition">Rekap</a>
                                 </div>
                             </div>
                         @endforeach
                     </div>
                 </section>
             @empty
-                <p class="text-sm text-slate-500">
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 text-slate-500 text-sm shadow-sm text-center">
                     Tidak ada riwayat{{ $hari ? ' pada hari ' . $namaHari[$hari] : '' }} {{ $rentang === 'bulan' ? 'dalam 30 hari terakhir' : 'minggu ini' }}.
-                </p>
+                </div>
             @endforelse
         </div>
     @endif

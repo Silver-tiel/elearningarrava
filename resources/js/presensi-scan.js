@@ -59,7 +59,7 @@ if (root) {
 
     function tambahRiwayat(status, nama, waktu) {
         const li = document.createElement('li');
-        li.className = 'flex items-center justify-between rounded-xl bg-white border border-gray-100 px-4 py-3 text-sm';
+        li.className = 'flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200/70 px-4 py-3 text-sm';
         const kiri = document.createElement('span');
         kiri.className = 'font-medium text-slate-800';
         kiri.textContent = nama || 'QR tidak dikenal';
