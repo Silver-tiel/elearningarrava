@@ -282,7 +282,7 @@
                     };
 
                     // Label mapel / jenjang
-                    $mapelLabel = $modul->jenjang->nama_tipe ?? '-';
+                    $mapelLabel = $modul->mapel?->nama_mapel ?? ($modul->jenjang->nama_tipe ?? '-');
 
                     // Format materi
                     $isVideo = $modul->is_video;

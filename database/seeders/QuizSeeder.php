@@ -20,6 +20,7 @@ class QuizSeeder extends Seeder
                 'judul' => 'Kuis Cepat Kilat Ceria SD',
                 'deskripsi' => 'Uji kecepatan berpikir dan ketangkasan wawasan dasar seputar sains, matematika, dan pengetahuan umum dengan durasi waktu per soal.',
                 'id_jenjang' => 1,
+                'id_mapel' => 4,
                 'id_tipequiz' => 1, // Harian
                 'id_tingkatquiz' => 1, // Mudah
                 'mode_pengerjaan' => 'wayground',
@@ -79,6 +80,7 @@ class QuizSeeder extends Seeder
                 'judul' => 'Penilaian Harian Tematik & IPA Terpadu SD',
                 'deskripsi' => 'Penilaian harian tematik mencakup IPA, Bahasa Indonesia, dan Matematika dasar dalam mode waktu total 20 menit.',
                 'id_jenjang' => 1,
+                'id_mapel' => 4,
                 'id_tipequiz' => 1, // Harian
                 'id_tingkatquiz' => 2, // Sedang
                 'mode_pengerjaan' => 'biasa',
@@ -145,6 +147,7 @@ class QuizSeeder extends Seeder
                 'judul' => 'Ulangan Akhir Semester Cerdas Cendekia SD',
                 'deskripsi' => 'Ujian semester komprehensif untuk siswa SD tingkat lanjut. Dibutuhkan token untuk membuka akses pengerjaan.',
                 'id_jenjang' => 1,
+                'id_mapel' => 1,
                 'id_tipequiz' => 2, // Ulangan
                 'id_tingkatquiz' => 3, // Sulit
                 'mode_pengerjaan' => 'biasa',
@@ -215,6 +218,7 @@ class QuizSeeder extends Seeder
                 'judul' => 'Speed Challenge Sains & Logika SMP',
                 'deskripsi' => 'Tantangan kecepatan sains dan penalaran logika SMP dalam tempo cepat per nomor.',
                 'id_jenjang' => 2,
+                'id_mapel' => 4,
                 'id_tipequiz' => 1, // Harian
                 'id_tingkatquiz' => 2, // Sedang
                 'mode_pengerjaan' => 'wayground',
@@ -274,6 +278,7 @@ class QuizSeeder extends Seeder
                 'judul' => 'Ujian Mandiri Bahasa & Sosial Budaya SMP',
                 'deskripsi' => 'Evaluasi wawasan kebahasaan, sosial, dan sejarah nasional dengan mode waktu total 25 menit.',
                 'id_jenjang' => 2,
+                'id_mapel' => 2,
                 'id_tipequiz' => 1, // Harian
                 'id_tingkatquiz' => 1, // Mudah
                 'mode_pengerjaan' => 'biasa',
@@ -340,6 +345,7 @@ class QuizSeeder extends Seeder
                 'judul' => 'Ulangan Tengah Semester IPA & Teknologi SMP',
                 'deskripsi' => 'Ulangan komprehensif sains, biologi sel, dan fisika gerak untuk siswa berprestasi SMP.',
                 'id_jenjang' => 2,
+                'id_mapel' => 8,
                 'id_tipequiz' => 2, // Ulangan
                 'id_tingkatquiz' => 3, // Sulit
                 'mode_pengerjaan' => 'biasa',
@@ -410,6 +416,7 @@ class QuizSeeder extends Seeder
                 'judul' => 'Grand Prix Sains & Olimpiade SMA',
                 'deskripsi' => 'Ajang uji cepat ketepatan analisis konsep sains fisika, kimia, dan matematika SMA bergaya Wayground.',
                 'id_jenjang' => 3,
+                'id_mapel' => 11,
                 'id_tipequiz' => 1, // Harian
                 'id_tingkatquiz' => 2, // Sedang
                 'mode_pengerjaan' => 'wayground',
@@ -469,6 +476,7 @@ class QuizSeeder extends Seeder
                 'judul' => 'Simulasi UTBK & Penalaran Skolastik SMA',
                 'deskripsi' => 'Simulasi ujian seleksi masuk perguruan tinggi menguji literasi, penalaran matematika tingkat lanjut, dan analisis kritis.',
                 'id_jenjang' => 3,
+                'id_mapel' => 1,
                 'id_tipequiz' => 2, // Ulangan
                 'id_tingkatquiz' => 3, // Sulit
                 'mode_pengerjaan' => 'biasa',
@@ -535,6 +543,7 @@ class QuizSeeder extends Seeder
                 'judul' => 'Wawasan Literasi & Sejarah Global SMA',
                 'deskripsi' => 'Eksplorasi wawasan sejarah dunia, literasi global, dan kebudayaan umum dalam mode waktu total 25 menit.',
                 'id_jenjang' => 3,
+                'id_mapel' => 17,
                 'id_tipequiz' => 1, // Harian
                 'id_tingkatquiz' => 1, // Mudah
                 'mode_pengerjaan' => 'biasa',
@@ -600,13 +609,23 @@ class QuizSeeder extends Seeder
         ];
 
         DB::transaction(function () use ($quizList) {
+            $hasMapelTable = \Illuminate\Support\Facades\Schema::hasTable('mapel');
+
             foreach ($quizList as $qData) {
+                $idMapel = null;
+                if (!empty($qData['id_mapel']) && $hasMapelTable) {
+                    if (DB::table('mapel')->where('id_mapel', $qData['id_mapel'])->exists()) {
+                        $idMapel = $qData['id_mapel'];
+                    }
+                }
+
                 // Buat atau perbarui Quiz berdasarkan Judul
                 $quiz = Quiz::updateOrCreate(
                     ['judul' => $qData['judul']],
                     [
                         'deskripsi' => $qData['deskripsi'],
                         'id_jenjang' => $qData['id_jenjang'],
+                        'id_mapel' => $idMapel,
                         'id_tipequiz' => $qData['id_tipequiz'],
                         'id_tingkatquiz' => $qData['id_tingkatquiz'],
                         'mode_pengerjaan' => $qData['mode_pengerjaan'],

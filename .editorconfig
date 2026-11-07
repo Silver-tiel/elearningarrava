@@ -14,5 +14,7 @@ trim_trailing_whitespace = false
 [*.{yml,yaml}]
 indent_size = 2
 
-[compose.yaml]
+[*.php]
 indent_size = 4
+php_diagnostic_php6613 = false
+php_diagnostic_php0448 = false

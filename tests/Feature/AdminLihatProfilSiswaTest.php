@@ -36,6 +36,8 @@ class AdminLihatProfilSiswaTest extends TestCase
             $table->string('status_akun')->default('Aktif');
             $table->unsignedInteger('id_modul')->nullable();
             $table->string('foto_profil')->nullable();
+            $table->char('qr_token', 36)->nullable()->unique();
+            $table->timestamp('qr_dibuat_pada')->nullable();
             $table->timestamps();
         });
 

@@ -496,6 +496,50 @@
                 </div>
             </div>
 
+            <!-- QR CODE PRESENSI SISWA -->
+            <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span class="text-blue-600">📱</span>
+                        <span>QR Presensi Siswa</span>
+                    </h3>
+                    @if($siswa->qr_dibuat_pada)
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>QR Aktif</span>
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            <span>Belum Dibuat</span>
+                        </span>
+                    @endif
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div class="flex justify-between py-1.5 border-b border-slate-100">
+                        <span class="text-slate-400">Status Token QR</span>
+                        <span class="font-semibold text-slate-700">Tersimpan Aman (Terenkripsi)</span>
+                    </div>
+                    <div class="flex justify-between py-1.5 border-b border-slate-100">
+                        <span class="text-slate-400">Terakhir Dibuat</span>
+                        <span class="font-semibold text-slate-700">{{ $siswa->qr_dibuat_pada ? $siswa->qr_dibuat_pada->translatedFormat('d F Y, H:i') : 'Belum pernah dibuat' }}</span>
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('admin.qr.regenerate', $siswa->id_user) }}"
+                      onsubmit="return confirm('Buat ulang QR untuk {{ addslashes($siswa->nama) }}? QR lama tidak akan berlaku lagi.')"
+                      class="pt-1">
+                    @csrf
+                    <button type="submit"
+                            class="w-full py-2.5 px-4 text-xs font-bold rounded-xl bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 hover:border-amber-300 transition flex items-center justify-center gap-2 shadow-2xs">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span>Buat Ulang (Regenerasi) QR Siswa</span>
+                    </button>
+                </form>
+            </div>
+
         </div>
     </div>
 </div>

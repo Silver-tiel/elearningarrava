@@ -41,8 +41,12 @@ class PerkembanganNilaiController extends Controller
 
         // Filter rentang waktu
         $rentang = $request->input('rentang', 'semua');
+        $withRelations = ['quiz.tipeQuiz'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $withRelations[] = 'quiz.mapel';
+        }
         $hasilQuery = HasilQuizModul::where('id_user', $siswa->id_user)
-            ->with('quiz.tipeQuiz')
+            ->with($withRelations)
             ->orderBy('waktu_dapat');
 
         if ($rentang === '7')  $hasilQuery->where('waktu_dapat', '>=', now()->subDays(7));
@@ -60,11 +64,11 @@ class PerkembanganNilaiController extends Controller
         if ($statusFilter === 'lulus')    $hasilFiltered = $hasilAll->where('is_lulus', true);
         if ($statusFilter === 'remedial') $hasilFiltered = $hasilAll->where('is_lulus', false);
 
-        // Daftar mata pelajaran unik (dari judul quiz)
-        $mataPelajaranList = $hasilAll->map(fn($h) => $h->quiz?->judul)->filter()->unique()->values();
+        // Daftar mata pelajaran unik (utamakan relasi mapel resmi, fallback ke judul quiz)
+        $mataPelajaranList = $hasilAll->map(fn($h) => $h->quiz?->mapel?->nama_mapel ?: $h->quiz?->judul)->filter()->unique()->values();
 
         if ($mapel) {
-            $hasilFiltered = $hasilFiltered->filter(fn($h) => $h->quiz?->judul === $mapel);
+            $hasilFiltered = $hasilFiltered->filter(fn($h) => ($h->quiz?->mapel?->nama_mapel ?: $h->quiz?->judul) === $mapel);
         }
 
         // Hitung nilai (persen) per hasil

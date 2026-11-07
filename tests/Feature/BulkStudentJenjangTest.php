@@ -23,6 +23,8 @@ class BulkStudentJenjangTest extends TestCase
             $table->unsignedInteger('id_tipeuser')->default(3);
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->string('status_akun')->nullable();
+            $table->char('qr_token', 36)->nullable()->unique();
+            $table->timestamp('qr_dibuat_pada')->nullable();
             $table->timestamps();
         });
 

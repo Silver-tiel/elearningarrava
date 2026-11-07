@@ -360,21 +360,31 @@ class SiswaController extends Controller
     {
         $filters = $request->validate([
             'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
+            'mapel' => ['nullable', 'integer', 'exists:mapel,id_mapel'],
             'sort' => ['nullable', 'in:terbaru,terlama'],
         ]);
 
         $user = Auth::user();
 
-        $query = Quiz::published()->belumKadaluarsa()->with([
+        $relations = [
             'tipeQuiz',
             'tingkatQuiz',
             'jenjang',
             'soal.jenisSoal',
             'hasil' => fn($q) => $user ? $q->where('id_user', $user->id_user) : $q,
-        ]);
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+
+        $query = Quiz::published()->belumKadaluarsa()->with($relations);
 
         if ($user && $user->id_jenjang) {
             $query->where('id_jenjang', $user->id_jenjang);
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel') && !empty($filters['mapel'])) {
+            $query->where('id_mapel', $filters['mapel']);
         }
 
         if (!empty($filters['tingkat'])) {
@@ -389,8 +399,9 @@ class SiswaController extends Controller
 
         $quizzes = $query->get();
         $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
+        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
 
-        return view('siswa.quiz', compact('quizzes', 'tingkatQuizList'));
+        return view('siswa.quiz', compact('quizzes', 'tingkatQuizList', 'mapelList'));
     }
 
     /* ---------------------------------------------------------------------
@@ -1033,8 +1044,16 @@ class SiswaController extends Controller
             ->with('success', "Jenjang {$jenjang->nama_tipe} berhasil diterapkan pada {$updatedCount} siswa.");
     }
 
+    /**
+     * Tampilan profil detail siswa untuk admin.
+     *
+     * @suppress PHP6613, PHP0448
+     * @param int|string $id
+     * @return \Illuminate\View\View
+     */
     public function adminLihatProfilSiswa($id)
     {
+        /** @var User $siswa */
         $siswa = User::where('id_tipeuser', 3)
             ->with(['jenjang', 'tipeUser'])
             ->findOrFail($id);
@@ -1059,60 +1078,8 @@ class SiswaController extends Controller
             ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
             ->count();
 
-        // Riwayat pengerjaan kuis siswa
-        $quizResults = HasilQuizModul::where('id_user', $siswa->id_user)
-            ->with('quiz')
-            ->orderByDesc('waktu_dapat')
-            ->get();
-
-        $totalPercobaan = $quizResults->count();
-        $kuisLulus = $quizResults->where('is_lulus', true)->count();
-        $kuisGagal = $totalPercobaan - $kuisLulus;
-        $uniqueQuizLulus = $quizResults->where('is_lulus', true)->pluck('id_quiz')->unique()->count();
-
-        $nilaiList = $quizResults->map(function ($hasil) {
-            return (float) $hasil->total_poin > 0
-                ? round(($hasil->poin_didapat / $hasil->total_poin) * 100, 1)
-                : 0;
-        });
-
-        $rataRataNilai = $nilaiList->isNotEmpty() ? round($nilaiList->avg(), 1) : 0;
-        $nilaiTertinggi = $nilaiList->isNotEmpty() ? $nilaiList->max() : 0;
-
-        // Modul selesai berdasarkan kuis modul yang lulus
-        $quizLulusIds = $quizResults->where('is_lulus', true)->pluck('id_quiz')->unique();
-        $modulSelesai = $quizLulusIds->isNotEmpty()
-            ? Modul::whereIn('id_quiz', $quizLulusIds)->distinct()->count('id_modul')
-            : 0;
-
-        $progresModulPersen = $totalModulJenjang > 0
-            ? min(100, (int) round(($modulSelesai / $totalModulJenjang) * 100))
-            : 0;
-
-        // Data untuk Grafik Tren Nilai (Urut dari waktu terlama ke terbaru)
-        $chartDataTrend = $quizResults->sortBy('waktu_dapat')->values()->map(function ($hasil) {
-            $nilai = (float) $hasil->total_poin > 0
-                ? round(($hasil->poin_didapat / $hasil->total_poin) * 100, 1)
-                : 0;
-            return [
-                'judul' => $hasil->quiz?->judul ?? ('Kuis #' . $hasil->id_quiz),
-                'tanggal' => $hasil->waktu_dapat ? Carbon::parse($hasil->waktu_dapat)->format('d M H:i') : '-',
-                'nilai' => $nilai,
-                'poin' => (int) $hasil->poin_didapat,
-                'total_poin' => (int) $hasil->total_poin,
-                'is_lulus' => (bool) $hasil->is_lulus,
-            ];
-        });
-
-        // Data untuk Grafik Aktivitas Harian
-        $chartAktivitas = $quizResults->groupBy(function ($hasil) {
-            return $hasil->waktu_dapat ? Carbon::parse($hasil->waktu_dapat)->toDateString() : 'Lainnya';
-        })->map(function ($group, $date) {
-            return [
-                'tanggal' => $date !== 'Lainnya' ? Carbon::parse($date)->translatedFormat('d M') : 'Lainnya',
-                'jumlah' => $group->count(),
-            ];
-        })->values()->take(10);
+        // Statistik kuis, modul, dan grafik aktivitas siswa
+        $stats = $this->hitungStatistikProfilSiswa($siswa, $totalModulJenjang);
 
         // Pencapaian / Achievements
         $achievementsUnlocked = PencapaianUser::with('achievement')
@@ -1132,27 +1099,110 @@ class SiswaController extends Controller
         // Semua jenjang
         $jenjangs = Jenjang::orderBy('nama_tipe')->get();
 
-        return view('admin.daftar_siswa.profil_siswa', compact(
-            'siswa',
-            'peringkat',
-            'totalSiswaJenjang',
-            'totalModulJenjang',
-            'totalPercobaan',
-            'kuisLulus',
-            'kuisGagal',
-            'uniqueQuizLulus',
-            'rataRataNilai',
-            'nilaiTertinggi',
-            'modulSelesai',
-            'progresModulPersen',
-            'quizResults',
-            'chartDataTrend',
-            'chartAktivitas',
-            'achievementsUnlocked',
-            'allAchievements',
-            'orangtuaList',
-            'jenjangs'
-        ));
+        return view('admin.daftar_siswa.profil_siswa', array_merge([
+            'siswa' => $siswa,
+            'peringkat' => $peringkat,
+            'totalSiswaJenjang' => $totalSiswaJenjang,
+            'totalModulJenjang' => $totalModulJenjang,
+            'achievementsUnlocked' => $achievementsUnlocked,
+            'allAchievements' => $allAchievements,
+            'orangtuaList' => $orangtuaList,
+            'jenjangs' => $jenjangs,
+        ], $stats));
+    }
+
+    /**
+     * Hitung agregasi statistik kuis, modul, dan grafik aktivitas siswa.
+     *
+     * @suppress PHP6613, PHP0448
+     * @param User $siswa
+     * @param int $totalModulJenjang
+     * @return array<string, mixed>
+     */
+    private function hitungStatistikProfilSiswa(User $siswa, int $totalModulJenjang): array
+    {
+        $quizResults = HasilQuizModul::where('id_user', $siswa->id_user)
+            ->with('quiz')
+            ->orderByDesc('waktu_dapat')
+            ->get();
+
+        $totalPercobaan = $quizResults->count();
+        $kuisLulus = $quizResults->where('is_lulus', true)->count();
+        $kuisGagal = $totalPercobaan - $kuisLulus;
+        $uniqueQuizLulus = $quizResults->where('is_lulus', true)->pluck('id_quiz')->unique()->count();
+
+        $nilaiList = [];
+        foreach ($quizResults as $hasil) {
+            /** @var HasilQuizModul $hasil */
+            $nilaiList[] = (float) $hasil->total_poin > 0
+                ? round(($hasil->poin_didapat / $hasil->total_poin) * 100, 1)
+                : 0.0;
+        }
+        $nilaiCollection = collect($nilaiList);
+        $rataRataNilai = $nilaiCollection->isNotEmpty() ? round($nilaiCollection->avg(), 1) : 0;
+        $nilaiTertinggi = $nilaiCollection->isNotEmpty() ? $nilaiCollection->max() : 0;
+
+        // Modul selesai berdasarkan kuis modul yang lulus
+        $quizLulusIds = $quizResults->where('is_lulus', true)->pluck('id_quiz')->unique();
+        $modulSelesai = $quizLulusIds->isNotEmpty()
+            ? Modul::whereIn('id_quiz', $quizLulusIds)->distinct()->count('id_modul')
+            : 0;
+
+        $progresModulPersen = $totalModulJenjang > 0
+            ? min(100, (int) round(($modulSelesai / $totalModulJenjang) * 100))
+            : 0;
+
+        // Data untuk Grafik Tren Nilai (Urut dari waktu terlama ke terbaru)
+        $chartDataTrendList = [];
+        $sortedQuizResults = $quizResults->sortBy('waktu_dapat')->values();
+        foreach ($sortedQuizResults as $hasil) {
+            $nilai = (float) $hasil->total_poin > 0
+                ? round(($hasil->poin_didapat / $hasil->total_poin) * 100, 1)
+                : 0.0;
+
+            $chartDataTrendList[] = [
+                'judul' => $hasil->quiz?->judul ?? ('Kuis #' . $hasil->id_quiz),
+                'tanggal' => $hasil->waktu_dapat ? Carbon::parse($hasil->waktu_dapat)->format('d M H:i') : '-',
+                'nilai' => $nilai,
+                'poin' => (int) $hasil->poin_didapat,
+                'total_poin' => (int) $hasil->total_poin,
+                'is_lulus' => (bool) $hasil->is_lulus,
+            ];
+        }
+
+        // Data untuk Grafik Aktivitas Harian
+        $aktivitasPerTanggal = [];
+        foreach ($quizResults as $hasil) {
+            $dateKey = $hasil->waktu_dapat ? Carbon::parse($hasil->waktu_dapat)->toDateString() : 'Lainnya';
+            $aktivitasPerTanggal[$dateKey] = ($aktivitasPerTanggal[$dateKey] ?? 0) + 1;
+        }
+
+        $chartAktivitasList = [];
+        $activityCount = 0;
+        foreach ($aktivitasPerTanggal as $date => $jumlah) {
+            if ($activityCount >= 10) {
+                break;
+            }
+            $chartAktivitasList[] = [
+                'tanggal' => $date !== 'Lainnya' ? Carbon::parse($date)->translatedFormat('d M') : 'Lainnya',
+                'jumlah' => $jumlah,
+            ];
+            $activityCount++;
+        }
+
+        return [
+            'quizResults' => $quizResults,
+            'totalPercobaan' => $totalPercobaan,
+            'kuisLulus' => $kuisLulus,
+            'kuisGagal' => $kuisGagal,
+            'uniqueQuizLulus' => $uniqueQuizLulus,
+            'rataRataNilai' => $rataRataNilai,
+            'nilaiTertinggi' => $nilaiTertinggi,
+            'modulSelesai' => $modulSelesai,
+            'progresModulPersen' => $progresModulPersen,
+            'chartDataTrend' => collect($chartDataTrendList),
+            'chartAktivitas' => collect($chartAktivitasList),
+        ];
     }
 
     public function updateStudentData(Request $request, $id)
@@ -1324,9 +1374,9 @@ class SiswaController extends Controller
                 return $hasil;
             });
         $scoreTrend = $quizResults->groupBy(function ($hasil) {
-            return \Illuminate\Support\Carbon::parse($hasil->waktu_dapat)->toDateString();
+            return Carbon::parse($hasil->waktu_dapat)->toDateString();
         })->map(function ($dailyResults, $date) {
-            $tanggal = \Illuminate\Support\Carbon::parse($date);
+            $tanggal = Carbon::parse($date);
 
             return [
                 'tanggal' => $tanggal->translatedFormat('d M'),

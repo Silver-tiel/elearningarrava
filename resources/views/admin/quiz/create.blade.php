@@ -460,6 +460,30 @@
                             </select>
                         </div>
 
+                        {{-- 1.2 MATA PELAJARAN (MAPEL) --}}
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
+                            <label class="block text-xs font-bold text-blue-900 mb-1.5 flex items-center justify-between">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                    </svg>
+                                    Mata Pelajaran (Mapel)
+                                </span>
+                                <span class="text-[10px] text-blue-500 font-normal">Opsional</span>
+                            </label>
+                            <select name="id_mapel" id="select-mapel"
+                                class="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- Pilih Mata Pelajaran --</option>
+                                @if(isset($mapelList) && count($mapelList) > 0)
+                                    @foreach($mapelList as $m)
+                                        <option value="{{ $m->id_mapel }}" @selected(old('id_mapel', $quiz->id_mapel ?? null) == $m->id_mapel)>
+                                            {{ $m->nama_mapel }}{{ $m->jenjang ? ' (' . $m->jenjang->nama_tipe . ')' : '' }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+
                         {{-- 1.5 TINGKAT QUIZ --}}
                         <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
                             <label class="block text-xs font-bold text-blue-900 mb-1.5 flex items-center gap-1.5">

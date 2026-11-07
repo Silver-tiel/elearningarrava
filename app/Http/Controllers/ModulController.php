@@ -23,7 +23,11 @@ class ModulController extends Controller
             Gate::authorize('viewAny', Modul::class);
         }
 
-        $query = Modul::with(['tipeModul', 'jenjang', 'quiz']);
+        $relations = ['tipeModul', 'jenjang', 'quiz'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $query = Modul::with($relations);
 
         // Guru hanya melihat modul miliknya sendiri; admin melihat semua.
         if ($request->user() && $request->user()->isGuru()) {
@@ -123,8 +127,9 @@ class ModulController extends Controller
         // Hanya ambil jenjang SD, SMP, SMA (id 1, 2, 3)
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
+        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
 
-        return view('admin.modul.create', compact('tipeModul', 'jenjang', 'quizzes'));
+        return view('admin.modul.create', compact('tipeModul', 'jenjang', 'quizzes', 'mapelList'));
     }
 
     // Menyimpan data modul baru & memproses upload file fisik / draf
@@ -142,6 +147,7 @@ class ModulController extends Controller
         $rules = [
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul',
             'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
+            'id_mapel' => 'nullable|integer',
             'id_tipemodul' => $isDraft ? 'nullable|integer' : 'required|integer|exists:tipemodul,id_tipemodul',
             'id_quiz' => 'nullable|integer|exists:quiz,id_quiz',
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
@@ -208,7 +214,7 @@ class ModulController extends Controller
             $pathFoto = $foto->store('modul/covers', 'public');
         }
 
-        $modulBaru = Modul::create([
+        $modulData = [
             'judul_modul' => $validated['judul_modul'],
             'file_materi' => $pathFile,
             'tipe_file' => $tipeFile,
@@ -219,7 +225,11 @@ class ModulController extends Controller
             'foto_modul' => $pathFoto,
             'kkm_quiz' => $request->filled('kkm_quiz') ? (int) $request->kkm_quiz : 70,
             'poin_modul' => $request->filled('poin_modul') ? (int) $request->poin_modul : 50,
-        ]);
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel')) {
+            $modulData['id_mapel'] = $validated['id_mapel'] ?? null;
+        }
+        $modulBaru = Modul::create($modulData);
 
         $this->saveSoalModul($modulBaru, $request->input('soal'));
 
@@ -263,8 +273,9 @@ class ModulController extends Controller
         $tipeModul = TipeModul::all();
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
+        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
 
-        return view('admin.modul.edit', compact('module', 'tipeModul', 'jenjang', 'quizzes'));
+        return view('admin.modul.edit', compact('module', 'tipeModul', 'jenjang', 'quizzes', 'mapelList'));
     }
 
     // Memproses update data modul (bisa simpan draf atau publikasikan)
@@ -282,6 +293,7 @@ class ModulController extends Controller
         $rules = [
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul,' . $module->id_modul . ',id_modul',
             'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
+            'id_mapel' => 'nullable|integer',
             'id_tipemodul' => $isDraft ? 'nullable|integer' : 'required|integer|exists:tipemodul,id_tipemodul',
             'id_quiz' => 'nullable|integer|exists:quiz,id_quiz',
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
@@ -361,7 +373,7 @@ class ModulController extends Controller
             $pathFoto = $foto->store('modul/covers', 'public');
         }
 
-        $module->update([
+        $updateData = [
             'judul_modul' => $validated['judul_modul'],
             'file_materi' => $pathFile,
             'tipe_file' => $tipeFile,
@@ -372,7 +384,11 @@ class ModulController extends Controller
             'foto_modul' => $pathFoto,
             'kkm_quiz' => $request->filled('kkm_quiz') ? (int) $request->kkm_quiz : ($module->kkm_quiz ?? 70),
             'poin_modul' => $request->filled('poin_modul') ? (int) $request->poin_modul : ($module->poin_modul ?? 50),
-        ]);
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel')) {
+            $updateData['id_mapel'] = $validated['id_mapel'] ?? null;
+        }
+        $module->update($updateData);
 
         $this->saveSoalModul($module, $request->input('soal'));
 
@@ -543,7 +559,11 @@ class ModulController extends Controller
     public function apiIndex(Request $request)
     {
         $user = $request->user();
-        $query = Modul::with(['tipeModul', 'jenjang', 'quiz']);
+        $relations = ['tipeModul', 'jenjang', 'quiz'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $query = Modul::with($relations);
 
         // Siswa otomatis hanya dapat melihat modul published dan sesuai jenjangnya
         if ($user && $user->isSiswa()) {
@@ -553,6 +573,10 @@ class ModulController extends Controller
             }
         } elseif ($request->filled('jenjang')) {
             $query->where('id_jenjang', $request->jenjang);
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel') && $request->filled('mapel')) {
+            $query->where('id_mapel', $request->mapel);
         }
 
         if ($request->filled('status')) {
@@ -585,7 +609,11 @@ class ModulController extends Controller
     // API: menampilkan detail modul
     public function apiShow(Request $request, $id)
     {
-        $modul = Modul::with(['tipeModul', 'jenjang', 'quiz', 'catatan', 'soalModul.pilihan'])->find($id);
+        $relations = ['tipeModul', 'jenjang', 'quiz', 'catatan', 'soalModul.pilihan'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $modul = Modul::with($relations)->find($id);
 
         if (!$modul) {
             return response()->json([
@@ -670,6 +698,8 @@ class ModulController extends Controller
             'nama_tipe' => $modul->tipeModul->nama_tipe ?? ($modul->id_tipemodul == 1 ? 'Video' : ($modul->id_tipemodul == 2 ? 'PDF' : 'Artikel')),
             'id_jenjang' => $modul->id_jenjang ? (int) $modul->id_jenjang : null,
             'nama_jenjang' => $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? null,
+            'id_mapel' => $modul->id_mapel ? (int) $modul->id_mapel : null,
+            'nama_mapel' => $modul->mapel->nama_mapel ?? null,
             'id_quiz' => $modul->id_quiz ? (int) $modul->id_quiz : null,
             'quiz' => $modul->quiz ? [
                 'id_quiz' => (int) $modul->quiz->id_quiz,
@@ -710,6 +740,7 @@ class ModulController extends Controller
             'judul_modul' => 'required|string|max:255',
             'id_tipemodul' => 'required|integer',
             'id_jenjang' => 'required|integer',
+            'id_mapel' => 'nullable|integer',
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -733,7 +764,7 @@ class ModulController extends Controller
             $pathFoto = $foto->store('modul/covers', 'public');
         }
 
-        $modul = Modul::create([
+        $modulData = [
             'judul_modul' => $request->judul_modul,
             'file_materi' => $pathFile,
             'tipe_file' => $tipeFile,
@@ -742,7 +773,11 @@ class ModulController extends Controller
             'id_quiz' => $request->id_quiz ?: null,
             'progressModul' => 'Tersedia',
             'foto_modul' => $pathFoto,
-        ]);
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel')) {
+            $modulData['id_mapel'] = $request->id_mapel ?: null;
+        }
+        $modul = Modul::create($modulData);
 
         return response()->json([
             'success' => true,
@@ -771,6 +806,7 @@ class ModulController extends Controller
             'judul_modul' => 'required|string|max:255',
             'id_tipemodul' => 'required|integer',
             'id_jenjang' => 'required|integer',
+            'id_mapel' => 'nullable|integer',
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -801,10 +837,10 @@ class ModulController extends Controller
                 Storage::disk('public')->delete($module->foto_modul);
             }
             $foto = $request->file('foto_modul');
-            $pathFoto = $module->store('modul/covers', 'public');
+            $pathFoto = $foto->store('modul/covers', 'public');
         }
 
-        $module->update([
+        $updateData = [
             'judul_modul' => $request->judul_modul,
             'file_materi' => $pathFile,
             'tipe_file' => $tipeFile,
@@ -812,7 +848,11 @@ class ModulController extends Controller
             'id_jenjang' => $request->id_jenjang,
             'id_quiz' => $request->id_quiz ?: null,
             'foto_modul' => $pathFoto,
-        ]);
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel')) {
+            $updateData['id_mapel'] = $request->id_mapel ?: null;
+        }
+        $module->update($updateData);
 
         return response()->json([
             'success' => true,

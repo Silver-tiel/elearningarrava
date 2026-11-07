@@ -16,10 +16,11 @@ class QrAdminController extends Controller
         $cari = trim((string) $request->query('q', ''));
 
         // Hanya kolom non-rahasia yang diambil: token TIDAK pernah ditampilkan.
-        $siswa = User::where('id_tipeuser', 3)
+        $siswa = User::with('jenjang')
+            ->where('id_tipeuser', 3)
             ->when($cari !== '', fn ($q) => $q->where('nama', 'like', '%' . $cari . '%'))
             ->orderBy('nama')
-            ->paginate(20, ['id_user', 'nama', 'qr_dibuat_pada'])
+            ->paginate(20, ['id_user', 'nama', 'email', 'nisn', 'foto_profil', 'id_jenjang', 'status_akun', 'qr_dibuat_pada'])
             ->withQueryString();
 
         return view('admin.qr.index', ['siswa' => $siswa, 'cari' => $cari]);

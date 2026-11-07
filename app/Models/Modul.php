@@ -18,6 +18,7 @@ class Modul extends Model
         'tipe_file',
         'id_tipemodul',
         'id_jenjang',
+        'id_mapel',
         'id_quiz',
         'progressModul',
         'foto_modul',
@@ -34,6 +35,12 @@ class Modul extends Model
     public function jenjang()
     {
         return $this->belongsTo(Jenjang::class, 'id_jenjang', 'id_jenjang');
+    }
+
+    // Relasi ke tabel mapel (Mata Pelajaran)
+    public function mapel()
+    {
+        return $this->belongsTo(Mapel::class, 'id_mapel', 'id_mapel');
     }
     // Relasi opsional ke kuis terkait
     public function quiz()

@@ -24,6 +24,7 @@ class Quiz extends Model
         'id_tipequiz',
         'id_tingkatquiz',
         'id_jenjang',
+        'id_mapel',
         'waktu_kadaluarsa',
         'mode_pengerjaan',
         'durasi_total_menit',
@@ -56,6 +57,11 @@ class Quiz extends Model
     public function jenjang()
     {
         return $this->belongsTo(Jenjang::class, 'id_jenjang', 'id_jenjang');
+    }
+
+    public function mapel()
+    {
+        return $this->belongsTo(Mapel::class, 'id_mapel', 'id_mapel');
     }
 
     public function tipeQuiz()

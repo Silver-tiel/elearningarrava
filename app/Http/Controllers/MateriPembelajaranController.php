@@ -48,7 +48,11 @@ class MateriPembelajaranController extends Controller
         $searchQuery = $request->input('q');
 
         /* --- Query modul sesuai jenjang siswa --- */
-        $modulQuery = Modul::published()->with(['tipeModul', 'jenjang', 'quiz'])
+        $relations = ['tipeModul', 'jenjang', 'quiz'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $modulQuery = Modul::published()->with($relations)
             ->where('id_jenjang', $siswa->id_jenjang);
 
         if ($tipeAktif) {

@@ -120,6 +120,20 @@
                     </select>
                 </div>
                 <div class="flex-1">
+                    <label for="filter-mapel" class="mb-1 block text-xs font-semibold text-slate-500">Mata Pelajaran</label>
+                    <select id="filter-mapel" name="mapel"
+                        class="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <option value="">Semua mapel</option>
+                        @if(isset($mapelList))
+                            @foreach($mapelList as $m)
+                                <option value="{{ $m->id_mapel }}" @selected(request('mapel') == $m->id_mapel)>
+                                    {{ $m->nama_mapel }}
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+                <div class="flex-1">
                     <label for="filter-tingkat" class="mb-1 block text-xs font-semibold text-slate-500">Kesulitan</label>
                     <select id="filter-tingkat" name="tingkat"
                         class="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
@@ -190,7 +204,8 @@
                     @endphp
                     <div class="quiz-card bg-white rounded-2xl border border-gray-100 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group"
                         data-judul="{{ strtolower($quiz->judul) }}" data-token="{{ strtolower($quiz->token ?? '') }}"
-                        data-jenjang="{{ strtolower($quiz->jenjang->nama_tipe ?? '') }}">
+                        data-jenjang="{{ strtolower($quiz->jenjang->nama_tipe ?? '') }}"
+                        data-mapel="{{ strtolower($quiz->mapel->nama_mapel ?? '') }}">
 
                         <!-- BANNER ATAS DENGAN STATUS & JENJANG -->
                         <div
@@ -248,6 +263,12 @@
                                         </svg>
                                         {{ $quiz->soal_count ?? 0 }} Soal
                                     </span>
+                                    @if($quiz->mapel)
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                            {{ $quiz->mapel->nama_mapel }}
+                                        </span>
+                                    @endif
                                     @if($quiz->tingkatQuiz ?? $quiz->tingkat)
                                         <span
                                             class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
@@ -358,8 +379,9 @@
                 const judul = card.getAttribute('data-judul') || '';
                 const token = card.getAttribute('data-token') || '';
                 const jenjang = card.getAttribute('data-jenjang') || '';
+                const mapel = card.getAttribute('data-mapel') || '';
 
-                if (judul.includes(query) || token.includes(query) || jenjang.includes(query)) {
+                if (judul.includes(query) || token.includes(query) || jenjang.includes(query) || mapel.includes(query)) {
                     card.style.display = 'flex';
                     visibleCount++;
                 } else {

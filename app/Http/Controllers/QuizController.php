@@ -32,7 +32,11 @@ class QuizController extends Controller
             Gate::authorize('viewAny', Quiz::class);
         }
 
-        $query = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang'])->withCount('soal');
+        $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $query = Quiz::with($relations)->withCount('soal');
 
         // Guru hanya melihat quiz miliknya sendiri; admin melihat semua.
         if ($request->user() && $request->user()->isGuru()) {
@@ -41,6 +45,10 @@ class QuizController extends Controller
 
         if (!empty($filters['jenjang'])) {
             $query->where('id_jenjang', $filters['jenjang']);
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel') && !empty($filters['mapel'])) {
+            $query->where('id_mapel', $filters['mapel']);
         }
 
         if (!empty($filters['tingkat'])) {
@@ -73,8 +81,9 @@ class QuizController extends Controller
         $quizzes = $query->get();
         $jenjangList = Jenjang::orderBy('id_jenjang')->get();
         $tingkatQuizList = \App\Models\TingkatQuiz::orderBy('id_tingkatquiz')->get();
+        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
 
-        return view('admin.quiz.index', compact('quizzes', 'jenjangList', 'tingkatQuizList'));
+        return view('admin.quiz.index', compact('quizzes', 'jenjangList', 'tingkatQuizList', 'mapelList'));
     }
 
     // Menampilkan form untuk menambah kuis baru (bergaya Kahoot).
@@ -86,8 +95,9 @@ class QuizController extends Controller
 
         $jenjangList = Jenjang::all();
         $tingkatQuizList = \App\Models\TingkatQuiz::all();
+        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
         $questions = $this->questionEditorState(old('soal', []));
-        return view('admin.quiz.create', compact('jenjangList', 'tingkatQuizList', 'questions'));
+        return view('admin.quiz.create', compact('jenjangList', 'tingkatQuizList', 'mapelList', 'questions'));
     }
 
     public function edit($id)
@@ -98,6 +108,7 @@ class QuizController extends Controller
         }
         $jenjangList = Jenjang::all();
         $tingkatQuizList = \App\Models\TingkatQuiz::all();
+        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
         $savedQuestions = $quiz->soal->map(function (Soal $soal) {
             $type = match ((int) $soal->id_jenis_soal) {
                 2 => 'isian_singkat',
@@ -130,7 +141,7 @@ class QuizController extends Controller
         $oldQuestions = old('soal');
         $questions = is_array($oldQuestions) ? $this->questionEditorState($oldQuestions) : $savedQuestions;
 
-        return view('admin.quiz.create', compact('quiz', 'jenjangList', 'tingkatQuizList', 'questions'));
+        return view('admin.quiz.create', compact('quiz', 'jenjangList', 'tingkatQuizList', 'mapelList', 'questions'));
     }
 
     // Menyimpan kuis baru beserta soal dan pilihan jawaban ke database.
@@ -147,6 +158,7 @@ class QuizController extends Controller
                 'judul'            => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
                 'deskripsi'        => 'nullable|string|max:3000',
                 'id_jenjang'       => 'required|integer',
+                'id_mapel'         => 'nullable|integer',
                 'id_tipequiz'      => 'nullable|integer',
                 'id_tingkatquiz'   => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date'],
@@ -176,6 +188,7 @@ class QuizController extends Controller
                 'judul'            => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
                 'deskripsi'        => 'nullable|string|max:3000',
                 'id_jenjang'       => 'required|integer',
+                'id_mapel'         => 'nullable|integer',
                 'id_tipequiz'      => 'nullable|integer',
                 'id_tingkatquiz'   => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date', 'after_or_equal:now'],
@@ -222,7 +235,7 @@ class QuizController extends Controller
 
         DB::transaction(function () use ($request, $questions, $token, $fotoQuizPath, $isDraft) {
             // 1. Simpan quiz
-            $quiz = Quiz::create([
+            $quizData = [
                 'judul'            => $request->judul,
                 'deskripsi'        => $request->deskripsi ?: null,
                 'id_jenjang'       => $request->id_jenjang,
@@ -235,7 +248,11 @@ class QuizController extends Controller
                 'token'            => $token,
                 'foto_quiz'        => $fotoQuizPath,
                 'proggressQuiz'    => $isDraft ? 'Draft' : 'Tersedia',
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel')) {
+                $quizData['id_mapel'] = $request->id_mapel ?: null;
+            }
+            $quiz = Quiz::create($quizData);
 
             // 2. Simpan setiap soal
             foreach ($questions as $index => $soalData) {
@@ -288,6 +305,7 @@ class QuizController extends Controller
                 'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
                 'deskripsi' => 'nullable|string|max:3000',
                 'id_jenjang' => 'required|integer',
+                'id_mapel' => 'nullable|integer',
                 'id_tipequiz' => 'nullable|integer',
                 'id_tingkatquiz' => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date'],
@@ -319,6 +337,7 @@ class QuizController extends Controller
                 'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
                 'deskripsi' => 'nullable|string|max:3000',
                 'id_jenjang' => 'required|integer',
+                'id_mapel' => 'nullable|integer',
                 'id_tipequiz' => 'nullable|integer',
                 'id_tingkatquiz' => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date'],
@@ -395,7 +414,7 @@ class QuizController extends Controller
         }
 
         DB::transaction(function () use ($quiz, $validated, $questions, $request, $token, $fotoQuizPath, $isDraft) {
-            $quiz->update([
+            $updateData = [
                 'judul' => $validated['judul'],
                 'deskripsi' => $request->deskripsi ?: null,
                 'id_jenjang' => $validated['id_jenjang'],
@@ -408,7 +427,11 @@ class QuizController extends Controller
                 'token' => $token,
                 'foto_quiz' => $fotoQuizPath,
                 'proggressQuiz' => $isDraft ? 'Draft' : 'Tersedia',
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel')) {
+                $updateData['id_mapel'] = $request->id_mapel ?: null;
+            }
+            $quiz->update($updateData);
 
             $this->replaceQuestions($quiz, $questions, (int) $validated['id_jenjang'], $request);
         });
@@ -743,7 +766,11 @@ class QuizController extends Controller
 
     public function apiIndex(Request $request)
     {
-        $query = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'])
+        $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $query = Quiz::with($relations)
             ->withCount(['soal', 'hasil as participants_count']);
 
         $user = $request->user();
@@ -753,6 +780,10 @@ class QuizController extends Controller
             $query->where('id_jenjang', $user->id_jenjang);
         } elseif ($request->filled('jenjang')) {
             $query->where('id_jenjang', $request->jenjang);
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel') && $request->filled('mapel')) {
+            $query->where('id_mapel', $request->mapel);
         }
 
         if ($request->filled('tingkat')) {
@@ -794,7 +825,11 @@ class QuizController extends Controller
 
     public function apiShow($id)
     {
-        $quiz = Quiz::with(['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'])
+        $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $quiz = Quiz::with($relations)
             ->withCount(['soal', 'hasil as participants_count'])
             ->find($id);
 
@@ -827,6 +862,7 @@ class QuizController extends Controller
             'judul' => 'required|string|max:255',
             'deskripsi' => 'nullable|string|max:3000',
             'id_jenjang' => 'required|integer',
+            'id_mapel' => 'nullable|integer',
             'id_tipequiz' => 'nullable|integer',
             'id_tingkatquiz' => 'nullable|integer',
             'waktu_kadaluarsa' => 'nullable|date',
@@ -853,7 +889,7 @@ class QuizController extends Controller
             : null;
 
         $quiz = DB::transaction(function () use ($request, $validated, $token, $isDraft) {
-            $quiz = Quiz::create([
+            $quizData = [
                 'judul' => $validated['judul'],
                 'deskripsi' => $validated['deskripsi'] ?? null,
                 'id_jenjang' => $validated['id_jenjang'],
@@ -866,7 +902,11 @@ class QuizController extends Controller
                 'token' => $token,
                 'foto_quiz' => null,
                 'proggressQuiz' => $isDraft ? 'Draft' : 'Tersedia',
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel')) {
+                $quizData['id_mapel'] = $validated['id_mapel'] ?? null;
+            }
+            $quiz = Quiz::create($quizData);
 
             $soalInput = $request->input('soal', []);
             if (is_array($soalInput)) {
@@ -930,7 +970,11 @@ class QuizController extends Controller
             return $quiz;
         });
 
-        $quiz->load(['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'])->loadCount(['soal', 'hasil as participants_count']);
+        $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $quiz->load($relations)->loadCount(['soal', 'hasil as participants_count']);
 
         return response()->json([
             'status' => 'success',
@@ -955,6 +999,7 @@ class QuizController extends Controller
             'judul' => 'sometimes|required|string|max:255',
             'deskripsi' => 'nullable|string|max:3000',
             'id_jenjang' => 'sometimes|required|integer',
+            'id_mapel' => 'nullable|integer',
             'id_tipequiz' => 'nullable|integer',
             'id_tingkatquiz' => 'nullable|integer',
             'waktu_kadaluarsa' => 'nullable|date',
@@ -973,6 +1018,7 @@ class QuizController extends Controller
             if ($request->has('judul')) $updateData['judul'] = $validated['judul'];
             if ($request->has('deskripsi')) $updateData['deskripsi'] = $validated['deskripsi'];
             if ($request->has('id_jenjang')) $updateData['id_jenjang'] = $validated['id_jenjang'];
+            if ($request->has('id_mapel')) $updateData['id_mapel'] = $validated['id_mapel'] ?? null;
             if ($request->has('id_tipequiz')) $updateData['id_tipequiz'] = $validated['id_tipequiz'];
             if ($request->has('id_tingkatquiz')) $updateData['id_tingkatquiz'] = $validated['id_tingkatquiz'];
             if ($request->has('waktu_kadaluarsa')) $updateData['waktu_kadaluarsa'] = $validated['waktu_kadaluarsa'];
@@ -1053,7 +1099,11 @@ class QuizController extends Controller
             }
         });
 
-        $quiz->load(['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'])->loadCount(['soal', 'hasil as participants_count']);
+        $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $quiz->load($relations)->loadCount(['soal', 'hasil as participants_count']);
 
         return response()->json([
             'status' => 'success',
@@ -1301,6 +1351,8 @@ class QuizController extends Controller
             'deskripsi' => $quiz->deskripsi,
             'id_jenjang' => $quiz->id_jenjang ? (int) $quiz->id_jenjang : null,
             'nama_jenjang' => $quiz->jenjang->nama_tipe ?? $quiz->jenjang->nama_jenjang ?? null,
+            'id_mapel' => (!empty($quiz->id_mapel)) ? (int) $quiz->id_mapel : null,
+            'nama_mapel' => ($quiz->relationLoaded('mapel') && $quiz->mapel) ? $quiz->mapel->nama_mapel : null,
             'id_tingkatquiz' => $quiz->id_tingkatquiz ? (int) $quiz->id_tingkatquiz : null,
             'nama_tingkat' => $quiz->tingkatQuiz->nama_tingkat ?? $quiz->tingkatQuiz->nama_tingkatquiz ?? null,
             'id_tipequiz' => $quiz->id_tipequiz ? (int) $quiz->id_tipequiz : null,
@@ -1342,5 +1394,31 @@ class QuizController extends Controller
                 ];
             })->values()->all() : [],
         ];
+    }
+
+    public function apiMapelIndex(Request $request)
+    {
+        $query = \App\Models\Mapel::with('jenjang');
+        if ($request->filled('jenjang')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('id_jenjang', $request->jenjang)
+                  ->orWhereNull('id_jenjang');
+            });
+        }
+        $mapels = $query->orderBy('nama_mapel')->get()->map(function ($m) {
+            return [
+                'id_mapel' => (int) $m->id_mapel,
+                'nama_mapel' => $m->nama_mapel,
+                'id_jenjang' => $m->id_jenjang ? (int) $m->id_jenjang : null,
+                'nama_jenjang' => $m->jenjang->nama_tipe ?? null,
+                'deskripsi' => $m->deskripsi,
+                'icon' => $m->icon,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $mapels,
+        ]);
     }
 }

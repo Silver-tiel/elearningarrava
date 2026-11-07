@@ -113,7 +113,20 @@
 
         {{-- Filter Bar --}}
         <form method="GET" action="{{ route('siswa.quiz') }}"
-            class="grid gap-3 rounded-2xl border border-[#dfe6ef] bg-white p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end shadow-sm">
+            class="grid gap-3 rounded-2xl border border-[#dfe6ef] bg-white p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end shadow-sm">
+            <div>
+                <label for="filter-mapel" class="mb-1.5 block text-xs font-semibold text-[#52627a]">Mata Pelajaran</label>
+                <select id="filter-mapel" name="mapel"
+                    class="h-10 w-full rounded-xl border border-[#d5deea] bg-white px-3 text-sm text-[#172033] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    <option value="">Semua mapel</option>
+                    @if(isset($mapelList))
+                        @foreach($mapelList as $m)
+                            <option value="{{ $m->id_mapel }}" @selected(request('mapel') == $m->id_mapel)>
+                                {{ $m->nama_mapel }}</option>
+                        @endforeach
+                    @endif
+                </select>
+            </div>
             <div>
                 <label for="filter-tingkat" class="mb-1.5 block text-xs font-semibold text-[#52627a]">Tingkat
                     Kesulitan</label>
@@ -184,6 +197,7 @@
                         'judul' => $quiz->judul,
                         'deskripsi' => $quiz->deskripsi ?: 'Kuis ini berisi serangkaian soal latihan interaktif untuk menguji pemahaman Anda. Pastikan koneksi stabil sebelum memulai!',
                         'tingkat' => $quiz->tingkatQuiz->nama_tingkat ?? 'Umum',
+                        'mapel' => $quiz->mapel->nama_mapel ?? null,
                         'durasi' => $quiz->durasi_total_menit ? ($quiz->durasi_total_menit . ' Menit') : 'Fleksibel',
                         'soal_count' => $soalCount,
                         'total_poin' => $totalPoin,
@@ -236,6 +250,16 @@
                                 <div class="absolute top-2 right-2 z-10 pointer-events-none select-none">
                                     <img src="{{ asset('assets/widget/quizBerhasilStempel.webp') }}" alt="Stempel Selesai"
                                         class="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg transform -rotate-12 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-6">
+                                </div>
+                            @endif
+
+                            {{-- Bottom Left on Cover: Mata Pelajaran --}}
+                            @if($quiz->mapel)
+                                <div class="absolute bottom-3 left-3 z-10">
+                                    <span
+                                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-950/80 text-indigo-200 border border-indigo-400/30 backdrop-blur-md shadow-sm">
+                                        {{ $quiz->mapel->nama_mapel }}
+                                    </span>
                                 </div>
                             @endif
 

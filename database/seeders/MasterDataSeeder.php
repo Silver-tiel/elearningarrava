@@ -45,5 +45,9 @@ class MasterDataSeeder extends Seeder
             ['id_jenis_soal' => 2, 'nama_jenis_soal' => 'Essay', 'created_at' => $now, 'updated_at' => $now],
             ['id_jenis_soal' => 3, 'nama_jenis_soal' => 'Benar/Salah', 'created_at' => $now, 'updated_at' => $now],
         ]);
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+            $this->call(MapelSeeder::class);
+        }
     }
 }
