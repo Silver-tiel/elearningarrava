@@ -213,6 +213,19 @@ class DashboardController extends Controller
         Achievement::syncForUser($user);
         $user->refresh()->load('jenjang');
 
+        // Return only the parents linked to the authenticated student's account.
+        $orangTua = $user->orangtuaList()
+            ->whereHas('orangtua', fn ($query) => $query->where('id_tipeuser', 4))
+            ->with('orangtua:id_user,nama,nomor_hp,email')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($relasi) => [
+                'nama' => $relasi->orangtua->nama,
+                'nomor_hp' => $relasi->orangtua->nomor_hp,
+                'email' => $relasi->orangtua->email,
+            ])
+            ->values();
+
         $rankTier = $user->rank_tier;
         $qrPayload = method_exists($user, 'qrPayload') ? $user->qrPayload() : null;
 
@@ -283,6 +296,7 @@ class DashboardController extends Controller
                     'foto_profil' => $fotoUrl,
                     'qr_payload' => $qrPayload,
                 ],
+                'orang_tua' => $orangTua,
                 'rank' => [
                     'current_rank' => $rankTier['current_rank'] ?? 'Pemula',
                     'current_badge_url' => $rankTier['current_badge_url'] ?? null,
