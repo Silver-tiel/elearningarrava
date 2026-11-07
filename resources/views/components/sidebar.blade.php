@@ -9,26 +9,36 @@
 @include('components.sidebar-effects')
 
 <!-- Backdrop Gelap untuk Layar Kecil (Mobile) -->
-<div id="sidebarBackdrop" class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0 pointer-events-none lg:hidden"></div>
+<div id="sidebarBackdrop"
+    class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0 pointer-events-none lg:hidden">
+</div>
 
-<aside id="mainSidebar" class="fixed inset-y-0 left-0 z-50 flex h-screen w-64 -translate-x-full flex-col justify-between border-r border-gray-100 bg-white p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none lg:z-30 shrink-0 overflow-y-auto overflow-x-hidden">
+<aside id="mainSidebar"
+    class="fixed inset-y-0 left-0 z-50 flex h-screen w-64 -translate-x-full flex-col justify-between border-r border-gray-100 bg-white p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none lg:z-30 shrink-0 overflow-y-auto overflow-x-hidden">
     <!-- Top Section -->
     <div class="space-y-6">
         <!-- Logo Brand & Tombol Close (Mobile) -->
         <div class="flex items-center justify-between px-2">
-            <a href="{{ route($isAdmin ? 'admin' : 'siswa.dashboard') }}" class="flex items-center gap-2.5 no-underline group">
-                <svg viewBox="0 0 40 40" class="h-9 w-9 shrink-0 transition-transform duration-200 group-hover:scale-105" fill="none" aria-hidden="true">
-                    <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+            <a href="{{ route($isAdmin ? 'admin' : 'siswa.dashboard') }}"
+                class="flex items-center gap-2.5 no-underline group">
+                <svg viewBox="0 0 40 40"
+                    class="h-9 w-9 shrink-0 transition-transform duration-200 group-hover:scale-105" fill="none"
+                    aria-hidden="true">
+                    <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9" stroke-width="6"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5" stroke-linecap="round"
+                        stroke-linejoin="round" />
                     <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
                 </svg>
                 <span class="text-[22px] font-extrabold tracking-[-0.7px] text-[#082765]">Arrava</span>
             </a>
 
             <!-- Tombol Tutup Sidebar di Layar Kecil -->
-            <button id="sidebarClose" type="button" class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition lg:hidden" aria-label="Tutup Menu">
+            <button id="sidebarClose" type="button"
+                class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition lg:hidden"
+                aria-label="Tutup Menu">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
         </div>
@@ -38,73 +48,97 @@
             @if ($isAdmin)
                 {{-- ================= MENU ADMIN ================= --}}
                 @php
-                    $actAdminDash   = request()->is('admin/dashboard*') || request()->is('admin');
-                    $actAdminSiswa  = request()->is('admin/siswa*') || request()->is('admin/data*');
-                    $actAdminModul  = request()->is('admin/modul*');
-                    $actAdminQuiz   = request()->is('admin/quiz*') || request()->is('admin/soal*');
+                    $actAdminDash = request()->is('admin/dashboard*') || request()->is('admin');
+                    $actAdminSiswa = request()->is('admin/siswa*') || request()->is('admin/data*');
+                    $actAdminModul = request()->is('admin/modul*');
+                    $actAdminQuiz = request()->is('admin/quiz*') || request()->is('admin/soal*');
                     $actAdminAchieve = request()->is('admin/achievement*');
-                    $actAdminGuru   = request()->is('admin/guru*');
+                    $actAdminGuru = request()->is('admin/guru*');
                     $actAdminProfil = request()->is('admin/profil*');
                 @endphp
 
                 <!-- Dashboard -->
                 <a href="{{ route('admin') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminDash ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminDash ? 'true' : 'false' }}">
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminDash ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    data-active="{{ $actAdminDash ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                            </path>
+                        </svg>
                         <span class="truncate">Dashboard</span>
                     </div>
                     <div class="sidebar-pop-wrap">
                         <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarBerandaIcon.webp') }}" alt="Dashboard" class="sidebar-pop-img" draggable="false">
+                            <img src="{{ asset('assets/sidebar/sidebarBerandaIcon.webp') }}" alt="Dashboard"
+                                class="sidebar-pop-img" draggable="false">
                         </div>
                     </div>
                 </a>
 
                 @if($idTipe == 1)
-                <!-- Siswa -->
-                <a href="{{ route('admin.daftar_siswa') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminSiswa ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminSiswa ? 'true' : 'false' }}">
-                    <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        <span class="truncate">Siswa</span>
-                    </div>
-                    <div class="sidebar-pop-wrap">
-                        <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Siswa" class="sidebar-pop-img" draggable="false">
+                    <!-- Siswa -->
+                    <a href="{{ route('admin.daftar_siswa') }}"
+                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminSiswa ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        data-active="{{ $actAdminSiswa ? 'true' : 'false' }}">
+                        <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
+                            <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                                </path>
+                            </svg>
+                            <span class="truncate">Siswa</span>
                         </div>
-                    </div>
-                </a>
+                        <div class="sidebar-pop-wrap">
+                            <div class="sidebar-pop-box">
+                                <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Siswa"
+                                    class="sidebar-pop-img" draggable="false">
+                            </div>
+                        </div>
+                    </a>
                 @endif
 
                 <!-- Modul -->
                 <a href="{{ route('admin.modul') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminModul ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminModul ? 'true' : 'false' }}">
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminModul ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    data-active="{{ $actAdminModul ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 16.5 5c1.747 0 3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 16.5 5c1.747 0 3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                            </path>
+                        </svg>
                         <span class="truncate">Modul</span>
                     </div>
                     <div class="sidebar-pop-wrap">
                         <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarModulIcon.webp') }}" alt="Modul" class="sidebar-pop-img" draggable="false">
+                            <img src="{{ asset('assets/sidebar/sidebarModulIcon.webp') }}" alt="Modul"
+                                class="sidebar-pop-img" draggable="false">
                         </div>
                     </div>
                 </a>
 
                 <!-- Quiz -->
                 <a href="{{ route('admin.quiz') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminQuiz ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminQuiz ? 'true' : 'false' }}">
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminQuiz ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    data-active="{{ $actAdminQuiz ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
                         <span class="truncate">Quiz</span>
                     </div>
                     <div class="sidebar-pop-wrap">
                         <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarQuizIcon.webp') }}" alt="Quiz" class="sidebar-pop-img" draggable="false">
+                            <img src="{{ asset('assets/sidebar/sidebarQuizIcon.webp') }}" alt="Quiz" class="sidebar-pop-img"
+                                draggable="false">
                         </div>
                     </div>
                 </a>
@@ -112,144 +146,200 @@
                 @php $actPresensi = request()->is('guru/presensi*'); @endphp
                 <!-- Presensi -->
                 <a href="{{ route('guru.presensi.index') }}"
-                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actPresensi ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actPresensi ? 'true' : 'false' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
+                    class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actPresensi ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    data-active="{{ $actPresensi ? 'true' : 'false' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z" />
+                    </svg>
                     <span class="truncate">Presensi</span>
+                    <div class="sidebar-pop-wrap">
+                        <div class="sidebar-pop-box">
+                            <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Profil"
+                                class="sidebar-pop-img" draggable="false">
+                        </div>
+                    </div>
                 </a>
 
                 @if($idTipe == 1)
-                @php $actKelas = request()->is('admin/kelas*'); $actQrAdmin = request()->is('admin/qr*'); @endphp
-                <!-- Kelas -->
-                <a href="{{ route('admin.kelas') }}"
-                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actKelas ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actKelas ? 'true' : 'false' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 100-8 4 4 0 000 8zm6 0a3 3 0 100-6M3 11a3 3 0 106 0"/></svg>
-                    <span class="truncate">Kelas</span>
-                </a>
+                    @php $actKelas = request()->is('admin/kelas*');
+                    $actQrAdmin = request()->is('admin/qr*'); @endphp
+                    <!-- Kelas -->
+                    <a href="{{ route('admin.kelas') }}"
+                        class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actKelas ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        data-active="{{ $actKelas ? 'true' : 'false' }}">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 100-8 4 4 0 000 8zm6 0a3 3 0 100-6M3 11a3 3 0 106 0" />
+                        </svg>
+                        <span class="truncate">Kelas</span>
+                    </a>
 
-                <!-- QR Siswa -->
-                <a href="{{ route('admin.qr') }}"
-                   class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actQrAdmin ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actQrAdmin ? 'true' : 'false' }}">
-                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg>
-                    <span class="truncate">QR Siswa</span>
-                </a>
+                    <!-- QR Siswa -->
+                    <a href="{{ route('admin.qr') }}"
+                        class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actQrAdmin ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        data-active="{{ $actQrAdmin ? 'true' : 'false' }}">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z" />
+                        </svg>
+                        <span class="truncate">QR Siswa</span>
+                    </a>
 
-                <!-- Penghargaan / Achievement -->
-                <a href="{{ route('admin.achievement') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminAchieve ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminAchieve ? 'true' : 'false' }}">
-                    <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
-                        <span class="truncate">Penghargaan</span>
-                    </div>
-                    <div class="sidebar-pop-wrap">
-                        <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarQuizIcon.webp') }}" alt="Penghargaan" class="sidebar-pop-img" draggable="false">
+                    <!-- Penghargaan / Achievement -->
+                    <a href="{{ route('admin.achievement') }}"
+                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminAchieve ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        data-active="{{ $actAdminAchieve ? 'true' : 'false' }}">
+                        <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
+                            <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z">
+                                </path>
+                            </svg>
+                            <span class="truncate">Penghargaan</span>
                         </div>
-                    </div>
-                </a>
-
-                <!-- Guru -->
-                <a href="{{ route('admin.guru') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminGuru ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminGuru ? 'true' : 'false' }}">
-                    <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        <span class="truncate">Guru</span>
-                    </div>
-                    <div class="sidebar-pop-wrap">
-                        <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Guru" class="sidebar-pop-img" draggable="false">
+                        <div class="sidebar-pop-wrap">
+                            <div class="sidebar-pop-box">
+                                <img src="{{ asset('assets/sidebar/sidebarQuizIcon.webp') }}" alt="Penghargaan"
+                                    class="sidebar-pop-img" draggable="false">
+                            </div>
                         </div>
-                    </div>
-                </a>
+                    </a>
+
+                    <!-- Guru -->
+                    <a href="{{ route('admin.guru') }}"
+                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminGuru ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        data-active="{{ $actAdminGuru ? 'true' : 'false' }}">
+                        <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
+                            <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                </path>
+                            </svg>
+                            <span class="truncate">Guru</span>
+                        </div>
+                        <div class="sidebar-pop-wrap">
+                            <div class="sidebar-pop-box">
+                                <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Guru"
+                                    class="sidebar-pop-img" draggable="false">
+                            </div>
+                        </div>
+                    </a>
                 @endif
 
                 @if($idTipe == 2)
-                {{-- Menu Profil hanya untuk Guru --}}
-                <!-- Profil -->
-                <a href="{{ route('admin.profil') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminProfil ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actAdminProfil ? 'true' : 'false' }}">
-                    <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        <span class="truncate">Profil</span>
-                    </div>
-                    <div class="sidebar-pop-wrap">
-                        <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Profil" class="sidebar-pop-img" draggable="false">
+                    {{-- Menu Profil hanya untuk Guru --}}
+                    <!-- Profil -->
+                    <a href="{{ route('admin.profil') }}"
+                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminProfil ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        data-active="{{ $actAdminProfil ? 'true' : 'false' }}">
+                        <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
+                            <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span class="truncate">Profil</span>
                         </div>
-                    </div>
-                </a>
+                        <div class="sidebar-pop-wrap">
+                            <div class="sidebar-pop-box">
+                                <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Profil"
+                                    class="sidebar-pop-img" draggable="false">
+                            </div>
+                        </div>
+                    </a>
                 @endif
 
             @else
                 {{-- ================= MENU SISWA ================= --}}
                 @php
-                    $actSiswaDash   = request()->is('siswa/dashboard*');
+                    $actSiswaDash = request()->is('siswa/dashboard*');
                     $actSiswaBelajar = request()->is('siswa/belajar*');
-                    $actSiswaQuiz   = request()->is('siswa/quiz*');
+                    $actSiswaQuiz = request()->is('siswa/quiz*');
                     $actSiswaProfil = request()->is('siswa/profil*');
                 @endphp
 
                 <!-- Dashboard -->
                 <a href="{{ route('siswa.dashboard') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaDash ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaDash ? 'true' : 'false' }}">
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaDash ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    data-active="{{ $actSiswaDash ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                            </path>
+                        </svg>
                         <span class="truncate">Dashboard</span>
                     </div>
                     <div class="sidebar-pop-wrap">
                         <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarBerandaIcon.webp') }}" alt="Dashboard" class="sidebar-pop-img" draggable="false">
+                            <img src="{{ asset('assets/sidebar/sidebarBerandaIcon.webp') }}" alt="Dashboard"
+                                class="sidebar-pop-img" draggable="false">
                         </div>
                     </div>
                 </a>
 
                 <!-- Belajar / Modul -->
                 <a href="{{ route('siswa.modul') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaBelajar ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaBelajar ? 'true' : 'false' }}">
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaBelajar ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    data-active="{{ $actSiswaBelajar ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 16.5 5c1.747 0 3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 16.5 5c1.747 0 3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                            </path>
+                        </svg>
                         <span class="truncate">Belajar</span>
                     </div>
                     <div class="sidebar-pop-wrap">
                         <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarModulIcon.webp') }}" alt="Belajar" class="sidebar-pop-img" draggable="false">
+                            <img src="{{ asset('assets/sidebar/sidebarModulIcon.webp') }}" alt="Belajar"
+                                class="sidebar-pop-img" draggable="false">
                         </div>
                     </div>
                 </a>
 
                 <!-- Quiz -->
                 <a href="{{ route('siswa.quiz') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaQuiz ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaQuiz ? 'true' : 'false' }}">
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaQuiz ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    data-active="{{ $actSiswaQuiz ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                            </path>
+                        </svg>
                         <span class="truncate">Quiz</span>
                     </div>
                     <div class="sidebar-pop-wrap">
                         <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarQuizIcon.webp') }}" alt="Quiz" class="sidebar-pop-img" draggable="false">
+                            <img src="{{ asset('assets/sidebar/sidebarQuizIcon.webp') }}" alt="Quiz" class="sidebar-pop-img"
+                                draggable="false">
                         </div>
                     </div>
                 </a>
 
                 <!-- Profil -->
                 <a href="{{ route('siswa.profil') }}"
-                   class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaProfil ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
-                   data-active="{{ $actSiswaProfil ? 'true' : 'false' }}">
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaProfil ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    data-active="{{ $actSiswaProfil ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
                         <span class="truncate">Profil</span>
                     </div>
                     <div class="sidebar-pop-wrap">
                         <div class="sidebar-pop-box">
-                            <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Profil" class="sidebar-pop-img" draggable="false">
+                            <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Profil"
+                                class="sidebar-pop-img" draggable="false">
                         </div>
                     </div>
                 </a>
@@ -267,20 +357,24 @@
         <!-- User Info & Logout Card -->
         <div class="pt-1 flex items-center justify-between">
             <div class="flex items-center gap-3 overflow-hidden">
-                <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0">
+                <div
+                    class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0">
                     {{ strtoupper(substr($user->nama ?? 'U', 0, 1)) }}
                 </div>
                 <div class="truncate">
-                    <h4 class="text-sm font-semibold text-gray-900 leading-tight truncate">{{ $user->nama ?? 'User' }}</h4>
+                    <h4 class="text-sm font-semibold text-gray-900 leading-tight truncate">{{ $user->nama ?? 'User' }}
+                    </h4>
                     <p class="text-xs text-gray-400 capitalize truncate">{{ $role }}</p>
                 </div>
             </div>
             <!-- Tombol Logout → buka modal konfirmasi -->
             <button type="button" id="logoutTrigger"
-                    class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition shrink-0"
-                    title="Keluar" onclick="openLogoutModal()">
+                class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition shrink-0"
+                title="Keluar" onclick="openLogoutModal()">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                    </path>
                 </svg>
             </button>
         </div>
@@ -288,9 +382,9 @@
 </aside>
 
 <script>
-    (function() {
+    (function () {
         // Expose helper untuk membunyikan suara menu sidebar lewat audio engine utama
-        window.playSidebarMenuSound = function(pitchShift, vol) {
+        window.playSidebarMenuSound = function (pitchShift, vol) {
             if (window.ArravaHoverSound && window.ArravaHoverSound.playMenuClick) {
                 window.ArravaHoverSound.playMenuClick(pitchShift !== undefined ? pitchShift : 0, vol !== undefined ? vol : 0.85);
             }
@@ -319,15 +413,15 @@
                 document.body.classList.remove('overflow-hidden', 'lg:overflow-auto');
             }
 
-            toggleBtns.forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
+            toggleBtns.forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
                     e.stopPropagation();
                     openSidebar();
                 });
             });
 
             if (closeBtn) {
-                closeBtn.addEventListener('click', function(e) {
+                closeBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
                     closeSidebar();
                 });
@@ -335,7 +429,7 @@
 
             backdrop.addEventListener('click', closeSidebar);
 
-            window.addEventListener('resize', function() {
+            window.addEventListener('resize', function () {
                 if (window.innerWidth >= 1024) {
                     closeSidebar();
                 }
@@ -343,7 +437,7 @@
         }
 
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 initResponsiveSidebar();
             });
         } else {
@@ -351,4 +445,3 @@
         }
     })();
 </script>
-
