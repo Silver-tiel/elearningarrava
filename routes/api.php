@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\ModulController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SiswaController;
+use App\Http\Controllers\PresensiController;
 
 // AUTH
 Route::post('/login', [AuthController::class, 'login']);
@@ -45,5 +46,9 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
         Route::put('/quizzes/{id}', [QuizController::class, 'apiUpdate']);
         Route::delete('/quizzes/{id}', [QuizController::class, 'apiDestroy']);
         Route::get('/quizzes/questions/bank', [QuizController::class, 'apiQuestionBank']);
+
+        Route::get('/sesi-aktif', [PresensiController::class, 'sesiAktif']);
+        Route::get('/sesi/{id_sesi}/rekap', [PresensiController::class, 'rekapApi']);
+        Route::post('/{id_sesi}/scan', [PresensiController::class, 'prosesScan']);
     });
 });

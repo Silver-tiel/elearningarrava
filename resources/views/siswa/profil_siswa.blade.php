@@ -70,7 +70,7 @@
                                     >
                                 @else
                                     <div class="flex h-20 w-20 items-center justify-center rounded-full bg-blue-50 text-2xl font-bold text-blue-600 ring-4 ring-slate-100">
-                                        {{ strtoupper(substr($user->username ?? 'S', 0, 1)) }}
+                                        {{ strtoupper(substr($user->username ?? 'U', 0, 1)) }}
                                     </div>
                                 @endif
                             </div>
