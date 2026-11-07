@@ -86,6 +86,97 @@ class PresensiController extends Controller
         ]);
     }
 
+    public function sesiAktif(Request $request): JsonResponse
+    {
+        Gate::authorize('viewAny', SesiPresensi::class);
+
+        $user = $request->user();
+        $kelasQuery = Kelas::orderBy('nama');
+        if ($user->isGuru()) {
+            $kelasQuery->whereIn('id_kelas', $user->kelasDiampu()->pluck('kelas.id_kelas'));
+        }
+
+        $kelas = $kelasQuery->get();
+        foreach ($kelas as $item) {
+            SesiPresensi::pastikanUntuk($item, now(), $user->id_user);
+        }
+
+        $sesiAktif = SesiPresensi::with('kelas.jenjang')
+            ->withCount('presensi')
+            ->whereIn('id_kelas', $kelas->pluck('id_kelas'))
+            ->whereDate('tanggal', now()->toDateString())
+            ->get()
+            ->filter(fn (SesiPresensi $sesi) => $sesi->bisaDipindai())
+            ->sortBy(fn (SesiPresensi $sesi) => $sesi->kelas->nama)
+            ->values()
+            ->map(fn (SesiPresensi $sesi) => [
+                'id_sesi' => (int) $sesi->id_sesi,
+                'id_kelas' => (int) $sesi->id_kelas,
+                'judul' => $sesi->judul,
+                'pertemuan_ke' => (int) $sesi->pertemuan_ke,
+                'tanggal' => $sesi->tanggal?->toDateString(),
+                'batas_tepat_waktu' => $sesi->batas_tepat_waktu?->toIso8601String(),
+                'status' => $sesi->statusTampil(),
+                'presensi_count' => (int) $sesi->presensi_count,
+                'kelas' => [
+                    'nama' => $sesi->kelas->nama,
+                    'jenjang' => $sesi->kelas->jenjang?->nama_jenjang,
+                ],
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $sesiAktif,
+        ]);
+    }
+
+    public function rekapApi($id_sesi): JsonResponse
+    {
+        $sesi = SesiPresensi::with('kelas.jenjang')->findOrFail($id_sesi);
+        Gate::authorize('view', $sesi);
+
+        $presensi = Presensi::where('id_sesi', $sesi->id_sesi)
+            ->get()
+            ->keyBy('id_siswa');
+
+        $siswa = $sesi->kelas->anggota()
+            ->orderBy('nama')
+            ->get(['id_user', 'nama', 'nisn'])
+            ->map(function (User $user) use ($presensi) {
+                $catatan = $presensi->get($user->id_user);
+
+                return [
+                    'id_siswa' => (int) $user->id_user,
+                    'nama' => $user->nama,
+                    'nisn' => $user->nisn,
+                    'status' => $catatan?->status ?? 'tidak_hadir',
+                    'waktu_scan' => $catatan?->waktu_scan?->format('H:i'),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'sesi' => [
+                    'id_sesi' => (int) $sesi->id_sesi,
+                    'judul' => $sesi->judul,
+                    'status' => $sesi->statusTampil(),
+                    'kelas' => $sesi->kelas->nama,
+                    'jenjang' => $sesi->kelas->jenjang?->nama_jenjang,
+                    'tanggal' => $sesi->tanggal?->toDateString(),
+                ],
+                'ringkasan' => [
+                    'total' => $siswa->count(),
+                    'hadir' => $siswa->where('status', 'hadir')->count(),
+                    'terlambat' => $siswa->where('status', 'terlambat')->count(),
+                    'tidak_hadir' => $siswa->where('status', 'tidak_hadir')->count(),
+                ],
+                'siswa' => $siswa,
+            ],
+        ]);
+    }
+
     public function scan($id)
     {
         $sesi = SesiPresensi::with('kelas')->findOrFail($id);
