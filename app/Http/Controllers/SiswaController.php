@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\HasilQuizModul;
 use App\Models\Jenjang;
+use App\Models\Mapel;
 use App\Models\Modul;
 use App\Models\ModulSoal;
 use App\Models\ProgresModulSiswa;
@@ -21,11 +22,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Throwable;
 
+/**
+ * Class SiswaController
+ *
+ * Controller untuk modul pembelajaran dan pengerjaan kuis siswa.
+ *
+ * @suppress PHP0416, PHP6613, PHP0448, PHP0407
+ */
 class SiswaController extends Controller
 {
     // Syarat lulus: minimal 70% soal dijawab benar.
@@ -53,6 +62,7 @@ class SiswaController extends Controller
         $user = $request->user();
         if ($user) {
             Achievement::syncForUser($user);
+            $user->loadMissing('jenjang');
         }
 
         $modulQuery = Modul::published();
@@ -65,13 +75,33 @@ class SiswaController extends Controller
 
         $modulCount = $modulQuery->count();
         $quizCount = $quizQuery->count();
-        $moduls = $modulQuery->with(['tipeModul', 'jenjang'])->latest()->take(4)->get();
+        $moduls = $modulQuery->with(['tipeModul', 'jenjang'])->latest()->take(6)->get();
+
+        $hasHasilQuizTable = Schema::hasTable('hasilquizmodul');
+
+        // Kuis yang sudah lulus
+        $kuisLulus = ($user && $hasHasilQuizTable) ? HasilQuizModul::where('id_user', $user->id_user)
+            ->where('is_lulus', true)
+            ->distinct('id_quiz')
+            ->count('id_quiz') : 0;
+
+        // Riwayat pengerjaan kuis terbaru siswa
+        $riwayatKuis = ($user && $hasHasilQuizTable) ? HasilQuizModul::where('id_user', $user->id_user)
+            ->with('quiz:id_quiz,judul')
+            ->orderByDesc('id_hasil')
+            ->take(5)
+            ->get() : collect();
+
+        $notifikasiPresensi = $user ? \App\Services\NotifikasiPresensiService::untukSiswa($user) : [];
 
         return view('siswa.dashboard', [
             'user' => $user,
             'modulCount' => $modulCount,
             'quizCount' => $quizCount,
             'moduls' => $moduls,
+            'kuisLulus' => $kuisLulus,
+            'riwayatKuis' => $riwayatKuis,
+            'notifikasiPresensi' => $notifikasiPresensi,
         ]);
     }
 
@@ -373,7 +403,7 @@ class SiswaController extends Controller
             'soal.jenisSoal',
             'hasil' => fn($q) => $user ? $q->where('id_user', $user->id_user) : $q,
         ];
-        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+        if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
 
@@ -383,7 +413,7 @@ class SiswaController extends Controller
             $query->where('id_jenjang', $user->id_jenjang);
         }
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel') && !empty($filters['mapel'])) {
+        if (Schema::hasColumn('quiz', 'id_mapel') && !empty($filters['mapel'])) {
             $query->where('id_mapel', $filters['mapel']);
         }
 
@@ -399,7 +429,7 @@ class SiswaController extends Controller
 
         $quizzes = $query->get();
         $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
-        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $mapelList = Schema::hasTable('mapel') ? Mapel::orderBy('nama_mapel')->get() : collect();
 
         return view('siswa.quiz', compact('quizzes', 'tingkatQuizList', 'mapelList'));
     }
@@ -1063,19 +1093,22 @@ class SiswaController extends Controller
             Achievement::syncForUser($siswa);
         }
 
+        $idJenjang = $siswa->id_jenjang;
+        $totalPoin = (int) $siswa->total_poin;
+
         // Leaderboard rank pada jenjang yang sama
         $peringkat = User::where('id_tipeuser', 3)
-            ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
-            ->where('total_poin', '>', (int) $siswa->total_poin)
+            ->when($idJenjang, fn($q) => $q->where('id_jenjang', $idJenjang))
+            ->where('total_poin', '>', $totalPoin)
             ->count() + 1;
 
         $totalSiswaJenjang = User::where('id_tipeuser', 3)
-            ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
+            ->when($idJenjang, fn($q) => $q->where('id_jenjang', $idJenjang))
             ->count();
 
         // Modul statistics
         $totalModulJenjang = Modul::published()
-            ->when($siswa->id_jenjang, fn($q) => $q->where('id_jenjang', $siswa->id_jenjang))
+            ->when($idJenjang, fn($q) => $q->where('id_jenjang', $idJenjang))
             ->count();
 
         // Statistik kuis, modul, dan grafik aktivitas siswa
@@ -1099,16 +1132,18 @@ class SiswaController extends Controller
         // Semua jenjang
         $jenjangs = Jenjang::orderBy('nama_tipe')->get();
 
-        return view('admin.daftar_siswa.profil_siswa', array_merge([
+        $viewData = array_merge([
             'siswa' => $siswa,
-            'peringkat' => $peringkat,
-            'totalSiswaJenjang' => $totalSiswaJenjang,
-            'totalModulJenjang' => $totalModulJenjang,
+            'peringkat' => (int) $peringkat,
+            'totalSiswaJenjang' => (int) $totalSiswaJenjang,
+            'totalModulJenjang' => (int) $totalModulJenjang,
             'achievementsUnlocked' => $achievementsUnlocked,
             'allAchievements' => $allAchievements,
             'orangtuaList' => $orangtuaList,
             'jenjangs' => $jenjangs,
-        ], $stats));
+        ], $stats);
+
+        return view('admin.daftar_siswa.profil_siswa', $viewData);
     }
 
     /**
@@ -1121,7 +1156,8 @@ class SiswaController extends Controller
      */
     private function hitungStatistikProfilSiswa(User $siswa, int $totalModulJenjang): array
     {
-        $quizResults = HasilQuizModul::where('id_user', $siswa->id_user)
+        $quizResults = HasilQuizModul::query()
+            ->where('id_user', $siswa->id_user)
             ->with('quiz')
             ->orderByDesc('waktu_dapat')
             ->get();
@@ -1350,7 +1386,7 @@ class SiswaController extends Controller
         Achievement::syncForUser($user);
 
         $jenjangs = Jenjang::orderBy('nama_tipe')->get();
-        $hasIsLulus = \Illuminate\Support\Facades\Schema::hasColumn('hasilquizmodul', 'is_lulus');
+        $hasIsLulus = Schema::hasColumn('hasilquizmodul', 'is_lulus');
         $kuisLulusExpr = $hasIsLulus
             ? 'COUNT(DISTINCT CASE WHEN is_lulus = 1 THEN id_quiz END) as kuis_lulus'
             : 'COUNT(DISTINCT id_quiz) as kuis_lulus';
@@ -1392,11 +1428,11 @@ class SiswaController extends Controller
 
         $qrSvg = null;
         $kelasList = collect();
-        if (\Illuminate\Support\Facades\Schema::hasColumn('user', 'qr_token')) {
+        if (Schema::hasColumn('user', 'qr_token')) {
             $renderer = new ImageRenderer(new RendererStyle(280, 1), new SvgImageBackEnd());
             $qrSvg = (new Writer($renderer))->writeString($user->qrPayload());
             $qrSvg = preg_replace('/^<\?xml.*?\?>\s*/s', '', $qrSvg);
-            if (\Illuminate\Support\Facades\Schema::hasTable('kelas_siswa')) {
+            if (Schema::hasTable('kelas_siswa')) {
                 $kelasList = $user->kelasDiikuti()->orderBy('nama')->pluck('nama');
             }
         }

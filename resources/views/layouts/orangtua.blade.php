@@ -8,10 +8,17 @@
     <meta name="description"
         content="@yield('meta_description', 'Portal orang tua untuk memantau perkembangan belajar siswa di Arrava E-Learning.')">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,300..900;1,6..12,300..900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Nunito Sans', sans-serif;
+            background-color: #F0F6FF;
+            color: #12233F;
+        }
+        h1, h2, h3, .font-heading {
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
         .stat-card {
@@ -59,7 +66,7 @@
     @stack('styles')
 </head>
 
-<body class="bg-[#F4F6F9] text-slate-800 antialiased">
+<body class="bg-[#F0F6FF] text-[#12233F] antialiased">
     @include('components.parallax-pixel-effect', ['sidebarOffset' => '15rem'])
 
     <div class="flex min-h-screen relative z-10">
@@ -96,6 +103,9 @@
                 <div class="flex items-center gap-3">
                     {{-- Pengaturan Suara --}}
                     @include('components.sound-settings')
+
+                    {{-- Aksi Tambahan / Notifikasi Presensi Khusus Dashboard --}}
+                    @yield('header-right')
 
                     {{-- Avatar + nama orang tua --}}
                     <div class="flex items-center gap-2">

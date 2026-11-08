@@ -14,7 +14,7 @@
 </div>
 
 <aside id="mainSidebar"
-    class="fixed inset-y-0 left-0 z-50 flex h-screen w-64 -translate-x-full flex-col justify-between border-r border-gray-100 bg-white p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none lg:z-30 shrink-0 overflow-y-auto overflow-x-hidden">
+    class="fixed inset-y-0 left-0 z-50 flex h-screen w-64 -translate-x-full flex-col justify-between border-r border-[#DCEFFF] bg-white p-4 shadow-2xl transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none lg:z-30 shrink-0 overflow-y-auto overflow-x-hidden">
     <!-- Top Section -->
     <div class="space-y-6">
         <!-- Logo Brand & Tombol Close (Mobile) -->
@@ -251,7 +251,7 @@
 
                 <!-- Dashboard -->
                 <a href="{{ route('siswa.dashboard') }}"
-                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaDash ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actSiswaDash ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                     data-active="{{ $actSiswaDash ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -272,7 +272,7 @@
 
                 <!-- Belajar / Modul -->
                 <a href="{{ route('siswa.modul') }}"
-                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaBelajar ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actSiswaBelajar ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                     data-active="{{ $actSiswaBelajar ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -293,7 +293,7 @@
 
                 <!-- Quiz -->
                 <a href="{{ route('siswa.quiz') }}"
-                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaQuiz ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actSiswaQuiz ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                     data-active="{{ $actSiswaQuiz ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -314,7 +314,7 @@
 
                 <!-- Profil -->
                 <a href="{{ route('siswa.profil') }}"
-                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actSiswaProfil ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actSiswaProfil ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                     data-active="{{ $actSiswaProfil ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -344,17 +344,21 @@
 
         <!-- User Info & Logout Card -->
         <div class="pt-1 flex items-center justify-between">
-            <div class="flex items-center gap-3 overflow-hidden">
+            <a href="{{ $isAdmin ? '#' : route('siswa.profil') }}" class="flex items-center gap-3 overflow-hidden group no-underline min-w-0 flex-1 mr-2" title="{{ $isAdmin ? '' : 'Buka Profil Siswa' }}">
                 <div
-                    class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0">
-                    {{ strtoupper(substr($user->nama ?? 'U', 0, 1)) }}
+                    class="w-9 h-9 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0 ring-2 ring-slate-100 shadow-xs transition group-hover:ring-blue-300">
+                    @if(!empty($user->foto_profil_url))
+                        <img src="{{ $user->foto_profil_url }}" alt="{{ $user->nama }}" class="w-full h-full object-cover">
+                    @else
+                        {{ strtoupper(substr($user->nama ?? 'U', 0, 1)) }}
+                    @endif
                 </div>
                 <div class="truncate">
-                    <h4 class="text-sm font-semibold text-gray-900 leading-tight truncate">{{ $user->nama ?? 'User' }}
+                    <h4 class="text-sm font-semibold text-gray-900 leading-tight truncate group-hover:text-blue-600 transition">{{ $user->nama ?? 'User' }}
                     </h4>
                     <p class="text-xs text-gray-400 capitalize truncate">{{ $role }}</p>
                 </div>
-            </div>
+            </a>
             <!-- Tombol Logout → buka modal konfirmasi -->
             <button type="button" id="logoutTrigger"
                 class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition shrink-0"

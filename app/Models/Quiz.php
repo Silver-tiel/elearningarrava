@@ -3,9 +3,44 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
+/**
+ * Class Quiz
+ *
+ * @property int $id_quiz
+ * @property string $kode_quiz
+ * @property string $judul
+ * @property string|null $deskripsi
+ * @property int|null $id_tipequiz
+ * @property int|null $id_tingkatquiz
+ * @property int|null $id_jenjang
+ * @property int|null $id_mapel
+ * @property Carbon|null $waktu_kadaluarsa
+ * @property string|null $mode_pengerjaan
+ * @property int|null $durasi_total_menit
+ * @property string|null $token
+ * @property string|null $hasil_quiz
+ * @property string|null $proggressQuiz
+ * @property string|null $foto_quiz
+ * @property string|null $opsi_preview
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read string $cover_url
+ * @property-read Jenjang|null $jenjang
+ * @property-read Mapel|null $mapel
+ * @property-read TipeQuiz|null $tipeQuiz
+ * @property-read TingkatQuiz|null $tingkatQuiz
+ * @property-read Collection<int, Soal> $soal
+ * @property-read Collection<int, HasilQuizModul> $hasil
+ *
+ * @method static Builder|Quiz published()
+ * @method static Builder|Quiz draft()
+ * @method static Builder|Quiz belumKadaluarsa()
+ */
 class Quiz extends Model
 {
     protected $table = 'quiz';

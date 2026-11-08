@@ -4,6 +4,11 @@
 @section('title', 'Dashboard - Portal Orang Tua')
 @section('breadcrumb', 'Ringkasan Belajar')
 
+@section('header-right')
+    {{-- Notifikasi Presensi khusus Dashboard Orang Tua --}}
+    <x-notifikasi-presensi :notifikasi="$notifikasiPresensi ?? []" :user-id="auth()->id() ?? 0" role="orangtua" />
+@endsection
+
 @section('content')
 <div class="mx-auto max-w-[1400px] space-y-6 px-4 py-6 sm:px-6">
 

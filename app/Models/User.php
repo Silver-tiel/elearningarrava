@@ -6,10 +6,37 @@ use App\Models\Achievement;
 use App\Models\OrangtuaSiswa;
 use App\Support\QrToken;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
+/**
+ * Class User
+ *
+ * @property int $id_user
+ * @property string $nama
+ * @property string $username
+ * @property string $email
+ * @property string $password
+ * @property string|null $nisn
+ * @property string|null $nomor_hp
+ * @property string|null $kelas
+ * @property string|null $asal_sekolah
+ * @property int $id_tipeuser
+ * @property int|null $id_jenjang
+ * @property int|null $total_poin
+ * @property string $status_akun
+ * @property int|null $id_modul
+ * @property string|null $foto_profil
+ * @property string|null $qr_token
+ * @property Carbon|\Carbon\CarbonInterface|string|null $qr_dibuat_pada
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Jenjang|null $jenjang
+ * @property-read TipeUser|null $tipeUser
+ * @property-read array $rank_tier
+ */
 class User extends Authenticatable
 {
     use HasApiTokens;
@@ -58,7 +85,7 @@ class User extends Authenticatable
 
             if (Schema::hasColumn('user', 'qr_token')) {
                 $user->qr_token = QrToken::baru();
-                $user->qr_dibuat_pada = now();
+                $user->qr_dibuat_pada = Carbon::now();
             }
         });
     }
@@ -95,11 +122,26 @@ class User extends Authenticatable
         return preg_replace('/^<\?xml.*?\?>\s*/s', '', $svg);
     }
 
+    public function getFotoProfilUrlAttribute(): ?string
+    {
+        if (empty($this->foto_profil)) {
+            return null;
+        }
+
+        if (filter_var($this->foto_profil, FILTER_VALIDATE_URL)) {
+            return $this->foto_profil;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->exists($this->foto_profil)
+            ? \Illuminate\Support\Facades\Storage::url($this->foto_profil)
+            : null;
+    }
+
     public function pastikanQrToken(): string
     {
         try {
             if (empty($this->qr_token)) {
-                $this->forceFill(['qr_token' => QrToken::baru(), 'qr_dibuat_pada' => now()])->save();
+                $this->forceFill(['qr_token' => QrToken::baru(), 'qr_dibuat_pada' => Carbon::now()])->save();
             }
             return (string) $this->qr_token;
         } catch (\Throwable $e) {
@@ -111,7 +153,7 @@ class User extends Authenticatable
     /** Cabut token lama dan buat yang baru. Token lama langsung tidak dikenali. */
     public function regenerasiQr(): void
     {
-        $this->forceFill(['qr_token' => QrToken::baru(), 'qr_dibuat_pada' => now()])->save();
+        $this->forceFill(['qr_token' => QrToken::baru(), 'qr_dibuat_pada' => Carbon::now()])->save();
     }
 
     public function kelasDiampu(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

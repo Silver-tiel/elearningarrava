@@ -15,8 +15,24 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Class DashboardController
+ *
+ * @suppress PHP0416, PHP6613, PHP0448, PHP0407
+ */
 class DashboardController extends Controller
 {
+    private function resolvePhotoUrl(?string $foto): ?string
+    {
+        if (empty($foto)) {
+            return null;
+        }
+        if (str_starts_with($foto, 'http://') || str_starts_with($foto, 'https://')) {
+            return $foto;
+        }
+        return url('api/storage/' . ltrim($foto, '/'));
+    }
+
     /**
      * Dashboard data khusus Siswa (Mobile)
      */
@@ -95,7 +111,7 @@ class DashboardController extends Controller
                     'nisn' => $user->nisn,
                     'jenjang' => $user->jenjang->nama_jenjang ?? 'Umum',
                     'total_xp' => (int) ($user->total_poin ?? 0),
-                    'foto_profil' => $user->foto_profil ? (str_starts_with($user->foto_profil, 'http') ? $user->foto_profil : asset('storage/' . ltrim($user->foto_profil, '/'))) : null,
+                    'foto_profil' => $this->resolvePhotoUrl($user->foto_profil),
                 ],
                 'stats' => [
                     'kursus_aktif' => $totalModul,
@@ -263,7 +279,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        $achievements = \App\Models\PencapaianUser::with('achievement')
+        $achievements = PencapaianUser::with('achievement')
             ->where('id_user', $user->id_user)
             ->orderByDesc('waktu_pencapaian')
             ->take(10)
@@ -280,7 +296,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        $fotoUrl = $user->foto_profil ? asset('storage/' . ltrim($user->foto_profil, '/')) : null;
+        $fotoUrl = $this->resolvePhotoUrl($user->foto_profil);
 
         return response()->json([
             'success' => true,
@@ -364,7 +380,7 @@ class DashboardController extends Controller
 
         $user->save();
 
-        $fotoUrl = $user->foto_profil ? asset('storage/' . ltrim($user->foto_profil, '/')) : null;
+        $fotoUrl = $this->resolvePhotoUrl($user->foto_profil);
 
         return response()->json([
             'success' => true,
@@ -407,7 +423,7 @@ class DashboardController extends Controller
                     'jenjang' => $s->jenjang->nama_jenjang ?? 'SD',
                     'id_jenjang' => $s->id_jenjang,
                     'total_poin' => (int) ($s->total_poin ?? 0),
-                    'foto_profil' => $s->foto_profil ? asset('storage/' . ltrim($s->foto_profil, '/')) : null,
+                    'foto_profil' => $this->resolvePhotoUrl($s->foto_profil),
                 ];
             });
 
@@ -439,7 +455,7 @@ class DashboardController extends Controller
         }
 
         // Tentukan siswa terpilih: dari query string ?siswa_id=... atau default anak pertama
-        $activeSiswaId = (int) $request->get('siswa_id', $siswaIds[0]);
+        $activeSiswaId = (int) $request->input('siswa_id', $siswaIds[0]);
         if (!in_array($activeSiswaId, $siswaIds)) {
             $activeSiswaId = $siswaIds[0];
         }
@@ -568,7 +584,7 @@ class DashboardController extends Controller
         }
 
         // Tentukan jenjang aktif
-        $rawJenjang = $request->get('jenjang');
+        $rawJenjang = $request->input('jenjang');
         $activeJenjangId = null;
 
         if ($rawJenjang !== null && $rawJenjang !== '' && $rawJenjang !== 'all' && $rawJenjang !== '0') {
@@ -589,7 +605,7 @@ class DashboardController extends Controller
             $query->where('id_jenjang', $activeJenjangId);
         }
 
-        $limit = min(max((int) $request->get('limit', 50), 10), 100);
+        $limit = min(max((int) $request->input('limit', 50), 10), 100);
         $students = $query->take($limit)->get();
 
         $tierResolver = function (int $pts) {
@@ -608,9 +624,7 @@ class DashboardController extends Controller
         $rankCounter = 1;
         $leaderboard = $students->map(function ($s) use (&$rankCounter, $tierResolver) {
             $pts = (int) ($s->total_poin ?? 0);
-            $foto = $s->foto_profil
-                ? (str_starts_with($s->foto_profil, 'http') ? $s->foto_profil : asset('storage/' . ltrim($s->foto_profil, '/')))
-                : null;
+            $foto = $this->resolvePhotoUrl($s->foto_profil);
 
             return [
                 'rank' => $rankCounter++,
@@ -637,9 +651,7 @@ class DashboardController extends Controller
                 ->where('total_poin', '>', $myPoints)
                 ->count();
 
-            $myFoto = $user->foto_profil
-                ? (str_starts_with($user->foto_profil, 'http') ? $user->foto_profil : asset('storage/' . ltrim($user->foto_profil, '/')))
-                : null;
+            $myFoto = $this->resolvePhotoUrl($user->foto_profil);
 
             $myRank = [
                 'rank' => $betterCount + 1,

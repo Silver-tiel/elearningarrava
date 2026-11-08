@@ -104,23 +104,23 @@
                 $kkm = (int) ($modul->kkm_quiz ?: 70);
                 $poinReward = (int) ($modul->poin_modul ?: 50);
             @endphp
-            <div class="mt-5 rounded-2xl border {{ $isTuntas ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-200/90 bg-white' }} p-5 shadow-sm transition">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b {{ $isTuntas ? 'border-emerald-200' : 'border-slate-100' }}">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-xl {{ $isTuntas ? 'bg-emerald-600 text-white' : 'bg-blue-100 text-indigo-700' }} font-bold text-sm">
+            <div class="mt-5 rounded-2xl sm:rounded-3xl border-2 {{ $isTuntas ? 'border-emerald-300 bg-emerald-50/80 shadow-[0_4px_0_#a7f3d0]' : 'border-[#DCEFFF] bg-white shadow-[0_4px_0_#B2E7FC]' }} p-5 sm:p-6 transition">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b {{ $isTuntas ? 'border-emerald-200' : 'border-[#DCEFFF]' }}">
+                    <div class="flex items-center gap-2.5">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-2xl {{ $isTuntas ? 'bg-emerald-600 text-white' : 'bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]' }} font-black text-sm">
                             {{ $isTuntas ? '✓' : '🎯' }}
                         </span>
                         <div>
-                            <h3 class="text-sm font-extrabold {{ $isTuntas ? 'text-emerald-950' : 'text-slate-900' }}">
-                                {{ $isTuntas ? 'Modul Tuntas Sempurna!' : 'Syarat Penyelesaian Modul' }}
+                            <h3 class="text-sm font-heading font-black {{ $isTuntas ? 'text-emerald-950' : 'text-[#082765]' }}">
+                                {{ $isTuntas ? 'Modul Tuntas Sempurna! 🎉' : 'Syarat Penyelesaian Modul' }}
                             </h3>
-                            <p class="text-xs {{ $isTuntas ? 'text-emerald-700' : 'text-slate-500' }}">
+                            <p class="text-xs font-semibold {{ $isTuntas ? 'text-emerald-700' : 'text-[#465673]' }}">
                                 {{ $isTuntas ? 'Kamu telah menyelesaikan materi & lulus evaluasi kuis modul.' : 'Selesaikan 2 langkah berikut untuk memperoleh reward poin modul.' }}
                             </p>
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 self-start sm:self-center">
-                        <span class="text-xs font-bold px-3 py-1 rounded-full {{ $isTuntas ? 'bg-emerald-600 text-white shadow-xs' : 'bg-amber-100 text-amber-900 border border-amber-200' }}">
+                        <span class="text-xs font-black px-3.5 py-1 rounded-full {{ $isTuntas ? 'bg-emerald-600 text-white shadow-xs' : 'bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]' }}">
                             🏆 +{{ $isTuntas ? ($progres->poin_didapat ?: $poinReward) : $poinReward }} EXP
                         </span>
                     </div>
@@ -129,14 +129,14 @@
                 {{-- Indikator 2 Langkah Penyelesaian --}}
                 <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {{-- Langkah 1: Pelajari Materi --}}
-                    <div class="rounded-xl p-3.5 border {{ $isMateriSelesai ? 'border-emerald-200 bg-white text-emerald-900' : 'border-slate-200 bg-slate-50 text-slate-700' }} flex items-center justify-between gap-3">
+                    <div class="rounded-2xl p-3.5 border-2 {{ $isMateriSelesai ? 'border-emerald-200 bg-white text-emerald-900 shadow-[0_2px_0_#a7f3d0]' : 'border-[#DCEFFF] bg-[#F0F6FF] text-[#465673]' }} flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2.5 min-w-0">
-                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold {{ $isMateriSelesai ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-600' }}">
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold {{ $isMateriSelesai ? 'bg-emerald-600 text-white' : 'bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]' }}">
                                 {{ $isMateriSelesai ? '✓' : '1' }}
                             </span>
                             <div class="min-w-0">
-                                <p class="text-xs font-bold truncate">1. Pelajari Materi</p>
-                                <span class="text-[11px] {{ $isMateriSelesai ? 'text-emerald-700 font-semibold' : 'text-slate-400' }}">
+                                <p class="text-xs font-black truncate">1. Pelajari Materi</p>
+                                <span class="text-[11px] font-semibold {{ $isMateriSelesai ? 'text-emerald-700' : 'text-[#72839E]' }}">
                                     {{ $isMateriSelesai ? 'Selesai dipelajari ✓' : 'Tonton / baca modul' }}
                                 </span>
                             </div>
@@ -144,26 +144,26 @@
                         @if(!$isMateriSelesai)
                             <form action="{{ route('siswa.modul.selesai_materi', $modul->id_modul) }}" method="POST" class="shrink-0">
                                 @csrf
-                                <button type="submit" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700 shadow-xs transition">
+                                <button type="submit" class="px-3.5 py-1.5 rounded-xl bg-[#007FBE] hover:bg-[#00679A] text-white font-black text-xs shadow-[0_2px_0_#005580] active:translate-y-0.5 active:shadow-none transition">
                                     Tandai Selesai
                                 </button>
                             </form>
                         @else
-                            <span class="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            <span class="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                                 Tuntas
                             </span>
                         @endif
                     </div>
 
                     {{-- Langkah 2: Kuis Evaluasi Modul --}}
-                    <div class="rounded-xl p-3.5 border {{ $isQuizLulus ? 'border-emerald-200 bg-white text-emerald-900' : (($progres->quiz_selesai ?? false) ? 'border-amber-200 bg-white text-amber-900' : 'border-slate-200 bg-slate-50 text-slate-700') }} flex items-center justify-between gap-3">
+                    <div class="rounded-2xl p-3.5 border-2 {{ $isQuizLulus ? 'border-emerald-200 bg-white text-emerald-900 shadow-[0_2px_0_#a7f3d0]' : (($progres->quiz_selesai ?? false) ? 'border-amber-200 bg-white text-amber-900' : 'border-[#DCEFFF] bg-[#F0F6FF] text-[#465673]') }} flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2.5 min-w-0">
-                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold {{ $isQuizLulus ? 'bg-emerald-600 text-white' : (($progres->quiz_selesai ?? false) ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-600') }}">
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold {{ $isQuizLulus ? 'bg-emerald-600 text-white' : (($progres->quiz_selesai ?? false) ? 'bg-amber-500 text-white' : 'bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]') }}">
                                 {{ $isQuizLulus ? '✓' : '2' }}
                             </span>
                             <div class="min-w-0">
-                                <p class="text-xs font-bold truncate">2. Kuis Modul (KKM: {{ $kkm }})</p>
-                                <span class="text-[11px] {{ $isQuizLulus ? 'text-emerald-700 font-semibold' : (($progres->quiz_selesai ?? false) ? 'text-amber-700 font-semibold' : 'text-slate-400') }}">
+                                <p class="text-xs font-black truncate">2. Kuis Modul (KKM: {{ $kkm }})</p>
+                                <span class="text-[11px] font-semibold {{ $isQuizLulus ? 'text-emerald-700' : (($progres->quiz_selesai ?? false) ? 'text-amber-700' : 'text-[#72839E]') }}">
                                     @if(!$hasQuiz)
                                         Tanpa Kuis Evaluasi (Opsional)
                                     @elseif($isQuizLulus)
@@ -177,38 +177,38 @@
                             </div>
                         </div>
                         @if($hasQuiz)
-                            <button type="button" onclick="switchToTab('kuis')" class="shrink-0 px-3 py-1.5 rounded-lg {{ $isQuizLulus ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-indigo-600 text-white hover:bg-indigo-700' }} font-bold text-xs shadow-xs transition">
+                            <button type="button" onclick="switchToTab('kuis')" class="shrink-0 px-3.5 py-1.5 rounded-xl {{ $isQuizLulus ? 'border-2 border-[#B2E7FC] bg-white text-[#007FBE] hover:bg-[#F0F6FF]' : 'bg-[#007FBE] text-white hover:bg-[#00679A] shadow-[0_2px_0_#005580]' }} font-black text-xs transition">
                                 {{ $isQuizLulus ? 'Lihat Kuis' : 'Kerjakan' }}
                             </button>
                         @else
-                            <span class="shrink-0 text-[11px] text-slate-400 font-medium">Bebas Kuis</span>
+                            <span class="shrink-0 text-[11px] text-[#72839E] font-bold">Bebas Kuis</span>
                         @endif
                     </div>
                 </div>
             </div>
 
             {{-- Card Detail & Konten Modul --}}
-            <div class="mt-6 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
+            <div class="mt-6 rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-6 shadow-[0_4px_0_#B2E7FC]">
                 {{-- Judul & Meta --}}
                 <div class="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <h1 class="text-[22px] font-extrabold text-[#172033]">
+                        <h1 class="text-[22px] font-heading font-black text-[#082765]">
                             {{ $modul->judul_modul }}
                         </h1>
-                        <p class="mt-1 text-[12px] text-[#687892]">
-                            <span class="font-semibold text-[#172033]">{{ $modul->tipeModul->nama_tipe ?? ($modul->is_video ? 'Video' : 'Dokumen') }}</span>
+                        <p class="mt-1 text-[12px] font-semibold text-[#465673]">
+                            <span class="font-bold text-[#082765]">{{ $modul->tipeModul->nama_tipe ?? ($modul->is_video ? 'Video' : 'Dokumen') }}</span>
                             • {{ $modul->jenjang->nama_tipe ?? 'Semua Jenjang' }}
                             • {{ $modul->is_video ? 'Video Pembelajaran' : ($modul->is_pdf ? 'Bahan Bacaan PDF' : 'Materi Pembelajaran') }}
                         </p>
                     </div>
                     <div class="flex gap-2">
                         <a href="{{ route('siswa.modul') }}"
-                           class="rounded-lg border border-[#dce4ed] bg-white px-4 py-2 text-[12px] font-semibold text-[#52617a] hover:bg-slate-50 transition shadow-xs">
+                           class="rounded-xl border-2 border-[#B2E7FC] bg-white px-4 py-2 text-[12px] font-bold text-[#007FBE] hover:bg-[#F0F6FF] shadow-[0_2px_0_#B2E7FC] transition">
                             Kembali
                         </a>
                         @if($hasQuiz)
                             <button type="button" onclick="switchToTab('kuis')"
-                               class="rounded-lg bg-indigo-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-indigo-700 shadow-sm transition">
+                               class="rounded-xl bg-[#007FBE] hover:bg-[#00679A] px-4 py-2 text-[12px] font-black text-white shadow-[0_3px_0_#005580] active:translate-y-0.5 active:shadow-none transition">
                                 Kuis Modul ({{ $modul->soalModul->count() }} Soal) →
                             </button>
                         @endif

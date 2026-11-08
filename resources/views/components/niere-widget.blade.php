@@ -4,13 +4,12 @@
 
   $shouldHideNiere = ($hideNiere ?? false)
     || View::hasSection('hideNiere')
-    || request()->routeIs('quiz.kerjakan')
-    || request()->routeIs('siswa.quiz.kerjakan')
-    || request()->routeIs('quiz.detail')
-    || request()->routeIs('siswa.quiz.detail')
-    || request()->routeIs('admin.quiz.preview')
-    || request()->is('quiz/*')
-    || request()->is('siswa/quiz/*');
+    || request()->routeIs('quiz*')
+    || request()->routeIs('siswa.quiz*')
+    || request()->routeIs('admin.quiz*')
+    || request()->is('quiz*')
+    || request()->is('siswa/quiz*')
+    || request()->is('admin/quiz*');
 @endphp
 @if(!$shouldHideNiere)
   <!-- ========================================================
@@ -613,10 +612,10 @@
     $userNotifLines = [];
 
     if ($currentUser) {
-        $hasNiereNotif = true;
         $userName = $currentUser->nama ?? 'Sobat Arrava';
 
         if ($currentUser->id_tipeuser == 3) { // Siswa
+            $hasNiereNotif = true;
             $kuisCount = 0;
             try {
                 $kuisCount = \App\Models\Quiz::published()
@@ -628,24 +627,33 @@
 
             $totalPoin = (int) ($currentUser->total_poin ?? 0);
 
+            // Notifikasi Presensi Siswa
+            try {
+                $presensiNotifs = \App\Services\NotifikasiPresensiService::untukSiswa($currentUser);
+                foreach ($presensiNotifs as $pn) {
+                    $userNotifLines[] = "📢 {$pn['judul']}: {$pn['pesan']}";
+                }
+            } catch (\Exception $e) {}
+
             $userNotifLines[] = "Halo {$userName}! Senang melihatmu kembali belajar. ✨";
             if ($kuisCount > 0) {
                 $userNotifLines[] = "🔔 Ada {$kuisCount} Kuis aktif yang belum kamu kerjakan! Ayo selesaikan sekarang untuk raih poin EXP! ⚡";
-            } else {
-                $userNotifLines[] = "🌟 Hebat! Semua kuis jenjangmu sudah selesai kamu ikuti. Tetap asah pemahamanmu lewat modul belajar!";
             }
             $userNotifLines[] = "🏆 Poin kamu saat ini: {$totalPoin} XP. Semangat kumpulkan XP untuk memuncaki Leaderboard!";
-        } elseif ($currentUser->id_tipeuser == 2) { // Guru
-            $userNotifLines[] = "Halo Guru {$userName}! Selamat bertugas.";
-            $userNotifLines[] = "🔔 Cek presensi kelas dan evaluasi kuis siswa yang baru dikerjakan hari ini. 📋";
-            $userNotifLines[] = "Kelola modul materi dan kuis dengan mudah melalui menu Manajemen Modul & Kuis.";
         } elseif ($currentUser->id_tipeuser == 4) { // Orang Tua
+            $hasNiereNotif = true;
+            // Notifikasi Presensi untuk Orang Tua
+            try {
+                $presensiNotifs = \App\Services\NotifikasiPresensiService::untukOrangtua($currentUser);
+                foreach ($presensiNotifs as $pn) {
+                    $userNotifLines[] = "📢 {$pn['judul']}: {$pn['pesan']}";
+                }
+            } catch (\Exception $e) {}
+
             $userNotifLines[] = "Halo Ayah/Bunda ({$userName})!";
-            $userNotifLines[] = "🔔 Evaluasi nilai dan riwayat belajar kuis ananda telah diperbarui di Portal Orang Tua.";
-            $userNotifLines[] = "Dampingi ananda mereview materi untuk mempertahankan semangat belajarnya! 🌟";
-        } else { // Admin
-            $userNotifLines[] = "Halo Admin {$userName}!";
-            $userNotifLines[] = "🔔 Seluruh sistem elearning Arrava berjalan normal dan siap melayani pengguna.";
+            $userNotifLines[] = "🔔 Pantau presensi dan evaluasi nilai kuis ananda melalui Portal Orang Tua.";
+        } else { // Admin dan Guru: tidak ada notifikasi
+            $hasNiereNotif = false;
         }
     } else {
         $userNotifLines = [
@@ -672,6 +680,16 @@
         </div>
         <div id="niere-say"></div>
         <span id="niere-more">▼</span>
+
+        <!-- Bubble Action Footer (Khusus Notifikasi / Aksi Interaktif) -->
+        <div id="niere-bubble-footer" style="display: none; margin-top: 10px; padding-top: 8px; border-top: 1.5px dashed rgba(59,79,209,0.3); gap: 6px; flex-wrap: wrap; align-items: center;">
+          <button type="button" id="niere-mark-read-btn" class="niere-btn-mini" style="background: #e0f2fe; color: #0284c7; border: 2px solid #0284c7; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 6px;">
+            ✓ Tandai Telah Dibaca
+          </button>
+          <button type="button" id="niere-open-header-btn" class="niere-btn-mini" style="background: #fef3c7; color: #b45309; border: 2px solid #d97706; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 6px;">
+            🔔 Buka Lonceng
+          </button>
+        </div>
       </div>
 
       <!-- Mascot Button (TRANSPARAN, dapat di-drag dan di-klik langsung di tempat) -->
@@ -679,9 +697,7 @@
         aria-label="Niere. Buka Pusat Informasi"
         title="Klik untuk membuka menu, atau geser (drag) untuk memindahkan Niere">
         <img id="niere-hero" alt="Niere Maskot" src="{{ asset('assets/niere/niereIdle.gif') }}">
-        @if($hasNiereNotif)
-          <span class="niere-mascot-notif-badge" id="niere-mascot-badge" title="Ada Notifikasi Baru!">1</span>
-        @endif
+        <span class="niere-mascot-notif-badge" id="niere-mascot-badge" title="Ada Notifikasi Belum Dibaca!" style="display: none;">0</span>
       </button>
     </div>
   </div>
@@ -700,6 +716,7 @@
       const NOTIF_LINES = @json($userNotifLines);
       const HAS_NOTIF = @json($hasNiereNotif);
       const IS_LOGGED_IN = @json((bool) Auth::check());
+      const RAW_PRESENSI_NOTIFS = @json($presensiNotifs ?? []);
 
       const INFO = [
         {
@@ -900,7 +917,10 @@
           btn.style.setProperty("--y", y + "px");
           btn.style.setProperty("--d", delay);
 
-          const badgeHtml = item.hasBadge
+          const isNotif = item.id === "notif";
+          const currentUnread = window.arravaNotifData ? (window.arravaNotifData.unreadCount || 0) : (item.hasBadge ? 1 : 0);
+          const shouldShowBadge = isNotif ? (currentUnread > 0) : item.hasBadge;
+          const badgeHtml = shouldShowBadge
             ? `<span class="niere-opt-notif-badge">!</span>`
             : "";
 
@@ -1157,6 +1177,31 @@
 
       function selectOption(item) {
         playClick();
+        const footer = $("niere-bubble-footer");
+        if (item.id === "notif") {
+          const data = window.arravaNotifData;
+          const unreadCount = data ? (data.unreadCount || 0) : 0;
+          if (unreadCount > 0) {
+            const lines = [
+              `Kamu memiliki ${unreadCount} pemberitahuan presensi belum dibaca: 🔔`,
+              ...data.unreadItems.map(u => `📢 ${u.judul}:\n${u.pesan}`),
+              "Klik tombol 'Tandai Telah Dibaca' di bawah atau buka lonceng 🔔 di header ya!"
+            ];
+            sayLines(lines, "talk");
+            if (footer) footer.style.display = 'flex';
+          } else {
+            sayLines([
+              "Semua notifikasi presensi sudah kamu baca! ✨",
+              "Pemberitahuan tetap tersimpan dan bisa dibuka kembali lewat lonceng 🔔 di header atas."
+            ], "talk");
+            if (footer) footer.style.display = 'none';
+          }
+          if (typeof window.openHeaderNotifDropdown === 'function') {
+            window.openHeaderNotifDropdown();
+          }
+          return;
+        }
+        if (footer) footer.style.display = 'none';
         sayLines(item.lines, "talk");
       }
 
@@ -1226,6 +1271,8 @@
       closeBubbleBtn.onclick = ev => {
         ev.stopPropagation();
         bubble.classList.remove("show");
+        const footer = $("niere-bubble-footer");
+        if (footer) footer.style.display = 'none';
         clearTimeout(typeTimer);
         setPose("idle");
       };
@@ -1236,6 +1283,8 @@
           if (open) setOpen(false);
           if (bubble.classList.contains("show")) {
             bubble.classList.remove("show");
+            const footer = $("niere-bubble-footer");
+            if (footer) footer.style.display = 'none';
             clearTimeout(typeTimer);
             setPose("idle");
           }
@@ -1301,17 +1350,152 @@
         }
       } catch (e) { }
 
-      // Notifikasi otomatis setelah login saat membuka halaman
-      if (IS_LOGGED_IN && HAS_NOTIF) {
-        setTimeout(() => {
-          if (!open && !bubble.classList.contains("show")) {
-            sayLines([
-              "Psst! Ada notifikasi baru untukmu! 🔔",
-              "Klik ikon 🔔 Notifikasi di atasku untuk membaca info tugas & kuis ya!"
-            ], "talk");
+      // ================= SINKRONISASI NOTIFIKASI DENGAN NIERE =================
+      function updateNiereBadge(count) {
+        // 1. Update mascot head badge
+        const mascotBadge = $("niere-mascot-badge");
+        if (mascotBadge) {
+          if (count > 0) {
+            mascotBadge.textContent = count > 9 ? '9+' : count;
+            mascotBadge.style.display = 'flex';
+          } else {
+            mascotBadge.style.display = 'none';
           }
-        }, 1200);
+        }
+
+        // 2. Selalu sinkronkan item.hasBadge di array INFO
+        INFO.forEach(it => {
+          if (it.id === "notif") {
+            it.hasBadge = count > 0;
+          }
+        });
+
+        // 3. Sembunyikan atau tampilkan tanda seru (!) pada semua tombol radial
+        const optBadges = mascot ? mascot.querySelectorAll(".niere-opt-notif-badge") : [];
+        optBadges.forEach(b => {
+          b.style.display = count > 0 ? 'flex' : 'none';
+        });
+
+        // 4. Update footer tombol 'Tandai Telah Dibaca' di balon bicara Niere
+        const footer = $("niere-bubble-footer");
+        if (footer) {
+          footer.style.display = count > 0 ? 'flex' : 'none';
+        }
       }
+
+      // Handler untuk tombol 'Tandai Telah Dibaca' di dalam balon bicara Niere
+      const niereMarkReadBtn = $("niere-mark-read-btn");
+      if (niereMarkReadBtn) {
+        niereMarkReadBtn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          wakeAudio();
+          playClick();
+
+          // Panggil fungsi global yang menandai semua notif sebagai dibaca
+          if (typeof window.markAllNotifAsRead === 'function') {
+            window.markAllNotifAsRead();
+          } else {
+            const userId = '{{ $currentUser->id_user ?? 0 }}';
+            const allNotifs = Array.isArray(RAW_PRESENSI_NOTIFS) ? RAW_PRESENSI_NOTIFS : [];
+            const allIds = allNotifs.map(n => n.id);
+            try {
+              localStorage.setItem(`arrava_read_notif_${userId}`, JSON.stringify(allIds));
+            } catch(e) {}
+            updateNiereBadge(0);
+          }
+
+          // Segera sembunyikan semua badge dan tanda seru di Niere
+          updateNiereBadge(0);
+
+          // Niere memberi respon ramah
+          sayLines([
+            "Semua notifikasi sudah kamu tandai telah dibaca! ✨",
+            "Pemberitahuan tetap tersimpan dan bisa dibuka kembali lewat lonceng 🔔 header atas ya."
+          ], "talk");
+        });
+      }
+
+      // Handler untuk tombol 'Buka Lonceng' di balon bicara Niere
+      const niereOpenHeaderBtn = $("niere-open-header-btn");
+      if (niereOpenHeaderBtn) {
+        niereOpenHeaderBtn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          wakeAudio();
+          playClick();
+          if (typeof window.openHeaderNotifDropdown === 'function') {
+            window.openHeaderNotifDropdown();
+          }
+        });
+      }
+
+      function initNiereNotificationGreeting() {
+        const userId = '{{ $currentUser->id_user ?? 0 }}';
+        const readIds = (() => {
+          try { return JSON.parse(localStorage.getItem(`arrava_read_notif_${userId}`) || '[]'); }
+          catch(e) { return []; }
+        })();
+
+        let unreadItems = [];
+        let unreadCount = 0;
+
+        const data = window.arravaNotifData;
+        if (data && Array.isArray(data.unreadItems)) {
+          unreadItems = data.unreadItems;
+          unreadCount = data.unreadCount;
+        } else {
+          const allNotifs = Array.isArray(RAW_PRESENSI_NOTIFS) ? RAW_PRESENSI_NOTIFS : [];
+          unreadItems = allNotifs.filter(n => !readIds.includes(n.id));
+          unreadCount = unreadItems.length;
+        }
+
+        updateNiereBadge(unreadCount);
+
+        // Jika ADA notifikasi belum dibaca, Niere LANGSUNG berbicara memberikan informasi pesan & jumlahnya
+        if (unreadCount > 0) {
+          setTimeout(() => {
+            if (!open && !bubble.classList.contains("show")) {
+              const lines = [
+                `Halo {{ $userName ?? 'Sobat Arrava' }}! Ada ${unreadCount} notifikasi presensi yang belum dibaca: 🔔`,
+                ...unreadItems.slice(0, 2).map(u => `📢 ${u.judul || 'Presensi'}:\n${u.pesan || ''}`),
+                `Klik 'Tandai Telah Dibaca' di bawah atau buka lonceng 🔔 header atas ya!`
+              ];
+              sayLines(lines, "talk");
+              const footer = $("niere-bubble-footer");
+              if (footer) footer.style.display = 'flex';
+            }
+          }, 800);
+        }
+      }
+
+      if (IS_LOGGED_IN) {
+        setTimeout(initNiereNotificationGreeting, 350);
+      }
+
+      // Dengarkan event ketika notifikasi dibaca di header
+      window.addEventListener('arrava:notif-update', ev => {
+        const d = ev.detail;
+        if (!d) return;
+        updateNiereBadge(d.unreadCount || 0);
+      });
+
+      // Dengarkan event ketika notifikasi baru tiba secara REALTIME tanpa refresh
+      window.addEventListener('arrava:notif-realtime-arrival', ev => {
+        const item = ev.detail;
+        if (!item) return;
+
+        const mascotBadge = $("niere-mascot-badge");
+        const currentCount = mascotBadge ? (parseInt(mascotBadge.textContent, 10) || 0) : 0;
+        updateNiereBadge(currentCount + 1);
+
+        wakeAudio();
+        sayLines([
+          `Psst! Ada notifikasi presensi baru masuk! 📢`,
+          `${item.judul || 'Presensi'}:\n${item.pesan || ''}`,
+          `Pemberitahuan ini sudah masuk ke lonceng 🔔 header atas ya!`
+        ], "talk");
+        const footer = $("niere-bubble-footer");
+        if (footer) footer.style.display = 'flex';
+      });
     })();
   </script>
 @endif

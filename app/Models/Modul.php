@@ -1,9 +1,41 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * Class Modul
+ *
+ * @property int $id_modul
+ * @property string $judul_modul
+ * @property string|null $deskripsi
+ * @property string|null $file_materi
+ * @property string|null $tipe_file
+ * @property int|null $id_tipemodul
+ * @property int|null $id_jenjang
+ * @property int|null $id_mapel
+ * @property int|null $id_quiz
+ * @property string|null $progressModul
+ * @property string|null $proggressModul
+ * @property string|null $foto_modul
+ * @property int|null $kkm_quiz
+ * @property int|null $poin_modul
+ * @property string|null $youtube_id
+ * @property string|null $youtube_embed_url
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ *
+ * @property-read TipeModul|null $tipeModul
+ * @property-read Jenjang|null $jenjang
+ * @property-read Mapel|null $mapel
+ * @property-read Quiz|null $quiz
+ *
+ * @method static Builder|Modul published()
+ * @method static Builder|Modul draft()
+ */
 class Modul extends Model
 {
     //menentukan nama tabel

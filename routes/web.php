@@ -102,6 +102,12 @@ Route::prefix('orangtua')
         ->name('aktivitas-belajar');
     });
 
+// Route Notifikasi Presensi Realtime (Siswa & Orang Tua)
+Route::middleware(['auth', 'active.student', 'role:siswa,orangtua'])->group(function () {
+    Route::get('/notifikasi/check', [\App\Http\Controllers\NotifikasiController::class, 'check'])->name('notifikasi.check');
+    Route::post('/notifikasi/mark-read', [\App\Http\Controllers\NotifikasiController::class, 'markRead'])->name('notifikasi.mark_read');
+});
+
 // Global Route untuk semua user login
 Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware(['auth', 'active.student', 'role:admin,guru,siswa,orangtua']);
 
@@ -233,3 +239,26 @@ Route::prefix('guru/presensi')->name('guru.presensi.')->middleware(['auth', 'act
     Route::post('/sesi/{id}/scan', [PresensiController::class, 'prosesScan'])
         ->whereNumber('id')->middleware('throttle:scan-qr')->name('proses');
 });
+
+// Fallback route untuk melayani file storage secara andal (mendukung php artisan serve / Windows junction)
+Route::get('/storage/{path}', function (string $path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (!file_exists($fullPath) || !is_file($fullPath)) {
+        abort(404);
+    }
+    $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
+    $filesize = filesize($fullPath);
+
+    return response()->stream(function () use ($fullPath) {
+        $stream = fopen($fullPath, 'rb');
+        if ($stream) {
+            fpassthru($stream);
+            fclose($stream);
+        }
+    }, 200, [
+        'Content-Type' => $mime,
+        'Content-Length' => $filesize,
+        'Cache-Control' => 'no-cache, private',
+        'Access-Control-Allow-Origin' => '*',
+    ]);
+})->where('path', '.*');

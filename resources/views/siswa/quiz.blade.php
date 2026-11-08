@@ -1,6 +1,7 @@
 @extends('layouts.siswa')
 
 @section('title', 'Daftar Quiz — Arrava E-Learning')
+@section('hideNiere', 'true')
 
 @push('styles')
     <style>
@@ -14,18 +15,53 @@
                 transform: translateY(0);
             }
         }
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: #ffffff;
+            border: 2px solid #B2E7FC;
+            box-shadow: 0 3px 0 #B2E7FC;
+            color: #007FBE;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .nav-btn:hover:not(:disabled) {
+            background: #DDF3FF;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 0 #B2E7FC;
+        }
+        .nav-btn:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #B2E7FC;
+        }
+        .nav-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            border-color: #E2E8F0;
+            box-shadow: none;
+            color: #94A3B8;
+        }
+        .nav-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
     </style>
 @endpush
 
 @section('header')
     <div class="relative w-full max-w-[420px]">
-        <svg class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a98ad]" viewBox="0 0 24 24" fill="none"
+        <svg class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#72839E]" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-4-4" />
         </svg>
         <input type="text" id="quiz-search-input" placeholder="Cari quiz atau materi..."
-            class="h-10 w-full rounded-lg bg-[#f5f8fc] pl-11 pr-4 text-sm outline-none placeholder:text-[#9aa7b9] focus:ring-2 focus:ring-blue-100">
+            class="h-10 w-full rounded-2xl bg-[#F0F6FF] border-2 border-[#DCEFFF] pl-11 pr-4 text-sm font-semibold text-[#12233F] outline-none placeholder:text-[#72839E] focus:bg-white focus:border-[#007FBE] focus:ring-4 focus:ring-[#DDF3FF] transition shadow-[0_2px_0_#DCEFFF]">
     </div>
 @endsection
 
@@ -105,19 +141,18 @@
 
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-                <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-[#172033]">Daftar Quiz</h1>
-                <p class="mt-1 text-sm text-[#687892]">Pilih kuis untuk melihat pratinjau materi, aturan pengerjaan, dan
-                    mulai berlatih.</p>
+                <h1 class="text-2xl sm:text-3xl font-heading font-black tracking-tight text-[#082765]">Daftar Quiz 🎯</h1>
+                <p class="mt-1 text-sm font-semibold text-[#465673]">Pilih kuis untuk melihat pratinjau materi, aturan pengerjaan, dan mulai berlatih.</p>
             </div>
         </div>
 
         {{-- Filter Bar --}}
         <form method="GET" action="{{ route('siswa.quiz') }}"
-            class="grid gap-3 rounded-2xl border border-[#dfe6ef] bg-white p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end shadow-sm">
+            class="grid gap-3.5 rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end shadow-[0_3px_0_#DCEFFF]">
             <div>
-                <label for="filter-mapel" class="mb-1.5 block text-xs font-semibold text-[#52627a]">Mata Pelajaran</label>
+                <label for="filter-mapel" class="mb-1.5 block text-xs font-bold text-[#465673]">Mata Pelajaran</label>
                 <select id="filter-mapel" name="mapel"
-                    class="h-10 w-full rounded-xl border border-[#d5deea] bg-white px-3 text-sm text-[#172033] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    class="h-10 w-full rounded-xl border-2 border-[#DCEFFF] bg-[#F0F6FF] px-3 text-sm font-semibold text-[#12233F] focus:border-[#007FBE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#DDF3FF] transition">
                     <option value="">Semua mapel</option>
                     @if(isset($mapelList))
                         @foreach($mapelList as $m)
@@ -128,10 +163,9 @@
                 </select>
             </div>
             <div>
-                <label for="filter-tingkat" class="mb-1.5 block text-xs font-semibold text-[#52627a]">Tingkat
-                    Kesulitan</label>
+                <label for="filter-tingkat" class="mb-1.5 block text-xs font-bold text-[#465673]">Tingkat Kesulitan</label>
                 <select id="filter-tingkat" name="tingkat"
-                    class="h-10 w-full rounded-xl border border-[#d5deea] bg-white px-3 text-sm text-[#172033] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    class="h-10 w-full rounded-xl border-2 border-[#DCEFFF] bg-[#F0F6FF] px-3 text-sm font-semibold text-[#12233F] focus:border-[#007FBE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#DDF3FF] transition">
                     <option value="">Semua tingkat</option>
                     @foreach($tingkatQuizList as $tingkat)
                         <option value="{{ $tingkat->id_tingkatquiz }}" @selected(request('tingkat') == $tingkat->id_tingkatquiz)>
@@ -140,17 +174,17 @@
                 </select>
             </div>
             <div>
-                <label for="filter-sort" class="mb-1.5 block text-xs font-semibold text-[#52627a]">Urutkan</label>
+                <label for="filter-sort" class="mb-1.5 block text-xs font-bold text-[#465673]">Urutkan</label>
                 <select id="filter-sort" name="sort"
-                    class="h-10 w-full rounded-xl border border-[#d5deea] bg-white px-3 text-sm text-[#172033] focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    class="h-10 w-full rounded-xl border-2 border-[#DCEFFF] bg-[#F0F6FF] px-3 text-sm font-semibold text-[#12233F] focus:border-[#007FBE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#DDF3FF] transition">
                     <option value="terbaru" @selected(request('sort') == 'terbaru')>Terbaru</option>
                     <option value="terlama" @selected(request('sort') == 'terlama')>Terlama</option>
                 </select>
             </div>
             <button type="submit"
-                class="h-10 rounded-xl bg-[#3180f7] hover:bg-[#246bd4] px-5 text-sm font-bold text-white transition shadow-sm">Terapkan</button>
+                class="h-10 rounded-xl bg-[#007FBE] hover:bg-[#00679A] px-5 text-sm font-black text-white shadow-[0_3px_0_#005580] active:translate-y-0.5 active:shadow-none transition">Terapkan</button>
             <a href="{{ route('siswa.quiz') }}"
-                class="inline-flex h-10 items-center justify-center rounded-xl border border-[#d5deea] px-4 text-sm font-semibold text-[#52627a] transition hover:bg-[#f5f8fc]">Reset</a>
+                class="inline-flex h-10 items-center justify-center rounded-xl border-2 border-[#B2E7FC] bg-white px-4 text-sm font-bold text-[#007FBE] shadow-[0_2px_0_#B2E7FC] hover:bg-[#F0F6FF] transition">Reset</a>
         </form>
 
         {{-- Grid Quiz Cards --}}
@@ -214,7 +248,7 @@
                         'poin_didapat_tertinggi' => $poinDidapatTertinggi,
                     ];
                 @endphp
-                <div class="quiz-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border border-slate-200 bg-white transition-all duration-300 {{ ($expired && !$quiz->perluToken()) ? 'cursor-not-allowed opacity-75 grayscale' : 'hover:-translate-y-1.5 hover:shadow-xl hover:border-blue-400/60' }}"
+                <div class="quiz-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white transition-all duration-200 {{ ($expired && !$quiz->perluToken()) ? 'cursor-not-allowed opacity-75 grayscale' : 'hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_6px_0_#007FBE] shadow-[0_4px_0_#B2E7FC]' }}"
                     data-title="{{ strtolower($quiz->judul) }}">
 
                     <div>
@@ -240,7 +274,7 @@
                                 <div class="absolute top-3 left-3 z-10">
                                     <span
                                         class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-purple-950/85 backdrop-blur-md text-purple-200 border border-purple-400/40 shadow-md">
-                                        Token
+                                        🔒 Token
                                     </span>
                                 </div>
                             @endif
@@ -257,7 +291,7 @@
                             @if($quiz->mapel)
                                 <div class="absolute bottom-3 left-3 z-10">
                                     <span
-                                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-950/80 text-indigo-200 border border-indigo-400/30 backdrop-blur-md shadow-sm">
+                                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-[#082765]/80 text-[#DDF3FF] border border-[#B2E7FC]/40 backdrop-blur-md shadow-sm">
                                         {{ $quiz->mapel->nama_mapel }}
                                     </span>
                                 </div>
@@ -274,12 +308,12 @@
 
                         {{-- Card Body --}}
                         <div class="p-5">
-                            <h2 class="text-base sm:text-[17px] font-black text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug"
+                            <h2 class="text-base sm:text-[17px] font-heading font-black text-[#082765] group-hover:text-[#007FBE] transition-colors line-clamp-2 leading-snug"
                                 title="{{ $quiz->judul }}">
                                 {{ $quiz->judul }}
                             </h2>
 
-                            <p class="mt-2 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                            <p class="mt-2 text-xs font-semibold text-[#465673] line-clamp-2 leading-relaxed">
                                 {{ $quiz->deskripsi ?: 'Kuis interaktif untuk menguji pemahaman materi. Uji kemampuanmu dan dapatkan skor terbaik!' }}
                             </p>
 
@@ -288,7 +322,7 @@
                                 <div class="mt-3 flex flex-wrap items-center gap-1.5">
                                     @foreach($quiz->soal->pluck('jenisSoal.nama_jenis')->filter()->unique() as $namaJenis)
                                         <span
-                                            class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                                            class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]">
                                             {{ $namaJenis }}
                                         </span>
                                     @endforeach
@@ -301,7 +335,7 @@
 
                     {{-- Card Bottom Action --}}
                     <div class="px-5 pb-5 pt-0">
-                        <div class="flex items-center justify-between border-t border-slate-100 pt-3.5">
+                        <div class="flex items-center justify-between border-t border-[#DCEFFF] pt-3.5">
                             @if($expired)
                                 <span class="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600">
                                     <span class="h-2 w-2 rounded-full bg-rose-500"></span>
@@ -323,12 +357,12 @@
 
                                 <div class="flex items-center gap-1.5">
                                     <a href="{{ route('siswa.quiz.detail', $quiz->id_quiz) }}"
-                                        class="rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 px-3 py-2 text-xs font-bold text-slate-700 transition shadow-2xs"
+                                        class="rounded-xl border-2 border-[#B2E7FC] bg-white hover:bg-[#F0F6FF] px-3 py-1.5 text-xs font-bold text-[#007FBE] shadow-[0_2px_0_#B2E7FC] transition"
                                         title="Lihat halaman preview kuis">
                                         Detail
                                     </a>
                                     <button type="button" data-quiz-start onclick='openQuizPreviewModal(@json($modalData))'
-                                        class="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs px-4 py-2 transition shadow-sm hover:shadow hover:scale-[1.02]">
+                                        class="inline-flex items-center gap-1.5 rounded-xl bg-[#007FBE] hover:bg-[#00679A] text-white font-black text-xs px-4 py-2 shadow-[0_3px_0_#005580] active:translate-y-0.5 active:shadow-none transition">
                                         <span>Kerjakan</span>
                                         <span>→</span>
                                     </button>
@@ -339,7 +373,8 @@
                 </div>
             @empty
                 <div
-                    class="col-span-full rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-12 text-center text-sm text-[#7c899c]">
+                    class="col-span-full rounded-2xl sm:rounded-3xl border-2 border-dashed border-[#B2E7FC] bg-white p-12 text-center text-sm font-semibold text-[#465673] shadow-[0_4px_0_#DCEFFF]">
+                    <div class="text-4xl mb-2">🎯</div>
                     Tidak ada quiz yang sesuai dengan filter ini.
                 </div>
             @endforelse
@@ -347,7 +382,8 @@
 
         {{-- Dynamic Search Empty State (saat pencarian tidak menemukan hasil) --}}
         <div id="quiz-empty-search"
-            class="hidden rounded-2xl border border-dashed border-[#cfd9e5] bg-white p-12 text-center text-sm text-[#7c899c]">
+            class="hidden rounded-2xl sm:rounded-3xl border-2 border-dashed border-[#B2E7FC] bg-white p-12 text-center text-sm font-semibold text-[#465673] shadow-[0_4px_0_#DCEFFF]">
+            <div class="text-4xl mb-2">🔍</div>
             Tidak ada kuis yang cocok dengan kata kunci pencarian Anda.
         </div>
 
@@ -362,7 +398,7 @@
 
                 {{-- Indikator Nomor & Titik Halaman --}}
                 <div class="flex flex-col items-center justify-center min-w-[50px]">
-                    <span id="quiz-page-current" class="text-3xl sm:text-4xl font-black text-blue-600 tracking-tight leading-none">
+                    <span id="quiz-page-current" class="text-3xl sm:text-4xl font-heading font-black text-[#007FBE] tracking-tight leading-none">
                         1
                     </span>
                     <div id="quiz-pagination-dots" class="mt-2 flex items-center justify-center gap-1.5">
@@ -580,9 +616,9 @@
                     dot.type = 'button';
                     dot.setAttribute('aria-label', `Halaman ${p}`);
                     if (p === currentPage) {
-                        dot.className = 'w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-600 scale-125 transition-transform duration-150 pointer-events-none shadow-xs';
+                        dot.className = 'w-2 h-2 rounded-full bg-[#007FBE] scale-125 transition-transform duration-150 pointer-events-none shadow-xs';
                     } else {
-                        dot.className = 'w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-200 hover:bg-blue-500 transition-colors duration-150 cursor-pointer';
+                        dot.className = 'w-2 h-2 rounded-full bg-[#B2E7FC] hover:bg-[#007FBE] transition-colors duration-150 cursor-pointer';
                         dot.addEventListener('click', function () {
                             currentQuizPage = p;
                             renderQuizPagination(true);
@@ -852,15 +888,6 @@
                     if (modalSelesaiBanner) modalSelesaiBanner.classList.add('hidden');
                 }
 
-                // Tutup dan sembunyikan Niere saat melihat pratinjau / deskripsi kuis
-                if (typeof window.closeNiereWidget === 'function') {
-                    window.closeNiereWidget();
-                }
-                const niereEl = document.getElementById('niere-widget-container');
-                if (niereEl) {
-                    niereEl.style.setProperty('display', 'none', 'important');
-                }
-
                 modalEl.classList.remove('hidden');
                 document.body.style.overflow = 'hidden';
             }
@@ -868,12 +895,6 @@
             function closeQuizPreviewModal() {
                 modalEl.classList.add('hidden');
                 document.body.style.overflow = '';
-
-                // Kembalikan tampilan Niere saat modal deskripsi ditutup
-                const niereEl = document.getElementById('niere-widget-container');
-                if (niereEl) {
-                    niereEl.style.removeProperty('display');
-                }
             }
 
             // Close on backdrop click
