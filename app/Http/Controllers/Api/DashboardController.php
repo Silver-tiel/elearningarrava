@@ -95,7 +95,7 @@ class DashboardController extends Controller
                     'nisn' => $user->nisn,
                     'jenjang' => $user->jenjang->nama_jenjang ?? 'Umum',
                     'total_xp' => (int) ($user->total_poin ?? 0),
-                    'foto_profil' => $user->foto_profil ? asset('storage/' . $user->foto_profil) : null,
+                    'foto_profil' => $user->foto_profil ? (str_starts_with($user->foto_profil, 'http') ? $user->foto_profil : asset('storage/' . ltrim($user->foto_profil, '/'))) : null,
                 ],
                 'stats' => [
                     'kursus_aktif' => $totalModul,
@@ -553,6 +553,121 @@ class DashboardController extends Controller
                 'stats' => $stats,
                 'recent_activities' => $recentActivities,
                 'achievements' => $achievements,
+            ],
+        ]);
+    }
+
+    /**
+     * Leaderboard Siswa berdasarkan total XP / Poin (Mobile API)
+     */
+    public function leaderboard(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        // Tentukan jenjang aktif
+        $rawJenjang = $request->get('jenjang');
+        $activeJenjangId = null;
+
+        if ($rawJenjang !== null && $rawJenjang !== '' && $rawJenjang !== 'all' && $rawJenjang !== '0') {
+            $activeJenjangId = (int) $rawJenjang;
+        } elseif ($rawJenjang === null && $user->isSiswa() && $user->id_jenjang) {
+            $activeJenjangId = (int) $user->id_jenjang;
+        }
+
+        $query = User::where('id_tipeuser', 3)
+            ->where(function ($q) {
+                $q->whereNull('status_akun')->orWhere('status_akun', '!=', 'Nonaktif');
+            })
+            ->with('jenjang')
+            ->orderByDesc('total_poin')
+            ->orderBy('nama');
+
+        if ($activeJenjangId !== null && $activeJenjangId > 0) {
+            $query->where('id_jenjang', $activeJenjangId);
+        }
+
+        $limit = min(max((int) $request->get('limit', 50), 10), 100);
+        $students = $query->take($limit)->get();
+
+        $tierResolver = function (int $pts) {
+            return match (true) {
+                $pts >= 5000 => 'Grandmaster',
+                $pts >= 3000 => 'Master',
+                $pts >= 1800 => 'Madya',
+                $pts >= 1000 => 'Mahir',
+                $pts >= 500  => 'Pemula',
+                $pts >= 200  => 'Dasar',
+                $pts >= 50   => 'Rintisan',
+                default      => 'Starter',
+            };
+        };
+
+        $rankCounter = 1;
+        $leaderboard = $students->map(function ($s) use (&$rankCounter, $tierResolver) {
+            $pts = (int) ($s->total_poin ?? 0);
+            $foto = $s->foto_profil
+                ? (str_starts_with($s->foto_profil, 'http') ? $s->foto_profil : asset('storage/' . ltrim($s->foto_profil, '/')))
+                : null;
+
+            return [
+                'rank' => $rankCounter++,
+                'id_user' => $s->id_user,
+                'nama' => $s->nama,
+                'username' => $s->username,
+                'jenjang' => $s->jenjang->nama_jenjang ?? 'SD',
+                'id_jenjang' => $s->id_jenjang,
+                'total_poin' => $pts,
+                'tier' => $tierResolver($pts),
+                'foto_profil' => $foto,
+            ];
+        })->values();
+
+        // Hitung peringkat user yang login (jika siswa)
+        $myRank = null;
+        if ($user->isSiswa()) {
+            $myPoints = (int) ($user->total_poin ?? 0);
+            $betterCount = User::where('id_tipeuser', 3)
+                ->where(function ($q) {
+                    $q->whereNull('status_akun')->orWhere('status_akun', '!=', 'Nonaktif');
+                })
+                ->when($activeJenjangId !== null && $activeJenjangId > 0, fn($q) => $q->where('id_jenjang', $activeJenjangId))
+                ->where('total_poin', '>', $myPoints)
+                ->count();
+
+            $myFoto = $user->foto_profil
+                ? (str_starts_with($user->foto_profil, 'http') ? $user->foto_profil : asset('storage/' . ltrim($user->foto_profil, '/')))
+                : null;
+
+            $myRank = [
+                'rank' => $betterCount + 1,
+                'id_user' => $user->id_user,
+                'nama' => $user->nama,
+                'username' => $user->username,
+                'jenjang' => $user->jenjang->nama_jenjang ?? 'SD',
+                'id_jenjang' => $user->id_jenjang,
+                'total_poin' => $myPoints,
+                'tier' => $tierResolver($myPoints),
+                'foto_profil' => $myFoto,
+            ];
+        }
+
+        $jenjangOptions = [
+            ['id' => 0, 'nama' => 'Semua'],
+            ['id' => 1, 'nama' => 'SD'],
+            ['id' => 2, 'nama' => 'SMP'],
+            ['id' => 3, 'nama' => 'SMA'],
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'leaderboard' => $leaderboard,
+                'my_rank' => $myRank,
+                'active_jenjang_id' => $activeJenjangId ?? 0,
+                'jenjang_options' => $jenjangOptions,
             ],
         ]);
     }

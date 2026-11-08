@@ -565,14 +565,16 @@ class ModulController extends Controller
         }
         $query = Modul::with($relations);
 
-        // Siswa otomatis hanya dapat melihat modul published dan sesuai jenjangnya
+        // Siswa otomatis hanya dapat melihat modul published
         if ($user && $user->isSiswa()) {
             $query->published();
-            if ($user->id_jenjang) {
-                $query->where('id_jenjang', $user->id_jenjang);
-            }
-        } elseif ($request->filled('jenjang')) {
+        }
+
+        // Filter jenjang: utamakan request jika ada, jika siswa default ke jenjangnya sendiri
+        if ($request->filled('jenjang') && $request->jenjang !== 'all' && $request->jenjang !== '0') {
             $query->where('id_jenjang', $request->jenjang);
+        } elseif ($user && $user->isSiswa() && $user->id_jenjang && !$request->has('jenjang')) {
+            $query->where('id_jenjang', $user->id_jenjang);
         }
 
         if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel') && $request->filled('mapel')) {

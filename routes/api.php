@@ -17,11 +17,12 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Dashboard
+    // Dashboard & Leaderboard
     Route::get('/student/dashboard', [DashboardController::class, 'studentDashboard']);
     Route::get('/student/profile', [DashboardController::class, 'studentProfile']);
     Route::match(['put', 'post'], '/student/profile', [DashboardController::class, 'updateStudentProfile']);
     Route::get('/parent/dashboard', [DashboardController::class, 'parentDashboard']);
+    Route::get('/leaderboard', [DashboardController::class, 'leaderboard']);
     Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard']);
     Route::get('/teachers', [DashboardController::class, 'teachers']);
     Route::get('/students', [DashboardController::class, 'students']);
