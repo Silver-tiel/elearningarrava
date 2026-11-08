@@ -1,6 +1,6 @@
 @php
   $isLoginPage = request()->routeIs('login') || request()->is('login');
-  $initialPosClass = 'pos-top';
+  $initialPosClass = $isLoginPage ? 'pos-bottom' : 'pos-top';
 
   $shouldHideNiere = ($hideNiere ?? false)
     || View::hasSection('hideNiere')
@@ -358,6 +358,59 @@
       visibility: visible;
     }
 
+    /* Badge Notifikasi pada Maskot */
+    .niere-mascot-notif-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 22px;
+      height: 22px;
+      background: #ef4444;
+      color: #ffffff;
+      border: 2.5px solid #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.45);
+      z-index: 60;
+      pointer-events: none;
+      animation: niereBadgePulse 1.8s infinite;
+    }
+
+    @keyframes niereBadgePulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+      }
+      50% {
+        transform: scale(1.18);
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+      }
+    }
+
+    /* Badge Notifikasi pada Ikon Radial */
+    .niere-opt-notif-badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      background: #ef4444;
+      color: #ffffff;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 900;
+      box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+      animation: niereBadgePulse 1.8s infinite;
+    }
+
     /* Speech Bubble (Mengambang di sebelah Niere dan cerdas membalik arah jika Niere di sisi kiri) */
     .niere-bubble {
       position: absolute;
@@ -553,7 +606,53 @@
 
   @php
     $isLoginPage = request()->routeIs('login') || request()->is('login');
-    $initialPosClass = 'pos-top';
+    $initialPosClass = $isLoginPage ? 'pos-bottom' : 'pos-top';
+
+    $currentUser = Auth::user();
+    $hasNiereNotif = false;
+    $userNotifLines = [];
+
+    if ($currentUser) {
+        $hasNiereNotif = true;
+        $userName = $currentUser->nama ?? 'Sobat Arrava';
+
+        if ($currentUser->id_tipeuser == 3) { // Siswa
+            $kuisCount = 0;
+            try {
+                $kuisCount = \App\Models\Quiz::published()
+                    ->belumKadaluarsa()
+                    ->when($currentUser->id_jenjang, fn($q) => $q->where('id_jenjang', $currentUser->id_jenjang))
+                    ->whereDoesntHave('hasil', fn($q) => $q->where('id_user', $currentUser->id_user))
+                    ->count();
+            } catch (\Exception $e) {}
+
+            $totalPoin = (int) ($currentUser->total_poin ?? 0);
+
+            $userNotifLines[] = "Halo {$userName}! Senang melihatmu kembali belajar. ✨";
+            if ($kuisCount > 0) {
+                $userNotifLines[] = "🔔 Ada {$kuisCount} Kuis aktif yang belum kamu kerjakan! Ayo selesaikan sekarang untuk raih poin EXP! ⚡";
+            } else {
+                $userNotifLines[] = "🌟 Hebat! Semua kuis jenjangmu sudah selesai kamu ikuti. Tetap asah pemahamanmu lewat modul belajar!";
+            }
+            $userNotifLines[] = "🏆 Poin kamu saat ini: {$totalPoin} XP. Semangat kumpulkan XP untuk memuncaki Leaderboard!";
+        } elseif ($currentUser->id_tipeuser == 2) { // Guru
+            $userNotifLines[] = "Halo Guru {$userName}! Selamat bertugas.";
+            $userNotifLines[] = "🔔 Cek presensi kelas dan evaluasi kuis siswa yang baru dikerjakan hari ini. 📋";
+            $userNotifLines[] = "Kelola modul materi dan kuis dengan mudah melalui menu Manajemen Modul & Kuis.";
+        } elseif ($currentUser->id_tipeuser == 4) { // Orang Tua
+            $userNotifLines[] = "Halo Ayah/Bunda ({$userName})!";
+            $userNotifLines[] = "🔔 Evaluasi nilai dan riwayat belajar kuis ananda telah diperbarui di Portal Orang Tua.";
+            $userNotifLines[] = "Dampingi ananda mereview materi untuk mempertahankan semangat belajarnya! 🌟";
+        } else { // Admin
+            $userNotifLines[] = "Halo Admin {$userName}!";
+            $userNotifLines[] = "🔔 Seluruh sistem elearning Arrava berjalan normal dan siap melayani pengguna.";
+        }
+    } else {
+        $userNotifLines = [
+            "Selamat datang di E-Learning Arrava! 🎓",
+            "Silakan masuk ke akunmu untuk mengakses modul belajar, kuis seru, dan notifikasi tugas terbarumu!"
+        ];
+    }
   @endphp
 
   <!-- ================= NIERE IN-PLACE FLOATING CONTAINER ================= -->
@@ -580,6 +679,9 @@
         aria-label="Niere. Buka Pusat Informasi"
         title="Klik untuk membuka menu, atau geser (drag) untuk memindahkan Niere">
         <img id="niere-hero" alt="Niere Maskot" src="{{ asset('assets/niere/niereIdle.gif') }}">
+        @if($hasNiereNotif)
+          <span class="niere-mascot-notif-badge" id="niere-mascot-badge" title="Ada Notifikasi Baru!">1</span>
+        @endif
       </button>
     </div>
   </div>
@@ -594,43 +696,36 @@
         shock: "{{ asset('assets/niere/niereShock.gif') }}"
       };
 
-      /* ====== DATA INFORMASI (4 TOPIK UTAMA) ====== */
+      /* ====== DATA INFORMASI & NOTIFIKASI (MENU BERSIH & BERGUNA) ====== */
+      const NOTIF_LINES = @json($userNotifLines);
+      const HAS_NOTIF = @json($hasNiereNotif);
+      const IS_LOGGED_IN = @json((bool) Auth::check());
+
       const INFO = [
         {
-          id: "jam",
-          icon: "🕗",
-          label: "Jam layanan",
-          lines: [
-            "Kami buka Senin sampai Jumat, pukul 08.00–16.00.",
-            "Hari Sabtu buka pukul 08.00–12.00.\nMinggu dan tanggal merah tutup."
-          ]
-        },
-        {
-          id: "daftar",
-          icon: "📝",
-          label: "Cara pendaftaran",
-          lines: [
-            "Pendaftaran mudah kok! Pilih menu Pendaftaran.",
-            "Isi data dirimu dan nomor orang tua untuk verifikasi.",
-            "Setelah terdaftar, kamu langsung dapat QR code dan bisa masuk ke portal belajar!"
-          ]
+          id: "notif",
+          icon: "🔔",
+          label: "Notifikasi",
+          hasBadge: HAS_NOTIF,
+          lines: NOTIF_LINES
         },
         {
           id: "fasilitas",
           icon: "💻",
-          label: "Fasilitas belajar",
+          label: "Panduan Belajar",
           lines: [
-            "Di Arrava tersedia Modul Pembelajaran interaktif, Latihan Soal, hingga Quiz berwaktu.",
-            "Setiap menyelesaikan modul dan quiz, kamu akan mendapat EXP, Level, dan Badge keren!"
+            "Di Arrava kamu bisa belajar mandiri lewat Modul Pembelajaran interaktif (Video & PDF).",
+            "Selesaikan Quiz untuk menguji pemahamanmu, kumpulkan EXP, dan raih lencana penghargaan keren!",
+            "Pantau posisimu di Leaderboard untuk bersaing sehat bersama teman-teman se-jenjang! 🏆"
           ]
         },
         {
           id: "kontak",
           icon: "❓",
-          label: "Bantuan lain",
+          label: "Bantuan",
           lines: [
-            "Butuh bantuan langsung dari guru atau admin?",
-            "Kunjungi ruang pengelola saat jam kerja atau hubungi WhatsApp resmi kami di nomor layanan."
+            "Butuh bantuan seputar materi belajar, akun, atau kuis?",
+            "Kamu bisa menghubungi guru pengampu di sekolah atau admin layanan Arrava."
           ]
         }
       ];
@@ -773,7 +868,7 @@
       }
 
       /* ====== RADIAL BUTTONS (MAHKOTA BUSUR - TIDAK MENGHALANGI WAJAH) ====== */
-      // 4 opsi diletakkan pada busur atas Niere (y negatif tinggi), bebas dari wajah/tubuh Niere
+      // 3 opsi (Notifikasi, Panduan Belajar, Bantuan) diletakkan simetris di busur atas Niere
       const optBtns = [];
       function createRadialOptions() {
         mascot.querySelectorAll(".niere-opt").forEach(el => el.remove());
@@ -783,9 +878,9 @@
         const isMobile = window.innerWidth <= 640;
         const R = isMobile ? 78 : 90;
 
-        // Busur atas: sudut 45° sampai 135° (semua tombol tinggi di atas kepala)
-        // Jika didekatkan ke ujung atas layar (near-top), busur diarahkan ke bawah (225° - 315°)
-        const angles = isNearTop ? [315, 285, 255, 225] : [45, 75, 105, 135];
+        // Busur simetris 3 tombol: sudut 60°, 90°, 120° di atas kepala
+        // Jika didekatkan ke ujung atas layar (near-top), busur diarahkan ke bawah (300°, 270°, 240°)
+        const angles = isNearTop ? [300, 270, 240] : [60, 90, 120];
 
         INFO.forEach((item, i) => {
           const btn = document.createElement("button");
@@ -794,7 +889,7 @@
           btn.setAttribute("aria-label", item.label);
           btn.title = item.label;
 
-          const angleDeg = angles[i];
+          const angleDeg = angles[i] !== undefined ? angles[i] : 90;
           const angleRad = (angleDeg * Math.PI) / 180;
           const x = Math.round(R * Math.cos(angleRad));
           const y = Math.round(-R * Math.sin(angleRad));
@@ -805,8 +900,13 @@
           btn.style.setProperty("--y", y + "px");
           btn.style.setProperty("--d", delay);
 
+          const badgeHtml = item.hasBadge
+            ? `<span class="niere-opt-notif-badge">!</span>`
+            : "";
+
           btn.innerHTML = `
           <span class="niere-ico">${item.icon}</span>
+          ${badgeHtml}
           <span class="niere-opt-tip">${item.label}</span>
         `;
 
@@ -815,6 +915,16 @@
             wakeAudio();
             btn.classList.add("go");
             setTimeout(() => btn.classList.remove("go"), 260);
+
+            // Bersihkan badge notifikasi saat menu notifikasi dibuka
+            if (item.id === "notif") {
+              const mascotBadge = $("niere-mascot-badge");
+              if (mascotBadge) mascotBadge.style.display = "none";
+              const optBadge = btn.querySelector(".niere-opt-notif-badge");
+              if (optBadge) optBadge.style.display = "none";
+              item.hasBadge = false;
+            }
+
             selectOption(item);
           });
 
@@ -962,9 +1072,18 @@
           optBtns.forEach((_, i) => setTimeout(() => playPop(i), i * 45));
           open = true;
 
-          // Jika bubble belum terbuka, beri sapaan singkat acak
+          // Jika bubble belum terbuka, beri notifikasi langsung jika ada notifikasi baru, atau sapaan singkat acak
           if (!bubble.classList.contains("show")) {
-            sayLines(getRandomGreet(), "talk");
+            if (HAS_NOTIF && INFO.length > 0 && INFO[0].id === 'notif' && INFO[0].hasBadge) {
+              sayLines(INFO[0].lines, "talk");
+              const mascotBadge = $("niere-mascot-badge");
+              if (mascotBadge) mascotBadge.style.display = "none";
+              const optBadge = mascot.querySelector(".niere-opt-notif-badge");
+              if (optBadge) optBadge.style.display = "none";
+              INFO[0].hasBadge = false;
+            } else {
+              sayLines(getRandomGreet(), "talk");
+            }
           }
         } else {
           if (!open) return;
@@ -1181,6 +1300,18 @@
           setTimeout(window.openNiereWidget, 400);
         }
       } catch (e) { }
+
+      // Notifikasi otomatis setelah login saat membuka halaman
+      if (IS_LOGGED_IN && HAS_NOTIF) {
+        setTimeout(() => {
+          if (!open && !bubble.classList.contains("show")) {
+            sayLines([
+              "Psst! Ada notifikasi baru untukmu! 🔔",
+              "Klik ikon 🔔 Notifikasi di atasku untuk membaca info tugas & kuis ya!"
+            ], "talk");
+          }
+        }, 1200);
+      }
     })();
   </script>
 @endif
