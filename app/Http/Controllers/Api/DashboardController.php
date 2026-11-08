@@ -7,9 +7,13 @@ use App\Models\Achievement;
 use App\Models\Guru;
 use App\Models\HasilQuizModul;
 use App\Models\Modul;
+use App\Models\OrangtuaSiswa;
+use App\Models\PencapaianUser;
 use App\Models\Quiz;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class DashboardController extends Controller
 {
@@ -334,6 +338,7 @@ class DashboardController extends Controller
             'nomor_hp' => ['nullable', 'string', 'max:20'],
             'asal_sekolah' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'min:6'],
+            'foto_profil' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         if (!empty($validated['username'])) {
@@ -349,7 +354,17 @@ class DashboardController extends Controller
             $user->password = bcrypt($validated['password']);
         }
 
+        if ($request->hasFile('foto_profil')) {
+            $oldPhoto = $user->foto_profil;
+            $user->foto_profil = $request->file('foto_profil')->store('profil-siswa', 'public');
+            if ($oldPhoto && Storage::disk('public')->exists($oldPhoto)) {
+                Storage::disk('public')->delete($oldPhoto);
+            }
+        }
+
         $user->save();
+
+        $fotoUrl = $user->foto_profil ? asset('storage/' . ltrim($user->foto_profil, '/')) : null;
 
         return response()->json([
             'success' => true,
@@ -360,6 +375,184 @@ class DashboardController extends Controller
                 'email' => $user->email,
                 'nomor_hp' => $user->nomor_hp,
                 'asal_sekolah' => $user->asal_sekolah,
+                'foto_profil' => $fotoUrl,
+            ],
+        ]);
+    }
+
+    /**
+     * Dashboard data khusus Orang Tua (Mobile API)
+     */
+    public function parentDashboard(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        // Ambil daftar ID siswa yang terhubung dengan orang tua ini
+        $siswaIds = OrangtuaSiswa::where('id_orangtua', $user->id_user)
+            ->pluck('id_siswa')
+            ->toArray();
+
+        // Ambil daftar data anak lengkap
+        $children = User::whereIn('id_user', $siswaIds)
+            ->with('jenjang')
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id_user' => $s->id_user,
+                    'nama' => $s->nama,
+                    'nisn' => $s->nisn,
+                    'jenjang' => $s->jenjang->nama_jenjang ?? 'SD',
+                    'id_jenjang' => $s->id_jenjang,
+                    'total_poin' => (int) ($s->total_poin ?? 0),
+                    'foto_profil' => $s->foto_profil ? asset('storage/' . ltrim($s->foto_profil, '/')) : null,
+                ];
+            });
+
+        if ($children->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'parent' => [
+                        'nama' => $user->nama,
+                        'email' => $user->email,
+                    ],
+                    'selected_student' => null,
+                    'children' => [],
+                    'stats' => [
+                        'avg_nilai' => 0,
+                        'kkm' => 75,
+                        'status_eval' => 'Belum Ada Data',
+                        'total_quiz_dikerjakan' => 0,
+                        'total_quiz_tersedia' => 0,
+                        'modul_selesai' => 0,
+                        'total_modul' => 0,
+                        'total_poin' => 0,
+                        'rank_kelas' => '-',
+                    ],
+                    'recent_activities' => [],
+                    'achievements' => [],
+                ],
+            ]);
+        }
+
+        // Tentukan siswa terpilih: dari query string ?siswa_id=... atau default anak pertama
+        $activeSiswaId = (int) $request->get('siswa_id', $siswaIds[0]);
+        if (!in_array($activeSiswaId, $siswaIds)) {
+            $activeSiswaId = $siswaIds[0];
+        }
+
+        $selectedStudent = User::with('jenjang')->find($activeSiswaId);
+        if ($selectedStudent) {
+            Achievement::syncForUser($selectedStudent);
+            $selectedStudent->refresh();
+        }
+
+        // Hitung statistik anak terpilih
+        $hasilList = HasilQuizModul::where('id_user', $activeSiswaId)
+            ->with('quiz')
+            ->orderByDesc('waktu_dapat')
+            ->get();
+
+        $totalQuizDikerjakan = $hasilList->count();
+        $totalQuizTersedia = Quiz::where('id_jenjang', $selectedStudent->id_jenjang ?? null)->count();
+        if ($totalQuizTersedia === 0) {
+            $totalQuizTersedia = Quiz::count();
+        }
+
+        $avgNilai = 0;
+        if ($hasilList->isNotEmpty()) {
+            $avgNilai = $hasilList->avg(function ($h) {
+                return $h->total_poin > 0
+                    ? round(($h->poin_didapat / $h->total_poin) * 100, 1)
+                    : 0;
+            });
+        }
+
+        $modulSelesai = HasilQuizModul::where('id_user', $activeSiswaId)
+            ->where('is_lulus', true)
+            ->distinct('id_quiz')
+            ->count('id_quiz');
+
+        $totalModul = Modul::where('id_jenjang', $selectedStudent->id_jenjang ?? null)->count();
+        if ($totalModul === 0) {
+            $totalModul = Modul::count();
+        }
+
+        $kkm = 75;
+        $statusEval = $avgNilai >= $kkm ? 'Tuntas Mandiri' : 'Perlu Bimbingan';
+
+        $totalPoin = (int) ($selectedStudent->total_poin ?? 0);
+        $rankKelas = DB::table('user')
+            ->where('id_tipeuser', 3)
+            ->where('id_jenjang', $selectedStudent->id_jenjang)
+            ->where('total_poin', '>', $totalPoin)
+            ->count() + 1;
+
+        $stats = [
+            'avg_nilai' => round($avgNilai, 1),
+            'kkm' => $kkm,
+            'status_eval' => $statusEval,
+            'total_quiz_dikerjakan' => $totalQuizDikerjakan,
+            'total_quiz_tersedia' => $totalQuizTersedia,
+            'modul_selesai' => $modulSelesai,
+            'total_modul' => $totalModul,
+            'total_poin' => $totalPoin,
+            'rank_kelas' => $rankKelas,
+        ];
+
+        // Aktivitas terbaru (8 aktivitas kuis terakhir)
+        $recentActivities = $hasilList->take(8)->map(function ($h) {
+            $nilai = $h->total_poin > 0
+                ? round(($h->poin_didapat / $h->total_poin) * 100, 1)
+                : 0;
+            return [
+                'id_hasil' => $h->id_hasil,
+                'judul' => $h->quiz?->judul ?? 'Kuis Belajar',
+                'nilai' => $nilai,
+                'skor' => "{$h->poin_didapat} / {$h->total_poin} Poin",
+                'is_lulus' => (bool) $h->is_lulus,
+                'tanggal' => $h->waktu_dapat ? date('d M Y, H:i', strtotime($h->waktu_dapat)) : '-',
+            ];
+        })->values();
+
+        // Pencapaian terbaru
+        $achievements = PencapaianUser::where('id_user', $activeSiswaId)
+            ->with('achievement')
+            ->orderByDesc('waktu_pencapaian')
+            ->take(5)
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'id_pencapaian' => $p->id_pencapaian,
+                    'judul' => $p->achievement?->nama_achivement ?? ($p->nama ?? 'Prestasi Belajar'),
+                    'deskripsi' => $p->achievement?->deskripsi ?? 'Capaian istimewa ananda',
+                    'gambar_url' => $p->achievement?->gambar_url ?? null,
+                    'tanggal' => $p->waktu_pencapaian ? $p->waktu_pencapaian->format('d M Y') : '-',
+                ];
+            })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'parent' => [
+                    'nama' => $user->nama,
+                    'email' => $user->email,
+                ],
+                'selected_student' => [
+                    'id_user' => $selectedStudent->id_user,
+                    'nama' => $selectedStudent->nama,
+                    'nisn' => $selectedStudent->nisn,
+                    'jenjang' => $selectedStudent->jenjang->nama_jenjang ?? 'SD',
+                    'id_jenjang' => $selectedStudent->id_jenjang,
+                    'total_poin' => $totalPoin,
+                ],
+                'children' => $children,
+                'stats' => $stats,
+                'recent_activities' => $recentActivities,
+                'achievements' => $achievements,
             ],
         ]);
     }

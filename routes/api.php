@@ -20,7 +20,8 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
     // Dashboard
     Route::get('/student/dashboard', [DashboardController::class, 'studentDashboard']);
     Route::get('/student/profile', [DashboardController::class, 'studentProfile']);
-    Route::put('/student/profile', [DashboardController::class, 'updateStudentProfile']);
+    Route::match(['put', 'post'], '/student/profile', [DashboardController::class, 'updateStudentProfile']);
+    Route::get('/parent/dashboard', [DashboardController::class, 'parentDashboard']);
     Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard']);
     Route::get('/teachers', [DashboardController::class, 'teachers']);
     Route::get('/students', [DashboardController::class, 'students']);
