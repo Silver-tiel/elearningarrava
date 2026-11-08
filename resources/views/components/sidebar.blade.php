@@ -59,7 +59,7 @@
 
                 <!-- Dashboard -->
                 <a href="{{ route('admin') }}"
-                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminDash ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminDash ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                     data-active="{{ $actAdminDash ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -81,7 +81,7 @@
                 @if($idTipe == 1)
                     <!-- Siswa -->
                     <a href="{{ route('admin.daftar_siswa') }}"
-                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminSiswa ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminSiswa ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                         data-active="{{ $actAdminSiswa ? 'true' : 'false' }}">
                         <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                             <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -103,7 +103,7 @@
 
                 <!-- Modul -->
                 <a href="{{ route('admin.modul') }}"
-                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminModul ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminModul ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                     data-active="{{ $actAdminModul ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -124,7 +124,7 @@
 
                 <!-- Quiz -->
                 <a href="{{ route('admin.quiz') }}"
-                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminQuiz ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminQuiz ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                     data-active="{{ $actAdminQuiz ? 'true' : 'false' }}">
                     <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                         <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -146,7 +146,7 @@
                 @php $actPresensi = request()->is('guru/presensi*'); @endphp
                 <!-- Presensi -->
                 <a href="{{ route('guru.presensi.index') }}"
-                    class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actPresensi ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                    class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition {{ $actPresensi ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                     data-active="{{ $actPresensi ? 'true' : 'false' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -165,7 +165,7 @@
                     @php $actKelas = request()->is('admin/kelas*'); @endphp
                     <!-- Kelas -->
                     <a href="{{ route('admin.kelas') }}"
-                        class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actKelas ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition {{ $actKelas ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                         data-active="{{ $actKelas ? 'true' : 'false' }}">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -176,7 +176,7 @@
 
                     <!-- Penghargaan / Achievement -->
                     <a href="{{ route('admin.achievement') }}"
-                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminAchieve ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminAchieve ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                         data-active="{{ $actAdminAchieve ? 'true' : 'false' }}">
                         <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                             <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -197,7 +197,7 @@
 
                     <!-- Guru -->
                     <a href="{{ route('admin.guru') }}"
-                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminGuru ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminGuru ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                         data-active="{{ $actAdminGuru ? 'true' : 'false' }}">
                         <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                             <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
@@ -221,7 +221,7 @@
                     {{-- Menu Profil hanya untuk Guru --}}
                     <!-- Profil -->
                     <a href="{{ route('admin.profil') }}"
-                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition {{ $actAdminProfil ? 'bg-blue-50 text-blue-600 is-active' : 'text-slate-500 hover:bg-gray-50' }}"
+                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminProfil ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
                         data-active="{{ $actAdminProfil ? 'true' : 'false' }}">
                         <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
                             <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"

@@ -8,6 +8,41 @@
     <meta name="description"
         content="@yield('meta_description', 'Portal orang tua untuk memantau perkembangan belajar siswa di Arrava E-Learning.')">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Nunito Sans"', 'sans-serif'],
+                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        samudra: {
+                            DEFAULT: '#007FBE',
+                            dark: '#00628E',
+                            light: '#DDF3FF',
+                            bg: '#F0F6FF',
+                            border: '#DCEFFF',
+                            shadow: '#B2E7FC',
+                        },
+                        navy: {
+                            ink: '#082765',
+                            dark: '#12233F',
+                            slate: '#465673',
+                            muted: '#72839E',
+                        }
+                    },
+                    boxShadow: {
+                        '3d': '0 4px 0 #B2E7FC',
+                        '3d-sm': '0 3px 0 #B2E7FC',
+                        '3d-btn': '0 3px 0 #00628E',
+                        '3d-amber': '0 3px 0 #F59E0B',
+                        '3d-emerald': '0 3px 0 #059669',
+                    }
+                }
+            }
+        };
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,300..900;1,6..12,300..900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
@@ -77,12 +112,12 @@
         {{-- MAIN AREA --}}
 
         <main class="flex-1 min-w-0 flex flex-col lg:ml-60">
-            {{-- TOPBAR --}}
+            {{-- TOPBAR (Sesuai Tema Arrava Samudra 3D) --}}
             <header
-                class="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
+                class="h-16 bg-white/95 backdrop-blur-md border-b border-[#DCEFFF] flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 shadow-[0_2px_12px_rgba(0,127,190,0.04)]">
                 <div class="flex items-center gap-3">
                     <button id="otSidebarToggle" type="button"
-                        class="lg:hidden flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition"
+                        class="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-[#DCEFFF] text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] transition"
                         aria-label="Buka Menu">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -90,12 +125,14 @@
                         </svg>
                     </button>
                     {{-- Breadcrumb --}}
-                    <nav class="hidden sm:flex items-center gap-1.5 text-sm text-slate-400">
-                        <span class="text-slate-600 font-medium">Portal Orang Tua</span>
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <nav class="hidden sm:flex items-center gap-2 text-sm">
+                        <span class="text-[#082765] font-extrabold flex items-center gap-1.5">
+                            <span>🏠</span> Portal Orang Tua
+                        </span>
+                        <svg class="w-3.5 h-3.5 text-[#72839E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
-                        <span>@yield('breadcrumb', 'Dashboard')</span>
+                        <span class="text-[#007FBE] font-bold">@yield('breadcrumb', 'Dashboard')</span>
                     </nav>
                 </div>
 
@@ -108,15 +145,15 @@
                     @yield('header-right')
 
                     {{-- Avatar + nama orang tua --}}
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2.5">
                         <div
-                            class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">
-                            {{ strtoupper(substr(Auth::user()->nama ?? 'O', 0, 2)) }}
+                            class="w-9 h-9 rounded-full bg-[#DDF3FF] ring-2 ring-[#DCEFFF] flex items-center justify-center text-[#007FBE] font-black text-sm shrink-0 shadow-xs">
+                            {{ strtoupper(substr(Auth::user()->nama ?? 'O', 0, 1)) }}
                         </div>
                         <div class="hidden sm:block leading-tight">
-                            <p class="text-sm font-semibold text-slate-800 leading-none">
+                            <p class="text-sm font-black text-[#082765] leading-none">
                                 {{ Auth::user()->nama ?? 'Orang Tua' }}</p>
-                            <p class="text-[11px] text-slate-400 mt-0.5">Wali Murid / Orang Tua</p>
+                            <p class="text-[11px] font-bold text-[#72839E] mt-0.5">Wali Murid</p>
                         </div>
                     </div>
                 </div>

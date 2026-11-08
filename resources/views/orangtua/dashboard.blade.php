@@ -10,19 +10,29 @@
 @endsection
 
 @section('content')
-<div class="mx-auto max-w-[1400px] space-y-6 px-4 py-6 sm:px-6">
+@php
+    /**
+     * @var \App\Models\User|null $siswa
+     * @var \Illuminate\Support\Collection<int, \App\Models\User> $siswaList
+     * @var array{total_quiz_dikerjakan: int, total_quiz_tersedia: int, modul_selesai: int, total_modul: int, avg_nilai: float} $stats
+     * @var \Illuminate\Support\Collection<int, array<string, mixed>> $aktivitas
+     * @var array $notifikasiPresensi
+     */
+    $aktivitasCollection = ($aktivitas instanceof \Illuminate\Support\Collection) ? $aktivitas : collect($aktivitas ?? []);
+@endphp
+<div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
 
     @if(!$siswa)
-    <div class="rounded-2xl border border-slate-200 bg-white px-6 py-14 text-center">
-        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50">
-            <svg class="h-7 w-7 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+    <div class="rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white px-6 py-14 text-center shadow-[0_4px_0_#B2E7FC]">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]">
+            <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
         </div>
-        <h2 class="mt-4 font-bold text-slate-800">Belum Ada Siswa Terhubung</h2>
-        <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">
-            Silakan hubungi administrator untuk menghubungkan akun orang tua dengan akun siswa.
+        <h2 class="mt-4 font-heading font-black text-lg text-[#082765]">Belum Ada Siswa Terhubung</h2>
+        <p class="mx-auto mt-1.5 max-w-md text-xs sm:text-sm font-medium text-[#72839E]">
+            Silakan hubungi administrator untuk menghubungkan akun orang tua dengan akun siswa Anda.
         </p>
     </div>
     @else
@@ -30,22 +40,22 @@
     {{-- Header dan informasi siswa --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-slate-800">Ringkasan Belajar</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                Pantau hasil quiz dan aktivitas belajar anak dari satu halaman.
+            <h1 class="text-xl sm:text-2xl font-heading font-black text-[#082765]">Ringkasan Belajar</h1>
+            <p class="mt-1 text-xs sm:text-sm font-medium text-[#72839E]">
+                Pantau perkembangan nilai, hasil kuis, dan aktivitas belajar anak dari satu dashboard terpadu.
             </p>
         </div>
 
-        <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-50 font-bold text-indigo-600">
+        <div class="flex items-center gap-3 rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-3.5 shadow-[0_3px_0_#B2E7FC]">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#DDF3FF] font-black text-[#007FBE] border border-[#B2E7FC]">
                 {{ strtoupper(substr($siswa->nama, 0, 1)) }}
             </div>
 
             <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-slate-800">
+                <p class="truncate text-xs sm:text-sm font-black text-[#082765]">
                     {{ $siswa->nama }}
                 </p>
-                <p class="text-xs text-slate-500">
+                <p class="text-[11px] font-bold text-[#72839E]">
                     {{ $siswa->jenjang->nama_jenjang ?? $siswa->jenjang->nama_tipe ?? 'Jenjang belum tersedia' }}
                 </p>
             </div>
@@ -56,7 +66,7 @@
                     name="siswa_id"
                     onchange="this.form.submit()"
                     aria-label="Pilih siswa"
-                    class="max-w-28 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-600 focus:border-indigo-500 focus:outline-none">
+                    class="rounded-xl border-2 border-[#DCEFFF] bg-white px-3 py-1.5 text-xs font-bold text-[#082765] focus:border-[#007FBE] focus:outline-none">
                     @foreach($siswaList as $s)
                     <option value="{{ $s->id_user }}"
                         {{ (int) $s->id_user === (int) $siswa->id_user ? 'selected' : '' }}>
@@ -69,69 +79,77 @@
         </div>
     </div>
 
-    {{-- Ringkasan akademik --}}
+    {{-- Ringkasan akademik (3D Samudra Style) --}}
     <section>
-        <h2 class="mb-3 text-base font-bold text-slate-800">Ringkasan Akademik</h2>
+        <h2 class="mb-3.5 text-base font-heading font-black text-[#082765] flex items-center gap-2">
+            <span>📊</span> Ringkasan Akademik
+        </h2>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+            <div class="rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50">
-                        <svg class="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A]">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 5h-2a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                     </div>
-                    <p class="text-sm font-medium text-slate-500">Quiz Dikerjakan</p>
+                    <div>
+                        <p class="text-xs font-bold text-[#72839E]">Quiz Dikerjakan</p>
+                    </div>
                 </div>
 
-                <p class="mt-4 text-3xl font-bold text-slate-800">
+                <p class="mt-4 text-2xl sm:text-3xl font-heading font-black text-[#082765]">
                     {{ $stats['total_quiz_dikerjakan'] }}
-                    <span class="text-base font-medium text-slate-400">
+                    <span class="text-sm sm:text-base font-bold text-[#72839E]">
                         / {{ $stats['total_quiz_tersedia'] }}
                     </span>
                 </p>
-                <p class="mt-1 text-xs text-slate-500">Dari quiz yang tersedia</p>
+                <p class="mt-1 text-xs font-bold text-[#72839E]">Dari seluruh kuis yang tersedia</p>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+            <div class="rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
-                        <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#DCFCE7] text-[#059669] border border-[#BBF7D0]">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <p class="text-sm font-medium text-slate-500">Materi Selesai</p>
+                    <div>
+                        <p class="text-xs font-bold text-[#72839E]">Materi Selesai</p>
+                    </div>
                 </div>
 
-                <p class="mt-4 text-3xl font-bold text-slate-800">
+                <p class="mt-4 text-2xl sm:text-3xl font-heading font-black text-[#082765]">
                     {{ $stats['modul_selesai'] }}
-                    <span class="text-base font-medium text-slate-400">
+                    <span class="text-sm sm:text-base font-bold text-[#72839E]">
                         / {{ $stats['total_modul'] }}
                     </span>
                 </p>
-                <p class="mt-1 text-xs text-slate-500">Modul pembelajaran</p>
+                <p class="mt-1 text-xs font-bold text-[#72839E]">Modul pembelajaran selesai dipelajari</p>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+            <div class="rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50">
-                        <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <p class="text-sm font-medium text-slate-500">Rata-rata Nilai</p>
+                    <div>
+                        <p class="text-xs font-bold text-[#72839E]">Rata-rata Nilai</p>
+                    </div>
                 </div>
 
-                <p class="mt-4 text-3xl font-bold text-slate-800">
+                <p class="mt-4 text-2xl sm:text-3xl font-heading font-black text-[#082765]">
                     {{ number_format($stats['avg_nilai'], 1, ',', '.') }}
-                    <span class="text-base font-medium text-slate-400">/ 100</span>
+                    <span class="text-sm sm:text-base font-bold text-[#72839E]">/ 100</span>
                 </p>
-                <p class="mt-1 text-xs text-slate-500">
-                    {{ $stats['total_quiz_dikerjakan'] > 0 ? 'Berdasarkan hasil quiz' : 'Belum ada hasil quiz' }}
+                <p class="mt-1 text-xs font-bold text-[#72839E]">
+                    {{ $stats['total_quiz_dikerjakan'] > 0 ? 'Berdasarkan rekap nilai kuis' : 'Belum ada hasil kuis' }}
                 </p>
             </div>
 
@@ -139,41 +157,40 @@
     </section>
 
     {{-- Aktivitas belajar terbaru --}}
-    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <section class="overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white shadow-[0_4px_0_#B2E7FC]">
+        <div class="flex flex-col gap-3 border-b border-[#DCEFFF] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h2 class="font-bold text-slate-800">Aktivitas Belajar Terbaru</h2>
-                <p class="mt-1 text-sm text-slate-500">
-                    Riwayat pengerjaan quiz anak.
+                <h2 class="font-heading font-black text-base text-[#082765] flex items-center gap-2">
+                    <span>⏱️</span> Aktivitas Belajar Terbaru
+                </h2>
+                <p class="mt-0.5 text-xs font-bold text-[#72839E]">
+                    Riwayat pengerjaan kuis siswa secara real-time.
                 </p>
             </div>
 
             <a href="{{ route('orangtua.riwayat-quiz') }}"
-                class="inline-flex items-center justify-center gap-2 self-start rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-50 sm:self-center">
-                Lihat Semua Riwayat
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                        d="M5 12h14m-6-6l6 6-6 6" />
-                </svg>
+                class="h-9 px-4 inline-flex items-center justify-center gap-1.5 self-start rounded-xl border-2 border-[#B2E7FC] bg-white hover:bg-[#F0F6FF] text-xs font-bold text-[#007FBE] shadow-[0_2px_0_#B2E7FC] active:translate-y-0.5 transition sm:self-center">
+                <span>Lihat Semua Riwayat</span>
+                <span>→</span>
             </a>
         </div>
 
-        @if($aktivitas->isEmpty())
+        @if($aktivitasCollection->isEmpty())
         <div class="px-5 py-12 text-center">
-            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50">
-                <svg class="h-6 w-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                        d="M9 5h-2a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" />
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5h-2a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
             </div>
-            <p class="mt-3 text-sm font-semibold text-slate-700">Belum Ada Aktivitas</p>
-            <p class="mt-1 text-sm text-slate-500">
-                Aktivitas belajar akan muncul setelah anak mengerjakan quiz.
+            <p class="mt-3 text-sm font-black text-[#082765]">Belum Ada Aktivitas</p>
+            <p class="mt-1 text-xs font-bold text-[#72839E]">
+                Aktivitas belajar akan otomatis muncul setelah anak mengerjakan kuis.
             </p>
         </div>
         @else
-        <div class="divide-y divide-slate-100">
-            @foreach($aktivitas->take(5) as $item)
+        <div class="divide-y divide-[#DCEFFF]">
+            @foreach($aktivitasCollection->take(5) as $item)
             @php
             $waktu = $item['waktu'] instanceof \Carbon\Carbon
             ? $item['waktu']
@@ -183,22 +200,21 @@
             $remedial = $item['status'] === 'Remedial';
             @endphp
 
-            <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex min-w-0 items-start gap-3">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl
-                                    {{ $lulus ? 'bg-emerald-50' : ($remedial ? 'bg-rose-50' : 'bg-slate-50') }}">
-                        <svg class="h-5 w-5 {{ $lulus ? 'text-emerald-600' : ($remedial ? 'text-rose-600' : 'text-slate-500') }}"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                                d="M9 5h-2a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2" />
+            <div class="flex flex-col gap-3 px-6 py-4.5 sm:flex-row sm:items-center sm:justify-between hover:bg-[#F0F6FF]/40 transition">
+                <div class="flex min-w-0 items-start gap-3.5">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border
+                                    {{ $lulus ? 'bg-[#DCFCE7] text-[#059669] border-[#BBF7D0]' : ($remedial ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-[#DDF3FF] text-[#007FBE] border-[#B2E7FC]') }}">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5h-2a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                     </div>
 
                     <div class="min-w-0">
-                        <p class="truncate text-sm font-semibold text-slate-800">
+                        <p class="truncate text-xs sm:text-sm font-black text-[#082765]">
                             {{ $item['judul_quiz'] }}
                         </p>
-                        <p class="mt-1 text-xs text-slate-500">
+                        <p class="mt-1 text-[11px] font-bold text-[#72839E]">
                             {{ $item['tipe'] }} · {{ $waktu->translatedFormat('d M Y, H:i') }}
                         </p>
                     </div>
@@ -206,16 +222,16 @@
 
                 <div class="flex items-center justify-between gap-4 sm:justify-end">
                     <div class="text-left sm:text-right">
-                        <p class="text-sm font-bold text-slate-800">
+                        <p class="text-sm font-heading font-black text-[#082765]">
                             {{ number_format($item['nilai'], 1, ',', '.') }}
                         </p>
-                        <p class="text-xs text-slate-500">
+                        <p class="text-[11px] font-bold text-[#72839E]">
                             {{ $item['poin_didapat'] }} / {{ $item['total_poin'] }} poin
                         </p>
                     </div>
 
-                    <span class="inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-semibold
-                                    {{ $lulus ? 'bg-emerald-50 text-emerald-700' : ($remedial ? 'bg-rose-50 text-rose-700' : 'bg-blue-50 text-blue-700') }}">
+                    <span class="inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-black border
+                                    {{ $lulus ? 'bg-[#DCFCE7] text-[#059669] border-[#BBF7D0]' : ($remedial ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-[#DDF3FF] text-[#007FBE] border-[#B2E7FC]') }}">
                         {{ $item['status'] }}
                     </span>
                 </div>
@@ -227,41 +243,39 @@
 
     {{-- Informasi tambahan --}}
     @php
-    $perluPerhatian = $aktivitas->contains(function ($item) {
-    return $item['status'] === 'Remedial';
+    $perluPerhatian = $aktivitasCollection->contains(function ($item) {
+        return ($item['status'] ?? null) === 'Remedial';
     });
     @endphp
 
-    <section class="rounded-2xl border p-5
-            {{ $perluPerhatian ? 'border-amber-200 bg-amber-50/60' : 'border-slate-200 bg-white' }}">
-        <div class="flex items-start gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl
-                    {{ $perluPerhatian ? 'bg-amber-100' : 'bg-indigo-50' }}">
-                <svg class="h-5 w-5 {{ $perluPerhatian ? 'text-amber-700' : 'text-indigo-600' }}"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+    <section class="rounded-2xl sm:rounded-3xl border-2 p-5 shadow-[0_3px_0_#B2E7FC]
+            {{ $perluPerhatian ? 'border-amber-300 bg-amber-50/70' : 'border-[#DCEFFF] bg-white' }}">
+        <div class="flex items-start gap-3.5">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border
+                    {{ $perluPerhatian ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-[#DDF3FF] text-[#007FBE] border-[#B2E7FC]' }}">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 9v4m0 4h.01M10.3 3.9L2.5 17.4A1.8 1.8 0 004.1 20h15.8a1.8 1.8 0 001.6-2.6L13.7 3.9a1.9 1.9 0 00-3.4 0z" />
                 </svg>
             </div>
 
             <div>
-                <h2 class="font-bold text-slate-800">
-                    {{ $perluPerhatian ? 'Perlu Perhatian' : 'Pendampingan Belajar' }}
+                <h2 class="font-heading font-black text-base text-[#082765]">
+                    {{ $perluPerhatian ? 'Perlu Perhatian Khusus' : 'Pendampingan Belajar' }}
                 </h2>
 
-                <p class="mt-1 text-sm leading-relaxed text-slate-600">
+                <p class="mt-1 text-xs sm:text-sm font-medium leading-relaxed text-[#465673]">
                     @if($perluPerhatian)
-                    Ada hasil quiz berstatus remedial pada aktivitas terbaru.
-                    Orang tua dapat mendampingi anak mengulang materi dan meninjau hasil quiz.
+                    Terdapat hasil kuis dengan status remedial pada riwayat aktivitas terbaru.
+                    Disarankan untuk mendampingi anak dalam mempelajari kembali materi yang terkait sebelum mencoba kuis berikutnya.
                     @else
-                    Dampingi anak belajar secara rutin dan tinjau hasil quiznya untuk mengetahui
-                    materi yang masih perlu dipelajari kembali.
+                    Dampingi anak belajar secara rutin dan tinjau hasil evaluasi kuisnya secara berkala untuk mendukung perkembangan akademiknya secara optimal.
                     @endif
                 </p>
 
                 <a href="{{ route('orangtua.riwayat-quiz') }}"
-                    class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-                    Buka Riwayat Quiz
+                    class="mt-3 inline-flex items-center gap-1.5 text-xs font-black text-[#007FBE] hover:text-[#00679A]">
+                    <span>Buka Riwayat Quiz Lengkap</span>
                     <span aria-hidden="true">→</span>
                 </a>
             </div>
