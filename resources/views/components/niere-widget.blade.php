@@ -615,19 +615,23 @@
         $userName = $currentUser->nama ?? 'Sobat Arrava';
 
         if ($currentUser->id_tipeuser == 3) { // Siswa
-            $hasNiereNotif = true;
+            $idJenjang = (int) ($currentUser->id_jenjang ?? 0);
+            $jenjangLabel = $currentUser->jenjang->nama_tipe ?? ($idJenjang == 1 ? 'SD' : ($idJenjang == 2 ? 'SMP' : ($idJenjang == 3 ? 'SMA' : '')));
             $kuisCount = 0;
-            try {
-                $kuisCount = \App\Models\Quiz::published()
-                    ->belumKadaluarsa()
-                    ->when($currentUser->id_jenjang, fn($q) => $q->where('id_jenjang', $currentUser->id_jenjang))
-                    ->whereDoesntHave('hasil', fn($q) => $q->where('id_user', $currentUser->id_user))
-                    ->count();
-            } catch (\Exception $e) {}
+
+            if ($idJenjang > 0) {
+                try {
+                    $kuisCount = \App\Models\Quiz::published()
+                        ->belumKadaluarsa()
+                        ->where('id_jenjang', $idJenjang)
+                        ->whereDoesntHave('hasil', fn($q) => $q->where('id_user', $currentUser->id_user))
+                        ->count();
+                } catch (\Exception $e) {}
+            }
 
             $totalPoin = (int) ($currentUser->total_poin ?? 0);
 
-            // Notifikasi Presensi Siswa
+            // Notifikasi Presensi Siswa (Hanya sesuai jenjang aktif siswa)
             try {
                 $presensiNotifs = \App\Services\NotifikasiPresensiService::untukSiswa($currentUser);
                 foreach ($presensiNotifs as $pn) {
@@ -635,20 +639,27 @@
                 }
             } catch (\Exception $e) {}
 
-            $userNotifLines[] = "Halo {$userName}! Senang melihatmu kembali belajar. ✨";
+            $hasNiereNotif = (count($presensiNotifs) > 0 || $kuisCount > 0);
+
+            $jenjangText = $jenjangLabel ? " ({$jenjangLabel})" : '';
+            $userNotifLines[] = "Halo {$userName}! Senang melihatmu kembali belajar di Jenjang{$jenjangText}. ✨";
             if ($kuisCount > 0) {
-                $userNotifLines[] = "🔔 Ada {$kuisCount} Kuis aktif yang belum kamu kerjakan! Ayo selesaikan sekarang untuk raih poin EXP! ⚡";
+                $userNotifLines[] = "🔔 Ada {$kuisCount} Kuis aktif jenjang{$jenjangText} yang belum kamu kerjakan! Ayo selesaikan sekarang untuk raih poin EXP! ⚡";
+            } else {
+                $userNotifLines[] = "✨ Seluruh kuis aktif jenjang{$jenjangText} sudah kamu selesaikan. Pertahankan prestasimu!";
             }
             $userNotifLines[] = "🏆 Poin kamu saat ini: {$totalPoin} XP. Semangat kumpulkan XP untuk memuncaki Leaderboard!";
         } elseif ($currentUser->id_tipeuser == 4) { // Orang Tua
-            $hasNiereNotif = true;
             // Notifikasi Presensi untuk Orang Tua
             try {
-                $presensiNotifs = \App\Services\NotifikasiPresensiService::untukOrangtua($currentUser);
+                $targetAnakId = request('siswa_id') ? (int) request('siswa_id') : null;
+                $presensiNotifs = \App\Services\NotifikasiPresensiService::untukOrangtua($currentUser, $targetAnakId);
                 foreach ($presensiNotifs as $pn) {
                     $userNotifLines[] = "📢 {$pn['judul']}: {$pn['pesan']}";
                 }
             } catch (\Exception $e) {}
+
+            $hasNiereNotif = count($presensiNotifs) > 0;
 
             $userNotifLines[] = "Halo Ayah/Bunda ({$userName})!";
             $userNotifLines[] = "🔔 Pantau presensi dan evaluasi nilai kuis ananda melalui Portal Orang Tua.";
@@ -1455,7 +1466,7 @@
           setTimeout(() => {
             if (!open && !bubble.classList.contains("show")) {
               const lines = [
-                `Halo {{ $userName ?? 'Sobat Arrava' }}! Ada ${unreadCount} notifikasi presensi yang belum dibaca: 🔔`,
+                `Halo {{ $userName ?? 'Sobat Arrava' }}! Ada ${unreadCount} notifikasi presensi{{ $jenjangText ?? '' }} yang belum dibaca: 🔔`,
                 ...unreadItems.slice(0, 2).map(u => `📢 ${u.judul || 'Presensi'}:\n${u.pesan || ''}`),
                 `Klik 'Tandai Telah Dibaca' di bawah atau buka lonceng 🔔 header atas ya!`
               ];

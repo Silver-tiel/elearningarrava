@@ -52,7 +52,7 @@ class OrangtuaController extends Controller
 
         // Jika belum ada siswa yang dihubungkan tampilkan empty state.
         if (empty($siswaIds)) {
-            $notifikasiPresensi = \App\Services\NotifikasiPresensiService::untukOrangtua($orangtua);
+            $notifikasiPresensi = \App\Services\NotifikasiPresensiService::untukOrangtua($orangtua, $siswa ? $siswa->id_user : null);
             return view('orangtua.dashboard', [
                 'orangtua'       => $orangtua,
                 'siswa'          => null,
@@ -245,7 +245,7 @@ class OrangtuaController extends Controller
         // Karena tidak ada kolom durasi di hasilquizmodul, estimasi 15 menit per kuis
         $totalJamBelajar = $totalQuizDikerjakan * 15; // menit
 
-        $notifikasiPresensi = \App\Services\NotifikasiPresensiService::untukOrangtua($orangtua);
+        $notifikasiPresensi = \App\Services\NotifikasiPresensiService::untukOrangtua($orangtua, $siswa ? $siswa->id_user : null);
 
         return view('orangtua.dashboard', compact(
             'orangtua',

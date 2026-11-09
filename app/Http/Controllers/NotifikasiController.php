@@ -27,7 +27,8 @@ class NotifikasiController extends Controller
         if ($user->id_tipeuser == 3) { // Siswa
             $notifikasi = NotifikasiPresensiService::untukSiswa($user);
         } elseif ($user->id_tipeuser == 4) { // Orang Tua
-            $notifikasi = NotifikasiPresensiService::untukOrangtua($user);
+            $siswaId = $request->query('siswa_id');
+            $notifikasi = NotifikasiPresensiService::untukOrangtua($user, $siswaId ? (int) $siswaId : null);
         }
 
         $cacheKey = "read_notif_{$user->id_user}";
@@ -78,7 +79,8 @@ class NotifikasiController extends Controller
             if ($user->id_tipeuser == 3) {
                 $notifikasi = NotifikasiPresensiService::untukSiswa($user);
             } elseif ($user->id_tipeuser == 4) {
-                $notifikasi = NotifikasiPresensiService::untukOrangtua($user);
+                $siswaId = $request->query('siswa_id') ?? $request->input('siswa_id');
+                $notifikasi = NotifikasiPresensiService::untukOrangtua($user, $siswaId ? (int) $siswaId : null);
             }
             $allIds = collect($notifikasi)->pluck('id')->all();
             $readIds = array_values(array_unique(array_merge($readIds, $allIds)));

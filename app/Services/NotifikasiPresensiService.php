@@ -25,7 +25,8 @@ class NotifikasiPresensiService
             return [];
         }
 
-        if (empty($siswa->id_jenjang)) {
+        $idJenjang = (int) ($siswa->id_jenjang ?? 0);
+        if ($idJenjang <= 0) {
             return [];
         }
 
@@ -33,9 +34,9 @@ class NotifikasiPresensiService
         $today = now();
         $todayStr = $today->toDateString();
 
-        // 1. KELAS AKTIF HARI INI (MENANDAKAN ABSEN)
+        // 1. KELAS AKTIF HARI INI (MENANDAKAN ABSEN) - Strict Jenjang Filter
         $kelasQuery = Kelas::where('aktif', true)
-            ->where('id_jenjang', $siswa->id_jenjang);
+            ->where('id_jenjang', $idJenjang);
 
         if (Schema::hasTable('kelas_siswa') && $siswa->kelasDiikuti()->exists()) {
             $kelasQuery->whereIn('id_kelas', $siswa->kelasDiikuti()->pluck('kelas.id_kelas'));
@@ -62,11 +63,12 @@ class NotifikasiPresensiService
 
             if (!$sudahAbsen) {
                 $jamBatasInfo = $kelas->jam_batas ? " sebelum jam {$kelas->jam_batas}" : "";
+                $jenjangLabel = $kelas->jenjang->nama_tipe ?? ($idJenjang == 1 ? 'SD' : ($idJenjang == 2 ? 'SMP' : 'SMA'));
                 $notifikasi[] = [
                     'id' => 'absen-today-' . $kelas->id_kelas . '-' . $todayStr,
                     'kategori' => 'hari_ini',
                     'tipe' => 'info',
-                    'badge' => 'Hari Ini',
+                    'badge' => $jenjangLabel . ' · Hari Ini',
                     'badge_color' => 'bg-blue-100 text-blue-700 border-blue-200',
                     'icon' => 'calendar',
                     'judul' => 'Presensi Kelas Hari Ini',
@@ -78,15 +80,15 @@ class NotifikasiPresensiService
             }
         }
 
-        // 2. MELEWATKAN ABSENSI (SESI KELAS DALAM 7 HARI TERAKHIR YANG TIDAK DIHADIRI)
+        // 2. MELEWATKAN ABSENSI (SESI KELAS DALAM 7 HARI TERAKHIR YANG TIDAK DIHADIRI) - Strict Jenjang Filter
         $tujuhHariLalu = now()->subDays(7)->toDateString();
 
-        $sesiLewat = SesiPresensi::whereHas('kelas', function ($q) use ($siswa) {
-                $q->where('id_jenjang', $siswa->id_jenjang)->where('aktif', true);
+        $sesiLewat = SesiPresensi::whereHas('kelas', function ($q) use ($idJenjang) {
+                $q->where('id_jenjang', $idJenjang)->where('aktif', true);
             })
             ->whereDate('tanggal', '>=', $tujuhHariLalu)
             ->whereDate('tanggal', '<', $todayStr)
-            ->with('kelas')
+            ->with(['kelas', 'kelas.jenjang'])
             ->orderByDesc('tanggal')
             ->get();
 
@@ -103,11 +105,12 @@ class NotifikasiPresensiService
 
             if (!$presensi || in_array($presensi->status, ['alpa', 'tidak_hadir'], true)) {
                 $tglFormatted = $sesi->tanggal ? $sesi->tanggal->locale('id')->translatedFormat('l, d F Y') : '-';
+                $jenjangLabel = $sesi->kelas->jenjang->nama_tipe ?? ($idJenjang == 1 ? 'SD' : ($idJenjang == 2 ? 'SMP' : 'SMA'));
                 $notifikasi[] = [
                     'id' => 'absen-missed-' . $sesi->id_sesi . '-' . $siswa->id_user,
                     'kategori' => 'terlewat',
                     'tipe' => 'danger',
-                    'badge' => 'Terlewat',
+                    'badge' => $jenjangLabel . ' · Terlewat',
                     'badge_color' => 'bg-rose-100 text-rose-700 border-rose-200',
                     'icon' => 'alert',
                     'judul' => 'Melewatkan Presensi',
@@ -123,18 +126,23 @@ class NotifikasiPresensiService
     }
 
     /**
-     * Mengambil daftar notifikasi presensi untuk Orang Tua (memantau semua ananda).
+     * Mengambil daftar notifikasi presensi untuk Orang Tua (memantau semua ananda atau anak spesifik).
      *
      * @param User $orangtua
+     * @param int|null $targetSiswaId
      * @return array<int, array<string, mixed>>
      */
-    public static function untukOrangtua(User $orangtua): array
+    public static function untukOrangtua(User $orangtua, ?int $targetSiswaId = null): array
     {
         if (!Schema::hasTable('kelas') || !Schema::hasTable('sesi_presensi') || !Schema::hasTable('presensi') || !Schema::hasTable('orangtua_siswa')) {
             return [];
         }
 
-        $siswaIds = OrangtuaSiswa::where('id_orangtua', $orangtua->id_user)->pluck('id_siswa');
+        $query = OrangtuaSiswa::where('id_orangtua', $orangtua->id_user);
+        if ($targetSiswaId) {
+            $query->where('id_siswa', $targetSiswaId);
+        }
+        $siswaIds = $query->pluck('id_siswa');
         if ($siswaIds->isEmpty()) {
             return [];
         }
