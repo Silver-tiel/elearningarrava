@@ -1,9 +1,9 @@
 @php
     $user = Auth::user();
     // id_tipeuser: 1 = admin, 2 = guru, 3 = siswa
-    $idTipe = $user->id_tipeuser ?? 3;
+    $idTipe = (int) ($user->id_tipeuser ?? 3);
     $isAdmin = in_array($idTipe, [1, 2]);
-    $role = $isAdmin ? 'admin' : 'siswa';
+    $role = $idTipe === 1 ? 'admin' : ($idTipe === 2 ? 'guru' : 'siswa');
 @endphp
 
 @include('components.sidebar-effects')
@@ -57,6 +57,16 @@
                     $actAdminProfil = request()->is('admin/profil*');
                 @endphp
 
+                @if($idTipe == 1)
+                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                        Manajemen
+                    </div>
+                @else
+                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                        Guru
+                    </div>
+                @endif
+
                 <!-- Dashboard -->
                 <a href="{{ route('admin') }}"
                     class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminDash ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
@@ -99,6 +109,45 @@
                             </div>
                         </div>
                     </a>
+                @endif
+
+                @if($idTipe == 1)
+                    <!-- Guru -->
+                    <a href="{{ route('admin.guru') }}"
+                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminGuru ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
+                        data-active="{{ $actAdminGuru ? 'true' : 'false' }}">
+                        <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
+                            <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                </path>
+                            </svg>
+                            <span class="truncate">Guru</span>
+                        </div>
+                        <div class="sidebar-pop-wrap">
+                            <div class="sidebar-pop-box">
+                                <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Guru"
+                                    class="sidebar-pop-img" draggable="false">
+                            </div>
+                        </div>
+                    </a>
+
+                    @php $actKelas = request()->is('admin/kelas*'); @endphp
+                    <!-- Kelas -->
+                    <a href="{{ route('admin.kelas') }}"
+                        class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition {{ $actKelas ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
+                        data-active="{{ $actKelas ? 'true' : 'false' }}">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 100-8 4 4 0 000 8zm6 0a3 3 0 100-6M3 11a3 3 0 106 0" />
+                        </svg>
+                        <span class="truncate">Kelas</span>
+                    </a>
+
+                    <div class="px-3 pt-4 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                        Pembelajaran
+                    </div>
                 @endif
 
                 <!-- Modul -->
@@ -162,18 +211,6 @@
                 </a>
 
                 @if($idTipe == 1)
-                    @php $actKelas = request()->is('admin/kelas*'); @endphp
-                    <!-- Kelas -->
-                    <a href="{{ route('admin.kelas') }}"
-                        class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition {{ $actKelas ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
-                        data-active="{{ $actKelas ? 'true' : 'false' }}">
-                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 100-8 4 4 0 000 8zm6 0a3 3 0 100-6M3 11a3 3 0 106 0" />
-                        </svg>
-                        <span class="truncate">Kelas</span>
-                    </a>
-
                     <!-- Penghargaan / Achievement -->
                     <a href="{{ route('admin.achievement') }}"
                         class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminAchieve ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
@@ -195,26 +232,6 @@
                         </div>
                     </a>
 
-                    <!-- Guru -->
-                    <a href="{{ route('admin.guru') }}"
-                        class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminGuru ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
-                        data-active="{{ $actAdminGuru ? 'true' : 'false' }}">
-                        <div class="flex items-center gap-3 relative z-10 min-w-0 pr-12">
-                            <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                                </path>
-                            </svg>
-                            <span class="truncate">Guru</span>
-                        </div>
-                        <div class="sidebar-pop-wrap">
-                            <div class="sidebar-pop-box">
-                                <img src="{{ asset('assets/sidebar/sidebarProfileIcon.webp') }}" alt="Guru"
-                                    class="sidebar-pop-img" draggable="false">
-                            </div>
-                        </div>
-                    </a>
                 @endif
 
                 @if($idTipe == 2)
@@ -366,7 +383,9 @@
 
         <!-- User Info & Logout Card -->
         <div class="pt-1 flex items-center justify-between">
-            <a href="{{ $isAdmin ? '#' : route('siswa.profil') }}" class="flex items-center gap-3 overflow-hidden group no-underline min-w-0 flex-1 mr-2" title="{{ $isAdmin ? '' : 'Buka Profil Siswa' }}">
+            <a href="{{ $isAdmin ? '#' : route('siswa.profil') }}"
+                class="flex items-center gap-3 overflow-hidden group no-underline min-w-0 flex-1 mr-2"
+                title="{{ $isAdmin ? '' : 'Buka Profil Siswa' }}">
                 <div
                     class="w-9 h-9 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0 ring-2 ring-slate-100 shadow-xs transition group-hover:ring-blue-300">
                     @if(!empty($user->foto_profil_url))
@@ -376,7 +395,9 @@
                     @endif
                 </div>
                 <div class="truncate">
-                    <h4 class="text-sm font-semibold text-gray-900 leading-tight truncate group-hover:text-blue-600 transition">{{ $user->nama ?? 'User' }}
+                    <h4
+                        class="text-sm font-semibold text-gray-900 leading-tight truncate group-hover:text-blue-600 transition">
+                        {{ $user->nama ?? 'User' }}
                     </h4>
                     <p class="text-xs text-gray-400 capitalize truncate">{{ $role }}</p>
                 </div>
