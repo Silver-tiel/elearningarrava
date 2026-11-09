@@ -27,6 +27,10 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
     Route::get('/teachers', [DashboardController::class, 'teachers']);
     Route::get('/students', [DashboardController::class, 'students']);
 
+    // Notifikasi Presensi
+    Route::get('/notifikasi/check', [\App\Http\Controllers\NotifikasiController::class, 'check']);
+    Route::post('/notifikasi/mark-read', [\App\Http\Controllers\NotifikasiController::class, 'markRead']);
+
     // Baca: semua pengguna terautentikasi.
     Route::get('/modules', [ModulController::class, 'apiIndex']);
     Route::get('/modules/{id}', [ModulController::class, 'apiShow']);
@@ -54,3 +58,28 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
         Route::post('/{id_sesi}/scan', [PresensiController::class, 'prosesScan']);
     });
 });
+
+// Media / storage streamer dengan header CORS penuh (mendukung Flutter Web & Mobile serta kompatibel Windows)
+Route::get('/storage/{path}', function (string $path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (!file_exists($fullPath) || !is_file($fullPath)) {
+        abort(404);
+    }
+    $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
+    $filesize = filesize($fullPath);
+
+    return response()->stream(function () use ($fullPath) {
+        $stream = fopen($fullPath, 'rb');
+        if ($stream) {
+            fpassthru($stream);
+            fclose($stream);
+        }
+    }, 200, [
+        'Content-Type' => $mime,
+        'Content-Length' => $filesize,
+        'Cache-Control' => 'no-cache, private',
+        'Access-Control-Allow-Origin' => '*',
+        'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+        'Access-Control-Allow-Headers' => '*',
+    ]);
+})->where('path', '.*');

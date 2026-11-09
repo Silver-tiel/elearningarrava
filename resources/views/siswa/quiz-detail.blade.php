@@ -43,10 +43,10 @@
     @endif
 
     {{-- KARTU HEADER DETAIL KUIS (KAHOOT STYLE) --}}
-    <div class="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-sm">
+    <div class="bg-white rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] p-5 sm:p-7 shadow-[0_4px_0_#B2E7FC]">
         <div class="flex flex-col md:flex-row items-start gap-6">
             {{-- Cover Thumbnail di Kiri --}}
-            <div class="relative shrink-0 w-full md:w-72 aspect-video rounded-xl overflow-hidden shadow-md bg-slate-100 border border-slate-200/80">
+            <div class="relative shrink-0 w-full md:w-72 aspect-video rounded-2xl overflow-hidden shadow-sm bg-[#DDF3FF] border-2 border-[#B2E7FC]">
                 <img src="{{ $quiz->cover_url }}" alt="{{ $quiz->judul }}" class="w-full h-full object-cover">
 
                 @if($expired && !$quiz->perluToken())
@@ -82,24 +82,24 @@
                         </div>
 
                         @if($quiz->perluToken())
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                Terbuka
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                🔒 Token
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                Terbuka
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]">
+                                🌐 Terbuka
                             </span>
                         @endif
 
                         @if(isset($hasilSiswa) && $hasilSiswa->is_lulus && $hasilSiswa->poin_didapat > 0)
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-black bg-amber-100 text-amber-900 border border-amber-300">
-                               Selesai (+{{ $hasilSiswa->poin_didapat }} Poin)
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300">
+                               🏆 Selesai (+{{ $hasilSiswa->poin_didapat }} Poin)
                             </span>
                         @endif
                     </div>
 
                     {{-- Judul Kuis --}}
-                    <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug mb-2.5">
+                    <h1 class="text-2xl sm:text-3xl font-heading font-black text-[#082765] tracking-tight leading-snug mb-2.5">
                         {{ $quiz->judul }}
                     </h1>
 
@@ -155,15 +155,15 @@
         </div>
     </div>
 
-    {{-- BANNER AKSI / PEMBERITAHUAN (TEMA BIRU) --}}
-    <div class="rounded-xl bg-gradient-to-r from-[#0B4FB3] via-[#1368CE] to-[#0A3D8F] text-white px-5 py-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    {{-- BANNER AKSI / PEMBERITAHUAN (TEMA BIRU SAMUDRA) --}}
+    <div class="rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#007FBE] via-[#00679A] to-[#005580] text-white px-6 py-5 shadow-[0_4px_0_#003c5a] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-white font-bold border border-white/40">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white font-bold border border-white/40">
                 <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                 </svg>
             </div>
-            <p class="text-xs sm:text-sm font-medium text-white/95 leading-snug">
+            <p class="text-xs sm:text-sm font-semibold text-white/95 leading-snug">
                 @if($expired)
                     Batas waktu pengerjaan kuis ini telah berakhir. Hubungi pengajar jika membutuhkan sesi susulan.
                 @elseif($quiz->perluToken())
@@ -176,21 +176,21 @@
 
         <div class="shrink-0 flex items-center justify-end">
             @if($expired)
-                <button type="button" disabled class="px-5 py-2.5 rounded-lg bg-white/20 text-white/70 font-bold text-sm cursor-not-allowed">
+                <button type="button" disabled class="px-5 py-2.5 rounded-xl bg-white/20 text-white/70 font-bold text-sm cursor-not-allowed">
                     Waktu Berakhir
                 </button>
             @elseif($quiz->soal->isEmpty())
-                <button type="button" disabled class="px-5 py-2.5 rounded-lg bg-white/20 text-white/70 font-bold text-sm cursor-not-allowed">
+                <button type="button" disabled class="px-5 py-2.5 rounded-xl bg-white/20 text-white/70 font-bold text-sm cursor-not-allowed">
                     Belum Ada Soal
                 </button>
             @elseif($quiz->perluToken())
-                <button type="button" onclick="openTokenModal()" class="px-6 py-2.5 rounded-lg bg-white text-[#0B4FB3] hover:bg-blue-50 hover:text-[#1368CE] font-extrabold text-sm tracking-wide shadow-md transition transform hover:-translate-y-0.5 active:translate-y-0">
+                <button type="button" onclick="openTokenModal()" class="px-6 py-2.5 rounded-xl bg-white text-[#007FBE] hover:bg-[#DDF3FF] font-black text-sm tracking-wide shadow-[0_3px_0_#B2E7FC] transition transform active:translate-y-0.5 active:shadow-none">
                     Mulai Kerjakan
                 </button>
             @else
                 <form action="{{ route('siswa.quiz.mulai', $quiz->id_quiz) }}" method="POST" class="inline">
                     @csrf
-                    <button type="submit" data-quiz-start class="px-6 py-2.5 rounded-lg bg-white text-[#0B4FB3] hover:bg-blue-50 hover:text-[#1368CE] font-extrabold text-sm tracking-wide shadow-md transition transform hover:-translate-y-0.5 active:translate-y-0">
+                    <button type="submit" data-quiz-start class="px-6 py-2.5 rounded-xl bg-white text-[#007FBE] hover:bg-[#DDF3FF] font-black text-sm tracking-wide shadow-[0_3px_0_#B2E7FC] transition transform active:translate-y-0.5 active:shadow-none">
                         Mulai Kerjakan
                     </button>
                 </form>

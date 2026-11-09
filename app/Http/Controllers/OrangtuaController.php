@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
+/**
+ * Class OrangtuaController
+ *
+ * @suppress PHP0416, PHP6613, PHP0448, PHP0407
+ */
 class OrangtuaController extends Controller
 {
     /* -----------------------------------------------------------------
@@ -47,6 +52,7 @@ class OrangtuaController extends Controller
 
         // Jika belum ada siswa yang dihubungkan tampilkan empty state.
         if (empty($siswaIds)) {
+            $notifikasiPresensi = \App\Services\NotifikasiPresensiService::untukOrangtua($orangtua, null);
             return view('orangtua.dashboard', [
                 'orangtua'       => $orangtua,
                 'siswa'          => null,
@@ -57,11 +63,12 @@ class OrangtuaController extends Controller
                 'aktivitas'      => collect(),
                 'pencapaian'     => collect(),
                 'totalJamBelajar'=> 0,
+                'notifikasiPresensi' => $notifikasiPresensi,
             ]);
         }
 
         // Pilih siswa aktif: dari query string atau default siswa pertama.
-        $activeSiswaId = (int) $request->get('siswa_id', $siswaIds[0]);
+        $activeSiswaId = (int) $request->input('siswa_id', $siswaIds[0]);
         if (!in_array($activeSiswaId, $siswaIds)) {
             $activeSiswaId = $siswaIds[0];
         }
@@ -238,6 +245,8 @@ class OrangtuaController extends Controller
         // Karena tidak ada kolom durasi di hasilquizmodul, estimasi 15 menit per kuis
         $totalJamBelajar = $totalQuizDikerjakan * 15; // menit
 
+        $notifikasiPresensi = \App\Services\NotifikasiPresensiService::untukOrangtua($orangtua, $siswa ? $siswa->id_user : null);
+
         return view('orangtua.dashboard', compact(
             'orangtua',
             'siswa',
@@ -247,7 +256,8 @@ class OrangtuaController extends Controller
             'modulProgress',
             'aktivitas',
             'pencapaian',
-            'totalJamBelajar'
+            'totalJamBelajar',
+            'notifikasiPresensi'
         ));
     }
 
@@ -316,7 +326,7 @@ class OrangtuaController extends Controller
             ]);
         }
 
-        $activeSiswaId = (int) $request->get('siswa_id', $siswaIds[0]);
+        $activeSiswaId = (int) $request->input('siswa_id', $siswaIds[0]);
 
         if (!in_array($activeSiswaId, $siswaIds)) {
             $activeSiswaId = $siswaIds[0];
@@ -422,7 +432,7 @@ class OrangtuaController extends Controller
         }
 
         // Menentukan siswa yang sedang dipilih
-        $activeSiswaId = (int) $request->get('siswa_id', $siswaIds[0]);
+        $activeSiswaId = (int) $request->input('siswa_id', $siswaIds[0]);
 
         if (!in_array($activeSiswaId, $siswaIds)) {
             $activeSiswaId = $siswaIds[0];
