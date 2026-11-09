@@ -210,7 +210,7 @@
                         </p>
                         <p class="mt-0.5 break-words text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[28px]">
                             {{ number_format($poin) }}
-                            <span class="text-[11px] font-semibold text-amber-600">XP</span>
+                            <span class="text-[11px] font-semibold text-amber-600">EXP</span>
                         </p>
                         <p class="mt-0.5 text-[10px] font-semibold text-sky-700">
                             {{ $siswa->jumlah_lencana }} Lencana

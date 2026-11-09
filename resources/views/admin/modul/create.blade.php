@@ -248,10 +248,10 @@
                         </div>
                     </details>
 
-                    <!-- 4. Upload File Materi (Dokumen PDF/PPT) -->
+                    <!-- 4. Unggah File Materi (Dokumen PDF/PPT) -->
                     <div id="container_file">
                         <label for="file_upload" class="block text-sm font-medium text-slate-700 mb-1">
-                            Upload Berkas Materi (PDF / PPT)
+                            Unggah Berkas Materi (PDF / PPT)
                         </label>
                         <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-lg hover:border-blue-400 transition bg-slate-50">
                             <div class="space-y-1 text-center">

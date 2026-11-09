@@ -26,7 +26,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
-            <span>+ Buat Achievement Baru</span>
+            <span>+ Buat Penghargaan Baru</span>
         </a>
     </div>
 
@@ -45,7 +45,7 @@
         <!-- Card 1 -->
         <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Achievement</span>
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Penghargaan</span>
                 <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                 </div>
@@ -257,12 +257,12 @@
             <div class="w-16 h-16 rounded-full bg-amber-50 text-amber-500 mx-auto flex items-center justify-center text-3xl mb-4">
                 🏆
             </div>
-            <h3 class="text-lg font-bold text-slate-800">Belum ada achievement ditemukan</h3>
+            <h3 class="text-lg font-bold text-slate-800">Belum ada penghargaan ditemukan</h3>
             <p class="text-sm text-slate-500 max-w-md mx-auto mt-1">
                 @if(request()->hasAny(['search', 'status']))
                     Tidak ada penghargaan yang sesuai dengan kata kunci atau filter pencarian Anda.
                 @else
-                    Belum ada data penghargaan/achievement yang dibuat untuk siswa. Silakan buat yang pertama!
+                    Belum ada data penghargaan yang dibuat untuk siswa. Silakan buat yang pertama!
                 @endif
             </p>
             <div class="mt-6 flex justify-center gap-3">

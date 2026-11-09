@@ -240,10 +240,10 @@
                         </p>
                     </div>
                 </details>
-                <!-- 4. Upload File Materi -->
+                <!-- 4. Unggah File Materi -->
                 <div id="container_file">
                     <label for="file_upload" class="block text-sm font-medium text-slate-700 mb-1">
-                        Upload Berkas Materi Baru (Biarkan kosong jika tidak ingin mengubah)
+                        Unggah Berkas Materi Baru (Biarkan kosong jika tidak ingin mengubah)
                     </label>
                     <input type="file" id="file_upload" name="file_upload" accept=".pdf,.ppt,.pptx" class="w-full">
                     @error('file_upload')

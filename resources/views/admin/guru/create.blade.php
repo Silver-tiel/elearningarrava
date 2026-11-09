@@ -159,7 +159,7 @@
 
             <div class="mb-4">
                 <h2 class="text-base font-bold text-slate-800">Informasi Akun Login</h2>
-                <p class="text-xs text-slate-500 mt-0.5">Email dan password ini akan digunakan oleh guru untuk masuk ke platform.</p>
+                <p class="text-xs text-slate-500 mt-0.5">Email dan kata sandi ini akan digunakan oleh guru untuk masuk ke platform.</p>
             </div>
 
             <!-- EMAIL AKUN -->
@@ -194,7 +194,7 @@
 
                 <label for="password"
                     class="block text-sm font-semibold text-slate-700 mb-2">
-                    Password Akun <span class="text-red-500">*</span>
+                    Password Akun (Kata Sandi) <span class="text-red-500">*</span>
                 </label>
 
                 <input

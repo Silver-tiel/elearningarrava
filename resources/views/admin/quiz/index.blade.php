@@ -225,7 +225,7 @@
                                     <span>Draft</span>
                                 </span>
                             @elseif($expired)
-                                <span
+                                <span title="Kadaluarsa"
                                     class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/90 text-white shadow-2xs">
                                     <span>Kedaluwarsa</span>
                                 </span>

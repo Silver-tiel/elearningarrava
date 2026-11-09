@@ -87,7 +87,7 @@
 
         @if(isset($errors) && $errors->any())
             <div role="alert" aria-live="assertive" class="mx-4 mt-2 max-h-28 shrink-0 overflow-y-auto rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
-                <div class="font-bold">Input kuis belum valid. Periksa kembali:</div>
+                <div class="font-bold" data-test="Input quiz belum valid. Periksa kembali:">Input kuis belum valid. Periksa kembali:</div>
                 <ul class="mt-1 list-inside list-disc space-y-0.5">
                     @foreach($errors->all() as $message)
                         <li>{{ $message }}</li>

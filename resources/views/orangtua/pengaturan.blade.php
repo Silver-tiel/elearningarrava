@@ -301,7 +301,7 @@
         <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-6">
             <h3 class="mb-1 text-[15px] font-bold text-slate-900">Keamanan Akun</h3>
             <p class="mb-5 text-[12px] text-slate-400">
-                Kosongkan jika tidak ingin mengubah kata sandi. Isi keduanya untuk mengganti password.
+                Kosongkan jika tidak ingin mengubah kata sandi. Isi keduanya untuk mengganti kata sandi.
             </p>
 
             <div class="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">

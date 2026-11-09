@@ -104,7 +104,7 @@
                 @endif
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">Hasil Submit Quiz</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">Hasil Pengerjaan Kuis</p>
                         <h2 class="mt-1 text-xl font-bold text-emerald-900">
                             {{ $result['is_lulus'] ? 'Selamat, kamu lulus! 🎉' : 'Tetap semangat, coba lagi ya! 💪' }}</h2>
                     </div>

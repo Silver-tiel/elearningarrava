@@ -308,7 +308,7 @@
                     </div>
                 @else
                     <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center text-sm text-slate-500 font-semibold">
-                        Belum ada soal untuk quiz ini.
+                        Belum ada soal untuk kuis ini.
                     </div>
                 @endif
             </form>
@@ -316,7 +316,7 @@
             {{-- Sidebar Informasional --}}
             <aside class="space-y-6">
                 <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h2 class="text-sm font-bold text-slate-800">Informasi Quiz</h2>
+                    <h2 class="text-sm font-bold text-slate-800">Informasi Kuis</h2>
                     <dl class="mt-3 space-y-2 text-xs">
                         <div class="flex justify-between text-slate-600">
                             <dt>Jumlah Soal</dt>
