@@ -141,7 +141,7 @@
                         @endif
                         <span class="text-xs font-bold uppercase tracking-wider text-cyan-300">Rank: {{ $rank['current_rank'] }}</span>
                     </div>
-                    <span class="text-xs font-mono font-bold text-amber-400">{{ number_format($siswa->total_poin ?? 0) }} XP</span>
+                    <span class="text-xs font-mono font-bold text-amber-400">{{ number_format($siswa->total_poin ?? 0) }} EXP</span>
                 </div>
 
                 <!-- EXP Progress Bar -->
@@ -154,7 +154,7 @@
                         <div class="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 transition-all duration-500 shadow-sm shadow-cyan-500" style="width: {{ $rank['percent'] }}%;"></div>
                     </div>
                     <div class="flex justify-between text-[10px] text-slate-400 mt-1">
-                        <span>{{ $rank['is_max'] ? 'Maksimal' : ($rank['points_needed'] . ' XP lagi ke ' . $rank['next_rank']) }}</span>
+                        <span>{{ $rank['is_max'] ? 'Maksimal' : ($rank['points_needed'] . ' EXP lagi ke ' . $rank['next_rank']) }}</span>
                         <span>Target: {{ $rank['next_points'] ?? 'MAX' }}</span>
                     </div>
                 </div>
@@ -173,10 +173,10 @@
         2. STATISTIK TELEMETRI (4 HUD STAT CARDS)
     ============================================================ --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- 1. Total Poin / XP -->
+        <!-- 1. Total Poin / EXP -->
         <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs relative overflow-hidden group hover:border-cyan-400 transition-all duration-300">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Skor XP</span>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Skor EXP</span>
                 <div class="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-base shadow-xs">
                     ⚡
                 </div>
@@ -441,7 +441,7 @@
                                         {{ $ach->nama_achivement }}
                                     </p>
                                     <p class="text-[10px] text-slate-500 mt-0.5">
-                                        {{ $ach->minimal_poin_achivement }} XP
+                                        {{ $ach->minimal_poin_achivement }} EXP
                                     </p>
                                     @if($unlocked)
                                         <span class="inline-block mt-1 text-[9px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.2 rounded">

@@ -52,7 +52,7 @@
                 @if($expired && !$quiz->perluToken())
                     <div class="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40 backdrop-blur-[0.5px]">
                         <img src="{{ asset('assets/widget/expiredQuiz.webp') }}"
-                             alt="Kuis Kadaluarsa"
+                             alt="Kuis Kedaluwarsa"
                              class="w-full h-full object-cover [image-rendering:pixelated] opacity-90 drop-shadow-md">
                     </div>
                 @endif

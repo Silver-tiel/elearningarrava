@@ -159,7 +159,7 @@
                                     <span class="text-xs font-semibold text-[#72839E]">Bimbel Arrava</span>
                                 </div>
                                 <h2 class="mt-1 text-base font-heading font-black text-[#082765]">QR Presensi Saya 📲</h2>
-                                <p class="mt-0.5 text-xs font-semibold text-[#465673]">Tunjukkan kode QR ini kepada guru saat absensi kelas.</p>
+                                <p class="mt-0.5 text-xs font-semibold text-[#465673]">Tunjukkan kode QR ini kepada guru saat presensi kelas.</p>
                             </div>
                             <div class="no-print hidden sm:flex items-center gap-2 shrink-0">
                                 <button id="btn-unduh-qr" type="button" class="inline-flex items-center gap-1.5 rounded-xl bg-[#007FBE] hover:bg-[#00679A] px-3.5 py-2 text-xs font-black text-white shadow-[0_3px_0_#005580] active:translate-y-0.5 active:shadow-none transition cursor-pointer">

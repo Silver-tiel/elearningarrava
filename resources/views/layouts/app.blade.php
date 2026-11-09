@@ -119,9 +119,6 @@
 
     @include('components.hover-effects')
     @include('components.logout-modal')
-    @if(!request()->is('admin*') and !request()->is('guru*'))
-        @include('components.niere-widget')
-    @endif
     @stack('scripts')
 </body>
 

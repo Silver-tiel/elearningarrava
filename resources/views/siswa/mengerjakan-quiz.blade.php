@@ -95,7 +95,7 @@
                 <div class="w-20 h-20 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
                     <span class="text-4xl">🏆</span>
                 </div>
-                <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Quiz Selesai!</h2>
+                <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Kuis Selesai!</h2>
                 <p class="text-sm text-slate-500 mb-6">Berikut adalah hasil pencapaian Anda</p>
                 
                 <div class="bg-slate-50 rounded-2xl p-6 mb-6">

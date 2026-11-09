@@ -1,8 +1,8 @@
 @extends('layouts.orangtua')
 @include('components.page-loader')
 
-@section('title', 'Riwayat Quiz - Portal Orang Tua')
-@section('breadcrumb', 'Riwayat Quiz')
+@section('title', 'Riwayat Kuis - Portal Orang Tua')
+@section('breadcrumb', 'Riwayat Kuis')
 
 @section('content')
 <div class="px-4 sm:px-6 py-6 max-w-[1400px] mx-auto space-y-6">
@@ -10,9 +10,9 @@
     {{-- Header halaman --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-slate-800">Riwayat Quiz</h1>
+            <h1 class="text-2xl font-bold text-slate-800">Riwayat Kuis</h1>
             <p class="mt-1 text-sm text-slate-500">
-                Pantau hasil dan perkembangan pengerjaan quiz siswa.
+                Pantau hasil dan perkembangan pengerjaan kuis siswa.
             </p>
         </div>
     </div>
@@ -56,7 +56,7 @@
     @if ($siswa)
     <div class="flex flex-col gap-3 rounded-2xl border border-indigo-100 bg-indigo-50 p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <p class="text-sm text-indigo-600">Riwayat quiz siswa</p>
+            <p class="text-sm text-indigo-600">Riwayat kuis siswa</p>
             <h2 class="mt-1 text-lg font-bold text-slate-800">
                 {{ $siswa->nama }}
             </h2>
@@ -68,7 +68,7 @@
         <div class="rounded-xl bg-white px-4 py-3">
             <p class="text-xs text-slate-500">Total pengerjaan tercatat</p>
             <p class="mt-1 text-xl font-bold text-indigo-600">
-                {{ $hasilQuiz->total() }} quiz
+                {{ $hasilQuiz->total() }} kuis
             </p>
         </div>
     </div>
@@ -83,18 +83,18 @@
             <p class="mt-4 text-3xl font-bold text-slate-800">
                 {{ number_format($stats['rata_rata'], 1, ',', '.') }}
             </p>
-            <p class="mt-1 text-xs text-slate-500">Dari seluruh pengerjaan quiz</p>
+            <p class="mt-1 text-xs text-slate-500">Dari seluruh pengerjaan kuis</p>
         </div>
 
         <div class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
             <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-500">Quiz Lulus</p>
+                <p class="text-sm font-medium text-slate-500">Kuis Lulus</p>
                 <span class="rounded-xl bg-emerald-50 p-2 text-emerald-600">✓</span>
             </div>
             <p class="mt-4 text-3xl font-bold text-emerald-600">
                 {{ $stats['kuis_lulus'] }}
             </p>
-            <p class="mt-1 text-xs text-slate-500">Quiz berhasil dilewati</p>
+            <p class="mt-1 text-xs text-slate-500">Kuis berhasil dilewati</p>
         </div>
 
         <div class="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
@@ -120,12 +120,12 @@
         </div>
     </div>
 
-    {{-- Quiz yang perlu diperhatikan --}}
+    {{-- Kuis yang perlu diperhatikan --}}
     <div class="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
         <div class="border-b border-amber-100 bg-amber-50/70 px-5 py-4">
-            <h2 class="font-bold text-slate-800">Quiz yang Perlu Diperhatikan</h2>
+            <h2 class="font-bold text-slate-800">Kuis yang Perlu Diperhatikan</h2>
             <p class="mt-1 text-sm text-slate-600">
-                Quiz dengan nilai di bawah 70 atau status belum lulus.
+                Kuis dengan nilai di bawah 70 atau status belum lulus.
             </p>
         </div>
 
@@ -142,7 +142,7 @@
             <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="font-semibold text-slate-800">
-                        {{ $quiz->quiz?->judul ?? 'Quiz tidak tersedia' }}
+                        {{ $quiz->quiz?->judul ?? 'Kuis tidak tersedia' }}
                     </p>
                     <p class="mt-1 text-sm text-slate-500">
                         Skor {{ $quiz->poin_didapat ?? 0 }}/{{ $quiz->total_poin ?? 0 }}
@@ -167,9 +167,9 @@
         </div>
         @else
         <div class="px-5 py-8 text-center">
-            <p class="font-semibold text-emerald-700">Semua hasil quiz terlihat baik!</p>
+            <p class="font-semibold text-emerald-700">Semua hasil kuis terlihat baik!</p>
             <p class="mt-1 text-sm text-slate-500">
-                Tidak ada hasil quiz yang masuk daftar perhatian berdasarkan kriteria saat ini.
+                Tidak ada hasil kuis yang masuk daftar perhatian berdasarkan kriteria saat ini.
             </p>
         </div>
         @endif
@@ -178,7 +178,7 @@
     {{-- Tabel riwayat --}}
     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-5 py-4">
-            <h2 class="font-bold text-slate-800">Daftar Hasil Quiz</h2>
+            <h2 class="font-bold text-slate-800">Daftar Hasil Kuis</h2>
             <p class="mt-1 text-sm text-slate-500">
                 Hasil pengerjaan diurutkan dari yang terbaru.
             </p>
@@ -190,7 +190,7 @@
                 <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                         <th class="px-5 py-4 font-semibold">No.</th>
-                        <th class="px-5 py-4 font-semibold">Nama Quiz</th>
+                        <th class="px-5 py-4 font-semibold">Nama Kuis</th>
                         <th class="px-5 py-4 font-semibold">Jenis</th>
                         <th class="px-5 py-4 text-center font-semibold">Skor</th>
                         <th class="px-5 py-4 text-center font-semibold">Nilai</th>

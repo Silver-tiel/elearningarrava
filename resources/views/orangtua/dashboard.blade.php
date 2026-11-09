@@ -17,7 +17,9 @@
      * @var array{total_quiz_dikerjakan: int, total_quiz_tersedia: int, modul_selesai: int, total_modul: int, avg_nilai: float} $stats
      * @var \Illuminate\Support\Collection<int, array<string, mixed>> $aktivitas
      * @var array $notifikasiPresensi
+     * @var \Illuminate\Support\Collection<int, array<string, mixed>> $aktivitasCollection
      */
+    /** @var \Illuminate\Support\Collection<int, array<string, mixed>> $aktivitasCollection */
     $aktivitasCollection = ($aktivitas instanceof \Illuminate\Support\Collection) ? $aktivitas : collect($aktivitas ?? []);
 @endphp
 <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
@@ -96,7 +98,7 @@
                         </svg>
                     </div>
                     <div>
-                        <p class="text-xs font-bold text-[#72839E]">Quiz Dikerjakan</p>
+                        <p class="text-xs font-bold text-[#72839E]">Kuis Dikerjakan</p>
                     </div>
                 </div>
 
@@ -275,7 +277,7 @@
 
                 <a href="{{ route('orangtua.riwayat-quiz') }}"
                     class="mt-3 inline-flex items-center gap-1.5 text-xs font-black text-[#007FBE] hover:text-[#00679A]">
-                    <span>Buka Riwayat Quiz Lengkap</span>
+                    <span>Buka Riwayat Kuis Lengkap</span>
                     <span aria-hidden="true">→</span>
                 </a>
             </div>

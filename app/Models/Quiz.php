@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
+#[\AllowDynamicProperties]
 /**
  * Class Quiz
  *
@@ -40,6 +41,8 @@ use Illuminate\Support\Str;
  * @method static Builder|Quiz published()
  * @method static Builder|Quiz draft()
  * @method static Builder|Quiz belumKadaluarsa()
+ * @mixin \Illuminate\Database\Eloquent\Builder
+ * @mixin \Illuminate\Database\Eloquent\Model
  */
 class Quiz extends Model
 {

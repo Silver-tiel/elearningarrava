@@ -43,7 +43,7 @@
                 </span>
                 <div>
                     <h3 class="text-sm font-bold text-slate-800">Notifikasi Presensi</h3>
-                    <p class="text-[11px] text-slate-500" id="notifSubheading">Pemberitahuan absensi kelas</p>
+                    <p class="text-[11px] text-slate-500" id="notifSubheading">Pemberitahuan presensi kelas</p>
                 </div>
             </div>
             <button type="button" 

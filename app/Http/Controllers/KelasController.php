@@ -83,7 +83,7 @@ class KelasController extends Controller
         Gate::authorize('kelola-sistem');
 
         $kelas = Kelas::findOrFail($id);
-        $data = $this->validasiKelas($request);
+        $data = $this->validasiKelas($request, $kelas);
         $data['aktif'] = $request->boolean('aktif');
         $kelas->update($data);
         $kelas->refresh();
@@ -136,9 +136,11 @@ class KelasController extends Controller
         return back()->with('success', 'Penugasan guru dicabut.');
     }
 
-    private function validasiKelas(Request $request): array
+    private function validasiKelas(Request $request, ?Kelas $kelas = null): array
     {
-        $data = $request->validate([
+        $today = now()->toDateString();
+
+        $rules = [
             'nama' => ['required', 'string', 'max:150'],
             'id_jenjang' => ['required', 'integer', 'exists:jenjang,id_jenjang'],
             'tahun_ajaran' => ['nullable', 'string', 'max:20'],
@@ -147,15 +149,31 @@ class KelasController extends Controller
             'berlaku_dari' => ['nullable', 'date'],
             'berlaku_sampai' => ['nullable', 'date', 'after_or_equal:berlaku_dari'],
             'jam_batas' => ['nullable', 'date_format:H:i'],
-        ], [
+        ];
+
+        // Pengaman: tanggal yang sudah lewat tidak boleh dipilih saat pembuatan baru.
+        // Saat update, tanggal lama yang sudah berjalan diizinkan tetap, namun jika diubah
+        // maka tanggal baru tidak boleh tanggal yang sudah lewat.
+        $isExistingDari = $kelas && $kelas->berlaku_dari && $kelas->berlaku_dari->toDateString() === $request->berlaku_dari;
+        if (!$isExistingDari && $request->filled('berlaku_dari')) {
+            $rules['berlaku_dari'][] = 'after_or_equal:' . $today;
+        }
+
+        $isExistingSampai = $kelas && $kelas->berlaku_sampai && $kelas->berlaku_sampai->toDateString() === $request->berlaku_sampai;
+        if (!$isExistingSampai && $request->filled('berlaku_sampai')) {
+            $rules['berlaku_sampai'][] = 'after_or_equal:' . $today;
+        }
+
+        $data = $request->validate($rules, [
             'nama.required' => 'Nama kelas wajib diisi.',
             'nama.max' => 'Nama kelas maksimal 150 karakter.',
             'id_jenjang.required' => 'Jenjang wajib dipilih. Semua siswa pada jenjang itu otomatis menjadi peserta kelas.',
             'id_jenjang.exists' => 'Jenjang tidak valid.',
             'hari.*.between' => 'Hari tidak valid.',
             'berlaku_dari.date' => 'Tanggal mulai berlaku tidak valid.',
+            'berlaku_dari.after_or_equal' => 'Tanggal mulai berlaku tidak boleh tanggal yang sudah lewat.',
             'berlaku_sampai.date' => 'Tanggal akhir berlaku tidak valid.',
-            'berlaku_sampai.after_or_equal' => 'Tanggal akhir berlaku tidak boleh sebelum tanggal mulai.',
+            'berlaku_sampai.after_or_equal' => 'Tanggal akhir berlaku tidak boleh tanggal yang sudah lewat atau sebelum tanggal mulai berlaku.',
             'jam_batas.date_format' => 'Format batas tepat waktu harus JJ:MM, misalnya 08:15.',
         ]);
 

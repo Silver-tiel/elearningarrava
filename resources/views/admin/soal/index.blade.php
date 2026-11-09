@@ -74,7 +74,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID Quiz</th>
+                    <th>ID Kuis</th>
                     <th>Jenjang</th>
                     <th>Jenis Soal</th>
                     <th>Pertanyaan</th>

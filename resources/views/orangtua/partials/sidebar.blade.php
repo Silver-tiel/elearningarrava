@@ -119,7 +119,7 @@ $navItems = [
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M14 3v5h5M9 13h6M9 17h6" />
             </svg>
-            <span>Riwayat Quiz</span>
+            <span>Riwayat Kuis</span>
             <div class="sidebar-pop-wrap" aria-hidden="true">
                 <div class="sidebar-pop-box">
                     <img src="{{ asset('assets/sidebar/sidebarQuizIcon.webp') }}" alt="" class="sidebar-pop-img" draggable="false">

@@ -39,7 +39,7 @@
         @if (isset($errors) && $errors->any())
             <div role="alert" aria-live="assertive"
                 class="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
-                <div>Quiz tidak dapat diproses:</div>
+                <div>Kuis tidak dapat diproses:</div>
                 <ul class="mt-1 list-inside list-disc space-y-0.5">
                     @foreach ($errors->all() as $message)
                         <li>{{ $message }}</li>
@@ -73,7 +73,7 @@
                     class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-extrabold text-sm px-5 py-3 rounded-xl shadow-lg transition transform hover:scale-105">
 
                     <span>
-                        ⚡ Buka Editor Quiz Baru
+                        ⚡ Buka Editor Kuis Baru
                     </span>
                 </a>
             </div>
@@ -85,11 +85,11 @@
                 class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100">
                 <div class="flex items-center gap-3">
                     <h3 class="font-bold text-slate-800 text-base">
-                        Semua Quiz
+                        Semua Kuis
                     </h3>
                     <span
                         class="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Total: <span id="total-count">{{ $quizzes->count() }}</span> Quiz
+                        Total: <span id="total-count">{{ $quizzes->count() }}</span> Kuis
                     </span>
                 </div>
 
@@ -151,7 +151,7 @@
                         <option value="">Semua status</option>
                         <option value="published" @selected(request('status') == 'published')>Publikasi (Tersedia)</option>
                         <option value="draft" @selected(request('status') == 'draft')>Draf (Draft)</option>
-                        <option value="kadaluarsa" @selected(request('status') == 'kadaluarsa')>Kadaluarsa</option>
+                        <option value="kadaluarsa" @selected(request('status') == 'kadaluarsa')>Kedaluwarsa</option>
                     </select>
                 </div>
                 <div class="flex-1">
@@ -171,7 +171,7 @@
             </form>
         </div>
 
-        {{-- Jika Belum Ada Quiz --}}
+        {{-- Jika Belum Ada Kuis --}}
         @if ($quizzes->isEmpty())
             <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs">
                 <div
@@ -180,16 +180,16 @@
                 </div>
 
                 <h4 class="font-bold text-slate-700 text-base mb-1">
-                    Belum Ada Quiz
+                    Belum Ada Kuis
                 </h4>
 
                 <p class="text-slate-400 text-sm max-w-sm mx-auto mb-6">
-                    Mulai buat quiz pembelajaran interaktif pertama Anda sekarang!
+                    Mulai buat kuis pembelajaran interaktif pertama Anda sekarang!
                 </p>
 
                 <a href="{{ route('admin.quiz.create') }}"
                     class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition shadow-sm hover:shadow">
-                    + Buat Quiz Sekarang
+                    + Buat Kuis Sekarang
                 </a>
             </div>
 
@@ -227,7 +227,7 @@
                             @elseif($expired)
                                 <span
                                     class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/90 text-white shadow-2xs">
-                                    <span>Kadaluarsa</span>
+                                    <span>Kedaluwarsa</span>
                                 </span>
                             @else
                                 <span
@@ -282,7 +282,7 @@
                             <div class="mt-4 space-y-1.5">
                                 <div
                                     class="bg-slate-50 rounded-xl px-3 py-2 text-xs flex items-center justify-between border border-slate-100">
-                                    <span class="text-slate-400 font-medium">ID Quiz</span>
+                                    <span class="text-slate-400 font-medium">ID Kuis</span>
                                     <span class="text-slate-700 font-mono font-semibold">#{{ $quiz->id_quiz }}</span>
                                 </div>
 
@@ -341,10 +341,10 @@
 
                             <!-- HAPUS -->
                             <form action="{{ route('admin.quiz.destroy', $quiz->id_quiz) }}" method="POST"
-                                onsubmit="return confirm('Hapus quiz {{ addslashes($quiz->judul) }} beserta seluruh soalnya?')">
+                                onsubmit="return confirm('Hapus kuis {{ addslashes($quiz->judul) }} beserta seluruh soalnya?')">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" title="Hapus Quiz"
+                                <button type="submit" title="Hapus Kuis"
                                     class="py-2 px-3 text-xs font-semibold rounded-xl bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 transition flex items-center justify-center shadow-2xs">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -363,7 +363,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                         d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-                <p class="text-base font-bold text-slate-700">Quiz tidak ditemukan</p>
+                <p class="text-base font-bold text-slate-700">Kuis tidak ditemukan</p>
                 <p class="text-xs text-slate-400 mt-1">Coba gunakan kata kunci pencarian yang lain.</p>
             </div>
         @endif

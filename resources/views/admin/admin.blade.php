@@ -113,7 +113,7 @@
                 <span class="text-[10px] font-black uppercase tracking-wider text-[#D97706] bg-[#FEF3C7] px-2.5 py-0.5 rounded-full border border-[#FDE68A]">Kuis</span>
             </div>
             <div class="mt-4">
-                <p class="text-xs font-bold text-[#72839E]">Total Quiz</p>
+                <p class="text-xs font-bold text-[#72839E]">Total Kuis</p>
                 <h3 class="text-2xl sm:text-3xl font-heading font-black text-[#082765] mt-0.5">{{ number_format($quizCount ?? 0) }}</h3>
             </div>
         </div>

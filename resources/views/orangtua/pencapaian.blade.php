@@ -87,13 +87,13 @@
             </div>
             <div class="flex items-baseline gap-1.5">
                 <p class="text-[32px] font-extrabold text-slate-900 leading-none">{{ number_format($stats['total_poin']) }}</p>
-                <span class="text-sm font-bold text-amber-600">XP</span>
+                <span class="text-sm font-bold text-amber-600">EXP</span>
             </div>
             <div class="mt-2 flex items-center gap-1.5 text-[11px]">
                 <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
                 </svg>
-                <span class="font-semibold text-emerald-600">+{{ number_format(max(0, $stats['total_poin'] - 1240)) }} XP Bulan Februari</span>
+                <span class="font-semibold text-emerald-600">+{{ number_format(max(0, $stats['total_poin'] - 1240)) }} EXP Bulan Februari</span>
             </div>
             <div class="mt-2 text-[11px] text-slate-400">
                 Peringkat Kelas:
@@ -166,7 +166,7 @@
             @if($stats['poin_next_level'])
             <p class="text-[11px] text-slate-400 mt-1">
                 Target Lanjutan:
-                <span class="font-semibold text-slate-600">Level {{ $stats['level']['level'] + 1 }} ({{ number_format($stats['poin_next_level']) }} XP)</span>
+                <span class="font-semibold text-slate-600">Level {{ $stats['level']['level'] + 1 }} ({{ number_format($stats['poin_next_level']) }} EXP)</span>
             </p>
             @else
             <p class="text-[11px] font-semibold text-emerald-600 mt-1">Level Tertinggi Dicapai! 🎉</p>
@@ -294,7 +294,7 @@
                 @endif
 
                 @if($item['poin'] > 0)
-                <span class="text-[10px] font-bold {{ $p['text'] }} mt-0.5">+{{ number_format($item['poin']) }} XP</span>
+                <span class="text-[10px] font-bold {{ $p['text'] }} mt-0.5">+{{ number_format($item['poin']) }} EXP</span>
                 @endif
             </div>
 
@@ -316,7 +316,7 @@
                         Diperoleh {{ \Carbon\Carbon::parse($item['waktu'])->translatedFormat('d M Y') }}
                     </p>
                     @elseif($isSedang || $isTerkunci)
-                    <p class="text-[11px] text-slate-400 mt-0.5">Syarat: {{ number_format($item['poin']) }} XP</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Syarat: {{ number_format($item['poin']) }} EXP</p>
                     @endif
                 </div>
             </div>

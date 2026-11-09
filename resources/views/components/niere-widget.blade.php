@@ -1,6 +1,14 @@
 @php
+  $currentUser = Auth::user();
+
+  // Niere widget hanya untuk Siswa (id_tipeuser = 3) dan Orang Tua (id_tipeuser = 4), serta halaman login
+  // TIDAK PERNAH muncul untuk Admin (1) atau Guru (2)
+  if ($currentUser && in_array((int) $currentUser->id_tipeuser, [1, 2])) {
+      return;
+  }
+
   $isLoginPage = request()->routeIs('login') || request()->is('login');
-  $initialPosClass = $isLoginPage ? 'pos-bottom' : 'pos-top';
+  $initialPosClass = 'pos-bottom';
 
   $shouldHideNiere = ($hideNiere ?? false)
     || View::hasSection('hideNiere')
@@ -605,7 +613,7 @@
 
   @php
     $isLoginPage = request()->routeIs('login') || request()->is('login');
-    $initialPosClass = $isLoginPage ? 'pos-bottom' : 'pos-top';
+    $initialPosClass = 'pos-bottom';
 
     $currentUser = Auth::user();
     $hasNiereNotif = false;
@@ -648,7 +656,7 @@
             } else {
                 $userNotifLines[] = "✨ Seluruh kuis aktif jenjang{$jenjangText} sudah kamu selesaikan. Pertahankan prestasimu!";
             }
-            $userNotifLines[] = "🏆 Poin kamu saat ini: {$totalPoin} XP. Semangat kumpulkan XP untuk memuncaki Leaderboard!";
+            $userNotifLines[] = "🏆 Poin kamu saat ini: {$totalPoin} EXP. Semangat kumpulkan EXP untuk memuncaki Papan Peringkat!";
         } elseif ($currentUser->id_tipeuser == 4) { // Orang Tua
             // Notifikasi Presensi untuk Orang Tua
             try {
@@ -743,8 +751,8 @@
           label: "Panduan Belajar",
           lines: [
             "Di Arrava kamu bisa belajar mandiri lewat Modul Pembelajaran interaktif (Video & PDF).",
-            "Selesaikan Quiz untuk menguji pemahamanmu, kumpulkan EXP, dan raih lencana penghargaan keren!",
-            "Pantau posisimu di Leaderboard untuk bersaing sehat bersama teman-teman se-jenjang! 🏆"
+            "Selesaikan Kuis untuk menguji pemahamanmu, kumpulkan EXP, dan raih lencana penghargaan keren!",
+            "Pantau posisimu di Papan Peringkat untuk bersaing sehat bersama teman-teman se-jenjang! 🏆"
           ]
         },
         {

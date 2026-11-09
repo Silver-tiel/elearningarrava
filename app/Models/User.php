@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
+#[\AllowDynamicProperties]
 /**
  * Class User
  *
@@ -30,12 +31,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property int|null $id_modul
  * @property string|null $foto_profil
  * @property string|null $qr_token
- * @property Carbon|\Carbon\CarbonInterface|string|null $qr_dibuat_pada
+ * @property \Illuminate\Support\Carbon|\Carbon\CarbonInterface|string|null $qr_dibuat_pada
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Jenjang|null $jenjang
  * @property-read TipeUser|null $tipeUser
  * @property-read array $rank_tier
+ * @mixin \Illuminate\Database\Eloquent\Builder
+ * @mixin \Illuminate\Database\Eloquent\Model
  */
 class User extends Authenticatable
 {

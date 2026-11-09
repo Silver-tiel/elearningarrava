@@ -413,6 +413,51 @@ class PresensiQrTest extends TestCase
         $this->assertSame('2026-11-05', $sesi->tanggal->toDateString());
     }
 
+    public function test_pembuatan_kelas_presensi_menolak_tanggal_yang_sudah_lewat(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-04 07:00:00'));
+        $admin = $this->user(1, 'Admin Pengaman');
+
+        // 1. Berlaku dari di masa lalu (kemarin)
+        $this->actingAs($admin)->post(route('admin.kelas.store'), [
+            'nama' => 'Kelas Invalid Tanggal Lalu',
+            'id_jenjang' => 1,
+            'berlaku_dari' => '2026-11-03',
+        ])->assertSessionHasErrors(['berlaku_dari']);
+
+        // 2. Berlaku sampai di masa lalu (kemarin)
+        $this->actingAs($admin)->post(route('admin.kelas.store'), [
+            'nama' => 'Kelas Invalid Sampai Lalu',
+            'id_jenjang' => 1,
+            'berlaku_sampai' => '2026-11-03',
+        ])->assertSessionHasErrors(['berlaku_sampai']);
+
+        // 3. Berlaku sampai lebih awal daripada berlaku dari
+        $this->actingAs($admin)->post(route('admin.kelas.store'), [
+            'nama' => 'Kelas Invalid Urutan',
+            'id_jenjang' => 1,
+            'berlaku_dari' => '2026-11-10',
+            'berlaku_sampai' => '2026-11-05',
+        ])->assertSessionHasErrors(['berlaku_sampai']);
+    }
+
+    public function test_pembuatan_kelas_presensi_menerima_tanggal_valid(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-04 07:00:00'));
+        $admin = $this->user(1, 'Admin Tanggal Valid');
+
+        $this->actingAs($admin)->post(route('admin.kelas.store'), [
+            'nama' => 'Kelas Presensi Valid',
+            'id_jenjang' => 1,
+            'berlaku_dari' => '2026-11-04',
+            'berlaku_sampai' => '2026-11-30',
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $kelas = Kelas::where('nama', 'Kelas Presensi Valid')->firstOrFail();
+        $this->assertSame('2026-11-04', $kelas->berlaku_dari->toDateString());
+        $this->assertSame('2026-11-30', $kelas->berlaku_sampai->toDateString());
+    }
+
     public function test_pastikan_sesi_idempoten_dan_tidak_menggandakan_sesi_manual(): void
     {
         ['guru' => $guru, 'kelas' => $kelas, 'sesi' => $manual] = $this->skenario(); // sesi hari ini (manual)

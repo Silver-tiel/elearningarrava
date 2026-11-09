@@ -1487,4 +1487,101 @@ class SiswaController extends Controller
 
     return redirect()->route('siswa.profil')->with('success', 'Profil berhasil diperbarui.');
 }
+
+    /**
+     * Menampilkan halaman Papan Peringkat (Leaderboard) Siswa.
+     */
+    public function leaderboard(Request $request)
+    {
+        $user = $request->user();
+        if ($user) {
+            Achievement::syncForUser($user);
+            $user->loadMissing('jenjang');
+        }
+
+        $rawJenjang = $request->input('jenjang');
+        $activeJenjangId = null;
+
+        if ($rawJenjang !== null && $rawJenjang !== '' && $rawJenjang !== 'all' && $rawJenjang !== '0') {
+            $activeJenjangId = (int) $rawJenjang;
+        } elseif ($rawJenjang === null && $user && $user->id_jenjang) {
+            $activeJenjangId = (int) $user->id_jenjang;
+        }
+
+        $query = User::where('id_tipeuser', 3)
+            ->where(function ($q) {
+                $q->whereNull('status_akun')->orWhere('status_akun', '!=', 'Nonaktif');
+            })
+            ->with('jenjang')
+            ->orderByDesc('total_poin')
+            ->orderBy('nama');
+
+        if ($activeJenjangId !== null && $activeJenjangId > 0) {
+            $query->where('id_jenjang', $activeJenjangId);
+        }
+
+        $students = $query->take(50)->get();
+
+        $tierResolver = function (int $pts) {
+            return match (true) {
+                $pts >= 5000 => 'Grandmaster',
+                $pts >= 3000 => 'Master',
+                $pts >= 1800 => 'Madya',
+                $pts >= 1000 => 'Mahir',
+                $pts >= 500  => 'Pemula',
+                $pts >= 200  => 'Dasar',
+                $pts >= 50   => 'Rintisan',
+                default      => 'Starter',
+            };
+        };
+
+        $rankCounter = 1;
+        $leaderboard = $students->map(function ($s) use (&$rankCounter, $tierResolver) {
+            $pts = (int) ($s->total_poin ?? 0);
+            return [
+                'rank' => $rankCounter++,
+                'id_user' => $s->id_user,
+                'nama' => $s->nama,
+                'username' => $s->username,
+                'jenjang' => $s->jenjang->nama_jenjang ?? $s->jenjang->nama_tipe ?? 'SD',
+                'id_jenjang' => $s->id_jenjang,
+                'total_poin' => $pts,
+                'tier' => $s->rank_tier['current_rank'] ?? $tierResolver($pts),
+                'tier_badge' => $s->rank_tier['current_badge_url'] ?? null,
+                'foto_profil' => $s->foto_profil_url,
+            ];
+        });
+
+        // Hitung peringkat user yang login
+        $myRank = null;
+        if ($user) {
+            $myPoints = (int) ($user->total_poin ?? 0);
+            $betterCount = User::where('id_tipeuser', 3)
+                ->where(function ($q) {
+                    $q->whereNull('status_akun')->orWhere('status_akun', '!=', 'Nonaktif');
+                })
+                ->when($activeJenjangId !== null && $activeJenjangId > 0, fn($q) => $q->where('id_jenjang', $activeJenjangId))
+                ->where('total_poin', '>', $myPoints)
+                ->count();
+
+            $myRank = [
+                'rank' => $betterCount + 1,
+                'id_user' => $user->id_user,
+                'nama' => $user->nama,
+                'username' => $user->username,
+                'jenjang' => $user->jenjang->nama_jenjang ?? $user->jenjang->nama_tipe ?? 'SD',
+                'id_jenjang' => $user->id_jenjang,
+                'total_poin' => $myPoints,
+                'tier' => $user->rank_tier['current_rank'] ?? $tierResolver($myPoints),
+                'tier_badge' => $user->rank_tier['current_badge_url'] ?? null,
+                'foto_profil' => $user->foto_profil_url,
+            ];
+        }
+
+        $jenjangList = Schema::hasTable('jenjang')
+            ? Jenjang::orderBy('id_jenjang')->get()
+            : collect();
+
+        return view('siswa.leaderboard', compact('leaderboard', 'myRank', 'activeJenjangId', 'jenjangList', 'user'));
+    }
 }

@@ -79,7 +79,7 @@
             @csrf
 
             <div class="form-group">
-                <label for="id_quiz">ID Quiz</label>
+                <label for="id_quiz">ID Kuis</label>
                 <input type="number" id="id_quiz" name="id_quiz" value="{{ old('id_quiz') }}" required>
             </div>
 

@@ -259,4 +259,30 @@ class SiswaRankTierTest extends TestCase
         $response->assertSee('LEVEL UP! RANK BARU TERBUKA');
         $response->assertSee('assets/levelUp/littleLevelUp.gif');
     }
+
+    public function test_siswa_can_view_leaderboard_page(): void
+    {
+        // Buat 5 siswa untuk menguji podium top 3 dan list siswa lainnya
+        for ($i = 1; $i <= 5; $i++) {
+            User::create([
+                'nama' => "Siswa {$i}",
+                'email' => "siswa{$i}@test.com",
+                'password' => bcrypt('password'),
+                'total_poin' => $i * 100,
+                'id_tipeuser' => 3,
+                'status_akun' => 'Aktif',
+            ]);
+        }
+
+        $siswa = User::where('email', 'siswa1@test.com')->first();
+        $response = $this->actingAs($siswa)->get(route('siswa.leaderboard'));
+
+        $response->assertOk();
+        $response->assertSee('Papan Peringkat');
+        $response->assertSee('Tiga Besar Pembelajar Terbaik');
+        $response->assertSee('Daftar Peringkat Siswa Lainnya');
+        $response->assertSee('Siswa 5');
+        $response->assertSee('Siswa 4');
+        $response->assertSee('Siswa 1');
+    }
 }

@@ -151,6 +151,8 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'active.student', 'r
     Route::get('/profil', [SiswaController::class, 'profile'])->name('profil');
     Route::put('/profil/update', [SiswaController::class, 'updateProfile'])->name('profil.update');
 
+    Route::get('/leaderboard', [SiswaController::class, 'leaderboard'])->name('leaderboard');
+
     Route::get('/qr', [SiswaQrController::class, 'show'])->name('qr');
 });
 

@@ -30,14 +30,14 @@
                         @if($expired && !$quiz->perluToken())
                             <div class="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40 backdrop-blur-[0.5px]">
                                 <img src="{{ asset('assets/widget/expiredQuiz.webp') }}"
-                                     alt="Kuis Kadaluarsa"
+                                     alt="Kuis Kedaluwarsa"
                                      class="w-full h-full object-cover [image-rendering:pixelated] opacity-90 drop-shadow-md">
                             </div>
                         @endif
                     </div>
                     <div class="p-4">
                         <span class="inline-flex rounded-md {{ $expired ? 'bg-slate-200 text-slate-500' : 'bg-[#edf5ff] text-[#3180f7]' }} px-2 py-1 text-[11px] font-medium">
-                            {{ $expired ? 'Kadaluarsa' : ($quiz->tipeQuiz->nama_tipe ?? 'Latihan') }}
+                            {{ $expired ? 'Kedaluwarsa' : ($quiz->tipeQuiz->nama_tipe ?? 'Latihan') }}
                         </span>
                         <h2 class="mt-3 text-[16px] font-bold">{{ $quiz->judul }}</h2>
                         <div class="mt-4 flex items-center justify-between text-[11px] text-[#75839a]">

@@ -141,7 +141,7 @@
 
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-                <h1 class="text-2xl sm:text-3xl font-heading font-black tracking-tight text-[#082765]">Daftar Quiz 🎯</h1>
+                <h1 class="text-2xl sm:text-3xl font-heading font-black tracking-tight text-[#082765]">Daftar Kuis 🎯</h1>
                 <p class="mt-1 text-sm font-semibold text-[#465673]">Pilih kuis untuk melihat pratinjau materi, aturan pengerjaan, dan mulai berlatih.</p>
             </div>
         </div>
@@ -262,7 +262,7 @@
                             @if($expired && !$quiz->perluToken())
                                 <div class="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40 backdrop-blur-[0.5px]">
                                     <img src="{{ asset('assets/widget/expiredQuiz.webp') }}"
-                                         alt="Kuis Kadaluarsa"
+                                         alt="Kuis Kedaluwarsa"
                                          class="w-full h-full object-cover [image-rendering:pixelated] opacity-90 drop-shadow-md">
                                 </div>
                             @endif
@@ -339,7 +339,7 @@
                             @if($expired)
                                 <span class="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600">
                                     <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-                                    Kadaluarsa
+                                    Kedaluwarsa
                                 </span>
                                 <button type="button" disabled
                                     class="cursor-not-allowed rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-400">
@@ -428,7 +428,7 @@
 
                 {{-- Overlay Rantai Expired di Modal --}}
                 <div id="modal-expired-chains" class="hidden absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40">
-                    <img src="{{ asset('assets/widget/expiredQuiz.webp') }}" alt="Kuis Kadaluarsa"
+                    <img src="{{ asset('assets/widget/expiredQuiz.webp') }}" alt="Kuis Kedaluwarsa"
                         class="w-full h-full object-cover [image-rendering:pixelated] opacity-90 drop-shadow-lg">
                 </div>
 

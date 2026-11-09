@@ -17,6 +17,17 @@
 @endsection
 
 @section('content')
+@php
+    /**
+     * @var \App\Models\User $user
+     * @var int $modulCount
+     * @var int $quizCount
+     * @var int $kuisLulus
+     * @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Modul>|array $moduls
+     * @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\HasilQuizModul>|array $riwayatKuis
+     * @var array $notifikasiPresensi
+     */
+@endphp
 <div class="px-4 py-6 sm:px-8 sm:py-8 space-y-6 max-w-7xl mx-auto">
     @if(session('error'))
         <div class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm font-semibold text-red-700 shadow-sm">
@@ -35,150 +46,107 @@
     />
 
     {{-- =======================================================================
-         2. KARTU STATISTIK UTAMA (Materi, Quiz, Peringkat & EXP)
+         2. KARTU STATISTIK & MENU APLIKASI (Pintasan Materi, Quiz & Peringkat)
          ======================================================================= --}}
-    <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        <!-- 1. Materi Tersedia -->
-        <a href="{{ route('siswa.modul') }}"
-           class="group relative rounded-[22px] border border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_6px_0_#B2E7FC] flex flex-col justify-between overflow-hidden">
-            <div class="relative z-10 flex items-center justify-between">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-[#72839E]">Materi Tersedia</span>
-                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[#DDF3FF] text-[#007FBE]">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 16.5 5c1.747 0 3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                    </svg>
+    @php
+        $rankInfo = $user ? $user->rank_tier : [
+            'current_rank' => 'Pemula',
+            'current_badge_url' => null,
+            'next_rank' => null,
+            'next_badge_url' => null,
+            'current_points' => 0,
+            'next_points' => null,
+            'points_needed' => 0,
+            'percent' => 0,
+            'is_max' => false,
+        ];
+    @endphp
+
+    <!-- 1. Menu Pintasan Aplikasi (Materi, Quiz, Presensi, Peringkat) -->
+    <div class="rounded-[22px] border-2 border-[#DCEFFF] bg-white p-5 sm:p-6 shadow-[0_4px_0_#B2E7FC]">
+            <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-[#F0F6FF]">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-black uppercase tracking-wider text-[#72839E]">Menu Pintasan Belajar</span>
+                </div>
+                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#007FBE] bg-[#DDF3FF] px-2.5 py-0.5 rounded-full border border-[#B2E7FC]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#007FBE] animate-pulse"></span>
+                    <span>Akses Cepat</span>
                 </span>
             </div>
-            <p class="relative z-10 mt-3 text-3xl font-black text-[#12233F]">{{ $modulCount }}</p>
-            <div class="relative z-10 mt-4 flex items-center justify-between">
-                <span class="text-xs font-extrabold text-[#007FBE] group-hover:underline">Buka modul →</span>
-            </div>
 
-            <!-- Karakter Animasi Membaca Dokumen -->
-            <div class="pointer-events-none absolute bottom-1 right-2 h-28 w-28">
-                <img src="{{ asset('assets/foto_karakter/membacaDokumen/glasess_girl_readingl1.png') }}" 
-                     alt="Materi Tersedia" 
-                     style="image-rendering: pixelated;" 
-                     class="h-full w-full object-contain transition-opacity duration-150 group-hover:opacity-0">
-                <img src="{{ asset('assets/foto_karakter/membacaDokumen/glasess_girl_reading.gif') }}" 
-                     alt="Materi Tersedia Animasi" 
-                     style="image-rendering: pixelated;" 
-                     class="absolute inset-0 h-full w-full object-contain opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            </div>
-        </a>
-
-        <!-- 2. Quiz Tersedia -->
-        <a href="{{ route('siswa.quiz') }}"
-           class="group relative rounded-[22px] border border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_6px_0_#B2E7FC] flex flex-col justify-between overflow-hidden">
-            <div class="relative z-10 flex items-center justify-between">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-[#72839E]">Quiz Tersedia</span>
-                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[#DCFCE7] text-[#059669]">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </span>
-            </div>
-            <p class="relative z-10 mt-3 text-3xl font-black text-[#12233F]">{{ $quizCount }}</p>
-            <div class="relative z-10 mt-4 flex items-center justify-between">
-                <span class="text-xs font-extrabold text-[#059669] group-hover:underline">Buka quiz →</span>
-            </div>
-
-            <!-- Karakter Animasi Quiz Girl -->
-            <div class="pointer-events-none absolute bottom-1 right-2 h-28 w-28">
-                <img src="{{ asset('assets/foto_karakter/quiz/quizgirl1.png') }}" 
-                     alt="Quiz Tersedia" 
-                     style="image-rendering: pixelated;" 
-                     class="h-full w-full object-contain transition-opacity duration-150 group-hover:opacity-0">
-                <img src="{{ asset('assets/foto_karakter/quiz/quizgirl.gif') }}" 
-                     alt="Quiz Tersedia Animasi" 
-                     style="image-rendering: pixelated;" 
-                     class="absolute inset-0 h-full w-full object-contain opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            </div>
-        </a>
-
-        <!-- 3. Peringkat & EXP -->
-        @php
-            $rankInfo = $user ? $user->rank_tier : [
-                'current_rank' => 'Pemula',
-                'current_badge_url' => null,
-                'next_rank' => null,
-                'next_badge_url' => null,
-                'current_points' => 0,
-                'next_points' => null,
-                'points_needed' => 0,
-                'percent' => 0,
-                'is_max' => false,
-            ];
-        @endphp
-        <div class="rounded-[22px] border border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_6px_0_#B2E7FC] flex flex-col justify-between md:col-span-2 lg:col-span-1">
-            <div>
-                <div class="flex items-center justify-between gap-2">
-                    <span class="text-xs font-extrabold uppercase tracking-wider text-[#72839E]">Peringkat &amp; EXP</span>
-                    <a href="{{ route('siswa.profil') }}" class="inline-flex items-center gap-1.5 rounded-full bg-[#FEF3C7] px-2.5 py-1 text-xs font-extrabold text-[#B45309] border border-[#FDE68A] hover:bg-amber-100 transition shadow-xs">
-                        @if($rankInfo['current_badge_url'])
-                            <img src="{{ $rankInfo['current_badge_url'] }}" alt="{{ $rankInfo['current_rank'] }}" class="h-3.5 w-3.5 object-contain">
-                        @else
-                            <span class="text-[#D97706]">★</span>
-                        @endif
-                        <span>{{ $rankInfo['current_rank'] }}</span>
-                    </a>
-                </div>
-
-                <div class="mt-2.5 flex items-baseline gap-2">
-                    <p class="text-3xl font-black text-[#12233F]">{{ number_format($rankInfo['current_points']) }}</p>
-                    <span class="text-xs font-extrabold uppercase tracking-wider text-[#72839E]">EXP</span>
-                </div>
-
-                <!-- Status target rank -->
-                <div class="mt-2 flex items-center justify-between text-xs text-[#465673] font-semibold">
-                    <span>
-                        @if($rankInfo['is_max'])
-                            <span class="font-extrabold text-emerald-600">Tingkat Tertinggi 👑</span>
-                        @else
-                            Menuju <strong class="text-[#12233F]">{{ $rankInfo['next_rank'] }}</strong>
-                        @endif
-                    </span>
-                    <span class="font-extrabold text-[#12233F]">
-                        @if($rankInfo['is_max'])
-                            100%
-                        @else
-                            {{ number_format($rankInfo['current_points']) }} / {{ number_format($rankInfo['next_points']) }}
-                        @endif
-                    </span>
-                </div>
-
-                <!-- EXP Bar dengan Icon Widget EXP -->
-                <div class="mt-1.5 flex items-center gap-2">
-                    <img src="{{ asset('assets/widget/exp.png') }}" 
-                         alt="EXP" 
-                         title="EXP Poin"
-                         class="h-6 w-6 shrink-0 object-contain select-none"
-                         style="image-rendering: pixelated;">
-
-                    <div class="relative h-2.5 flex-1 overflow-hidden rounded-full bg-[#F0F6FF] ring-1 ring-[#DCEFFF]">
-                        <div class="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 transition-all duration-500"
-                             style="width: {{ $rankInfo['percent'] }}%;">
+            <div class="grid grid-cols-4 gap-2 sm:gap-4 py-2 justify-items-center">
+                <!-- 1. Materi Modul -->
+                <a href="{{ route('siswa.modul') }}"
+                   class="group flex flex-col items-center text-center transition-all">
+                    <div class="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-b from-[#EBF7FF] to-[#DDF3FF] border-2 border-[#B2E7FC] shadow-[0_4px_0_#007FBE] transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_6px_0_#007FBE] group-hover:border-[#007FBE] group-active:translate-y-0.5 group-active:shadow-none">
+                        <!-- Pixel Character Membaca -->
+                        <div class="relative h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center overflow-hidden">
+                            <img src="{{ asset('assets/foto_karakter/membacaDokumen/glasess_girl_readingl1.png') }}" 
+                                 alt="Materi Tersedia" 
+                                 style="image-rendering: pixelated;" 
+                                 class="h-full w-full object-contain transition-opacity duration-150 group-hover:opacity-0">
+                            <img src="{{ asset('assets/foto_karakter/membacaDokumen/glasess_girl_reading.gif') }}" 
+                                 alt="Materi Tersedia Animasi" 
+                                 style="image-rendering: pixelated;" 
+                                 class="absolute inset-0 h-full w-full object-contain opacity-0 transition-opacity duration-150 group-hover:opacity-100">
                         </div>
+                        <!-- Notification Badge -->
+                        <span class="absolute -top-1 -right-1 flex h-6 min-w-[24px] px-1.5 items-center justify-center rounded-full bg-[#007FBE] text-white text-[11px] font-black shadow-sm border-2 border-white">
+                            {{ $modulCount }}
+                        </span>
                     </div>
+                    <span class="mt-2.5 text-xs sm:text-sm font-black text-[#082765] group-hover:text-[#007FBE] transition">Materi</span>
+                    <span class="text-[11px] font-bold text-[#72839E]">{{ $modulCount }} Modul</span>
+                </a>
 
-                    <span class="shrink-0 text-xs font-extrabold text-amber-600 min-w-[34px] text-right">
-                        {{ $rankInfo['percent'] }}%
-                    </span>
-                </div>
-            </div>
+                <!-- 2. Quiz Latihan -->
+                <a href="{{ route('siswa.quiz') }}"
+                   class="group flex flex-col items-center text-center transition-all">
+                    <div class="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-b from-[#F0FDF4] to-[#DCFCE7] border-2 border-[#BBF7D0] shadow-[0_4px_0_#059669] transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_6px_0_#059669] group-hover:border-[#059669] group-active:translate-y-0.5 group-active:shadow-none">
+                        <!-- Pixel Character Quiz Girl -->
+                        <div class="relative h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center overflow-hidden">
+                            <img src="{{ asset('assets/foto_karakter/quiz/quizgirl1.png') }}" 
+                                 alt="Kuis Tersedia" 
+                                 style="image-rendering: pixelated;" 
+                                 class="h-full w-full object-contain transition-opacity duration-150 group-hover:opacity-0">
+                            <img src="{{ asset('assets/foto_karakter/quiz/quizgirl.gif') }}" 
+                                 alt="Kuis Tersedia Animasi" 
+                                 style="image-rendering: pixelated;" 
+                                 class="absolute inset-0 h-full w-full object-contain opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                        </div>
+                        <!-- Notification Badge -->
+                        <span class="absolute -top-1 -right-1 flex h-6 min-w-[24px] px-1.5 items-center justify-center rounded-full bg-[#059669] text-white text-[11px] font-black shadow-sm border-2 border-white">
+                            {{ $quizCount }}
+                        </span>
+                    </div>
+                    <span class="mt-2.5 text-xs sm:text-sm font-black text-[#082765] group-hover:text-[#059669] transition">Kuis</span>
+                    <span class="text-[11px] font-bold text-[#72839E]">{{ $quizCount }} Kuis</span>
+                </a>
 
-            <div class="mt-3.5 flex items-center justify-between border-t border-[#F0F6FF] pt-2.5 text-xs text-[#72839E]">
-                @if($rankInfo['is_max'])
-                    <span class="text-emerald-600 font-bold">Hebat! Semua tingkat terbuka.</span>
-                @else
-                    <span>Sisa <strong class="text-[#12233F]">{{ number_format($rankInfo['points_needed']) }} EXP</strong> lagi</span>
-                @endif
-                <a href="{{ route('siswa.profil') }}" class="font-extrabold text-[#007FBE] hover:underline">Detail rank →</a>
+                <!-- 3. Presensi QR -->
+                <a href="{{ route('siswa.profil') }}"
+                   class="group flex flex-col items-center text-center transition-all">
+                    <div class="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-b from-[#FFFBEB] to-[#FEF3C7] border-2 border-[#FDE68A] shadow-[0_4px_0_#D97706] transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_6px_0_#D97706] group-hover:border-[#D97706] group-active:translate-y-0.5 group-active:shadow-none">
+                        <svg class="h-6 w-6 sm:h-7 sm:w-7 text-[#D97706] transition-transform duration-200 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                        </svg>
+                    </div>
+                    <span class="mt-2.5 text-xs sm:text-sm font-black text-[#082765] group-hover:text-[#D97706] transition">Presensi</span>
+                    <span class="text-[11px] font-bold text-[#72839E]">QR Code</span>
+                </a>
+
+                <!-- 4. Peringkat / Leaderboard -->
+                <a href="{{ route('siswa.leaderboard') }}"
+                   class="group flex flex-col items-center text-center transition-all">
+                    <div class="relative flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-gradient-to-b from-[#F3E8FF] to-[#EDE9FE] border-2 border-[#DDD6FE] shadow-[0_4px_0_#7C3AED] transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-[0_6px_0_#7C3AED] group-hover:border-[#7C3AED] group-active:translate-y-0.5 group-active:shadow-none">
+                        <span class="text-2xl sm:text-3xl select-none transition-transform duration-200 group-hover:scale-110">🏆</span>
+                    </div>
+                    <span class="mt-2.5 text-xs sm:text-sm font-black text-[#082765] group-hover:text-[#7C3AED] transition">Peringkat</span>
+                    <span class="text-[11px] font-bold text-[#72839E]">{{ $rankInfo['current_rank'] }}</span>
+                </a>
             </div>
         </div>
-    </div>
-
-    {{-- =======================================================================
+    </div>    {{-- =======================================================================
          3. SPLIT SECTION: MATERI MODUL & RIWAYAT BELAJAR (Khas Arrava Mobile)
          ======================================================================= --}}
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -234,10 +202,10 @@
                                 </h3>
                                 <div class="mt-1 flex items-center gap-1.5 flex-wrap">
                                     <span class="rounded-md bg-[#F1F5F9] px-2 py-0.5 text-[10px] font-bold text-[#64748B]">
-                                        {{ $isVideo ? 'Video' : ($modul->tipeModul->nama_tipe ?? 'Materi') }}
+                                        {{ $isVideo ? 'Video' : ($modul->tipeModul?->nama_tipe ?? 'Materi') }}
                                     </span>
                                     <span class="rounded-md bg-[#EFF6FF] px-2 py-0.5 text-[10px] font-bold text-[#007FBE]">
-                                        {{ $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? 'Semua' }}
+                                        {{ $modul->jenjang?->nama_tipe ?? $modul->jenjang?->nama_jenjang ?? 'Semua' }}
                                     </span>
                                 </div>
                             </div>
@@ -293,10 +261,10 @@
 
                             <div class="min-w-0">
                                 <h4 class="text-xs sm:text-sm font-extrabold text-[#12233F] truncate">
-                                    {{ $riwayat->quiz->judul ?? 'Kuis Pembelajaran' }}
+                                    {{ $riwayat->quiz?->judul ?? 'Kuis Pembelajaran' }}
                                 </h4>
                                 <p class="text-[11px] font-semibold text-[#72839E]">
-                                    {{ $riwayat->waktu_dapat ? \Illuminate\Support\Carbon::parse($riwayat->waktu_dapat)->diffForHumans() : $riwayat->created_at->diffForHumans() }}
+                                    {{ $riwayat->waktu_dapat ? \Illuminate\Support\Carbon::parse($riwayat->waktu_dapat)->diffForHumans() : ($riwayat->created_at?->diffForHumans() ?? '-') }}
                                 </p>
                             </div>
                         </div>
@@ -318,15 +286,7 @@
                     </div>
                 @endforelse
 
-                <!-- Tips Belajar Singkat (Khas Arrava Mobile) -->
-                <div class="rounded-[18px] bg-[#EFF6FF] border border-[#BFDBFE] p-4 flex items-start gap-3">
-                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-[#007FBE]">
-                        💡
-                    </span>
-                    <p class="text-xs font-semibold text-[#1E40AF] leading-relaxed">
-                        Kerjakan modul dan latihan kuis secara berkala untuk memperkuat pemahamanmu serta menaikkan peringkat ke tingkat master!
-                    </p>
-                </div>
+
             </div>
         </div>
     </div>

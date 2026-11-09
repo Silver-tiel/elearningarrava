@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buat Quiz Baru — Arrava Editor</title>
+    <title>Buat Kuis Baru — Arrava Editor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet">
@@ -87,7 +87,7 @@
 
         @if(isset($errors) && $errors->any())
             <div role="alert" aria-live="assertive" class="mx-4 mt-2 max-h-28 shrink-0 overflow-y-auto rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800 shadow-sm">
-                <div class="font-bold">Input quiz belum valid. Periksa kembali:</div>
+                <div class="font-bold">Input kuis belum valid. Periksa kembali:</div>
                 <ul class="mt-1 list-inside list-disc space-y-0.5">
                     @foreach($errors->all() as $message)
                         <li>{{ $message }}</li>
@@ -150,7 +150,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>{{ (isset($quiz) && !$quiz->isDraft()) ? 'Perbarui Quiz' : 'Publikasikan' }}</span>
+                    <span>{{ (isset($quiz) && !$quiz->isDraft()) ? 'Perbarui Kuis' : 'Publikasikan' }}</span>
                 </button>
             </div>
         </header>
@@ -550,13 +550,13 @@ Tingkat Quiz
                         {{-- 2. WAKTU KADALUARSA (BISA TIDAK PERNAH) --}}
                         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
                             <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                             Batas Waktu Pengerjaan Quiz
+                             Batas Waktu Pengerjaan Kuis
                             </label>
                             
                             <div class="flex items-center gap-2 mb-2">
                                 <input type="checkbox" id="check-no-expiry" @checked(!isset($quiz) || !$quiz->waktu_kadaluarsa) class="w-4 h-4 text-blue-600 rounded">
                                 <label for="check-no-expiry" class="text-xs font-semibold text-slate-700 cursor-pointer">
-                                    Tidak Pernah Kadaluarsa
+                                    Tidak Pernah Kedaluwarsa
                                 </label>
                             </div>
 

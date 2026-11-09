@@ -9,16 +9,20 @@
     $rankInfo = $user ? $user->rank_tier : [
         'current_rank' => 'Pemula',
         'current_badge_url' => null,
-        'percent' => 0,
+        'next_rank' => null,
+        'next_badge_url' => null,
         'current_points' => 0,
+        'next_points' => null,
+        'points_needed' => 0,
+        'percent' => 0,
+        'is_max' => false,
     ];
     $progressPercent = $rankInfo['percent'] ?? 0;
-    $filledSegments = max(1, min(5, (int) round(($progressPercent / 100) * 5)));
     $jenjangName = $user->jenjang->nama_jenjang ?? $user->jenjang->nama_tipe ?? 'Umum';
 @endphp
 
 <div id="samudraHeroCard"
-     class="relative w-full rounded-[24px] overflow-hidden border border-[#DCEFFF] shadow-[0_8px_24px_rgba(6,32,63,0.18)] select-none min-h-[240px] sm:min-h-[260px] lg:min-h-[280px] flex flex-col justify-between p-4 sm:p-6"
+     class="relative w-full rounded-[24px] overflow-hidden border border-[#DCEFFF] shadow-[0_8px_24px_rgba(6,32,63,0.18)] select-none min-h-[260px] flex flex-col justify-between p-4 sm:p-6"
      style="background-color: #0c4a6e;">
     <!-- 1. Background Image Bawah Laut -->
     <img src="{{ asset('assets/widget/cards/underwaterHeroSection.webp') }}"
@@ -41,19 +45,19 @@
         <div class="bubble bubble-7"></div>
     </div>
 
-    <!-- 4. Konten Menimpa Bagian Atas: Profil Siswa, Jenjang & Bar EXP -->
-    <div class="relative z-20 flex flex-wrap items-center justify-between gap-3">
-        <!-- Info Profil Siswa -->
-        <div class="flex items-center gap-3 min-w-0">
+    <!-- 4. Konten Menimpa Bagian Atas: Profil Siswa & Peleburan Kartu Peringkat & EXP -->
+    <div class="relative z-20 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <!-- Kiri: Info Profil Siswa -->
+        <div class="flex items-center gap-3.5 min-w-0">
             <a href="{{ route('siswa.profil') }}" class="group relative block shrink-0" title="Buka Profil Siswa">
-                <div class="h-14 w-14 rounded-full p-[2.5px] bg-white shadow-lg ring-2 ring-white/70 transition duration-200 group-hover:scale-105">
+                <div class="h-14 w-14 sm:h-16 sm:w-16 rounded-full p-[2.5px] bg-white shadow-lg ring-2 ring-white/70 transition duration-200 group-hover:scale-105">
                     <div class="h-full w-full rounded-full overflow-hidden bg-gradient-to-tr from-[#007FBE] to-[#51CDF4] flex items-center justify-center text-white font-bold">
                         @if(!empty($user->foto_profil_url))
                             <img src="{{ $user->foto_profil_url }}"
                                  alt="Foto profil {{ $user->nama ?? 'Siswa' }}"
                                  class="h-full w-full object-cover">
                         @else
-                            <span class="text-xl font-extrabold tracking-tight text-white">
+                            <span class="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
                                 {{ strtoupper(substr($user->nama ?? 'S', 0, 1)) }}
                             </span>
                         @endif
@@ -61,7 +65,7 @@
                 </div>
             </a>
             <div class="min-w-0">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <h2 class="text-base sm:text-lg font-extrabold text-white leading-tight truncate drop-shadow-[0_2px_4px_rgba(0,0,0,0.65)]">
                         {{ $user->nama ?? 'Siswa Arrava' }}
                     </h2>
@@ -72,40 +76,92 @@
                         <span>{{ $jenjangName }}</span>
                     </span>
                 </div>
-                <p class="mt-0.5 text-xs font-semibold text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] flex items-center gap-1.5">
-                    <span>Level {{ $rankInfo['current_rank'] }}</span>
+                <p class="mt-1 text-xs font-semibold text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)] flex items-center gap-2 flex-wrap">
+                    <span class="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-md border border-white/25">
+                        <span>Level:</span> <strong>{{ $rankInfo['current_rank'] }}</strong>
+                    </span>
                     <span>•</span>
                     <span>{{ $kuisLulus }} Kuis Selesai</span>
+                    <span>•</span>
+                    <span>{{ $modulCount }} Modul</span>
                 </p>
             </div>
         </div>
 
-        <!-- Pill EXP (Tap untuk melihat Leaderboard / Profil) -->
-        <a href="{{ route('siswa.profil') }}"
-           class="inline-flex items-center gap-2.5 rounded-full bg-white/95 backdrop-blur-sm px-3.5 py-1.5 shadow-md border border-white/60 transition hover:bg-white hover:scale-105 active:scale-95 cursor-pointer"
-           title="Klik untuk detail EXP & Peringkat">
-            <span class="text-xs sm:text-sm font-extrabold text-[#0F172A] tracking-tight">
-                {{ number_format($user->total_poin ?? 0) }} EXP
-            </span>
-            <!-- Segmented Progress Bar (5 Segmen khas Mobile) -->
-            <div class="hidden sm:flex items-center gap-1">
-                @for($s = 1; $s <= 5; $s++)
-                    <span class="w-1.5 h-3.5 rounded-full transition-colors {{ $s <= $filledSegments ? 'bg-[#007FBE]' : 'bg-slate-200' }}"></span>
-                @endfor
+        <!-- Kanan: Peleburan Kartu Peringkat & EXP (Glassmorphic) -->
+        <div class="w-full lg:w-auto lg:min-w-[360px] xl:min-w-[400px] rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 p-3.5 sm:p-4 text-white shadow-lg">
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-black uppercase tracking-wider text-white/80">Peringkat &amp; EXP</span>
+                <a href="{{ route('siswa.leaderboard') }}"
+                   class="inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-sm px-2.5 py-0.5 text-xs font-extrabold text-[#B45309] border border-white/60 hover:bg-white transition shadow-xs"
+                   title="Lihat Papan Peringkat">
+                    @if($rankInfo['current_badge_url'])
+                        <img src="{{ $rankInfo['current_badge_url'] }}" alt="{{ $rankInfo['current_rank'] }}" class="h-3.5 w-3.5 object-contain">
+                    @else
+                        <span class="text-[#D97706]">★</span>
+                    @endif
+                    <span>{{ $rankInfo['current_rank'] }}</span>
+                </a>
             </div>
-            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-600 text-xs font-bold">
-                ★
-            </span>
-        </a>
+
+            <!-- Angka EXP & Status Target Rank -->
+            <div class="mt-2 flex items-baseline justify-between gap-2">
+                <div class="flex items-baseline gap-1.5">
+                    <span class="text-2xl sm:text-3xl font-heading font-black text-white leading-none">
+                        {{ number_format($rankInfo['current_points']) }}
+                    </span>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-amber-300">EXP</span>
+                </div>
+                <div class="text-right text-[11px] font-bold text-white/90">
+                    @if($rankInfo['is_max'])
+                        <span class="text-emerald-300 font-extrabold">Tingkat Tertinggi 👑</span>
+                    @else
+                        <span>Menuju <strong class="text-white font-black">{{ $rankInfo['next_rank'] }}</strong></span>
+                        <span class="block text-[10px] text-white/75 font-semibold">
+                            {{ number_format($rankInfo['current_points']) }} / {{ number_format($rankInfo['next_points']) }}
+                        </span>
+                    @endif
+                </div>
+            </div>
+
+            <!-- EXP Bar dengan Icon Widget EXP -->
+            <div class="mt-2 flex items-center gap-2">
+                <img src="{{ asset('assets/widget/exp.png') }}"
+                     alt="EXP"
+                     title="EXP Poin"
+                     class="h-5 w-5 shrink-0 object-contain select-none"
+                     style="image-rendering: pixelated;">
+
+                <div class="relative h-2.5 flex-1 overflow-hidden rounded-full bg-black/25 ring-1 ring-white/30">
+                    <div class="h-full rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 shadow-sm transition-all duration-500"
+                         style="width: {{ $rankInfo['percent'] }}%;">
+                    </div>
+                </div>
+
+                <span class="shrink-0 text-xs font-black text-amber-300 min-w-[34px] text-right">
+                    {{ $rankInfo['percent'] }}%
+                </span>
+            </div>
+
+            <!-- Footer: Sisa EXP & Link Leaderboard -->
+            <div class="mt-2.5 flex items-center justify-between border-t border-white/20 pt-2 text-[11px] font-bold text-white/90">
+                @if($rankInfo['is_max'])
+                    <span class="text-emerald-300">Hebat! Semua tingkat terbuka.</span>
+                @else
+                    <span>Sisa <strong class="text-white">{{ number_format($rankInfo['points_needed']) }} EXP</strong> lagi</span>
+                @endif
+                <a href="{{ route('siswa.leaderboard') }}" class="font-extrabold text-amber-300 hover:text-white hover:underline flex items-center gap-1 transition">
+                    <span>Lihat leaderboard</span>
+                    <span>→</span>
+                </a>
+            </div>
+        </div>
     </div>
 
     <!-- 5. Konten Menimpa Bagian Bawah: Sapaan Hangat & Quick Shortcuts -->
-    <div class="relative z-20 mt-auto pt-6 flex flex-wrap items-end justify-between gap-4">
+    <div class="relative z-20 mt-4 sm:mt-6 pt-3 sm:pt-4 flex flex-wrap items-end justify-between gap-4 border-t border-white/15">
         <div class="max-w-md">
-            <p class="text-xs font-bold uppercase tracking-wider text-[#DDF3FF] drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
-                Petualangan Belajar Arrava
-            </p>
-            <h1 class="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]">
+            <h1 class="text-lg sm:text-xl font-heading font-black text-white leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]">
                 Halo, {{ $user->nama ?? 'Siswa' }} 👋
             </h1>
             <p class="mt-0.5 text-xs sm:text-sm font-medium text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
