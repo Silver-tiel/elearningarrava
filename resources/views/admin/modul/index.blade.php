@@ -144,7 +144,7 @@
             FILTER & SORTIR TOOLBAR
         ====================================================== --}}
         <div class="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm mb-6">
-            <form action="{{ route('admin.modul') }}" method="GET" class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:flex xl:items-center mb-0git">
+            <form action="{{ route('admin.modul') }}" method="GET" class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:flex xl:items-center mb-0">
                 {{-- Pencarian --}}
                 <div class="relative min-w-0 xl:flex-[1.5]">
                     <input type="text" name="q" id="searchModule" value="{{ request('q', $search ?? '') }}"
