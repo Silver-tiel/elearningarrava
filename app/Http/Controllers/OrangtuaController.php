@@ -52,7 +52,7 @@ class OrangtuaController extends Controller
 
         // Jika belum ada siswa yang dihubungkan tampilkan empty state.
         if (empty($siswaIds)) {
-            $notifikasiPresensi = \App\Services\NotifikasiPresensiService::untukOrangtua($orangtua, $siswa ? $siswa->id_user : null);
+            $notifikasiPresensi = \App\Services\NotifikasiPresensiService::untukOrangtua($orangtua, null);
             return view('orangtua.dashboard', [
                 'orangtua'       => $orangtua,
                 'siswa'          => null,

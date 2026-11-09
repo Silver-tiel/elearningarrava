@@ -164,6 +164,23 @@ class NotifikasiPresensiTest extends TestCase
         $response->assertSee('Notifikasi Presensi');
     }
 
+    public function test_dashboard_orangtua_tanpa_siswa_terhubung_berhasil_render(): void
+    {
+        $orangtuaBaru = User::create([
+            'nama' => 'Orangtua Tanpa Anak',
+            'username' => 'orangtua_tanpa_anak',
+            'email' => 'orangtua.alone@example.com',
+            'nisn' => '9998887776',
+            'password' => bcrypt('password'),
+            'id_tipeuser' => 4,
+            'status_akun' => 'Aktif',
+        ]);
+
+        $response = $this->actingAs($orangtuaBaru)->get(route('orangtua.dashboard'));
+
+        $response->assertStatus(200);
+    }
+
     public function test_halaman_admin_tidak_menampilkan_icon_notifikasi(): void
     {
         $response = $this->actingAs($this->admin)->get(route('admin'));
