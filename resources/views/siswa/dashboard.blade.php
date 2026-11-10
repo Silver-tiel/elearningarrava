@@ -63,7 +63,7 @@
     @endphp
 
     <!-- 1. Menu Pintasan Aplikasi (Materi, Quiz, Presensi, Peringkat) -->
-    <div class="rounded-[22px] border-2 border-[#DCEFFF] bg-white p-5 sm:p-6 shadow-[0_4px_0_#B2E7FC]">
+    <div id="tourMenuPintasan" class="rounded-[22px] border-2 border-[#DCEFFF] bg-white p-5 sm:p-6 shadow-[0_4px_0_#B2E7FC]">
             <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-[#F0F6FF]">
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-black uppercase tracking-wider text-[#72839E]">Menu Pintasan Belajar</span>
@@ -151,7 +151,7 @@
          ======================================================================= --}}
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <!-- Kolom Kiri (7 Cols): Materi Modul Pembelajaran -->
-        <div class="lg:col-span-7 space-y-4">
+        <div id="tourMateriModul" class="lg:col-span-7 space-y-4">
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-base sm:text-lg font-black text-[#12233F] tracking-tight">Materi Modul Pembelajaran</h2>
@@ -224,7 +224,7 @@
         </div>
 
         <!-- Kolom Kanan (5 Cols): Riwayat Belajar & Kuis + Tips Belajar -->
-        <div class="lg:col-span-5 space-y-4">
+        <div id="tourRiwayatKuis" class="lg:col-span-5 space-y-4">
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-base sm:text-lg font-black text-[#12233F] tracking-tight">Riwayat Belajar &amp; Kuis</h2>

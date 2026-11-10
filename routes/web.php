@@ -248,19 +248,11 @@ Route::get('/storage/{path}', function (string $path) {
     if (!file_exists($fullPath) || !is_file($fullPath)) {
         abort(404);
     }
-    $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
-    $filesize = filesize($fullPath);
 
-    return response()->stream(function () use ($fullPath) {
-        $stream = fopen($fullPath, 'rb');
-        if ($stream) {
-            fpassthru($stream);
-            fclose($stream);
-        }
-    }, 200, [
-        'Content-Type' => $mime,
-        'Content-Length' => $filesize,
-        'Cache-Control' => 'no-cache, private',
+    return response()->file($fullPath, [
         'Access-Control-Allow-Origin' => '*',
+        'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+        'Access-Control-Allow-Headers' => '*',
+        'Cache-Control' => 'public, max-age=86400',
     ]);
 })->where('path', '.*');

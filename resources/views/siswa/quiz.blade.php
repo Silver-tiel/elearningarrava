@@ -139,15 +139,21 @@
             </div>
         @endif
 
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-heading font-black tracking-tight text-[#082765]">Daftar Kuis 🎯</h1>
                 <p class="mt-1 text-sm font-semibold text-[#465673]">Pilih kuis untuk melihat pratinjau materi, aturan pengerjaan, dan mulai berlatih.</p>
             </div>
+            <button type="button" id="btnStartQuizTour"
+                class="self-start sm:self-center inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border-2 border-[#B2E7FC] bg-white hover:bg-[#DDF3FF] text-[#007FBE] text-xs font-black shadow-[0_2px_0_#B2E7FC] active:translate-y-0.5 transition"
+                title="Buka panduan interaktif halaman kuis">
+                <span>🧭</span>
+                <span>Panduan Kuis</span>
+            </button>
         </div>
 
         {{-- Filter Bar --}}
-        <form method="GET" action="{{ route('siswa.quiz') }}"
+        <form id="quizFilterBar" method="GET" action="{{ route('siswa.quiz') }}"
             class="grid gap-3.5 rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end shadow-[0_3px_0_#DCEFFF]">
             <div>
                 <label for="filter-mapel" class="mb-1.5 block text-xs font-bold text-[#465673]">Mata Pelajaran</label>
@@ -248,7 +254,7 @@
                         'poin_didapat_tertinggi' => $poinDidapatTertinggi,
                     ];
                 @endphp
-                <div class="quiz-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white transition-all duration-200 {{ ($expired && !$quiz->perluToken()) ? 'cursor-not-allowed opacity-75 grayscale' : 'hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_6px_0_#007FBE] shadow-[0_4px_0_#B2E7FC]' }}"
+                <div {{ $loop->first ? 'id="tourQuizCard"' : '' }} class="quiz-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white transition-all duration-200 {{ ($expired && !$quiz->perluToken()) ? 'cursor-not-allowed opacity-75 grayscale' : 'hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_6px_0_#007FBE] shadow-[0_4px_0_#B2E7FC]' }}"
                     data-title="{{ strtolower($quiz->judul) }}">
 
                     <div>
@@ -580,6 +586,9 @@
             </div>
         </div>
     </div>
+
+    {{-- Tour Panduan Kuis Interaktif --}}
+    @include('components.quiz-tour')
 
     @push('scripts')
         <script>

@@ -1,0 +1,7 @@
+# Use this workspace to collaborate
+workspace:
+  id: bddafdcf-caa8-4962-88b8-bd8248f3a810
+
+localResources:
+  collections:
+    - ../public/Arrava_Postman_Collection.json

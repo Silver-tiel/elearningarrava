@@ -112,6 +112,7 @@ class DashboardController extends Controller
                     'jenjang' => $user->jenjang->nama_jenjang ?? 'Umum',
                     'total_xp' => (int) ($user->total_poin ?? 0),
                     'foto_profil' => $this->resolvePhotoUrl($user->foto_profil),
+                    'rank_tier' => $user->rank_tier,
                 ],
                 'stats' => [
                     'kursus_aktif' => $totalModul,
