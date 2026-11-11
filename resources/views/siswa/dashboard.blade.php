@@ -35,15 +35,37 @@
         </div>
     @endif
 
+    @if(session('success'))
+        <div role="status" class="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @php
+        $queryHero = request()->query('hero');
+        $activeHeroTheme = isset($user) && method_exists($user, 'resolvedHeroTheme')
+            ? $user->resolvedHeroTheme(is_string($queryHero) ? $queryHero : null)
+            : (in_array($queryHero, ['samudra', 'galaksi'], true) ? $queryHero : 'samudra');
+    @endphp
+
     {{-- =======================================================================
-         1. SAMUDRA HERO SECTION (Menimpa: Avatar, Nama, Bar EXP & Ikan Piksel)
+         1. HERO SECTION (Mengikuti pilihan tema profil user atau preview ?hero=)
          ======================================================================= --}}
-    <x-samudra-hero
-        :user="$user"
-        :kuis-lulus="$kuisLulus ?? 0"
-        :modul-count="$modulCount ?? 0"
-        :quiz-count="$quizCount ?? 0"
-    />
+    @if($activeHeroTheme === 'galaksi')
+        <x-galaksi-hero
+            :user="$user"
+            :kuis-lulus="$kuisLulus ?? 0"
+            :modul-count="$modulCount ?? 0"
+            :quiz-count="$quizCount ?? 0"
+        />
+    @else
+        <x-samudra-hero
+            :user="$user"
+            :kuis-lulus="$kuisLulus ?? 0"
+            :modul-count="$modulCount ?? 0"
+            :quiz-count="$quizCount ?? 0"
+        />
+    @endif
 
     {{-- =======================================================================
          2. KARTU STATISTIK & MENU APLIKASI (Pintasan Materi, Quiz & Peringkat)

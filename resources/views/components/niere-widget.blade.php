@@ -1610,7 +1610,7 @@
       const TOUR_STEPS = {
         siswa: [
           {
-            selector: "#samudraHeroCard",
+            selector: "#samudraHeroCard, #galaksiHeroCard",
             title: "Profil & EXP",
             text: "Ini area profilmu! Di sini kamu bisa melihat namamu, jenjang belajar, dan bilah progres EXP. Terus kumpulkan poin EXP dari kuis dan modul untuk menaikkan peringkatmu.",
             pose: "talk"

@@ -5,6 +5,8 @@
 @push('styles')
 <style>
     #qr-svg svg { width: 100%; height: auto; display: block; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     @media print {
         body * { visibility: hidden !important; }
         #kartu-qr, #kartu-qr * { visibility: visible !important; }
@@ -86,6 +88,9 @@
                                     <span class="rounded-full bg-[#DDF3FF] px-3 py-1 text-xs font-bold text-[#007FBE] border border-[#B2E7FC]">Siswa</span>
                                     @php
                                         $rankInfo = $user->rank_tier;
+                                        $activeHeroTheme = method_exists($user, 'resolvedHeroTheme') ? $user->resolvedHeroTheme() : 'samudra';
+                                        $nextHeroTheme = $activeHeroTheme === 'galaksi' ? 'samudra' : 'galaksi';
+                                        $nextHeroShort = $nextHeroTheme === 'galaksi' ? 'Galaksi' : 'Samudra';
                                     @endphp
                                     <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-800 border-2 border-amber-200 shadow-xs">
                                         @if($rankInfo['current_badge_url'])
@@ -102,8 +107,126 @@
                                     >
                                         Edit Profil Saya
                                     </button>
+                                    <form action="{{ route('siswa.profil.hero_theme') }}" method="POST" class="inline-flex">
+                                        @csrf
+                                        @method('PATCH')
+                                        <input type="hidden" name="hero_theme" value="{{ $nextHeroTheme }}">
+                                        <input type="hidden" name="redirect_to" value="profil">
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center gap-1 rounded-full bg-[#F0F6FF] hover:bg-[#DDF3FF] px-3 py-1 text-xs font-bold text-[#007FBE] border border-[#B2E7FC] transition cursor-pointer"
+                                            title="Ganti hero dashboard ke {{ $nextHeroShort }} Piksel"
+                                        >
+                                            <span>Ganti Hero ke {{ $nextHeroShort }}</span>
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
+                        </div>
+                    </section>
+
+                    <section id="tema-hero-dashboard" class="rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-5 sm:p-6 shadow-[0_4px_0_#B2E7FC]">
+                        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 class="text-base font-heading font-black text-[#082765]">Tema Hero Dashboard 🎨</h2>
+                                <p class="mt-0.5 text-xs font-semibold text-[#465673]">Pilih tampilan kartu sambutan yang tampil di Dashboard Anda.</p>
+                            </div>
+                            <a href="{{ route('siswa.dashboard') }}"
+                                class="inline-flex items-center gap-1 rounded-xl border-2 border-[#B2E7FC] bg-white px-3 py-1.5 text-xs font-bold text-[#007FBE] shadow-[0_2px_0_#B2E7FC] hover:bg-[#F0F6FF] transition">
+                                <span>Lihat Dashboard</span>
+                                <span>→</span>
+                            </a>
+                        </div>
+
+                        @php
+                            $heroVisuals = [
+                                'samudra' => [
+                                    'bgStyle' => 'background-color: #0c4a6e;',
+                                    'img' => asset('assets/widget/cards/herosection/herosection1/underwaterHeroSection.webp'),
+                                    'accentImg' => asset('assets/widget/cards/herosection/herosection1/fish1.webp'),
+                                    'accentClass' => 'right-3 bottom-3 h-7 w-7',
+                                ],
+                                'galaksi' => [
+                                    'bgStyle' => 'background-color: #05060F;',
+                                    'img' => asset('assets/widget/cards/herosection/herosection2/BackgroundSpace.webp'),
+                                    'accentImg' => asset('assets/widget/cards/herosection/herosection2/layer4_celestial.webp'),
+                                    'accentClass' => 'inset-0 h-full w-full object-cover',
+                                ],
+                            ];
+                        @endphp
+
+                        @php
+                            $activeHeroIndex = (int) array_search($activeHeroTheme, array_keys(\App\Models\User::HERO_THEMES), true);
+                        @endphp
+                        <div id="hero-theme-carousel-track"
+                            data-active-index="{{ $activeHeroIndex }}"
+                            class="no-scrollbar -mx-1 flex snap-x snap-mandatory gap-3.5 overflow-x-auto scroll-smooth px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 sm:snap-none">
+                            @foreach (\App\Models\User::HERO_THEMES as $themeKey => $themeMeta)
+                                @php
+                                    $visual = $heroVisuals[$themeKey];
+                                    $isActiveHero = $activeHeroTheme === $themeKey;
+                                @endphp
+                                <form action="{{ route('siswa.profil.hero_theme') }}" method="POST"
+                                    data-hero-slide="{{ $loop->index }}"
+                                    class="flex w-[86%] shrink-0 snap-center sm:w-auto sm:shrink">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="hero_theme" value="{{ $themeKey }}">
+                                    <input type="hidden" name="redirect_to" value="profil">
+                                    <button type="submit"
+                                        class="group flex w-full flex-col overflow-hidden rounded-2xl border-2 text-left transition cursor-pointer {{ $isActiveHero ? 'border-[#007FBE] bg-[#F0F6FF] ring-2 ring-[#B2E7FC]' : 'border-[#DCEFFF] bg-white hover:border-[#007FBE] hover:bg-[#F8FBFF]' }}">
+                                        <div class="relative h-24 w-full overflow-hidden" style="{{ $visual['bgStyle'] }}">
+                                            <img src="{{ $visual['img'] }}" alt="{{ $themeMeta['label'] }}"
+                                                class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                                style="image-rendering: pixelated;">
+                                            <img src="{{ $visual['accentImg'] }}" alt=""
+                                                class="pointer-events-none absolute {{ $visual['accentClass'] }}"
+                                                style="image-rendering: pixelated;">
+                                            <span class="absolute top-2.5 right-2.5 rounded-full px-2.5 py-0.5 text-[10px] font-black shadow-sm {{ $isActiveHero ? 'bg-emerald-500 text-white' : 'bg-white/90 text-[#082765]' }}">
+                                                {{ $isActiveHero ? '✓ Aktif' : 'Pilih' }}
+                                            </span>
+                                        </div>
+                                        <div class="flex flex-1 flex-col justify-between p-3.5">
+                                            <div>
+                                                <h3 class="text-sm font-heading font-black text-[#082765]">{{ $themeMeta['label'] }}</h3>
+                                                <p class="mt-0.5 text-xs font-semibold text-[#465673]">{{ $themeMeta['description'] }}</p>
+                                            </div>
+                                            <span class="mt-2.5 inline-flex items-center gap-1 text-xs font-extrabold {{ $isActiveHero ? 'text-emerald-700' : 'text-[#007FBE]' }}">
+                                                {{ $isActiveHero ? 'Sedang Digunakan' : 'Gunakan ' . $themeMeta['label'] . ' →' }}
+                                            </span>
+                                        </div>
+                                    </button>
+                                </form>
+                            @endforeach
+                        </div>
+
+                        <!-- Kontrol Carousel Mobile (muncul hanya ketika preview menjadi carousel di layar sempit) -->
+                        <div class="mt-3 flex items-center justify-between gap-3 sm:hidden" aria-label="Navigasi carousel tema hero">
+                            <button type="button" id="hero-carousel-prev"
+                                aria-label="Tema hero sebelumnya"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded-xl border-2 border-[#B2E7FC] bg-[#F0F6FF] text-[#007FBE] shadow-[0_2px_0_#B2E7FC] active:translate-y-0.5 active:shadow-none transition">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+
+                            <div class="flex items-center gap-1.5" id="hero-carousel-dots">
+                                @foreach (\App\Models\User::HERO_THEMES as $themeKey => $themeMeta)
+                                    <button type="button"
+                                        data-hero-dot="{{ $loop->index }}"
+                                        aria-label="Lihat tema {{ $themeMeta['label'] }}"
+                                        class="h-2 rounded-full transition-all duration-200 {{ $activeHeroTheme === $themeKey ? 'w-5 bg-[#007FBE]' : 'w-2 bg-[#B2E7FC]' }}">
+                                    </button>
+                                @endforeach
+                            </div>
+
+                            <button type="button" id="hero-carousel-next"
+                                aria-label="Tema hero berikutnya"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded-xl border-2 border-[#B2E7FC] bg-[#F0F6FF] text-[#007FBE] shadow-[0_2px_0_#B2E7FC] active:translate-y-0.5 active:shadow-none transition">
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
                         </div>
                     </section>
 
@@ -725,6 +848,77 @@
             if (btnCetakMobile) btnCetakMobile.addEventListener('click', cetakQr);
             if (btnUnduh) btnUnduh.addEventListener('click', unduhQr);
             if (btnUnduhMobile) btnUnduhMobile.addEventListener('click', unduhQr);
+        })();
+
+        // Carousel Tema Hero Dashboard pada layar sempit
+        (function () {
+            const track = document.getElementById('hero-theme-carousel-track');
+            const prevBtn = document.getElementById('hero-carousel-prev');
+            const nextBtn = document.getElementById('hero-carousel-next');
+            const dots = Array.from(document.querySelectorAll('[data-hero-dot]'));
+            const slides = track ? Array.from(track.querySelectorAll('[data-hero-slide]')) : [];
+            if (!track || slides.length === 0) return;
+
+            let currentIndex = Math.max(0, Math.min(slides.length - 1, Number(track.dataset.activeIndex || 0)));
+
+            function setDots(index) {
+                dots.forEach((dot, i) => {
+                    const active = i === index;
+                    dot.classList.toggle('w-5', active);
+                    dot.classList.toggle('bg-[#007FBE]', active);
+                    dot.classList.toggle('w-2', !active);
+                    dot.classList.toggle('bg-[#B2E7FC]', !active);
+                });
+            }
+
+            function scrollToSlide(index, smooth = true) {
+                const targetIndex = (index + slides.length) % slides.length;
+                const slide = slides[targetIndex];
+                if (!slide || track.scrollWidth <= track.clientWidth + 4) return;
+
+                currentIndex = targetIndex;
+                const left = slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2;
+                track.scrollTo({
+                    left: Math.max(0, left),
+                    behavior: smooth ? 'smooth' : 'auto',
+                });
+                setDots(currentIndex);
+            }
+
+            function syncIndexFromScroll() {
+                if (track.scrollWidth <= track.clientWidth + 4) return;
+                const center = track.scrollLeft + track.clientWidth / 2;
+                let closest = 0;
+                let bestDist = Infinity;
+                slides.forEach((slide, i) => {
+                    const slideCenter = slide.offsetLeft + slide.offsetWidth / 2;
+                    const dist = Math.abs(slideCenter - center);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        closest = i;
+                    }
+                });
+                if (closest !== currentIndex) {
+                    currentIndex = closest;
+                    setDots(currentIndex);
+                }
+            }
+
+            if (prevBtn) prevBtn.addEventListener('click', () => scrollToSlide(currentIndex - 1));
+            if (nextBtn) nextBtn.addEventListener('click', () => scrollToSlide(currentIndex + 1));
+            dots.forEach((dot, i) => dot.addEventListener('click', () => scrollToSlide(i)));
+
+            let scrollRaf = null;
+            track.addEventListener('scroll', () => {
+                if (scrollRaf) cancelAnimationFrame(scrollRaf);
+                scrollRaf = requestAnimationFrame(syncIndexFromScroll);
+            }, { passive: true });
+
+            if (currentIndex > 0) {
+                scrollToSlide(currentIndex, false);
+            } else {
+                setDots(0);
+            }
         })();
     </script>
 @endpush
