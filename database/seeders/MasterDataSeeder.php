@@ -26,7 +26,6 @@ class MasterDataSeeder extends Seeder
         DB::table('tipemodul')->insertOrIgnore([
             ['id_tipemodul' => 1, 'nama_tipe' => 'Video', 'created_at' => $now, 'updated_at' => $now],
             ['id_tipemodul' => 2, 'nama_tipe' => 'PDF', 'created_at' => $now, 'updated_at' => $now],
-            ['id_tipemodul' => 3, 'nama_tipe' => 'Artikel', 'created_at' => $now, 'updated_at' => $now],
         ]);
 
         DB::table('tipequiz')->insertOrIgnore([

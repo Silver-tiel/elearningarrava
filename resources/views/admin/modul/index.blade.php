@@ -176,7 +176,7 @@
                     </select>
                 </div>
 
-                {{-- Filter Jenis Modul (PDF, Video, Artikel) --}}
+                {{-- Filter Jenis Modul --}}
                 <div class="min-w-0 xl:flex-1">
                     <select name="tipe" onchange="this.form.submit()"
                         class="box-border h-10 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -185,7 +185,6 @@
                             <option value="{{ $t->id_tipemodul }}" {{ ($tipeFilter ?? '') == $t->id_tipemodul ? 'selected' : '' }}>
                                 @if(stripos($t->nama_tipe, 'pdf') !== false) 📄
                                 @elseif(stripos($t->nama_tipe, 'video') !== false) 🎬
-                                @elseif(stripos($t->nama_tipe, 'artikel') !== false) 📰
                                 @endif
                                 {{ $t->nama_tipe }}
                             </option>
@@ -206,7 +205,6 @@
                         <optgroup label="Urutan Berdasarkan Jenis Modul">
                             <option value="type_pdf" {{ ($sort ?? '') === 'type_pdf' ? 'selected' : '' }}>📄 Utamakan: PDF</option>
                             <option value="type_video" {{ ($sort ?? '') === 'type_video' ? 'selected' : '' }}>🎬 Utamakan: Video</option>
-                            <option value="type_artikel" {{ ($sort ?? '') === 'type_artikel' ? 'selected' : '' }}>📰 Utamakan: Artikel</option>
                             <option value="type_asc" {{ ($sort ?? '') === 'type_asc' ? 'selected' : '' }}>Jenis Modul (A - Z)</option>
                         </optgroup>
                     </select>

@@ -178,7 +178,7 @@ class OrangtuaController extends Controller
             ->pluck('id_quiz')
             ->toArray();
 
-        // Kelompokkan modul berdasarkan tipe modul (Video, PDF, Artikel)
+        // Kelompokkan modul berdasarkan tipe modul.
         $modulGrouped = $allModuls->groupBy(fn($m) => $m->tipeModul->nama_tipe ?? 'Lainnya');
 
         $modulProgress = $modulGrouped->map(function ($group, $tipeName) use ($lulusQuizIds) {

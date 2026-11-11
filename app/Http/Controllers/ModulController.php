@@ -72,7 +72,6 @@ class ModulController extends Controller
         $sort = $request->query('sort', 'latest');
         $idPdf = TipeModul::where('nama_tipe', 'like', '%pdf%')->value('id_tipemodul') ?? 2;
         $idVideo = TipeModul::where('nama_tipe', 'like', '%video%')->value('id_tipemodul') ?? 1;
-        $idArtikel = TipeModul::where('nama_tipe', 'like', '%artikel%')->value('id_tipemodul') ?? 3;
 
         match ($sort) {
             'oldest' => $query->oldest('id_modul'),
@@ -80,7 +79,6 @@ class ModulController extends Controller
             'title_desc' => $query->orderBy('judul_modul', 'desc'),
             'type_pdf' => $query->orderByRaw("CASE WHEN modul.id_tipemodul = {$idPdf} THEN 0 ELSE 1 END")->latest('modul.id_modul'),
             'type_video' => $query->orderByRaw("CASE WHEN modul.id_tipemodul = {$idVideo} THEN 0 ELSE 1 END")->latest('modul.id_modul'),
-            'type_artikel' => $query->orderByRaw("CASE WHEN modul.id_tipemodul = {$idArtikel} THEN 0 ELSE 1 END")->latest('modul.id_modul'),
             'type_asc' => $query->leftJoin('tipemodul', 'modul.id_tipemodul', '=', 'tipemodul.id_tipemodul')
                                 ->orderBy('tipemodul.nama_tipe', 'asc')
                                 ->select('modul.*'),
@@ -697,7 +695,7 @@ class ModulController extends Controller
             'file_url' => $fileUrl,
             'tipe_file' => $modul->tipe_file,
             'id_tipemodul' => $modul->id_tipemodul ? (int) $modul->id_tipemodul : null,
-            'nama_tipe' => $modul->tipeModul->nama_tipe ?? ($modul->id_tipemodul == 1 ? 'Video' : ($modul->id_tipemodul == 2 ? 'PDF' : 'Artikel')),
+            'nama_tipe' => $modul->tipeModul->nama_tipe ?? ($modul->id_tipemodul == 2 ? 'PDF' : 'Video'),
             'id_jenjang' => $modul->id_jenjang ? (int) $modul->id_jenjang : null,
             'nama_jenjang' => $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? null,
             'id_mapel' => $modul->id_mapel ? (int) $modul->id_mapel : null,

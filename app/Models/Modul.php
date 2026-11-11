@@ -58,7 +58,7 @@ class Modul extends Model
         'poin_modul',
     ];
 
-    // Relasi ke tabel tipe modul (1: Video, 2: PDF, 3: Artikel)
+    // Relasi ke tabel tipe modul (1: Video, 2: PDF)
     public function tipeModul()
     {
         return $this->belongsTo(TipeModul::class, 'id_tipemodul', 'id_tipemodul');
