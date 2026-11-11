@@ -48,7 +48,7 @@
             </p>
         </div>
 
-        <div class="flex items-center gap-3 rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-3.5 shadow-[0_3px_0_#B2E7FC]">
+        <div id="tourOtStudentCard" class="flex items-center gap-3 rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-3.5 shadow-[0_3px_0_#B2E7FC]">
             <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#DDF3FF] font-black text-[#007FBE] border border-[#B2E7FC]">
                 {{ strtoupper(substr($siswa->nama, 0, 1)) }}
             </div>
@@ -82,7 +82,7 @@
     </div>
 
     {{-- Ringkasan akademik (3D Samudra Style) --}}
-    <section>
+    <section id="tourOtStats">
         <h2 class="mb-3.5 text-base font-heading font-black text-[#082765] flex items-center gap-2">
             <span>📊</span> Ringkasan Akademik
         </h2>
@@ -159,7 +159,7 @@
     </section>
 
     {{-- Aktivitas belajar terbaru --}}
-    <section class="overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white shadow-[0_4px_0_#B2E7FC]">
+    <section id="tourOtAktivitas" class="overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white shadow-[0_4px_0_#B2E7FC]">
         <div class="flex flex-col gap-3 border-b border-[#DCEFFF] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="font-heading font-black text-base text-[#082765] flex items-center gap-2">
@@ -250,7 +250,7 @@
     });
     @endphp
 
-    <section class="rounded-2xl sm:rounded-3xl border-2 p-5 shadow-[0_3px_0_#B2E7FC]
+    <section id="tourOtPerhatian" class="rounded-2xl sm:rounded-3xl border-2 p-5 shadow-[0_3px_0_#B2E7FC]
             {{ $perluPerhatian ? 'border-amber-300 bg-amber-50/70' : 'border-[#DCEFFF] bg-white' }}">
         <div class="flex items-start gap-3.5">
             <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border

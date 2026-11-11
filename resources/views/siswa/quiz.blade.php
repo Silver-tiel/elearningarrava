@@ -139,53 +139,129 @@
             </div>
         @endif
 
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-heading font-black tracking-tight text-[#082765]">Daftar Kuis 🎯</h1>
                 <p class="mt-1 text-sm font-semibold text-[#465673]">Pilih kuis untuk melihat pratinjau materi, aturan pengerjaan, dan mulai berlatih.</p>
             </div>
+            <button type="button" id="btnStartQuizTour"
+                class="self-start sm:self-center inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border-2 border-[#B2E7FC] bg-white hover:bg-[#DDF3FF] text-[#007FBE] text-xs font-black shadow-[0_2px_0_#B2E7FC] active:translate-y-0.5 transition"
+                title="Buka panduan interaktif halaman kuis">
+                <span>🧭</span>
+                <span>Panduan Kuis</span>
+            </button>
         </div>
 
-        {{-- Filter Bar --}}
-        <form method="GET" action="{{ route('siswa.quiz') }}"
-            class="grid gap-3.5 rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end shadow-[0_3px_0_#DCEFFF]">
-            <div>
-                <label for="filter-mapel" class="mb-1.5 block text-xs font-bold text-[#465673]">Mata Pelajaran</label>
-                <select id="filter-mapel" name="mapel"
-                    class="h-10 w-full rounded-xl border-2 border-[#DCEFFF] bg-[#F0F6FF] px-3 text-sm font-semibold text-[#12233F] focus:border-[#007FBE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#DDF3FF] transition">
-                    <option value="">Semua mapel</option>
-                    @if(isset($mapelList))
-                        @foreach($mapelList as $m)
-                            <option value="{{ $m->id_mapel }}" @selected(request('mapel') == $m->id_mapel)>
-                                {{ $m->nama_mapel }}</option>
-                        @endforeach
-                    @endif
-                </select>
+        {{-- Oceanic Header & Filter Bar (Diadaptasi dari Arrava Mobile StudentQuizListPage) --}}
+        <div class="rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-gradient-to-b from-[#AEE3F9]/60 via-[#E6F3FF]/70 to-white/95 p-4 sm:p-5 shadow-[0_4px_0_#DCEFFF] space-y-4">
+            {{-- Top Header Row --}}
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#DCEFFF] shadow-xs">
+                    <span class="text-sm">🚀</span>
+                    <span class="text-xs font-black text-[#007FBE]">Kuis Pembelajaran</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <span id="quiz-count-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white border border-[#DCEFFF] text-xs font-black text-[#465673] shadow-xs">
+                        {{ count($quizzes) }} Kuis
+                    </span>
+                </div>
             </div>
-            <div>
-                <label for="filter-tingkat" class="mb-1.5 block text-xs font-bold text-[#465673]">Tingkat Kesulitan</label>
-                <select id="filter-tingkat" name="tingkat"
-                    class="h-10 w-full rounded-xl border-2 border-[#DCEFFF] bg-[#F0F6FF] px-3 text-sm font-semibold text-[#12233F] focus:border-[#007FBE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#DDF3FF] transition">
-                    <option value="">Semua tingkat</option>
-                    @foreach($tingkatQuizList as $tingkat)
-                        <option value="{{ $tingkat->id_tingkatquiz }}" @selected(request('tingkat') == $tingkat->id_tingkatquiz)>
-                            {{ $tingkat->nama_tingkat }}</option>
+
+            {{-- Search Bar --}}
+            <div class="relative">
+                <svg class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#007FBE]" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-4-4" />
+                </svg>
+                <input type="text" id="quiz-filter-search" name="q" value="{{ request('q') }}" placeholder="Cari kuis, mapel, topik..."
+                    class="h-11 w-full rounded-2xl bg-white border-2 border-[#DCEFFF] pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#12233F] outline-none placeholder:text-[#94A3B8] focus:border-[#007FBE] focus:ring-4 focus:ring-[#DDF3FF] transition shadow-[0_2px_0_#DCEFFF]">
+            </div>
+
+            {{-- Filter Jenjang (Filter Chips dari Mobile) --}}
+            <div class="space-y-1.5">
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="quiz-jenjang-chips">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-[#465673] shrink-0 mr-1">Jenjang:</span>
+                    @php
+                        $activeJenjang = $selectedJenjang ?? request('jenjang', 'Jenjang Saya');
+                    @endphp
+                    @foreach(['Jenjang Saya', 'Semua', 'SD', 'SMP', 'SMA'] as $j)
+                        @php
+                            $isJSelected = strcasecmp($activeJenjang, $j) === 0;
+                        @endphp
+                        <button type="button"
+                            data-jenjang="{{ $j }}"
+                            class="quiz-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border {{ $isJSelected ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs' : 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] hover:bg-[#DBEAFE]' }}">
+                            {{ $j }}
+                        </button>
                     @endforeach
-                </select>
+                </div>
             </div>
-            <div>
-                <label for="filter-sort" class="mb-1.5 block text-xs font-bold text-[#465673]">Urutkan</label>
-                <select id="filter-sort" name="sort"
-                    class="h-10 w-full rounded-xl border-2 border-[#DCEFFF] bg-[#F0F6FF] px-3 text-sm font-semibold text-[#12233F] focus:border-[#007FBE] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#DDF3FF] transition">
-                    <option value="terbaru" @selected(request('sort') == 'terbaru')>Terbaru</option>
-                    <option value="terlama" @selected(request('sort') == 'terlama')>Terlama</option>
-                </select>
+
+            {{-- Filter Status Kuis (Choice Chips dari Mobile) --}}
+            <div class="space-y-1.5">
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="quiz-status-chips">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-[#465673] shrink-0 mr-1">Status:</span>
+                    @php
+                        $activeStatus = $selectedStatus ?? request('status', 'Semua');
+                    @endphp
+                    @foreach(['Semua', 'Belum Dikerjakan', 'Lulus', 'Belum Lulus'] as $st)
+                        @php
+                            $isStSelected = strcasecmp($activeStatus, $st) === 0;
+                        @endphp
+                        <button type="button"
+                            data-status="{{ $st }}"
+                            class="quiz-status-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border {{ $isStSelected ? 'bg-[#007FBE] text-white border-[#007FBE] shadow-xs' : 'bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]' }}">
+                            {{ $st }}
+                        </button>
+                    @endforeach
+                </div>
             </div>
-            <button type="submit"
-                class="h-10 rounded-xl bg-[#007FBE] hover:bg-[#00679A] px-5 text-sm font-black text-white shadow-[0_3px_0_#005580] active:translate-y-0.5 active:shadow-none transition">Terapkan</button>
-            <a href="{{ route('siswa.quiz') }}"
-                class="inline-flex h-10 items-center justify-center rounded-xl border-2 border-[#B2E7FC] bg-white px-4 text-sm font-bold text-[#007FBE] shadow-[0_2px_0_#B2E7FC] hover:bg-[#F0F6FF] transition">Reset</a>
-        </form>
+
+            {{-- Secondary Filter Bar (Mapel, Tingkat, Urutkan) --}}
+            <form id="quizFilterBar" method="GET" action="{{ route('siswa.quiz') }}"
+                class="pt-3 border-t border-[#DCEFFF]/70 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end">
+                <input type="hidden" name="jenjang" id="quiz-input-jenjang" value="{{ $activeJenjang }}">
+                <input type="hidden" name="status" id="quiz-input-status" value="{{ $activeStatus }}">
+                <input type="hidden" name="q" id="quiz-input-q" value="{{ request('q') }}">
+                <div>
+                    <label for="filter-mapel" class="mb-1 block text-[11px] font-bold text-[#465673]">Mata Pelajaran</label>
+                    <select id="filter-mapel" name="mapel"
+                        class="h-9 w-full rounded-xl border-2 border-[#DCEFFF] bg-white px-2.5 text-xs font-semibold text-[#12233F] focus:border-[#007FBE] focus:outline-none transition">
+                        <option value="">Semua mapel</option>
+                        @if(isset($mapelList))
+                            @foreach($mapelList as $m)
+                                <option value="{{ $m->id_mapel }}" @selected(request('mapel') == $m->id_mapel)>
+                                    {{ $m->nama_mapel }}</option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-tingkat" class="mb-1 block text-[11px] font-bold text-[#465673]">Tingkat Kesulitan</label>
+                    <select id="filter-tingkat" name="tingkat"
+                        class="h-9 w-full rounded-xl border-2 border-[#DCEFFF] bg-white px-2.5 text-xs font-semibold text-[#12233F] focus:border-[#007FBE] focus:outline-none transition">
+                        <option value="">Semua tingkat</option>
+                        @foreach($tingkatQuizList as $tingkat)
+                            <option value="{{ $tingkat->id_tingkatquiz }}" @selected(request('tingkat') == $tingkat->id_tingkatquiz)>
+                                {{ $tingkat->nama_tingkat }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-sort" class="mb-1 block text-[11px] font-bold text-[#465673]">Urutkan</label>
+                    <select id="filter-sort" name="sort"
+                        class="h-9 w-full rounded-xl border-2 border-[#DCEFFF] bg-white px-2.5 text-xs font-semibold text-[#12233F] focus:border-[#007FBE] focus:outline-none transition">
+                        <option value="terbaru" @selected(request('sort') == 'terbaru')>Terbaru</option>
+                        <option value="terlama" @selected(request('sort') == 'terlama')>Terlama</option>
+                    </select>
+                </div>
+                <button type="submit"
+                    class="h-9 rounded-xl bg-[#007FBE] hover:bg-[#00679A] px-4 text-xs font-black text-white shadow-[0_2.5px_0_#005580] active:translate-y-0.5 active:shadow-none transition">Terapkan</button>
+                <a href="{{ route('siswa.quiz') }}"
+                    class="inline-flex h-9 items-center justify-center rounded-xl border-2 border-[#B2E7FC] bg-white px-3.5 text-xs font-bold text-[#007FBE] shadow-[0_2px_0_#B2E7FC] hover:bg-[#F0F6FF] transition">Reset</a>
+            </form>
+        </div>
 
         {{-- Grid Quiz Cards --}}
         <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3" id="quiz-cards-grid">
@@ -248,8 +324,14 @@
                         'poin_didapat_tertinggi' => $poinDidapatTertinggi,
                     ];
                 @endphp
-                <div class="quiz-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white transition-all duration-200 {{ ($expired && !$quiz->perluToken()) ? 'cursor-not-allowed opacity-75 grayscale' : 'hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_6px_0_#007FBE] shadow-[0_4px_0_#B2E7FC]' }}"
-                    data-title="{{ strtolower($quiz->judul) }}">
+                <div {{ $loop->first ? 'id="tourQuizCard"' : '' }} class="quiz-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white transition-all duration-200 {{ ($expired && !$quiz->perluToken()) ? 'cursor-not-allowed opacity-75 grayscale' : 'hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_6px_0_#007FBE] shadow-[0_4px_0_#B2E7FC]' }}"
+                    data-title="{{ strtolower($quiz->judul) }}"
+                    data-jenjang-id="{{ $quiz->id_jenjang }}"
+                    data-jenjang-name="{{ strtolower($quiz->jenjang->nama_jenjang ?? $quiz->jenjang->nama_tipe ?? '') }}"
+                    data-mapel="{{ strtolower($quiz->mapel->nama_mapel ?? '') }}"
+                    data-desc="{{ strtolower(strip_tags($quiz->deskripsi ?? '')) }}"
+                    data-status-taken="{{ $quiz->hasil->isNotEmpty() ? '1' : '0' }}"
+                    data-status-passed="{{ $quiz->hasil->where('is_lulus', true)->isNotEmpty() ? '1' : '0' }}">
 
                     <div>
                         {{-- Cover / Thumbnail Area --}}
@@ -581,31 +663,115 @@
         </div>
     </div>
 
+    {{-- Tour Panduan Kuis Interaktif --}}
+    @include('components.quiz-tour')
+
     @push('scripts')
         <script>
             // =========================================================================
-            // Client-side Pagination (Batasan 8 card per halaman) & Live Search
+            // Client-side Pagination (Batasan 8 card per halaman) & Filter Adaptasi Mobile
             // =========================================================================
             const CARDS_PER_PAGE = 8;
             let currentQuizPage = 1;
 
+            const userJenjangId = {{ (int) (Auth::user()?->id_jenjang ?? 0) }};
+            let selectedJenjang = @json($selectedJenjang ?? request('jenjang', 'Jenjang Saya'));
+            let selectedStatus = @json($selectedStatus ?? request('status', 'Semua'));
+
             const quizCards = Array.from(document.querySelectorAll('.quiz-card-item'));
             const searchInput = document.getElementById('quiz-search-input');
+            const filterSearchInput = document.getElementById('quiz-filter-search');
             const emptySearchEl = document.getElementById('quiz-empty-search');
             const paginationContainer = document.getElementById('quiz-pagination-container');
             const pageCurrentEl = document.getElementById('quiz-page-current');
             const dotsContainerEl = document.getElementById('quiz-pagination-dots');
             const btnPrev = document.getElementById('quiz-btn-prev');
             const btnNext = document.getElementById('quiz-btn-next');
+            const countBadge = document.getElementById('quiz-count-badge');
+
+            const jenjangChips = Array.from(document.querySelectorAll('.quiz-jenjang-chip'));
+            const statusChips = Array.from(document.querySelectorAll('.quiz-status-chip'));
+            const inputJenjang = document.getElementById('quiz-input-jenjang');
+            const inputStatus = document.getElementById('quiz-input-status');
+            const inputQ = document.getElementById('quiz-input-q');
 
             function getFilteredQuizCards() {
-                const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-                if (!query) return quizCards;
+                const q1 = searchInput ? searchInput.value.toLowerCase().trim() : '';
+                const q2 = filterSearchInput ? filterSearchInput.value.toLowerCase().trim() : '';
+                const query = q2 || q1;
+
                 return quizCards.filter(card => {
-                    const title = (card.getAttribute('data-title') || '').toLowerCase();
-                    return title.includes(query);
+                    // Match Search (judul, mapel, deskripsi)
+                    if (query) {
+                        const title = (card.getAttribute('data-title') || '').toLowerCase();
+                        const mapel = (card.getAttribute('data-mapel') || '').toLowerCase();
+                        const desc = (card.getAttribute('data-desc') || '').toLowerCase();
+                        if (!title.includes(query) && !mapel.includes(query) && !desc.includes(query)) {
+                            return false;
+                        }
+                    }
+
+                    // Match Jenjang
+                    const cardJenjangId = parseInt(card.getAttribute('data-jenjang-id') || '0', 10);
+                    const cardJenjangName = (card.getAttribute('data-jenjang-name') || '').toLowerCase().trim();
+
+                    if (selectedJenjang === 'SD') {
+                        if (cardJenjangId !== 1 && cardJenjangName !== 'sd') return false;
+                    } else if (selectedJenjang === 'SMP') {
+                        if (cardJenjangId !== 2 && cardJenjangName !== 'smp') return false;
+                    } else if (selectedJenjang === 'SMA') {
+                        if (cardJenjangId !== 3 && cardJenjangName !== 'sma') return false;
+                    } else if (selectedJenjang === 'Jenjang Saya') {
+                        if (userJenjangId > 0 && cardJenjangId !== userJenjangId) return false;
+                    }
+
+                    // Match Status
+                    const taken = card.getAttribute('data-status-taken') === '1';
+                    const passed = card.getAttribute('data-status-passed') === '1';
+
+                    if (selectedStatus === 'Belum Dikerjakan') {
+                        if (taken) return false;
+                    } else if (selectedStatus === 'Lulus') {
+                        if (!passed) return false;
+                    } else if (selectedStatus === 'Belum Lulus') {
+                        if (!taken || passed) return false;
+                    }
+
+                    return true;
                 });
             }
+
+            // Event handler untuk Chip Jenjang
+            jenjangChips.forEach(chip => {
+                chip.addEventListener('click', function () {
+                    selectedJenjang = this.getAttribute('data-jenjang');
+                    if (inputJenjang) inputJenjang.value = selectedJenjang;
+
+                    jenjangChips.forEach(c => {
+                        c.className = 'quiz-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] hover:bg-[#DBEAFE]';
+                    });
+                    this.className = 'quiz-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#2563EB] text-white border-[#2563EB] shadow-xs';
+
+                    currentQuizPage = 1;
+                    renderQuizPagination(true);
+                });
+            });
+
+            // Event handler untuk Chip Status
+            statusChips.forEach(chip => {
+                chip.addEventListener('click', function () {
+                    selectedStatus = this.getAttribute('data-status');
+                    if (inputStatus) inputStatus.value = selectedStatus;
+
+                    statusChips.forEach(c => {
+                        c.className = 'quiz-status-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]';
+                    });
+                    this.className = 'quiz-status-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#007FBE] text-white border-[#007FBE] shadow-xs';
+
+                    currentQuizPage = 1;
+                    renderQuizPagination(true);
+                });
+            });
 
             function renderQuizDots(totalPages, currentPage) {
                 if (!dotsContainerEl) return;
@@ -622,7 +788,7 @@
                         dot.addEventListener('click', function () {
                             currentQuizPage = p;
                             renderQuizPagination(true);
-                            const grid = document.getElementById('quiz-grid');
+                            const grid = document.getElementById('quiz-cards-grid');
                             if (grid && window.scrollY > grid.offsetTop) {
                                 grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             }
@@ -636,6 +802,10 @@
                 const filtered = getFilteredQuizCards();
                 const totalItems = filtered.length;
                 const totalPages = Math.max(1, Math.ceil(totalItems / CARDS_PER_PAGE));
+
+                if (countBadge) {
+                    countBadge.textContent = `${totalItems} Kuis`;
+                }
 
                 if (currentQuizPage > totalPages) {
                     currentQuizPage = totalPages;
@@ -691,7 +861,7 @@
                     if (currentQuizPage > 1) {
                         currentQuizPage--;
                         renderQuizPagination(true);
-                        const grid = document.getElementById('quiz-grid');
+                        const grid = document.getElementById('quiz-cards-grid');
                         if (grid && window.scrollY > grid.offsetTop) {
                             grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }
@@ -705,7 +875,7 @@
                     if (currentQuizPage < totalPages) {
                         currentQuizPage++;
                         renderQuizPagination(true);
-                        const grid = document.getElementById('quiz-grid');
+                        const grid = document.getElementById('quiz-cards-grid');
                         if (grid && window.scrollY > grid.offsetTop) {
                             grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }
@@ -713,10 +883,23 @@
                 });
             }
 
+            function syncSearch(query) {
+                if (searchInput && searchInput.value !== query) searchInput.value = query;
+                if (filterSearchInput && filterSearchInput.value !== query) filterSearchInput.value = query;
+                if (inputQ) inputQ.value = query;
+                currentQuizPage = 1;
+                renderQuizPagination(false);
+            }
+
             if (searchInput) {
                 searchInput.addEventListener('input', function () {
-                    currentQuizPage = 1;
-                    renderQuizPagination(false);
+                    syncSearch(this.value);
+                });
+            }
+
+            if (filterSearchInput) {
+                filterSearchInput.addEventListener('input', function () {
+                    syncSearch(this.value);
                 });
             }
 

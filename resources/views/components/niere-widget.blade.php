@@ -680,7 +680,19 @@
             "Silakan masuk ke akunmu untuk mengakses modul belajar, kuis seru, dan notifikasi tugas terbarumu!"
         ];
     }
+
+    $isDashboardSiswa = request()->routeIs('siswa.dashboard') || request()->is('siswa/dashboard*');
+    $isDashboardOrangtua = request()->routeIs('orangtua.dashboard') || request()->is('orangtua/dashboard*');
+    $isDashboard = ($isDashboardSiswa || $isDashboardOrangtua) && (bool) $currentUser;
+    $dashboardRole = $isDashboardSiswa ? 'siswa' : ($isDashboardOrangtua ? 'orangtua' : null);
   @endphp
+
+  @if($isDashboard)
+    <!-- ================= NIERE DASHBOARD TOUR SPOTLIGHT & OVERLAY ================= -->
+    <div id="niere-tour-overlay" style="display: none; position: fixed; inset: 0; z-index: 99990; pointer-events: auto; background: transparent;">
+      <div id="niere-tour-spotlight" style="position: fixed; border-radius: 20px; box-shadow: 0 0 0 9999px rgba(10, 18, 42, 0.65), 0 0 20px rgba(56, 189, 248, 0.6); border: 2.5px solid #38bdf8; pointer-events: none; transition: top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease, opacity 0.25s ease; opacity: 0; z-index: 99991;"></div>
+    </div>
+  @endif
 
   <!-- ================= NIERE IN-PLACE FLOATING CONTAINER ================= -->
   <div id="niere-widget-container" class="{{ $initialPosClass }}" role="complementary" aria-label="Asisten Niere">
@@ -689,7 +701,7 @@
       <!-- Speech Bubble (Floating directly beside Niere) -->
       <div class="niere-bubble" id="niere-bubble" role="status" aria-live="polite">
         <div class="niere-bubble-header">
-          <span class="niere-name">Niere</span>
+          <span class="niere-name" id="niere-name-label">Niere</span>
           <div class="niere-bubble-actions">
             <button type="button" class="niere-btn-mini" id="niere-snd" title="Toggle Suara"
               aria-pressed="true">🔊</button>
@@ -709,6 +721,39 @@
             🔔 Buka Lonceng
           </button>
         </div>
+
+        @if($isDashboard)
+        <!-- Tour Navigation Controls (Khusus Mode Tur Pengenalan Dashboard) -->
+        <div id="niere-tour-controls" style="display: none; margin-top: 10px; padding-top: 8px; border-top: 1.5px dashed rgba(59,79,209,0.3); flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 700; color: #4b5563;">
+            <span id="niere-tour-step-counter">Langkah 1 dari 7</span>
+            <div id="niere-tour-dots" style="display: flex; gap: 4px; align-items: center;"></div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+            <button type="button" id="niere-tour-prev-btn" class="niere-btn-mini" style="background: #f1f5f9; color: #475569; border: 2px solid #cbd5e1; font-weight: bold; padding: 3px 8px; border-radius: 6px; cursor: pointer;">
+              ← Kembali
+            </button>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" id="niere-tour-skip-btn" class="niere-btn-mini" style="background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; font-weight: bold; padding: 3px 7px; border-radius: 6px; cursor: pointer;">
+                Lewati
+              </button>
+              <button type="button" id="niere-tour-next-btn" class="niere-btn-mini" style="background: #007FBE; color: #ffffff; border: 2px solid #005f8e; font-weight: bold; padding: 3px 10px; border-radius: 6px; cursor: pointer; box-shadow: 1px 1px 0 #005f8e;">
+                Lanjut →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tour Prompt (Penawaran awal untuk pengguna baru di Dashboard) -->
+        <div id="niere-tour-prompt" style="display: none; margin-top: 10px; padding-top: 8px; border-top: 1.5px dashed rgba(59,79,209,0.3); justify-content: flex-end; gap: 6px;">
+          <button type="button" id="niere-tour-decline-btn" class="niere-btn-mini" style="background: #f1f5f9; color: #64748b; border: 2px solid #cbd5e1; font-weight: bold; padding: 3px 8px; border-radius: 6px; cursor: pointer;">
+            Nanti Saja
+          </button>
+          <button type="button" id="niere-tour-accept-btn" class="niere-btn-mini" style="background: #007FBE; color: #ffffff; border: 2px solid #005f8e; font-weight: bold; padding: 3px 10px; border-radius: 6px; cursor: pointer; box-shadow: 1px 1px 0 #005f8e;">
+            🚀 Mulai Pengenalan
+          </button>
+        </div>
+        @endif
       </div>
 
       <!-- Mascot Button (TRANSPARAN, dapat di-drag dan di-klik langsung di tempat) -->
@@ -736,6 +781,10 @@
       const HAS_NOTIF = @json($hasNiereNotif);
       const IS_LOGGED_IN = @json((bool) Auth::check());
       const RAW_PRESENSI_NOTIFS = @json($presensiNotifs ?? []);
+      const IS_DASHBOARD = @json((bool) $isDashboard);
+      const DASHBOARD_ROLE = @json($dashboardRole);
+      const USER_ID = @json($currentUser->id_user ?? 0);
+      const USER_NAME = @json($userName ?? 'Sobat Arrava');
 
       const INFO = [
         {
@@ -745,7 +794,12 @@
           hasBadge: HAS_NOTIF,
           lines: NOTIF_LINES
         },
-        {
+        IS_DASHBOARD ? {
+          id: "tour",
+          icon: "🧭",
+          label: "Pengenalan",
+          lines: []
+        } : {
           id: "fasilitas",
           icon: "💻",
           label: "Panduan Belajar",
@@ -823,6 +877,18 @@
       const more = $("niere-more");
       const sndBtn = $("niere-snd");
       const closeBubbleBtn = $("niere-close-bubble");
+      const niereNameLabel = $("niere-name-label");
+      const tourOverlay = $("niere-tour-overlay");
+      const tourSpotlight = $("niere-tour-spotlight");
+      const tourControls = $("niere-tour-controls");
+      const tourPrompt = $("niere-tour-prompt");
+      const tourNextBtn = $("niere-tour-next-btn");
+      const tourPrevBtn = $("niere-tour-prev-btn");
+      const tourSkipBtn = $("niere-tour-skip-btn");
+      const tourAcceptBtn = $("niere-tour-accept-btn");
+      const tourDeclineBtn = $("niere-tour-decline-btn");
+      const tourCounter = $("niere-tour-step-counter");
+      const tourDots = $("niere-tour-dots");
 
       if (!root || !mascot || !sprite || !hero) return;
 
@@ -830,10 +896,16 @@
       if (root.parentElement !== document.body) {
         document.body.appendChild(root);
       }
+      if (tourOverlay && tourOverlay.parentElement !== document.body) {
+        document.body.appendChild(tourOverlay);
+      }
 
       /* ====== STATE ====== */
       let open = false;
       let closing = false;
+      let isTourActive = false;
+      let tourCurrentStep = 0;
+      let tourSteps = [];
       let curLines = [];
       let curLine = 0;
       let typeTimer = null;
@@ -1097,6 +1169,7 @@
 
       /* ====== OPEN & CLOSE RADIAL MENU ====== */
       function setOpen(v) {
+        if (isTourActive) return;
         if (open === v) return;
         wakeAudio();
 
@@ -1197,6 +1270,15 @@
       function selectOption(item) {
         playClick();
         const footer = $("niere-bubble-footer");
+        if (tourControls) tourControls.style.display = 'none';
+        if (tourPrompt) tourPrompt.style.display = 'none';
+        if (niereNameLabel) niereNameLabel.textContent = "Niere";
+
+        if (item.id === "tour") {
+          startDashboardTour();
+          return;
+        }
+
         if (item.id === "notif") {
           const data = window.arravaNotifData;
           const unreadCount = data ? (data.unreadCount || 0) : 0;
@@ -1256,12 +1338,12 @@
 
       // 2. Hover pada Mascot: Otomatis membuka menu jika mouse masuk
       mascot.addEventListener("mouseenter", () => {
-        if (isDragging || hasDragged) return;
+        if (isDragging || hasDragged || isTourActive) return;
         isMouseInside = true;
         clearTimeout(closeT);
         clearTimeout(hoverOpenT);
         hoverOpenT = setTimeout(() => {
-          if (isMouseInside && !open && !isDragging) {
+          if (isMouseInside && !open && !isDragging && !isTourActive) {
             setOpen(true);
           }
         }, 180);
@@ -1282,6 +1364,16 @@
       // 4. Klik balon bicara untuk memajukan dialog
       bubble.onclick = ev => {
         ev.stopPropagation();
+        if (isTourActive) {
+          // Jika teks sedang diketik, selesaikan pengetikan langsung
+          if (typeTimer && say.textContent.length < (curLines[curLine] || "").length) {
+            clearTimeout(typeTimer);
+            typeTimer = null;
+            say.textContent = curLines[curLine];
+            setPose("idle");
+          }
+          return;
+        }
         wakeAudio();
         nextDialogue();
       };
@@ -1289,21 +1381,28 @@
       // 5. Tombol tutup balon
       closeBubbleBtn.onclick = ev => {
         ev.stopPropagation();
+        if (isTourActive) {
+          finishDashboardTour(false);
+          return;
+        }
         bubble.classList.remove("show");
         const footer = $("niere-bubble-footer");
         if (footer) footer.style.display = 'none';
+        if (tourPrompt) tourPrompt.style.display = 'none';
         clearTimeout(typeTimer);
         setPose("idle");
       };
 
-      // 6. Klik di luar menutup radial menu dan bubble
+      // 6. Klik di luar menutup radial menu dan bubble (hanya jika tur tidak aktif)
       document.addEventListener("click", ev => {
+        if (isTourActive) return;
         if (!mascot.contains(ev.target)) {
           if (open) setOpen(false);
           if (bubble.classList.contains("show")) {
             bubble.classList.remove("show");
             const footer = $("niere-bubble-footer");
             if (footer) footer.style.display = 'none';
+            if (tourPrompt) tourPrompt.style.display = 'none';
             clearTimeout(typeTimer);
             setPose("idle");
           }
@@ -1313,6 +1412,10 @@
       // 7. Keyboard shortcuts
       document.addEventListener("keydown", ev => {
         if (ev.key === "Escape") {
+          if (isTourActive) {
+            finishDashboardTour(false);
+            return;
+          }
           if (open) setOpen(false);
           if (bubble.classList.contains("show")) {
             bubble.classList.remove("show");
@@ -1321,6 +1424,17 @@
         }
         const targetTag = ev.target.tagName;
         if (targetTag === "INPUT" || targetTag === "TEXTAREA" || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+
+        if (isTourActive) {
+          if (ev.key === "ArrowRight" || ev.key === "Enter") {
+            ev.preventDefault();
+            nextTourStep();
+          } else if (ev.key === "ArrowLeft") {
+            ev.preventDefault();
+            prevTourStep();
+          }
+          return;
+        }
 
         if (ev.key === " " && bubble.classList.contains("show")) {
           ev.preventDefault();
@@ -1337,6 +1451,9 @@
 
       window.addEventListener("resize", () => {
         createRadialOptions();
+        if (isTourActive) {
+          renderTourStep();
+        }
         if (hasDragged) {
           const w = root.offsetWidth || 76;
           const maxL = window.innerWidth - w - 48;
@@ -1360,6 +1477,9 @@
       window.toggleNiereWidget = function () {
         if (open) window.closeNiereWidget();
         else window.openNiereWidget();
+      };
+      window.startNiereTour = function () {
+        startDashboardTour();
       };
 
       // Auto-open via ?open_niere=1
@@ -1486,8 +1606,344 @@
         }
       }
 
+      /* ====== LOGIKA PENGUMPULAN & NAVIGASI TUR DASHBOARD ====== */
+      const TOUR_STEPS = {
+        siswa: [
+          {
+            selector: "#samudraHeroCard",
+            title: "Profil & EXP",
+            text: "Ini area profilmu! Di sini kamu bisa melihat namamu, jenjang belajar, dan bilah progres EXP. Terus kumpulkan poin EXP dari kuis dan modul untuk menaikkan peringkatmu.",
+            pose: "talk"
+          },
+          {
+            selector: "#tourMenuPintasan",
+            title: "Menu Pintasan Belajar",
+            text: "Ini menu akses cepat! Kamu bisa langsung membuka daftar Modul Belajar, Kuis Latihan, kartu Presensi QR, atau melihat Papan Peringkat se-jenjang.",
+            pose: "talk"
+          },
+          {
+            selector: "#tourMateriModul",
+            title: "Materi Modul Pembelajaran",
+            text: "Di bagian ini, kamu bisa melihat materi pelajaran terbaru yang disiapkan guru, baik berupa video interaktif maupun dokumen PDF.",
+            pose: "talk"
+          },
+          {
+            selector: "#tourRiwayatKuis",
+            title: "Riwayat Belajar & Kuis",
+            text: "Semua hasil kuis yang telah kamu kerjakan akan tercatat rapi di sini, lengkap dengan skor dan tanggal pengerjaannya.",
+            pose: "talk"
+          },
+          {
+            selector: "#mainSidebar",
+            title: "Menu Navigasi Utama",
+            text: "Bilah menu di samping memudahkanmu berpindah halaman kapan saja: Dashboard, Belajar, Kuis, Peringkat, hingga Profil akunmu.",
+            pose: "talk"
+          },
+          {
+            selector: "#notifikasiPresensiRoot",
+            title: "Lonceng Notifikasi",
+            text: "Ikon lonceng ini akan memberitahumu secara langsung saat guru mencatat presensi kelas atau ada pengumuman baru.",
+            pose: "shock"
+          },
+          {
+            selector: "#niere-widget-container",
+            title: "Pengenalan Selesai!",
+            text: "Dan ini aku, Niere! Kamu bisa menggeser posisiku atau mengklik ikon 🧭 di sekelilingku kapan saja jika ingin mengulang pengenalan ini. Selamat belajar ya!",
+            pose: "shock"
+          }
+        ],
+        orangtua: [
+          {
+            selector: "#tourOtStudentCard",
+            title: "Profil Siswa",
+            text: "Ini kartu informasi ananda. Jika Ayah/Bunda memiliki lebih dari satu anak yang terdaftar di Arrava, Anda dapat memilih profil ananda melalui menu ini.",
+            pose: "talk"
+          },
+          {
+            selector: "#tourOtStats",
+            title: "Ringkasan Akademik",
+            text: "Di sini Ayah/Bunda dapat memantau tiga statistik utama: jumlah kuis yang dikerjakan, modul yang telah selesai dipelajari, serta rata-rata nilai ananda.",
+            pose: "talk"
+          },
+          {
+            selector: "#tourOtAktivitas",
+            title: "Aktivitas Belajar Terbaru",
+            text: "Bagian ini menampilkan riwayat pengerjaan kuis ananda secara langsung, lengkap dengan nilai dan status kelulusan (Tuntas atau Remedial).",
+            pose: "talk"
+          },
+          {
+            selector: "#tourOtPerhatian",
+            title: "Catatan Pendampingan",
+            text: "Area ini memberikan saran pendampingan belajar jika ananda membutuhkan pengulangan materi atau perhatian khusus.",
+            pose: "talk"
+          },
+          {
+            selector: "#otSidebar",
+            title: "Menu Navigasi Portal",
+            text: "Gunakan menu navigasi samping untuk melihat laporan perkembangan nilai, materi pembelajaran, riwayat kuis, pencapaian, dan pengaturan akun.",
+            pose: "talk"
+          },
+          {
+            selector: "#notifikasiPresensiRoot",
+            title: "Lonceng Notifikasi Presensi",
+            text: "Lonceng ini memberikan kabar langsung setiap kali ananda tercatat hadir atau guru memperbarui catatan presensi kelas.",
+            pose: "shock"
+          },
+          {
+            selector: "#niere-widget-container",
+            title: "Pengenalan Selesai!",
+            text: "Aku Niere, asisten pendamping di portal Arrava. Ayah/Bunda bisa mengklik ikon 🧭 di sekelilingku kapan saja untuk memutar kembali pengenalan ini. Semoga bermanfaat!",
+            pose: "shock"
+          }
+        ]
+      };
+
+      function dockNiereForTour(isTargetNearBottomRight) {
+        root.style.setProperty("position", "fixed", "important");
+        root.style.setProperty("z-index", "99999", "important");
+        root.style.setProperty("bottom", "20px", "important");
+        root.style.setProperty("top", "auto", "important");
+
+        if (isTargetNearBottomRight) {
+          root.style.setProperty("left", "24px", "important");
+          root.style.setProperty("right", "auto", "important");
+          root.classList.add("on-left");
+        } else {
+          root.style.setProperty("right", "28px", "important");
+          root.style.setProperty("left", "auto", "important");
+          root.classList.remove("on-left");
+        }
+      }
+
+      function startDashboardTour() {
+        if (!IS_DASHBOARD || !DASHBOARD_ROLE || !TOUR_STEPS[DASHBOARD_ROLE]) return;
+
+        tourSteps = TOUR_STEPS[DASHBOARD_ROLE].filter(st => {
+          if (st.selector === "#niere-widget-container") return true;
+          return !!document.querySelector(st.selector);
+        });
+
+        if (tourSteps.length === 0) return;
+
+        isTourActive = true;
+        tourCurrentStep = 0;
+
+        if (open) setOpen(false);
+
+        if (tourOverlay) tourOverlay.style.display = "block";
+        if (niereNameLabel) niereNameLabel.textContent = "Niere • Pengenalan";
+
+        dockNiereForTour(false);
+        renderTourStep();
+      }
+
+      function renderTourStep() {
+        if (!isTourActive || !tourSteps[tourCurrentStep]) return;
+        const step = tourSteps[tourCurrentStep];
+        const targetEl = document.querySelector(step.selector);
+
+        if (targetEl && step.selector !== "#niere-widget-container") {
+          targetEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+
+          setTimeout(() => {
+            if (!isTourActive) return;
+            const rect = targetEl.getBoundingClientRect();
+            const pad = 10;
+            const top = Math.max(0, rect.top - pad);
+            const left = Math.max(0, rect.left - pad);
+            const w = rect.width + pad * 2;
+            const h = rect.height + pad * 2;
+
+            if (tourSpotlight) {
+              tourSpotlight.style.top = top + "px";
+              tourSpotlight.style.left = left + "px";
+              tourSpotlight.style.width = w + "px";
+              tourSpotlight.style.height = h + "px";
+              tourSpotlight.style.opacity = "1";
+            }
+
+            const isNearBottomRight = (rect.bottom > window.innerHeight * 0.52) && (rect.right > window.innerWidth * 0.52);
+            dockNiereForTour(isNearBottomRight);
+          }, 280);
+        } else {
+          dockNiereForTour(false);
+          if (tourSpotlight) {
+            tourSpotlight.style.opacity = "0";
+          }
+        }
+
+        sayLines([step.text], step.pose || "talk");
+
+        if (tourPrompt) tourPrompt.style.display = "none";
+        const notifFooter = $("niere-bubble-footer");
+        if (notifFooter) notifFooter.style.display = "none";
+        if (tourControls) tourControls.style.display = "flex";
+
+        if (tourCounter) {
+          tourCounter.textContent = `Langkah ${tourCurrentStep + 1} dari ${tourSteps.length} • ${step.title}`;
+        }
+
+        if (tourDots) {
+          tourDots.innerHTML = tourSteps.map((_, i) => {
+            const active = (i === tourCurrentStep);
+            return `<span style="display:inline-block; width:${active ? '14px' : '5px'}; height:5px; border-radius:3px; background:${active ? '#007FBE' : '#cbd5e1'}; transition:all 0.2s ease;"></span>`;
+          }).join("");
+        }
+
+        if (tourPrevBtn) {
+          tourPrevBtn.style.visibility = (tourCurrentStep === 0) ? "hidden" : "visible";
+        }
+        if (tourNextBtn) {
+          if (tourCurrentStep === tourSteps.length - 1) {
+            tourNextBtn.textContent = "Selesai ✓";
+            tourNextBtn.style.background = "#059669";
+            tourNextBtn.style.borderColor = "#047857";
+          } else {
+            tourNextBtn.textContent = "Lanjut →";
+            tourNextBtn.style.background = "#007FBE";
+            tourNextBtn.style.borderColor = "#005f8e";
+          }
+        }
+      }
+
+      function nextTourStep() {
+        wakeAudio();
+        playClick();
+        if (tourCurrentStep < tourSteps.length - 1) {
+          tourCurrentStep++;
+          renderTourStep();
+        } else {
+          finishDashboardTour(true);
+        }
+      }
+
+      function prevTourStep() {
+        wakeAudio();
+        playClick();
+        if (tourCurrentStep > 0) {
+          tourCurrentStep--;
+          renderTourStep();
+        }
+      }
+
+      function finishDashboardTour(completed) {
+        isTourActive = false;
+        if (tourOverlay) tourOverlay.style.display = "none";
+        if (tourSpotlight) tourSpotlight.style.opacity = "0";
+        if (tourControls) tourControls.style.display = "none";
+        if (niereNameLabel) niereNameLabel.textContent = "Niere";
+
+        try {
+          localStorage.setItem(`arrava_tour_done_${USER_ID}_${DASHBOARD_ROLE}`, "1");
+        } catch (e) {}
+
+        if (completed) {
+          wakeAudio();
+          playPop(2);
+          sayLines([
+            "Hebat! Kamu sudah mengenal seluruh fitur utama di dashboard. ✨",
+            "Ikon 🧭 di sekelilingku selalu siap jika kamu ingin membuka pengenalan ini lagi."
+          ], "shock");
+        } else {
+          bubble.classList.remove("show");
+          setPose("idle");
+        }
+
+        setTimeout(() => {
+          root.style.removeProperty("position");
+          root.style.removeProperty("left");
+          root.style.removeProperty("top");
+          root.style.removeProperty("right");
+          root.style.removeProperty("bottom");
+          root.className = "{{ $initialPosClass }}";
+          updateOrientation(root.getBoundingClientRect().left, root.getBoundingClientRect().top);
+        }, 400);
+      }
+
+      function checkFirstTimeTourPrompt() {
+        if (!IS_DASHBOARD || !DASHBOARD_ROLE) return;
+        let tourDone = false;
+        try {
+          tourDone = !!localStorage.getItem(`arrava_tour_done_${USER_ID}_${DASHBOARD_ROLE}`);
+        } catch (e) {}
+
+        if (!tourDone) {
+          setTimeout(() => {
+            if (open || isTourActive || bubble.classList.contains("show")) return;
+
+            const promptText = (DASHBOARD_ROLE === 'orangtua')
+              ? `Halo Ayah/Bunda (${USER_NAME})! Selamat datang di Portal Orang Tua Arrava. 🎓\n\nMau Niere pandu mengenal fitur-fitur di dashboard ini?`
+              : `Halo ${USER_NAME}! Selamat datang di Dashboard Arrava. 🎓\n\nMau Niere pandu mengenal fitur-fitur di halaman ini?`;
+
+            sayLines([promptText], "talk");
+
+            if (tourPrompt) tourPrompt.style.display = "flex";
+            if (tourControls) tourControls.style.display = "none";
+            const notifFooter = $("niere-bubble-footer");
+            if (notifFooter) notifFooter.style.display = "none";
+          }, 1400);
+        }
+      }
+
+      // Event listeners tombol tur
+      if (tourNextBtn) {
+        tourNextBtn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          nextTourStep();
+        });
+      }
+      if (tourPrevBtn) {
+        tourPrevBtn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          prevTourStep();
+        });
+      }
+      if (tourSkipBtn) {
+        tourSkipBtn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          finishDashboardTour(false);
+        });
+      }
+      if (tourAcceptBtn) {
+        tourAcceptBtn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          if (tourPrompt) tourPrompt.style.display = "none";
+          startDashboardTour();
+        });
+      }
+      if (tourDeclineBtn) {
+        tourDeclineBtn.addEventListener("click", ev => {
+          ev.stopPropagation();
+          if (tourPrompt) tourPrompt.style.display = "none";
+          try {
+            localStorage.setItem(`arrava_tour_done_${USER_ID}_${DASHBOARD_ROLE}`, "1");
+          } catch (e) {}
+          bubble.classList.remove("show");
+          setPose("idle");
+        });
+      }
+
+      // Pastikan spotlight tetap mengikuti target saat scrolling halaman
+      window.addEventListener("scroll", () => {
+        if (!isTourActive || !tourSteps[tourCurrentStep]) return;
+        const step = tourSteps[tourCurrentStep];
+        if (step.selector === "#niere-widget-container") return;
+        const targetEl = document.querySelector(step.selector);
+        if (targetEl && tourSpotlight) {
+          const rect = targetEl.getBoundingClientRect();
+          const pad = 10;
+          tourSpotlight.style.top = Math.max(0, rect.top - pad) + "px";
+          tourSpotlight.style.left = Math.max(0, rect.left - pad) + "px";
+          tourSpotlight.style.width = (rect.width + pad * 2) + "px";
+          tourSpotlight.style.height = (rect.height + pad * 2) + "px";
+        }
+      }, { passive: true });
+
       if (IS_LOGGED_IN) {
         setTimeout(initNiereNotificationGreeting, 350);
+        if (IS_DASHBOARD) {
+          setTimeout(checkFirstTimeTourPrompt, 1400);
+        }
       }
 
       // Dengarkan event ketika notifikasi dibaca di header
