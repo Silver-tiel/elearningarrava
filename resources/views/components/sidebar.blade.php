@@ -58,7 +58,7 @@
                 @endphp
 
                 @if($idTipe == 1)
-                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                    <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#082765]">
                         Manajemen
                     </div>
                 @else
@@ -145,7 +145,7 @@
                         <span class="truncate">Kelas</span>
                     </a>
 
-                    <div class="px-3 pt-4 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                    <div class="px-3 pt-4 pb-1 text-[10px] font-black uppercase tracking-[0.16em] text-[#082765]">
                         Pembelajaran
                     </div>
                 @endif

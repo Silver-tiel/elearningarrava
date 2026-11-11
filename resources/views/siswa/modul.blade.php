@@ -83,69 +83,67 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2" id="modul-grid">
+    <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3" id="modul-grid">
         @forelse($moduls as $modul)
             @php
                 $isVideo = ($modul->id_tipemodul == 1 || $modul->youtube_embed_url);
             @endphp
-            <div class="modul-card-item hover-frame group rounded-2xl border-2 border-[#DCEFFF] bg-white p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_5px_0_#007FBE] shadow-[0_3px_0_#B2E7FC]"
+            <div class="modul-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white transition-all duration-200 hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_6px_0_#007FBE] shadow-[0_4px_0_#B2E7FC]"
                 data-title="{{ strtolower($modul->judul_modul) }}">
-                <div class="flex flex-col sm:flex-row gap-3.5 items-stretch">
-                    <!-- Thumbnail Box (Compact) -->
-                    <div class="relative h-[120px] sm:h-[125px] w-full sm:w-[135px] shrink-0 overflow-hidden rounded-xl bg-[#DDF3FF] border border-[#B2E7FC]">
+                <div>
+                    <div class="relative h-44 sm:h-48 w-full overflow-hidden rounded-t-2xl sm:rounded-t-3xl bg-slate-900">
                         @if($modul->foto_modul && Storage::disk('public')->exists($modul->foto_modul))
-                            <img src="{{ asset('storage/'.$modul->foto_modul) }}" alt="{{ $modul->judul_modul }}" class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
+                            <img src="{{ asset('storage/'.$modul->foto_modul) }}" alt="{{ $modul->judul_modul }}"
+                                class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105">
                         @elseif($modul->youtube_id)
-                            <img src="https://img.youtube.com/vi/{{ $modul->youtube_id }}/hqdefault.jpg" alt="{{ $modul->judul_modul }}" class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
-                            <div class="absolute inset-0 bg-black/25 flex items-center justify-center">
-                                <div class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md text-xs font-black pl-0.5 border-2 border-white">▶</div>
-                            </div>
+                            <img src="https://img.youtube.com/vi/{{ $modul->youtube_id }}/hqdefault.jpg" alt="{{ $modul->judul_modul }}"
+                                class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105">
                         @else
-                            <div class="flex h-full items-center justify-center text-3xl select-none">{{ $isVideo ? '🎬' : '📚' }}</div>
+                            <div class="flex h-full items-center justify-center text-5xl select-none">{{ $isVideo ? '🎬' : '📚' }}</div>
                         @endif
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30"></div>
+
+                        @if($isVideo)
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-red-600 text-sm font-black text-white shadow-lg">▶</span>
+                            </div>
+                        @endif
+
+                        <div class="absolute bottom-3 left-3 z-10">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-[#082765]/80 text-[#DDF3FF] border border-[#B2E7FC]/40 backdrop-blur-md shadow-sm">
+                                {{ $isVideo ? '🎬 Video' : ($modul->tipeModul->nama_tipe ?? '📖 Pelajaran') }}
+                            </span>
+                        </div>
+                        <div class="absolute bottom-3 right-3 z-10">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-[#082765]/80 text-[#DDF3FF] border border-[#B2E7FC]/40 backdrop-blur-md shadow-sm">
+                                🏫 {{ $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? 'Semua' }}
+                            </span>
+                        </div>
                     </div>
 
-                    <!-- Content & Action Area (Snug & Shortened) -->
-                    <div class="min-w-0 flex-1 flex flex-col justify-between">
-                        <div>
-                            <!-- Header Badges: Tipe & Jenjang -->
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="inline-flex items-center rounded-full {{ $isVideo ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]' }} px-2.5 py-0.5 text-[10.5px] font-bold">
-                                    {{ $isVideo ? '🎬 Video' : ($modul->tipeModul->nama_tipe ?? '📖 Pelajaran') }}
-                                </span>
-                                <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#72839E]">
-                                    <span>🏫</span> {{ $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? 'Semua' }}
-                                </span>
-                            </div>
-
-                            <!-- Judul Modul -->
-                            <h2 class="mt-1 text-sm sm:text-[15px] font-heading font-black leading-snug text-[#082765] group-hover:text-[#007FBE] transition-colors line-clamp-1" title="{{ $modul->judul_modul }}">
+                    <div class="p-5">
+                        <h2 class="text-base sm:text-[17px] font-heading font-black text-[#082765] group-hover:text-[#007FBE] transition-colors line-clamp-2 leading-snug"
+                            title="{{ $modul->judul_modul }}">
                                 {{ $modul->judul_modul }}
-                            </h2>
+                        </h2>
 
-                            <!-- Deskripsi Singkat -->
-                            <p class="mt-0.5 line-clamp-2 text-xs leading-relaxed font-semibold text-[#465673]">
-                                {{ $modul->deskripsi ?: ('Materi pembelajaran digital untuk siswa ' . ($modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? 'semua kelas') . '.') }}
-                            </p>
-                        </div>
+                        <p class="mt-2 text-xs font-semibold text-[#465673] line-clamp-2 leading-relaxed">
+                            {{ $modul->deskripsi ?: ('Materi pembelajaran digital untuk siswa ' . ($modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? 'semua kelas') . '.') }}
+                        </p>
+                    </div>
+                </div>
 
-                        <!-- Footer: Keterangan Format & Tombol Aksi 3D -->
-                        <div class="mt-2.5 pt-2 border-t border-[#DCEFFF] flex items-center justify-between gap-2">
-                            <span class="text-[11px] font-semibold text-[#72839E] flex items-center gap-1">
-                                <span>{{ $isVideo ? '▶' : '📄' }}</span> {{ $isVideo ? 'Video Belajar' : 'Dokumen Modul' }}
-                            </span>
-                            @if($isVideo)
-                                <a href="{{ route('siswa.modul.materi', $modul->id_modul) }}"
-                                    class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black rounded-xl shadow-[0_2.5px_0_#be123c] active:translate-y-0.5 active:shadow-none transition flex items-center gap-1.5 shrink-0">
-                                    <span>▶</span> Tonton Video
-                                </a>
-                            @else
-                                <a href="{{ route('siswa.modul.materi', $modul->id_modul) }}"
-                                    class="px-3 py-1.5 bg-[#007FBE] hover:bg-[#00679A] text-white text-xs font-black rounded-xl shadow-[0_2.5px_0_#005580] active:translate-y-0.5 active:shadow-none transition flex items-center gap-1.5 shrink-0">
-                                    <span>📖</span> Buka Modul
-                                </a>
-                            @endif
-                        </div>
+                <div class="px-5 pb-5 pt-0">
+                    <div class="flex items-center justify-between border-t border-[#DCEFFF] pt-3.5">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                            {{ $isVideo ? 'Video Belajar' : 'Dokumen Modul' }}
+                        </span>
+                        <a href="{{ route('siswa.modul.materi', $modul->id_modul) }}"
+                            class="inline-flex items-center gap-1.5 rounded-xl bg-[#007FBE] hover:bg-[#00679A] text-white font-black text-xs px-4 py-2 shadow-[0_3px_0_#005580] active:translate-y-0.5 active:shadow-none transition">
+                            <span>{{ $isVideo ? 'Tonton Video' : 'Buka Modul' }}</span>
+                            <span>→</span>
+                        </a>
                     </div>
                 </div>
             </div>
