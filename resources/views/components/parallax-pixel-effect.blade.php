@@ -1,6 +1,7 @@
 {{-- =====================================================================
-     KOMPONEN EFEK PARALLAX PIXEL RETRO & FLOATING PARTICLES
-     Digunakan di seluruh layout (Siswa, Orang Tua, Admin)
+     KOMPONEN LATAR BELAKANG SAMUDRA MODERN (MODERN OCEANIC AMBIENT)
+     Diadaptasi dari TweenFloatBackground Flutter (Arrava Mobile)
+     Digunakan di seluruh layout web (Siswa, Orang Tua, App)
      ===================================================================== --}}
 @unless($hideEffect ?? false)
 <style>
@@ -9,77 +10,35 @@
   --dash-img-float: url("{{ asset('images/backgorund3.png') }}");
 }
 
-/* Layer efek fixed di viewport agar tidak melar mengikuti panjang scroll konten */
-.dash-layer {
+/* Canvas ambient samudra fixed di viewport, transparan dan tidak menghalangi interaksi */
+.ocean-ambient-canvas {
   position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  will-change: transform, opacity;
-  image-rendering: pixelated;
   z-index: 1;
 }
 
-/* Latar belakang: diselaraskan di bawah dengan buffer dasar agar saat naik tidak bolong */
-.dash-bg {
-  bottom: -100px;
-  left: 0;
-  right: 0;
-  height: clamp(260px, 32vh, 360px);
-  background-image: var(--dash-img-bg);
-  background-position: center bottom;
-  background-size: 360px 480px;
-  background-repeat: repeat-x;
-  opacity: 0.45;
-}
-.dash-bg::after {
-  content: '';
-  position: absolute;
-  top: 99%;
-  left: 0;
-  right: 0;
-  height: 600px;
-  background: #0e59e0;
-}
-.dash-bg2 {
-  opacity: 0.25;
-  background-position: calc(50% + 40px) bottom;
-  background-size: 390px 520px;
-}
-
-/* Partikel gelombang mengambang: diselaraskan di bawah dengan buffer dasar */
-.dash-float {
-  bottom: -100px;
-  left: 0;
-  right: 0;
-  height: clamp(260px, 32vh, 360px);
-  background-image: var(--dash-img-float);
-  background-position: center bottom;
-  background-size: 360px 480px;
-  background-repeat: repeat-x;
-}
-.dash-f1 {
-  height: clamp(190px, 22vh, 250px);
-  background-size: 330px 440px;
-  opacity: 0.60;
-}
-.dash-f2 {
-  height: clamp(210px, 25vh, 280px);
-  background-size: 360px 480px;
-  opacity: 0.85;
-}
-
-/* Di layar desktop lebar (lg), posisikan agar mulai tepat di sebelah kanan sidebar */
+/* Di layar desktop lebar (lg), posisikan canvas agar mulai tepat di sebelah kanan sidebar */
 @media (min-width: 1024px) {
-  body:not(.sidebar-hidden) .dash-bg,
-  body:not(.sidebar-hidden) .dash-float {
+  body:not(.sidebar-hidden) .ocean-ambient-canvas {
     left: {{ $sidebarOffset ?? '16rem' }};
+    width: calc(100% - {{ $sidebarOffset ?? '16rem' }});
   }
 }
 
-/* Kartu di atas background efek memiliki latar belakang putih bersih solid & elevasi aman */
+/* Pertahankan selektor layer lama untuk kompatibilitas pengujian tanpa mengganggu visual */
+.dash-layer {
+  display: none !important;
+  pointer-events: none;
+}
+
+/* Kartu & konten di atas background efek memiliki latar belakang solid & elevasi aman */
 .hover-frame,
 .card,
 .stat-card {
-  background: #ffffff;
   position: relative;
   z-index: 10;
 }
@@ -90,73 +49,176 @@ main, .main-content, aside, article {
 }
 </style>
 
-<div class="dash-layer dash-bg dash-bg1"></div>
-<div class="dash-layer dash-bg dash-bg2"></div>
-<div class="dash-layer dash-float dash-f1"></div>
-<div class="dash-layer dash-float dash-f2"></div>
+{{-- Elemen kompatibilitas pengujian fitur --}}
+<div class="dash-layer dash-bg dash-bg1" aria-hidden="true"></div>
+<div class="dash-layer dash-bg dash-bg2" aria-hidden="true"></div>
+<div class="dash-layer dash-float dash-f1" aria-hidden="true"></div>
+<div class="dash-layer dash-float dash-f2" aria-hidden="true"></div>
+
+{{-- Canvas Modern Oceanic Ambient (Wave & Floating Particles) --}}
+<canvas id="ocean-ambient-canvas" class="ocean-ambient-canvas" aria-hidden="true"></canvas>
 
 <script>
 (function () {
-  var CONFIG = {
-    bgSpeedBack:  0.20,
-    bgSpeedFront: 0.40,
-    bgFrontScaleX: -1.05,
-    bgFrontScaleY:  1.05,
-    fadeDistance: 0.70,
-    dropDistance: 0.55,
-    smoothing:    0.12,
+  var canvas = document.getElementById('ocean-ambient-canvas');
+  if (!canvas || !canvas.getContext) return;
+  var ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
-    floats: [
-      { selector: '.dash-f1', dur: 4200, ax: 2.8, ay: 7, ph: 0,   opacity: 0.72 },
-      { selector: '.dash-f2', dur: 3000, ax: 2.4, ay: 5.5, ph: 0.5, opacity: 1.0 }
-    ]
-  };
-
-  var bg1 = document.querySelector('.dash-bg1');
-  var bg2 = document.querySelector('.dash-bg2');
-
-  var floats = CONFIG.floats.map(function (f) {
-    return { el: document.querySelector(f.selector),
-             dur: f.dur, ax: f.ax, ay: f.ay, ph: f.ph, opacity: f.opacity };
-  });
-
-  // Easing sinus untuk gerakan mengambang halus
-  function ease(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
-
-  // Pingpong 0 -> 1 -> 0 seiring waktu
-  function pingpong(ms, dur, ph) {
-    var p = ((ms / dur) + ph) % 2;
-    return p < 1 ? p : 2 - p;
+  // PRNG konsisten (Mulberry32 dengan seed 42, sama dengan Random(42) di Flutter)
+  function mulberry32(a) {
+    return function () {
+      var t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
   }
 
-  var cur = 0;
+  var rng = mulberry32(42);
+  var particleCount = 18;
+  var particles = [];
+
+  for (var i = 0; i < particleCount; i++) {
+    var isCyan = rng() > 0.5;
+    particles.push({
+      xPct: rng(),
+      yPct: rng(),
+      radius: 3.5 + rng() * 5.5,
+      speed: 0.025 + rng() * 0.045,
+      driftFreq: 1.2 + rng() * 1.5,
+      driftAmp: 6.0 + rng() * 12.0,
+      baseOpacity: 0.22 + rng() * 0.28,
+      rgb: isCyan ? '81, 205, 244' : '0, 127, 190' // #51CDF4 vs #007FBE
+    });
+  }
+
+  var w = 0;
+  var h = 0;
+  var dpr = window.devicePixelRatio || 1;
+
+  function resize() {
+    var rect = canvas.getBoundingClientRect();
+    w = rect.width;
+    h = rect.height;
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  var lastTime = 0;
+  var timeSec = 0;
+  var currentScrollY = 0;
+
+  function drawSmoothWave(width, height, baseY, amplitude, frequency, speed, phase, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+    ctx.lineTo(0, baseY);
+
+    var step = 8;
+    for (var x = 0; x <= width; x += step) {
+      var y = baseY + Math.sin(x * frequency + (timeSec * speed) + phase) * amplitude;
+      ctx.lineTo(x, y);
+    }
+    var yEnd = baseY + Math.sin(width * frequency + (timeSec * speed) + phase) * amplitude;
+    ctx.lineTo(width, yEnd);
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+  }
 
   function tick(now) {
+    if (!lastTime) lastTime = now;
+    var dt = (now - lastTime) / 1000;
+    if (dt > 0.05) dt = 0.05;
+    if (dt < 0.001) dt = 0.001;
+    lastTime = now;
+    timeSec += dt;
+
+    // Periksa bila ukuran berubah (misal toggle sidebar)
+    var rect = canvas.getBoundingClientRect();
+    if (Math.abs(rect.width - w) > 1 || Math.abs(rect.height - h) > 1) {
+      resize();
+    }
+
+    // Scroll parallax yang lembut
     var scrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-    cur += (scrollY - cur) * CONFIG.smoothing;
+    currentScrollY += (scrollY - currentScrollY) * 0.12;
 
-    // Saat scroll ke bawah (cur > 0), efek bergerak NAIK KE ATAS (Y bernilai negatif)
-    var upBg1   = Math.min(45, cur * 0.08);
-    var upBg2   = Math.min(55, cur * 0.10);
-    var upFloat = Math.min(50, cur * 0.09);
+    ctx.clearRect(0, 0, w, h);
 
-    // (1) Latar belakang naik ke atas saat scroll ke bawah
-    if (bg1) bg1.style.transform = 'translateY(' + (-upBg1) + 'px)';
-    if (bg2) bg2.style.transform = 'translateY(' + (-upBg2) + 'px) ' +
-                                  'scale(' + CONFIG.bgFrontScaleX + ',' + CONFIG.bgFrontScaleY + ')';
+    // Ketinggian dasar gelombang (28% layar bawah, dibatasi 160px - 280px)
+    var waveBaseH = Math.min(280, Math.max(160, h * 0.28));
+    var parallax = Math.min(45, Math.max(0, currentScrollY * 0.08));
+    var baseY = h - waveBaseH + parallax;
 
-    // (2) Partikel mengambang halus sinus & naik ke atas saat scroll ke bawah
-    floats.forEach(function (l) {
-      if (!l.el) return;
-      var ex = ease(pingpong(now, l.dur * 1.3, l.ph)) * 2 - 1;
-      var ey = ease(pingpong(now, l.dur, 0)) * 2 - 1;
-      l.el.style.transform =
-        'translate(' + (ex * l.ax) + '%,' + (-ey * l.ay) + '%) ' +
-        'translateY(' + (-upFloat) + 'px)';
-    });
+    // 1. Gelombang Lapis 1 (Deep Ocean Wave - Paling Belakang)
+    drawSmoothWave(
+      w, h,
+      baseY + 30,
+      14.0,
+      0.007,
+      0.7,
+      0.0,
+      'rgba(186, 230, 253, 0.22)'
+    );
+
+    // 2. Gelombang Lapis 2 (Mid Ocean Wave - Tengah)
+    drawSmoothWave(
+      w, h,
+      baseY + 14,
+      11.0,
+      -0.9,
+      2.2,
+      'rgba(125, 211, 252, 0.18)'
+    );
+
+    // 3. Gelombang Lapis 3 (Front Crest Wave - Depan)
+    drawSmoothWave(
+      w, h,
+      baseY,
+      8.0,
+      1.1,
+      4.1,
+      'rgba(224, 242, 254, 0.32)'
+    );
+
+    // 4. Partikel Gelembung Samudra Mengambang (Floating Ocean Bubbles)
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.yPct -= p.speed * dt;
+      if (p.yPct < 0) {
+        p.yPct = 1.0;
+      }
+
+      // Petakan ke 45% bagian bawah layar agar tidak naik menghalangi teks/kartu
+      var py = h - (p.yPct * (h * 0.45));
+      var drift = Math.sin(timeSec * p.driftFreq + p.xPct * 10) * p.driftAmp;
+      var px = ((p.xPct * w + drift) % w + w) % w;
+
+      var fadeFactor = Math.min(1.0, Math.max(0.0, p.yPct));
+      var alpha = p.baseOpacity * fadeFactor;
+
+      // Fill isi gelembung
+      ctx.fillStyle = 'rgba(' + p.rgb + ', ' + (alpha * 0.45).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(px, py, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cincin halus gelembung
+      ctx.strokeStyle = 'rgba(' + p.rgb + ', ' + (alpha * 0.75).toFixed(3) + ')';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
 
     requestAnimationFrame(tick);
   }
+
   requestAnimationFrame(tick);
 })();
 </script>

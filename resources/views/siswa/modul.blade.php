@@ -83,13 +83,95 @@
         </div>
     </div>
 
+    {{-- Oceanic Header & Filter Bar (Diadaptasi dari Arrava Mobile StudentModuleListPage) --}}
+    <div class="rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-gradient-to-b from-[#AEE3F9]/60 via-[#E6F3FF]/70 to-white/95 p-4 sm:p-5 shadow-[0_4px_0_#DCEFFF] space-y-4">
+        {{-- Top Header Row --}}
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#DCEFFF] shadow-xs">
+                <span class="text-sm">📚</span>
+                <span class="text-xs font-black text-[#007FBE]">Modul Pembelajaran</span>
+            </div>
+            <div class="flex items-center gap-2.5">
+                <span id="modul-count-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white border border-[#DCEFFF] text-xs font-black text-[#465673] shadow-xs">
+                    {{ count($moduls) }} Modul
+                </span>
+            </div>
+        </div>
+
+        {{-- Search Bar --}}
+        <div class="relative">
+            <svg class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#007FBE]" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
+            </svg>
+            <input type="text" id="modul-filter-search" name="q" value="{{ request('q') }}" placeholder="Cari modul, materi, mapel..."
+                class="h-11 w-full rounded-2xl bg-white border-2 border-[#DCEFFF] pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#12233F] outline-none placeholder:text-[#94A3B8] focus:border-[#007FBE] focus:ring-4 focus:ring-[#DDF3FF] transition shadow-[0_2px_0_#DCEFFF]">
+        </div>
+
+        {{-- Filter Jenjang (Filter Chips dari Mobile) --}}
+        <div class="space-y-1.5">
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="modul-jenjang-chips">
+                <span class="text-[11px] font-black uppercase tracking-wider text-[#465673] shrink-0 mr-1">Jenjang:</span>
+                @php
+                    $activeModulJenjang = $selectedJenjang ?? request('jenjang', 'Jenjang Saya');
+                @endphp
+                @foreach(['Jenjang Saya', 'Semua', 'SD', 'SMP', 'SMA'] as $j)
+                    @php
+                        $isJSelected = strcasecmp($activeModulJenjang, $j) === 0;
+                    @endphp
+                    <button type="button"
+                        data-jenjang="{{ $j }}"
+                        class="modul-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border {{ $isJSelected ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs' : 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] hover:bg-[#DBEAFE]' }}">
+                        {{ $j }}
+                    </button>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Filter Tipe / Status Modul (Choice Chips dari Mobile: 'Semua', 'Video', 'PDF', 'Belum Tuntas', 'Tuntas') --}}
+        <div class="space-y-1.5">
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="modul-filter-chips">
+                <span class="text-[11px] font-black uppercase tracking-wider text-[#465673] shrink-0 mr-1">Filter:</span>
+                @php
+                    $activeModulFilter = $selectedFilter ?? request('filter', 'Semua');
+                @endphp
+                @foreach(['Semua', 'Video', 'PDF', 'Belum Tuntas', 'Tuntas'] as $flt)
+                    @php
+                        $isFltSelected = strcasecmp($activeModulFilter, $flt) === 0;
+                    @endphp
+                    <button type="button"
+                        data-filter="{{ $flt }}"
+                        class="modul-filter-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border {{ $isFltSelected ? 'bg-[#007FBE] text-white border-[#007FBE] shadow-xs' : 'bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]' }}">
+                        {{ $flt }}
+                    </button>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Hidden GET Form for fallback / server sync --}}
+        <form id="modulFilterForm" method="GET" action="{{ route('siswa.modul') }}" class="hidden">
+            <input type="hidden" name="jenjang" id="modul-input-jenjang" value="{{ $activeModulJenjang }}">
+            <input type="hidden" name="filter" id="modul-input-filter" value="{{ $activeModulFilter }}">
+            <input type="hidden" name="q" id="modul-input-q" value="{{ request('q') }}">
+        </form>
+    </div>
+
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2" id="modul-grid">
         @forelse($moduls as $modul)
             @php
                 $isVideo = ($modul->id_tipemodul == 1 || $modul->youtube_embed_url);
+                $isTuntas = (bool) ($modul->progresUser?->is_tuntas || ($modul->progresSiswa && $modul->progresSiswa->where('is_tuntas', true)->isNotEmpty()));
             @endphp
             <div class="modul-card-item hover-frame group rounded-2xl border-2 border-[#DCEFFF] bg-white p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_5px_0_#007FBE] shadow-[0_3px_0_#B2E7FC]"
-                data-title="{{ strtolower($modul->judul_modul) }}">
+                data-title="{{ strtolower($modul->judul_modul) }}"
+                data-jenjang-id="{{ $modul->id_jenjang }}"
+                data-jenjang-name="{{ strtolower($modul->jenjang->nama_jenjang ?? $modul->jenjang->nama_tipe ?? '') }}"
+                data-mapel="{{ strtolower($modul->mapel->nama_mapel ?? '') }}"
+                data-desc="{{ strtolower(strip_tags($modul->deskripsi ?? '')) }}"
+                data-is-video="{{ $isVideo ? '1' : '0' }}"
+                data-is-pdf="{{ ($modul->id_tipemodul == 2 || $modul->is_pdf) ? '1' : '0' }}"
+                data-is-tuntas="{{ $isTuntas ? '1' : '0' }}">
                 <div class="flex flex-col sm:flex-row gap-3.5 items-stretch">
                     <!-- Thumbnail Box (Compact) -->
                     <div class="relative h-[120px] sm:h-[125px] w-full sm:w-[135px] shrink-0 overflow-hidden rounded-xl bg-[#DDF3FF] border border-[#B2E7FC]">
@@ -199,28 +281,112 @@
 @push('scripts')
 <script>
     // =========================================================================
-    // Client-side Pagination (Batasan 8 card per halaman) & Live Search Modul
+    // Client-side Pagination (Batasan 8 card per halaman) & Filter Adaptasi Mobile
     // =========================================================================
     const MODUL_CARDS_PER_PAGE = 8;
     let currentModulPage = 1;
 
+    const userJenjangId = {{ (int) (Auth::user()?->id_jenjang ?? 0) }};
+    let selectedModulJenjang = @json($selectedJenjang ?? request('jenjang', 'Jenjang Saya'));
+    let selectedModulFilter = @json($selectedFilter ?? request('filter', 'Semua'));
+
     const modulCards = Array.from(document.querySelectorAll('.modul-card-item'));
     const modulSearchInput = document.getElementById('modul-search-input');
+    const modulFilterSearchInput = document.getElementById('modul-filter-search');
     const modulEmptySearchEl = document.getElementById('modul-empty-search');
     const modulPaginationContainer = document.getElementById('modul-pagination-container');
     const modulPageCurrentEl = document.getElementById('modul-page-current');
     const modulDotsContainerEl = document.getElementById('modul-pagination-dots');
     const modulBtnPrev = document.getElementById('modul-btn-prev');
     const modulBtnNext = document.getElementById('modul-btn-next');
+    const modulCountBadge = document.getElementById('modul-count-badge');
+
+    const modulJenjangChips = Array.from(document.querySelectorAll('.modul-jenjang-chip'));
+    const modulFilterChips = Array.from(document.querySelectorAll('.modul-filter-chip'));
+    const inputModulJenjang = document.getElementById('modul-input-jenjang');
+    const inputModulFilter = document.getElementById('modul-input-filter');
+    const inputModulQ = document.getElementById('modul-input-q');
 
     function getFilteredModulCards() {
-        const query = modulSearchInput ? modulSearchInput.value.toLowerCase().trim() : '';
-        if (!query) return modulCards;
+        const q1 = modulSearchInput ? modulSearchInput.value.toLowerCase().trim() : '';
+        const q2 = modulFilterSearchInput ? modulFilterSearchInput.value.toLowerCase().trim() : '';
+        const query = q2 || q1;
+
         return modulCards.filter(card => {
-            const title = (card.getAttribute('data-title') || '').toLowerCase();
-            return title.includes(query);
+            // Match Search (judul, mapel, deskripsi)
+            if (query) {
+                const title = (card.getAttribute('data-title') || '').toLowerCase();
+                const mapel = (card.getAttribute('data-mapel') || '').toLowerCase();
+                const desc = (card.getAttribute('data-desc') || '').toLowerCase();
+                if (!title.includes(query) && !mapel.includes(query) && !desc.includes(query)) {
+                    return false;
+                }
+            }
+
+            // Match Jenjang
+            const cardJenjangId = parseInt(card.getAttribute('data-jenjang-id') || '0', 10);
+            const cardJenjangName = (card.getAttribute('data-jenjang-name') || '').toLowerCase().trim();
+
+            if (selectedModulJenjang === 'SD') {
+                if (cardJenjangId !== 1 && cardJenjangName !== 'sd') return false;
+            } else if (selectedModulJenjang === 'SMP') {
+                if (cardJenjangId !== 2 && cardJenjangName !== 'smp') return false;
+            } else if (selectedModulJenjang === 'SMA') {
+                if (cardJenjangId !== 3 && cardJenjangName !== 'sma') return false;
+            } else if (selectedModulJenjang === 'Jenjang Saya') {
+                if (userJenjangId > 0 && cardJenjangId !== userJenjangId) return false;
+            }
+
+            // Match Tipe / Status Modul ('Semua', 'Video', 'PDF', 'Belum Tuntas', 'Tuntas')
+            const isVideo = card.getAttribute('data-is-video') === '1';
+            const isPdf = card.getAttribute('data-is-pdf') === '1';
+            const isTuntas = card.getAttribute('data-is-tuntas') === '1';
+
+            if (selectedModulFilter === 'Video') {
+                if (!isVideo) return false;
+            } else if (selectedModulFilter === 'PDF') {
+                if (!isPdf) return false;
+            } else if (selectedModulFilter === 'Belum Tuntas') {
+                if (isTuntas) return false;
+            } else if (selectedModulFilter === 'Tuntas') {
+                if (!isTuntas) return false;
+            }
+
+            return true;
         });
     }
+
+    // Event handler Chip Jenjang
+    modulJenjangChips.forEach(chip => {
+        chip.addEventListener('click', function () {
+            selectedModulJenjang = this.getAttribute('data-jenjang');
+            if (inputModulJenjang) inputModulJenjang.value = selectedModulJenjang;
+
+            modulJenjangChips.forEach(c => {
+                c.className = 'modul-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] hover:bg-[#DBEAFE]';
+            });
+            this.className = 'modul-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#2563EB] text-white border-[#2563EB] shadow-xs';
+
+            currentModulPage = 1;
+            renderModulPagination(true);
+        });
+    });
+
+    // Event handler Chip Filter Tipe/Status
+    modulFilterChips.forEach(chip => {
+        chip.addEventListener('click', function () {
+            selectedModulFilter = this.getAttribute('data-filter');
+            if (inputModulFilter) inputModulFilter.value = selectedModulFilter;
+
+            modulFilterChips.forEach(c => {
+                c.className = 'modul-filter-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]';
+            });
+            this.className = 'modul-filter-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#007FBE] text-white border-[#007FBE] shadow-xs';
+
+            currentModulPage = 1;
+            renderModulPagination(true);
+        });
+    });
 
     function renderModulDots(totalPages, currentPage) {
         if (!modulDotsContainerEl) return;
@@ -251,6 +417,10 @@
         const filtered = getFilteredModulCards();
         const totalItems = filtered.length;
         const totalPages = Math.max(1, Math.ceil(totalItems / MODUL_CARDS_PER_PAGE));
+
+        if (modulCountBadge) {
+            modulCountBadge.textContent = `${totalItems} Modul`;
+        }
 
         if (currentModulPage > totalPages) currentModulPage = totalPages;
         if (currentModulPage < 1) currentModulPage = 1;
@@ -319,10 +489,23 @@
         });
     }
 
+    function syncModulSearch(query) {
+        if (modulSearchInput && modulSearchInput.value !== query) modulSearchInput.value = query;
+        if (modulFilterSearchInput && modulFilterSearchInput.value !== query) modulFilterSearchInput.value = query;
+        if (inputModulQ) inputModulQ.value = query;
+        currentModulPage = 1;
+        renderModulPagination(false);
+    }
+
     if (modulSearchInput) {
         modulSearchInput.addEventListener('input', function () {
-            currentModulPage = 1;
-            renderModulPagination(false);
+            syncModulSearch(this.value);
+        });
+    }
+
+    if (modulFilterSearchInput) {
+        modulFilterSearchInput.addEventListener('input', function () {
+            syncModulSearch(this.value);
         });
     }
 

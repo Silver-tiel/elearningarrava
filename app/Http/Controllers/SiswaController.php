@@ -105,20 +105,88 @@ class SiswaController extends Controller
         ]);
     }
 
-    public function belajar()
+    public function belajar(Request $request)
     {
         $user = Auth::user();
 
         // Menampilkan daftar modul untuk belajar sesuai jenjang siswa (hanya yang sudah dipublikasikan)
-        $query = Modul::published()->with(['tipeModul', 'jenjang']);
+        $relations = ['tipeModul', 'jenjang'];
+        if (Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        if (Schema::hasTable('progres_modul_siswa')) {
+            $relations['progresUser'] = fn($q) => $user ? $q->where('id_user', $user->id_user) : $q;
+        }
 
-        if ($user && $user->id_jenjang) {
-            $query->where('id_jenjang', $user->id_jenjang);
+        $query = Modul::published()->with($relations);
+
+        // Filter jenjang persis seperti mobile ('Jenjang Saya', 'Semua', 'SD', 'SMP', 'SMA')
+        $selectedJenjang = $request->query('jenjang', 'Jenjang Saya');
+        $jenjangLower = strtolower(trim($selectedJenjang));
+
+        if ($jenjangLower === 'jenjang saya' || $jenjangLower === 'saya') {
+            if ($user && $user->id_jenjang) {
+                $query->where('id_jenjang', $user->id_jenjang);
+            }
+        } elseif ($jenjangLower === 'sd' || $jenjangLower === '1') {
+            $query->where(function ($q) {
+                $q->where('id_jenjang', 1)
+                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%sd%'));
+            });
+        } elseif ($jenjangLower === 'smp' || $jenjangLower === '2') {
+            $query->where(function ($q) {
+                $q->where('id_jenjang', 2)
+                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%smp%'));
+            });
+        } elseif ($jenjangLower === 'sma' || $jenjangLower === '3') {
+            $query->where(function ($q) {
+                $q->where('id_jenjang', 3)
+                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%sma%'));
+            });
+        }
+        // Jika 'semua' atau '0' atau 'all', tidak difilter berdasarkan jenjang
+
+        // Filter tipe / status modul persis seperti mobile ('Semua', 'Video', 'PDF', 'Belum Tuntas', 'Tuntas')
+        $selectedFilter = $request->query('filter', 'Semua');
+        $filterLower = strtolower(trim($selectedFilter));
+
+        if ($filterLower === 'video') {
+            $query->where(function ($q) {
+                $q->where('id_tipemodul', 1)
+                  ->orWhereNotNull('youtube_embed_url')
+                  ->orWhere('youtube_embed_url', '!=', '');
+            });
+        } elseif ($filterLower === 'pdf') {
+            $query->where('id_tipemodul', 2);
+        } elseif ($filterLower === 'tuntas') {
+            if (Schema::hasTable('progres_modul_siswa')) {
+                $query->whereHas('progresSiswa', function ($q) use ($user) {
+                    if ($user) $q->where('id_user', $user->id_user);
+                    $q->where('is_tuntas', true);
+                });
+            }
+        } elseif ($filterLower === 'belum tuntas' || $filterLower === 'belum_tuntas') {
+            if (Schema::hasTable('progres_modul_siswa')) {
+                $query->whereDoesntHave('progresSiswa', function ($q) use ($user) {
+                    if ($user) $q->where('id_user', $user->id_user);
+                    $q->where('is_tuntas', true);
+                });
+            }
+        }
+
+        if ($search = $request->query('q')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('judul_modul', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%");
+                if (Schema::hasTable('mapel')) {
+                    $q->orWhereHas('mapel', fn($m) => $m->where('nama_mapel', 'like', "%{$search}%"));
+                }
+            });
         }
 
         $moduls = $query->latest()->get();
 
-        return view('siswa.modul', compact('moduls', 'user'));
+        return view('siswa.modul', compact('moduls', 'user', 'selectedJenjang', 'selectedFilter'));
     }
 
     public function materiVideo()
@@ -392,6 +460,9 @@ class SiswaController extends Controller
             'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
             'mapel' => ['nullable', 'integer', 'exists:mapel,id_mapel'],
             'sort' => ['nullable', 'in:terbaru,terlama'],
+            'jenjang' => ['nullable', 'string'],
+            'status' => ['nullable', 'string'],
+            'q' => ['nullable', 'string'],
         ]);
 
         $user = Auth::user();
@@ -409,8 +480,52 @@ class SiswaController extends Controller
 
         $query = Quiz::published()->belumKadaluarsa()->with($relations);
 
-        if ($user && $user->id_jenjang) {
-            $query->where('id_jenjang', $user->id_jenjang);
+        // Filter jenjang persis seperti mobile ('Jenjang Saya', 'Semua', 'SD', 'SMP', 'SMA')
+        $selectedJenjang = $request->query('jenjang', 'Jenjang Saya');
+        $jenjangLower = strtolower(trim($selectedJenjang));
+
+        if ($jenjangLower === 'jenjang saya' || $jenjangLower === 'saya') {
+            if ($user && $user->id_jenjang) {
+                $query->where('id_jenjang', $user->id_jenjang);
+            }
+        } elseif ($jenjangLower === 'sd' || $jenjangLower === '1') {
+            $query->where(function ($q) {
+                $q->where('id_jenjang', 1)
+                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%sd%'));
+            });
+        } elseif ($jenjangLower === 'smp' || $jenjangLower === '2') {
+            $query->where(function ($q) {
+                $q->where('id_jenjang', 2)
+                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%smp%'));
+            });
+        } elseif ($jenjangLower === 'sma' || $jenjangLower === '3') {
+            $query->where(function ($q) {
+                $q->where('id_jenjang', 3)
+                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%sma%'));
+            });
+        }
+        // Jika 'semua' atau '0' atau 'all', tidak difilter berdasarkan jenjang
+
+        // Filter Status Kuis persis seperti mobile ('Semua', 'Belum Dikerjakan', 'Lulus', 'Belum Lulus')
+        $selectedStatus = $request->query('status', 'Semua');
+        $statusLower = strtolower(trim($selectedStatus));
+
+        if ($statusLower === 'belum dikerjakan' || $statusLower === 'belum_dikerjakan') {
+            $query->whereDoesntHave('hasil', function ($q) use ($user) {
+                if ($user) $q->where('id_user', $user->id_user);
+            });
+        } elseif ($statusLower === 'lulus') {
+            $query->whereHas('hasil', function ($q) use ($user) {
+                if ($user) $q->where('id_user', $user->id_user);
+                $q->where('is_lulus', true);
+            });
+        } elseif ($statusLower === 'belum lulus' || $statusLower === 'belum_lulus') {
+            $query->whereHas('hasil', function ($q) use ($user) {
+                if ($user) $q->where('id_user', $user->id_user);
+            })->whereDoesntHave('hasil', function ($q) use ($user) {
+                if ($user) $q->where('id_user', $user->id_user);
+                $q->where('is_lulus', true);
+            });
         }
 
         if (Schema::hasColumn('quiz', 'id_mapel') && !empty($filters['mapel'])) {
@@ -419,6 +534,16 @@ class SiswaController extends Controller
 
         if (!empty($filters['tingkat'])) {
             $query->where('id_tingkatquiz', $filters['tingkat']);
+        }
+
+        if ($search = $request->query('q')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%");
+                if (Schema::hasTable('mapel')) {
+                    $q->orWhereHas('mapel', fn($m) => $m->where('nama_mapel', 'like', "%{$search}%"));
+                }
+            });
         }
 
         if (($filters['sort'] ?? null) === 'terlama') {
@@ -431,7 +556,7 @@ class SiswaController extends Controller
         $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
         $mapelList = Schema::hasTable('mapel') ? Mapel::orderBy('nama_mapel')->get() : collect();
 
-        return view('siswa.quiz', compact('quizzes', 'tingkatQuizList', 'mapelList'));
+        return view('siswa.quiz', compact('quizzes', 'tingkatQuizList', 'mapelList', 'user', 'selectedJenjang', 'selectedStatus'));
     }
 
     /* ---------------------------------------------------------------------

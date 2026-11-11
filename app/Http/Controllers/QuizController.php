@@ -764,6 +764,24 @@ class QuizController extends Controller
     // API ENDPOINTS FOR MOBILE APP (ARRAVA MOBILE)
     // =========================================================================
 
+    private function saveBase64Image(?string $base64Data, string $folder = 'soal/foto'): ?string
+    {
+        if (empty($base64Data)) return null;
+        if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $type)) {
+            $data = substr($base64Data, strpos($base64Data, ',') + 1);
+            $type = strtolower($type[1]);
+            if (!in_array($type, ['jpg', 'jpeg', 'gif', 'png', 'webp'])) {
+                $type = 'png';
+            }
+            $decoded = base64_decode($data);
+            if ($decoded === false) return null;
+            $filename = $folder . '/' . Str::random(40) . '.' . $type;
+            Storage::disk('public')->put($filename, $decoded);
+            return $filename;
+        }
+        return null;
+    }
+
     public function apiIndex(Request $request)
     {
         $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
@@ -871,11 +889,14 @@ class QuizController extends Controller
             'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
             'use_token' => 'nullable|boolean',
             'token' => 'nullable|string|max:50',
+            'foto_quiz' => 'nullable|string',
             'soal' => $isDraft ? 'nullable|array' : 'required|array|min:1',
             'soal.*.pertanyaan' => $isDraft ? 'nullable|string' : 'required|string',
             'soal.*.jenis_soal' => 'nullable|in:kuis,true_false,isian_singkat',
+            'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
             'soal.*.poin' => 'nullable|integer|min:0',
             'soal.*.durasi_detik' => 'nullable|integer',
+            'soal.*.foto_soal' => 'nullable|string',
             'soal.*.pilihan' => 'nullable|array',
             'soal.*.pilihan.*.label' => 'nullable|string',
             'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
@@ -888,7 +909,19 @@ class QuizController extends Controller
             ? ($request->filled('token') ? trim($request->input('token')) : strtoupper(Str::random(6)))
             : null;
 
-        $quiz = DB::transaction(function () use ($request, $validated, $token, $isDraft) {
+        $fotoQuizPath = null;
+        if ($request->hasFile('foto_quiz') && $request->file('foto_quiz')->isValid()) {
+            $fotoQuizPath = $request->file('foto_quiz')->store('quiz/cover', 'public');
+        } elseif ($request->filled('foto_quiz')) {
+            $rawCover = $request->input('foto_quiz');
+            if (str_starts_with($rawCover, 'data:image/')) {
+                $fotoQuizPath = $this->saveBase64Image($rawCover, 'quiz/cover');
+            } elseif (!str_starts_with($rawCover, 'http')) {
+                $fotoQuizPath = $rawCover;
+            }
+        }
+
+        $quiz = DB::transaction(function () use ($request, $validated, $token, $fotoQuizPath, $isDraft) {
             $quizData = [
                 'judul' => $validated['judul'],
                 'deskripsi' => $validated['deskripsi'] ?? null,
@@ -900,7 +933,7 @@ class QuizController extends Controller
                 'durasi_total_menit' => ($validated['mode_pengerjaan'] ?? 'wayground') === 'biasa' ? ($validated['durasi_total_menit'] ?? 30) : null,
                 'opsi_preview' => $validated['opsi_preview'] ?? 'lengkap',
                 'token' => $token,
-                'foto_quiz' => null,
+                'foto_quiz' => $fotoQuizPath,
                 'proggressQuiz' => $isDraft ? 'Draft' : 'Tersedia',
             ];
             if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel')) {
@@ -932,6 +965,22 @@ class QuizController extends Controller
                         }
                     }
 
+                    $fotoPath = null;
+                    if ($request->hasFile("soal_foto.$index")) {
+                        $foto = $request->file("soal_foto.$index");
+                        if ($foto && $foto->isValid()) $fotoPath = $foto->store('soal/foto', 'public');
+                    } elseif ($request->hasFile("soal.$index.foto_soal")) {
+                        $foto = $request->file("soal.$index.foto_soal");
+                        if ($foto && $foto->isValid()) $fotoPath = $foto->store('soal/foto', 'public');
+                    } elseif (!empty($soalData['foto_soal'])) {
+                        $rawFoto = $soalData['foto_soal'];
+                        if (str_starts_with($rawFoto, 'data:image/')) {
+                            $fotoPath = $this->saveBase64Image($rawFoto, 'soal/foto');
+                        } elseif (!str_starts_with($rawFoto, 'http')) {
+                            $fotoPath = $rawFoto;
+                        }
+                    }
+
                     $soal = Soal::create([
                         'id_quiz' => $quiz->id_quiz,
                         'id_jenjang' => $quiz->id_jenjang,
@@ -940,7 +989,7 @@ class QuizController extends Controller
                         'jawaban_benar' => $jawabanBenar,
                         'poin' => $poin,
                         'durasi_detik' => $durasiDetik,
-                        'foto_soal' => null,
+                        'foto_soal' => $fotoPath,
                     ]);
 
                     if ($idJenisSoal === 1 || $idJenisSoal === 3) {
@@ -1008,7 +1057,19 @@ class QuizController extends Controller
             'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
             'use_token' => 'nullable|boolean',
             'token' => 'nullable|string|max:50',
+            'foto_quiz' => 'nullable|string',
+            'hapus_foto_quiz' => 'nullable|boolean',
             'soal' => 'nullable|array',
+            'soal.*.pertanyaan' => 'nullable|string',
+            'soal.*.jenis_soal' => 'nullable|in:kuis,true_false,isian_singkat',
+            'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
+            'soal.*.poin' => 'nullable|integer|min:0',
+            'soal.*.durasi_detik' => 'nullable|integer',
+            'soal.*.foto_soal' => 'nullable|string',
+            'soal.*.pilihan' => 'nullable|array',
+            'soal.*.pilihan.*.label' => 'nullable|string',
+            'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
+            'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
         ];
 
         $validated = $request->validate($rules, $this->quizValidationMessages());
@@ -1034,10 +1095,36 @@ class QuizController extends Controller
                     : null;
             }
 
+            // Cover handling
+            if ($request->boolean('hapus_foto_quiz')) {
+                if ($quiz->foto_quiz && Storage::disk('public')->exists($quiz->foto_quiz)) {
+                    Storage::disk('public')->delete($quiz->foto_quiz);
+                }
+                $updateData['foto_quiz'] = null;
+            } elseif ($request->hasFile('foto_quiz') && $request->file('foto_quiz')->isValid()) {
+                if ($quiz->foto_quiz && Storage::disk('public')->exists($quiz->foto_quiz)) {
+                    Storage::disk('public')->delete($quiz->foto_quiz);
+                }
+                $updateData['foto_quiz'] = $request->file('foto_quiz')->store('quiz/cover', 'public');
+            } elseif ($request->filled('foto_quiz')) {
+                $rawCover = $request->input('foto_quiz');
+                if (str_starts_with($rawCover, 'data:image/')) {
+                    if ($quiz->foto_quiz && Storage::disk('public')->exists($quiz->foto_quiz)) {
+                        Storage::disk('public')->delete($quiz->foto_quiz);
+                    }
+                    $updateData['foto_quiz'] = $this->saveBase64Image($rawCover, 'quiz/cover');
+                } elseif (!str_starts_with($rawCover, 'http')) {
+                    $updateData['foto_quiz'] = $rawCover;
+                }
+            }
+
             $quiz->update($updateData);
 
             if ($request->has('soal') && is_array($request->input('soal'))) {
-                $existingSoalIds = $quiz->soal()->pluck('id_soal');
+                $oldSoalList = $quiz->soal()->orderBy('id_soal')->get();
+                $oldPhotosByIndex = $oldSoalList->mapWithKeys(fn($item, $idx) => [$idx => $item->foto_soal]);
+
+                $existingSoalIds = $oldSoalList->pluck('id_soal');
                 PilihanSoal::whereIn('id_soal', $existingSoalIds)->delete();
                 $quiz->soal()->delete();
 
@@ -1063,6 +1150,40 @@ class QuizController extends Controller
                         }
                     }
 
+                    $fotoPath = $oldPhotosByIndex[$index] ?? null;
+                    if (!empty($soalData['remove_foto'])) {
+                        if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
+                            Storage::disk('public')->delete($fotoPath);
+                        }
+                        $fotoPath = null;
+                    } elseif ($request->hasFile("soal_foto.$index")) {
+                        $foto = $request->file("soal_foto.$index");
+                        if ($foto && $foto->isValid()) {
+                            if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
+                                Storage::disk('public')->delete($fotoPath);
+                            }
+                            $fotoPath = $foto->store('soal/foto', 'public');
+                        }
+                    } elseif ($request->hasFile("soal.$index.foto_soal")) {
+                        $foto = $request->file("soal.$index.foto_soal");
+                        if ($foto && $foto->isValid()) {
+                            if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
+                                Storage::disk('public')->delete($fotoPath);
+                            }
+                            $fotoPath = $foto->store('soal/foto', 'public');
+                        }
+                    } elseif (!empty($soalData['foto_soal'])) {
+                        $rawFoto = $soalData['foto_soal'];
+                        if (str_starts_with($rawFoto, 'data:image/')) {
+                            if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
+                                Storage::disk('public')->delete($fotoPath);
+                            }
+                            $fotoPath = $this->saveBase64Image($rawFoto, 'soal/foto');
+                        } elseif (!str_starts_with($rawFoto, 'http')) {
+                            $fotoPath = $rawFoto;
+                        }
+                    }
+
                     $soal = Soal::create([
                         'id_quiz' => $quiz->id_quiz,
                         'id_jenjang' => $quiz->id_jenjang,
@@ -1071,7 +1192,7 @@ class QuizController extends Controller
                         'jawaban_benar' => $jawabanBenar,
                         'poin' => $poin,
                         'durasi_detik' => $durasiDetik,
-                        'foto_soal' => null,
+                        'foto_soal' => $fotoPath,
                     ]);
 
                     if ($idJenisSoal === 1 || $idJenisSoal === 3) {
