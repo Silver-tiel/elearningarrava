@@ -1613,6 +1613,33 @@ class SiswaController extends Controller
     return redirect()->route('siswa.profil')->with('success', 'Profil berhasil diperbarui.');
 }
 
+    public function updateHeroTheme(Request $request)
+    {
+        $validated = $request->validate([
+            'hero_theme'  => ['required', 'string', Rule::in(array_keys(User::HERO_THEMES))],
+            'redirect_to' => ['nullable', 'string', Rule::in(['dashboard', 'profil'])],
+        ]);
+
+        $theme = $validated['hero_theme'];
+        $user = $request->user();
+
+        if (Schema::hasColumn('user', 'hero_theme')) {
+            $user->hero_theme = $theme;
+            $user->save();
+        } else {
+            $request->session()->put('siswa_hero_theme', $theme);
+        }
+
+        $label = User::HERO_THEMES[$theme]['label'] ?? ucfirst($theme);
+        $targetRoute = ($validated['redirect_to'] ?? 'profil') === 'dashboard'
+            ? 'siswa.dashboard'
+            : 'siswa.profil';
+
+        return redirect()
+            ->route($targetRoute)
+            ->with('success', "Tema hero dashboard berhasil diganti ke {$label}.");
+    }
+
     /**
      * Menampilkan halaman Papan Peringkat (Leaderboard) Siswa.
      */

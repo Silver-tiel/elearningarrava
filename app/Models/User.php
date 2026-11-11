@@ -30,6 +30,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string $status_akun
  * @property int|null $id_modul
  * @property string|null $foto_profil
+ * @property string|null $hero_theme
  * @property string|null $qr_token
  * @property \Illuminate\Support\Carbon|\Carbon\CarbonInterface|string|null $qr_dibuat_pada
  * @property Carbon|null $created_at
@@ -49,6 +50,17 @@ class User extends Authenticatable
 
     protected ?array $memoizedRankTier = null;
 
+    public const HERO_THEMES = [
+        'samudra' => [
+            'label' => 'Samudra Piksel',
+            'description' => 'Suasana bawah laut dengan ikan piksel berenang.',
+        ],
+        'galaksi' => [
+            'label' => 'Galaksi Piksel',
+            'description' => 'Luar angkasa dengan planet mengorbit & asteroid interaktif.',
+        ],
+    ];
+
     protected $fillable = [
         'nama',
         'username',
@@ -64,6 +76,7 @@ class User extends Authenticatable
         'status_akun',
         'id_modul',
         'foto_profil',
+        'hero_theme',
     ];
 
     protected $hidden = [
@@ -106,6 +119,25 @@ class User extends Authenticatable
     public function isSiswa(): bool
     {
         return (int) $this->id_tipeuser === 3;
+    }
+
+    public function resolvedHeroTheme(?string $override = null): string
+    {
+        if (is_string($override) && array_key_exists($override, self::HERO_THEMES)) {
+            return $override;
+        }
+
+        $theme = $this->getAttribute('hero_theme');
+        if (is_string($theme) && array_key_exists($theme, self::HERO_THEMES)) {
+            return $theme;
+        }
+
+        $sessionTheme = session('siswa_hero_theme');
+        if (is_string($sessionTheme) && array_key_exists($sessionTheme, self::HERO_THEMES)) {
+            return $sessionTheme;
+        }
+
+        return 'samudra';
     }
 
     /** Isi QR (ARV1.<uuid>.<sig>) milik siswa ini; membuat token bila belum ada. */

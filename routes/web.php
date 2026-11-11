@@ -150,6 +150,7 @@ Route::prefix('siswa')->name('siswa.')->middleware(['auth', 'active.student', 'r
 
     Route::get('/profil', [SiswaController::class, 'profile'])->name('profil');
     Route::put('/profil/update', [SiswaController::class, 'updateProfile'])->name('profil.update');
+    Route::patch('/profil/hero-theme', [SiswaController::class, 'updateHeroTheme'])->name('profil.hero_theme');
 
     Route::get('/leaderboard', [SiswaController::class, 'leaderboard'])->name('leaderboard');
 
