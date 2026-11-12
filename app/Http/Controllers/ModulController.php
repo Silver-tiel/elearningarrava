@@ -9,13 +9,40 @@ use App\Models\TipeModul;
 use App\Models\Jenjang;
 use App\Models\Quiz;
 use App\Models\ProgresModulSiswa;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class ModulController extends Controller
 {
+    private function guruUsersForAssignment(?User $user)
+    {
+        if (!$user || !$user->isAdmin() || !Schema::hasTable('user')) {
+            return collect();
+        }
+
+        return User::where('id_tipeuser', 2)->orderBy('nama')->get();
+    }
+
+    private function resolvePembuatIdForStore(Request $request): ?int
+    {
+        $user = $request->user() ?? auth()->user();
+        if (!$user) {
+            return null;
+        }
+        if ($user->isGuru()) {
+            return (int) $user->id_user;
+        }
+        if ($user->isAdmin() && $request->filled('id_pembuat')) {
+            return (int) $request->input('id_pembuat');
+        }
+
+        return (int) $user->id_user;
+    }
+
     // Menampilkan daftar seluruh modul dengan relasinya, filter, dan sortir
     public function index(Request $request)
     {
@@ -23,17 +50,21 @@ class ModulController extends Controller
             Gate::authorize('viewAny', Modul::class);
         }
 
-        $hasMapel = \Illuminate\Support\Facades\Schema::hasTable('mapel')
-            && \Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel');
+        $hasMapel = Schema::hasTable('mapel')
+            && Schema::hasColumn('modul', 'id_mapel');
+        $hasPembuat = Schema::hasColumn('modul', 'id_pembuat');
 
         $relations = ['tipeModul', 'jenjang', 'quiz'];
         if ($hasMapel) {
             $relations[] = 'mapel';
         }
+        if ($hasPembuat && Schema::hasTable('user')) {
+            $relations[] = 'pembuat';
+        }
         $query = Modul::with($relations);
 
         // Guru hanya melihat modul miliknya sendiri; admin melihat semua.
-        if ($request->user() && $request->user()->isGuru()) {
+        if ($hasPembuat && $request->user() && $request->user()->isGuru()) {
             $query->where('id_pembuat', $request->user()->id_user);
         }
 
@@ -145,9 +176,10 @@ class ModulController extends Controller
         // Hanya ambil jenjang SD, SMP, SMA (id 1, 2, 3)
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
-        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $mapelList = Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $guruUsers = $this->guruUsersForAssignment(auth()->user());
 
-        return view('admin.modul.create', compact('tipeModul', 'jenjang', 'quizzes', 'mapelList'));
+        return view('admin.modul.create', compact('tipeModul', 'jenjang', 'quizzes', 'mapelList', 'guruUsers'));
     }
 
     // Menyimpan data modul baru & memproses upload file fisik / draf
@@ -166,6 +198,7 @@ class ModulController extends Controller
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul',
             'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
             'id_mapel' => 'nullable|integer',
+            'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
             'id_tipemodul' => $isDraft ? 'nullable|integer' : 'required|integer|exists:tipemodul,id_tipemodul',
             'id_quiz' => 'nullable|integer|exists:quiz,id_quiz',
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
@@ -244,8 +277,14 @@ class ModulController extends Controller
             'kkm_quiz' => $request->filled('kkm_quiz') ? (int) $request->kkm_quiz : 70,
             'poin_modul' => $request->filled('poin_modul') ? (int) $request->poin_modul : 50,
         ];
-        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel')) {
+        if (Schema::hasColumn('modul', 'id_mapel')) {
             $modulData['id_mapel'] = $validated['id_mapel'] ?? null;
+        }
+        if (Schema::hasColumn('modul', 'id_pembuat')) {
+            $pembuatId = $this->resolvePembuatIdForStore($request);
+            if ($pembuatId !== null) {
+                $modulData['id_pembuat'] = $pembuatId;
+            }
         }
         $modulBaru = Modul::create($modulData);
 
@@ -291,9 +330,10 @@ class ModulController extends Controller
         $tipeModul = TipeModul::all();
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
-        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $mapelList = Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $guruUsers = $this->guruUsersForAssignment(auth()->user());
 
-        return view('admin.modul.edit', compact('module', 'tipeModul', 'jenjang', 'quizzes', 'mapelList'));
+        return view('admin.modul.edit', compact('module', 'tipeModul', 'jenjang', 'quizzes', 'mapelList', 'guruUsers'));
     }
 
     // Memproses update data modul (bisa simpan draf atau publikasikan)
@@ -312,6 +352,7 @@ class ModulController extends Controller
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul,' . $module->id_modul . ',id_modul',
             'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
             'id_mapel' => 'nullable|integer',
+            'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
             'id_tipemodul' => $isDraft ? 'nullable|integer' : 'required|integer|exists:tipemodul,id_tipemodul',
             'id_quiz' => 'nullable|integer|exists:quiz,id_quiz',
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
@@ -403,8 +444,11 @@ class ModulController extends Controller
             'kkm_quiz' => $request->filled('kkm_quiz') ? (int) $request->kkm_quiz : ($module->kkm_quiz ?? 70),
             'poin_modul' => $request->filled('poin_modul') ? (int) $request->poin_modul : ($module->poin_modul ?? 50),
         ];
-        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel')) {
+        if (Schema::hasColumn('modul', 'id_mapel')) {
             $updateData['id_mapel'] = $validated['id_mapel'] ?? null;
+        }
+        if (Schema::hasColumn('modul', 'id_pembuat') && auth()->user()?->isAdmin() && $request->has('id_pembuat')) {
+            $updateData['id_pembuat'] = $request->filled('id_pembuat') ? (int) $request->input('id_pembuat') : null;
         }
         $module->update($updateData);
 
@@ -577,11 +621,21 @@ class ModulController extends Controller
     public function apiIndex(Request $request)
     {
         $user = $request->user();
+        $supportsPembuat = \Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_pembuat')
+            && \Illuminate\Support\Facades\Schema::hasTable('user');
         $relations = ['tipeModul', 'jenjang', 'quiz'];
         if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
+        if ($supportsPembuat) {
+            $relations[] = 'pembuat';
+        }
         $query = Modul::with($relations);
+
+        // Guru hanya mengelola modul miliknya sendiri
+        if ($supportsPembuat && $user && $user->isGuru()) {
+            $query->where('id_pembuat', $user->id_user);
+        }
 
         // Siswa otomatis hanya dapat melihat modul published
         if ($user && $user->isSiswa()) {
@@ -632,6 +686,10 @@ class ModulController extends Controller
         $relations = ['tipeModul', 'jenjang', 'quiz', 'catatan', 'soalModul.pilihan'];
         if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_pembuat')
+            && \Illuminate\Support\Facades\Schema::hasTable('user')) {
+            $relations[] = 'pembuat';
         }
         $modul = Modul::with($relations)->find($id);
 
@@ -720,6 +778,8 @@ class ModulController extends Controller
             'nama_jenjang' => $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? null,
             'id_mapel' => $modul->id_mapel ? (int) $modul->id_mapel : null,
             'nama_mapel' => $modul->mapel->nama_mapel ?? null,
+            'id_pembuat' => !empty($modul->id_pembuat) ? (int) $modul->id_pembuat : null,
+            'nama_pembuat' => $modul->relationLoaded('pembuat') ? ($modul->pembuat?->nama ?? null) : null,
             'id_quiz' => $modul->id_quiz ? (int) $modul->id_quiz : null,
             'quiz' => $modul->quiz ? [
                 'id_quiz' => (int) $modul->quiz->id_quiz,
@@ -794,8 +854,14 @@ class ModulController extends Controller
             'progressModul' => 'Tersedia',
             'foto_modul' => $pathFoto,
         ];
-        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel')) {
+        if (Schema::hasColumn('modul', 'id_mapel')) {
             $modulData['id_mapel'] = $request->id_mapel ?: null;
+        }
+        if (Schema::hasColumn('modul', 'id_pembuat')) {
+            $pembuatId = $this->resolvePembuatIdForStore($request);
+            if ($pembuatId !== null) {
+                $modulData['id_pembuat'] = $pembuatId;
+            }
         }
         $modul = Modul::create($modulData);
 

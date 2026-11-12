@@ -6,7 +6,9 @@ use Illuminate\Database\Seeder;
 use App\Models\Quiz;
 use App\Models\Soal;
 use App\Models\PilihanSoal;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class QuizSeeder extends Seeder
 {
@@ -609,7 +611,11 @@ class QuizSeeder extends Seeder
         ];
 
         DB::transaction(function () use ($quizList) {
-            $hasMapelTable = \Illuminate\Support\Facades\Schema::hasTable('mapel');
+            $hasMapelTable = Schema::hasTable('mapel');
+            $hasPembuat = Schema::hasColumn('quiz', 'id_pembuat');
+            $defaultGuruId = ($hasPembuat && Schema::hasTable('user'))
+                ? User::where('id_tipeuser', 2)->value('id_user')
+                : null;
 
             foreach ($quizList as $qData) {
                 $idMapel = null;
@@ -619,23 +625,29 @@ class QuizSeeder extends Seeder
                     }
                 }
 
+                $quizAttributes = [
+                    'deskripsi' => $qData['deskripsi'],
+                    'id_jenjang' => $qData['id_jenjang'],
+                    'id_mapel' => $idMapel,
+                    'id_tipequiz' => $qData['id_tipequiz'],
+                    'id_tingkatquiz' => $qData['id_tingkatquiz'],
+                    'mode_pengerjaan' => $qData['mode_pengerjaan'],
+                    'durasi_total_menit' => $qData['durasi_total_menit'],
+                    'token' => $qData['token'],
+                    'proggressQuiz' => $qData['proggressQuiz'],
+                    'opsi_preview' => $qData['opsi_preview'] ?? 'lengkap',
+                    'waktu_kadaluarsa' => null,
+                ];
+
                 // Buat atau perbarui Quiz berdasarkan Judul
                 $quiz = Quiz::updateOrCreate(
                     ['judul' => $qData['judul']],
-                    [
-                        'deskripsi' => $qData['deskripsi'],
-                        'id_jenjang' => $qData['id_jenjang'],
-                        'id_mapel' => $idMapel,
-                        'id_tipequiz' => $qData['id_tipequiz'],
-                        'id_tingkatquiz' => $qData['id_tingkatquiz'],
-                        'mode_pengerjaan' => $qData['mode_pengerjaan'],
-                        'durasi_total_menit' => $qData['durasi_total_menit'],
-                        'token' => $qData['token'],
-                        'proggressQuiz' => $qData['proggressQuiz'],
-                        'opsi_preview' => $qData['opsi_preview'] ?? 'lengkap',
-                        'waktu_kadaluarsa' => null,
-                    ]
+                    $quizAttributes
                 );
+
+                if ($hasPembuat && $defaultGuruId && empty($quiz->id_pembuat)) {
+                    $quiz->update(['id_pembuat' => $defaultGuruId]);
+                }
 
                 // Buat atau perbarui Soal-soal dalam Quiz
                 foreach ($qData['soal'] as $index => $sData) {

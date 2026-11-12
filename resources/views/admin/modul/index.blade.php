@@ -284,6 +284,7 @@
                     $isVideo = $module->youtube_id || $module->tipe_file === 'link' || str_contains($moduleType, 'video');
                     $modulMapelNama = $module->mapel->nama_mapel ?? '';
                     $modulJenjangNama = $module->jenjang->nama_tipe ?? 'Umum';
+                    $modulPengajarNama = $module->pembuat?->nama ?? $module->guru ?? $module->pengajar ?? 'Admin';
                 @endphp
 
                 <article
@@ -295,7 +296,7 @@
                     data-title="{{ strtolower($module->judul_modul ?? '') }}"
                     data-id="{{ (int) $module->id_modul }}"
                     data-created="{{ $module->created_at?->timestamp ?? (int) $module->id_modul }}"
-                    data-search="{{ strtolower(($module->judul_modul ?? '') . ' ' . $modulMapelNama . ' ' . ($module->tipeModul->nama_tipe ?? '') . ' ' . $modulJenjangNama . ' ' . ($module->deskripsi ?? '')) }}">
+                    data-search="{{ strtolower(($module->judul_modul ?? '') . ' ' . $modulMapelNama . ' ' . ($module->tipeModul->nama_tipe ?? '') . ' ' . $modulJenjangNama . ' ' . $modulPengajarNama . ' ' . ($module->deskripsi ?? '')) }}">
 
                     <div class="relative flex h-24 items-start justify-between gap-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 p-3.5">
                         <span class="inline-flex min-w-0 items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-xs">
@@ -386,7 +387,7 @@
                             </div>
                             <div class="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs">
                                 <span class="text-slate-400 font-medium">Pengajar</span>
-                                <span class="max-w-[65%] truncate font-semibold text-slate-700">{{ $module->guru ?? $module->pengajar ?? 'Admin' }}</span>
+                                <span class="max-w-[65%] truncate font-semibold text-slate-700">{{ $modulPengajarNama }}</span>
                             </div>
                         </div>
                     </div>

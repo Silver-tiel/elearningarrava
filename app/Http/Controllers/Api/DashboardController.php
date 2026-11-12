@@ -133,14 +133,28 @@ class DashboardController extends Controller
     /**
      * Dashboard data khusus Admin (Mobile)
      */
-    public function adminDashboard()
+    public function adminDashboard(Request $request)
     {
+        $user = $request->user();
+        $isGuru = $user && method_exists($user, 'isGuru') && $user->isGuru();
+
+        $modulQuery = Modul::query();
+        if ($isGuru && Schema::hasColumn('modul', 'id_pembuat')) {
+            $modulQuery->where('id_pembuat', $user->id_user);
+        }
+
+        $quizQuery = Quiz::query();
+        if ($isGuru && Schema::hasColumn('quiz', 'id_pembuat')) {
+            $quizQuery->where('id_pembuat', $user->id_user);
+        }
+
         $totalSiswa = User::where('id_tipeuser', 3)->count();
         $totalGuru = Guru::count();
-        $totalModul = Modul::count();
-        $totalQuiz = Quiz::count();
+        $totalModul = (clone $modulQuery)->count();
+        $totalQuiz = (clone $quizQuery)->count();
 
-        $recentModules = Modul::with(['tipeModul', 'jenjang'])
+        $recentModules = (clone $modulQuery)
+            ->with(['tipeModul', 'jenjang'])
             ->latest()
             ->take(4)
             ->get()
@@ -149,7 +163,7 @@ class DashboardController extends Controller
                     'id_modul' => $m->id_modul,
                     'judul_modul' => $m->judul_modul,
                     'deskripsi' => $m->deskripsi,
-                    'status' => $m->proggressModul ?? 'Tersedia',
+                    'status' => $m->progressModul ?? 'Tersedia',
                     'tipe' => $m->tipeModul->nama_tipe ?? 'Umum',
                     'jenjang' => $m->jenjang->nama_jenjang ?? 'Semua',
                 ];
@@ -174,7 +188,20 @@ class DashboardController extends Controller
      */
     public function teachers()
     {
-        $teachers = Guru::with('user')->latest('id_guru')->get()->map(function ($g) {
+        $guruQuery = Guru::with('user')->latest('id_guru');
+
+        $withCounts = [];
+        if (Schema::hasTable('modul') && Schema::hasColumn('modul', 'id_pembuat') && Schema::hasTable('user')) {
+            $withCounts[] = 'moduls';
+        }
+        if (Schema::hasTable('quiz') && Schema::hasColumn('quiz', 'id_pembuat') && Schema::hasTable('user')) {
+            $withCounts[] = 'quizzes';
+        }
+        if (!empty($withCounts)) {
+            $guruQuery->withCount($withCounts);
+        }
+
+        $teachers = $guruQuery->get()->map(function ($g) {
             $status = $g->user
                 ? ($g->user->status_akun ?? 'Aktif')
                 : 'Tanpa Akun';
@@ -186,6 +213,8 @@ class DashboardController extends Controller
                 'no_telepon' => $g->no_telepon,
                 'email' => $g->user?->email,
                 'status' => $status,
+                'jumlah_modul' => (int) ($g->moduls_count ?? 0),
+                'jumlah_quiz' => (int) ($g->quizzes_count ?? 0),
             ];
         });
 

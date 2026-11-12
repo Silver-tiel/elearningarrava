@@ -1,6 +1,7 @@
 <?php
 namespace App\Models;
 
+use App\Models\Concerns\MemilikiPembuat;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
  * @property int|null $id_jenjang
  * @property int|null $id_mapel
  * @property int|null $id_quiz
+ * @property int|null $id_pembuat
  * @property string|null $progressModul
  * @property string|null $proggressModul
  * @property string|null $foto_modul
@@ -32,12 +34,15 @@ use Illuminate\Support\Facades\Storage;
  * @property-read Jenjang|null $jenjang
  * @property-read Mapel|null $mapel
  * @property-read Quiz|null $quiz
+ * @property-read User|null $pembuat
  *
  * @method static Builder|Modul published()
  * @method static Builder|Modul draft()
  */
 class Modul extends Model
 {
+    use MemilikiPembuat;
+
     //menentukan nama tabel
     protected $table = 'modul';
     //menentukan primary key
@@ -52,6 +57,7 @@ class Modul extends Model
         'id_jenjang',
         'id_mapel',
         'id_quiz',
+        'id_pembuat',
         'progressModul',
         'foto_modul',
         'kkm_quiz',

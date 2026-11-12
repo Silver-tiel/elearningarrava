@@ -110,8 +110,9 @@ class SiswaController extends Controller
         $user = Auth::user();
 
         // Menampilkan daftar modul untuk belajar sesuai jenjang siswa (hanya yang sudah dipublikasikan)
+        $hasMapel = Schema::hasTable('mapel') && Schema::hasColumn('modul', 'id_mapel');
         $relations = ['tipeModul', 'jenjang'];
-        if (Schema::hasTable('mapel')) {
+        if ($hasMapel) {
             $relations[] = 'mapel';
         }
         if (Schema::hasTable('progres_modul_siswa')) {
@@ -123,6 +124,11 @@ class SiswaController extends Controller
         // Batasi modul sesuai jenjang siswa yang sedang login
         if ($user && $user->id_jenjang) {
             $query->where('id_jenjang', $user->id_jenjang);
+        }
+
+        $selectedMapel = $request->query('mapel', 'Semua');
+        if ($hasMapel && $selectedMapel !== 'Semua' && $selectedMapel !== 'all' && is_numeric($selectedMapel)) {
+            $query->where('id_mapel', (int) $selectedMapel);
         }
 
         // Filter tipe / status modul persis seperti mobile ('Semua', 'Video', 'PDF', 'Belum Tuntas', 'Tuntas')
@@ -165,7 +171,7 @@ class SiswaController extends Controller
 
         $moduls = $query->latest()->get();
 
-        return view('siswa.modul', compact('moduls', 'user', 'selectedFilter'));
+        return view('siswa.modul', compact('moduls', 'user', 'selectedFilter', 'selectedMapel'));
     }
 
     public function materiVideo()
@@ -173,7 +179,11 @@ class SiswaController extends Controller
         $user = Auth::user();
 
         // Menampilkan daftar modul yang ada videonya (hanya yang sudah dipublikasikan dan sesuai jenjang)
-        $query = Modul::published()->with(['tipeModul', 'jenjang']);
+        $relations = ['tipeModul', 'jenjang'];
+        if (Schema::hasTable('mapel')) {
+            $relations[] = 'mapel';
+        }
+        $query = Modul::published()->with($relations);
 
         if ($user && $user->id_jenjang) {
             $query->where('id_jenjang', $user->id_jenjang);
@@ -186,13 +196,18 @@ class SiswaController extends Controller
 
     public function materiVideoDetail(Request $request, $id_modul)
     {
-        $modul = Modul::with([
+        $detailRelations = [
             'tipeModul',
             'jenjang',
             'catatan',
             'quiz',
             'soalModul.pilihan',
-        ])->findOrFail($id_modul);
+        ];
+        if (Schema::hasTable('mapel')) {
+            $detailRelations[] = 'mapel';
+        }
+
+        $modul = Modul::with($detailRelations)->findOrFail($id_modul);
 
         if ($modul->isDraft()) {
             return redirect()->route('siswa.modul')->withErrors([
@@ -224,7 +239,11 @@ class SiswaController extends Controller
         }
 
         // Ambil modul lain untuk navigasi daftar materi sejenjang (hanya yang dipublikasikan)
-        $modulLain = Modul::published()->with(['tipeModul', 'jenjang'])
+        $otherRelations = ['tipeModul', 'jenjang'];
+        if (Schema::hasTable('mapel')) {
+            $otherRelations[] = 'mapel';
+        }
+        $modulLain = Modul::published()->with($otherRelations)
             ->where('id_jenjang', $modul->id_jenjang)
             ->where('id_modul', '!=', $modul->id_modul)
             ->latest()

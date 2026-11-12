@@ -127,6 +127,31 @@
                     </button>
                 @endforeach
             </div>
+
+            @php
+                $modulMapels = collect($moduls)->pluck('mapel')->filter()->unique('id_mapel')->sortBy('nama_mapel')->values();
+                $activeModulMapel = $selectedMapel ?? request('mapel', 'Semua');
+            @endphp
+            @if($modulMapels->isNotEmpty())
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="modul-mapel-chips">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-[#465673] shrink-0 mr-1">Mapel:</span>
+                    <button type="button"
+                        data-mapel-filter="Semua"
+                        class="modul-mapel-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border {{ ($activeModulMapel === 'Semua' || $activeModulMapel === 'all') ? 'bg-[#007FBE] text-white border-[#007FBE] shadow-xs' : 'bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]' }}">
+                        Semua Mapel
+                    </button>
+                    @foreach($modulMapels as $m)
+                        @php
+                            $isMapelSelected = (string) $activeModulMapel === (string) $m->id_mapel || strcasecmp((string) $activeModulMapel, (string) $m->nama_mapel) === 0;
+                        @endphp
+                        <button type="button"
+                            data-mapel-filter="{{ strtolower($m->nama_mapel) }}"
+                            class="modul-mapel-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border {{ $isMapelSelected ? 'bg-[#007FBE] text-white border-[#007FBE] shadow-xs' : 'bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]' }}">
+                            {{ $m->nama_mapel }}
+                        </button>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         {{-- Hidden GET Form for fallback / server sync --}}
@@ -167,11 +192,18 @@
                     <!-- Content & Action Area (Snug & Shortened) -->
                     <div class="min-w-0 flex-1 flex flex-col justify-between">
                         <div>
-                            <!-- Header Badges: Tipe & Jenjang -->
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="inline-flex items-center rounded-full {{ $isVideo ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]' }} px-2.5 py-0.5 text-[10.5px] font-bold">
-                                    {{ $isVideo ? '🎬 Video' : ($modul->tipeModul->nama_tipe ?? '📖 Pelajaran') }}
-                                </span>
+                            <!-- Header Badges: Tipe, Mapel & Jenjang -->
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span class="inline-flex items-center rounded-full {{ $isVideo ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]' }} px-2.5 py-0.5 text-[10.5px] font-bold">
+                                        {{ $isVideo ? '🎬 Video' : ($modul->tipeModul->nama_tipe ?? '📖 Pelajaran') }}
+                                    </span>
+                                    @if($modul->mapel)
+                                        <span class="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 text-[10.5px] font-bold">
+                                            📘 {{ $modul->mapel->nama_mapel }}
+                                        </span>
+                                    @endif
+                                </div>
                                 <span class="inline-flex items-center gap-1 text-[11px] font-bold text-[#72839E]">
                                     <span>🏫</span> {{ $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? 'Semua' }}
                                 </span>
@@ -264,6 +296,7 @@
     let currentModulPage = 1;
 
     let selectedModulFilter = @json($selectedFilter ?? request('filter', 'Semua'));
+    let selectedModulMapel = 'Semua';
 
     const modulCards = Array.from(document.querySelectorAll('.modul-card-item'));
     const modulSearchInput = document.getElementById('modul-search-input');
@@ -277,6 +310,7 @@
     const modulCountBadge = document.getElementById('modul-count-badge');
 
     const modulFilterChips = Array.from(document.querySelectorAll('.modul-filter-chip'));
+    const modulMapelChips = Array.from(document.querySelectorAll('.modul-mapel-chip'));
     const inputModulFilter = document.getElementById('modul-input-filter');
     const inputModulQ = document.getElementById('modul-input-q');
 
@@ -292,6 +326,13 @@
                 const mapel = (card.getAttribute('data-mapel') || '').toLowerCase();
                 const desc = (card.getAttribute('data-desc') || '').toLowerCase();
                 if (!title.includes(query) && !mapel.includes(query) && !desc.includes(query)) {
+                    return false;
+                }
+            }
+
+            if (selectedModulMapel && selectedModulMapel !== 'Semua') {
+                const cardMapel = (card.getAttribute('data-mapel') || '').toLowerCase();
+                if (cardMapel !== selectedModulMapel) {
                     return false;
                 }
             }
@@ -325,6 +366,21 @@
                 c.className = 'modul-filter-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]';
             });
             this.className = 'modul-filter-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#007FBE] text-white border-[#007FBE] shadow-xs';
+
+            currentModulPage = 1;
+            renderModulPagination(true);
+        });
+    });
+
+    // Event handler Chip Filter Mapel
+    modulMapelChips.forEach(chip => {
+        chip.addEventListener('click', function () {
+            selectedModulMapel = this.getAttribute('data-mapel-filter') || 'Semua';
+
+            modulMapelChips.forEach(c => {
+                c.className = 'modul-mapel-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]';
+            });
+            this.className = 'modul-mapel-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#007FBE] text-white border-[#007FBE] shadow-xs';
 
             currentModulPage = 1;
             renderModulPagination(true);

@@ -119,14 +119,25 @@ Route::get('/admin', function () {
         return redirect()->route('siswa.dashboard');
     }
 
+    $isGuru = $user && $user->isGuru();
+    $modulQuery = Modul::query();
+    $quizQuery = Quiz::query();
+
+    if ($isGuru && \Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_pembuat')) {
+        $modulQuery->where('id_pembuat', $user->id_user);
+    }
+    if ($isGuru && \Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_pembuat')) {
+        $quizQuery->where('id_pembuat', $user->id_user);
+    }
+
     return view('admin.admin', [
         'siswaCount'       => User::where('id_tipeuser', 3)->count(),
         'guruCount'        => User::where('id_tipeuser', 2)->count(),
-        'modulCount'       => Modul::count(),
-        'quizCount'        => Quiz::count(),
+        'modulCount'       => (clone $modulQuery)->count(),
+        'quizCount'        => (clone $quizQuery)->count(),
         'achievementCount' => Achievement::count(),
         'siswaTerbaru'     => User::where('id_tipeuser', 3)->latest()->take(5)->get(),
-        'modulTerbaru'     => Modul::with(['jenjang'])->latest()->take(5)->get(),
+        'modulTerbaru'     => (clone $modulQuery)->with(['jenjang'])->latest()->take(5)->get(),
     ]);
 })->middleware(['auth', 'active.student', 'role:admin,guru'])->name('admin');
 

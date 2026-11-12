@@ -243,6 +243,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Daftar modul yang dibuat oleh user/guru ini.
+     */
+    public function modulsDibuat(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Modul::class, 'id_pembuat', 'id_user');
+    }
+
+    /**
+     * Daftar quiz yang dibuat oleh user/guru ini.
+     */
+    public function quizzesDibuat(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Quiz::class, 'id_pembuat', 'id_user');
+    }
+
+    /**
      * Informasi status rank (tier penghargaan) dan progres EXP siswa berdasarkan total_poin.
      */
     public function getRankTierInfo(bool $forceRefresh = false): array

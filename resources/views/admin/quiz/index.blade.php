@@ -114,6 +114,14 @@
                 }
             }
 
+            $initialMapelLabel = 'Semua Mapel';
+            if (request()->filled('mapel')) {
+                $matchedMapel = ($mapelList ?? collect())->firstWhere('id_mapel', request('mapel'));
+                if ($matchedMapel) {
+                    $initialMapelLabel = $matchedMapel->nama_mapel;
+                }
+            }
+
             $initialSort = request('sort', 'terbaru') === 'terlama' ? 'terlama' : 'terbaru';
             $hasServerQuizFilter = request()->filled('status')
                 || request()->filled('mode')
@@ -204,6 +212,28 @@
                     chipClass="quiz-tingkat-chip"
                     dataAttr="data-tingkat"
                     :chips="$quizTingkatChips" />
+
+                {{-- Chip Mata Pelajaran (Mapel) --}}
+                @if(isset($mapelList) && $mapelList->isNotEmpty())
+                    @php
+                        $quizMapelChips = [
+                            ['value' => 'Semua Mapel', 'label' => 'Semua Mapel', 'active' => $initialMapelLabel === 'Semua Mapel'],
+                        ];
+                        foreach ($mapelList as $mItem) {
+                            $quizMapelChips[] = [
+                                'value' => $mItem->nama_mapel,
+                                'label' => $mItem->nama_mapel,
+                                'active' => strcasecmp($initialMapelLabel, $mItem->nama_mapel) === 0,
+                            ];
+                        }
+                    @endphp
+                    <x-student-style-filter-chip-bar
+                        id="quiz-mapel-chips"
+                        label="Mapel"
+                        chipClass="quiz-mapel-chip"
+                        dataAttr="data-mapel"
+                        :chips="$quizMapelChips" />
+                @endif
             </x-student-style-filter-bar>
         </div>
 
@@ -241,11 +271,13 @@
                         $quizModeKey = strtolower((string) ($quiz->mode_pengerjaan ?? 'wayground')) === 'biasa' ? 'klasik' : 'wayground';
                         $quizJenjangLabel = $quiz->jenjang->nama_tipe ?? 'Umum';
                         $quizTingkatLabel = ($quiz->tingkatQuiz ?? $quiz->tingkat)?->nama_tingkat ?? '';
+                        $quizPembuatNama = $quiz->pembuat?->nama ?? 'Admin';
                     @endphp
                     <div class="quiz-card bg-white rounded-2xl border border-gray-100 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group"
                         data-judul="{{ strtolower($quiz->judul) }}" data-token="{{ strtolower($quiz->token ?? '') }}"
                         data-jenjang="{{ strtolower($quizJenjangLabel) }}"
                         data-mapel="{{ strtolower($quiz->mapel->nama_mapel ?? '') }}"
+                        data-pembuat="{{ strtolower($quizPembuatNama) }}"
                         data-status="{{ $quizStatusKey }}"
                         data-mode="{{ $quizModeKey }}"
                         data-tingkat="{{ strtolower($quizTingkatLabel) }}"
@@ -351,6 +383,12 @@
 
                                 <div
                                     class="bg-slate-50 rounded-xl px-3 py-2 text-xs flex items-center justify-between border border-slate-100">
+                                    <span class="text-slate-400 font-medium">Pengajar</span>
+                                    <span class="text-slate-700 font-semibold truncate max-w-[65%]">{{ $quizPembuatNama }}</span>
+                                </div>
+
+                                <div
+                                    class="bg-slate-50 rounded-xl px-3 py-2 text-xs flex items-center justify-between border border-slate-100">
                                     <span class="text-slate-400 font-medium">Batas Waktu</span>
                                     @if($quiz->waktu_kadaluarsa)
                                         <span class="text-slate-700 font-semibold {{ $expired ? 'text-rose-600' : '' }}"
@@ -426,6 +464,7 @@
         let activeStatusMode = @json($initialStatusMode);
         let activeQuizJenjang = @json($initialJenjangLabel);
         let activeQuizTingkat = @json($initialTingkatLabel);
+        let activeQuizMapel = @json($initialMapelLabel);
         let activeQuizSort = @json($initialSort);
         const hasServerQuizFilter = @json($hasServerQuizFilter);
         const quizResetUrl = @json(route('admin.quiz'));
@@ -460,6 +499,7 @@
                 const token = card.getAttribute('data-token') || '';
                 const jenjang = card.getAttribute('data-jenjang') || '';
                 const mapel = card.getAttribute('data-mapel') || '';
+                const pembuat = card.getAttribute('data-pembuat') || '';
                 const status = card.getAttribute('data-status') || '';
                 const mode = card.getAttribute('data-mode') || '';
                 const tingkat = card.getAttribute('data-tingkat') || '';
@@ -468,7 +508,8 @@
                     || judul.includes(query)
                     || token.includes(query)
                     || jenjang.includes(query)
-                    || mapel.includes(query);
+                    || mapel.includes(query)
+                    || pembuat.includes(query);
 
                 let matchStatusMode = true;
                 const sm = activeStatusMode.toLowerCase();
@@ -485,7 +526,10 @@
                 const tk = activeQuizTingkat.toLowerCase();
                 const matchTingkat = tk === 'semua tingkat' || tingkat === tk;
 
-                if (matchQuery && matchStatusMode && matchJenjang && matchTingkat) {
+                const mp = activeQuizMapel.toLowerCase();
+                const matchMapel = mp === 'semua mapel' || mapel === mp;
+
+                if (matchQuery && matchStatusMode && matchJenjang && matchTingkat && matchMapel) {
                     card.style.display = 'flex';
                     visibleCount++;
                 } else {
@@ -508,6 +552,7 @@
                 || activeStatusMode !== 'Semua'
                 || activeQuizJenjang !== 'Semua Jenjang'
                 || activeQuizTingkat !== 'Semua Tingkat'
+                || activeQuizMapel !== 'Semua Mapel'
                 || activeQuizSort !== 'terbaru'
                 || hasServerQuizFilter;
             if (resetBtn) {
@@ -528,6 +573,7 @@
             activeStatusMode = 'Semua';
             activeQuizJenjang = 'Semua Jenjang';
             activeQuizTingkat = 'Semua Tingkat';
+            activeQuizMapel = 'Semua Mapel';
             activeQuizSort = 'terbaru';
 
             if (searchInput) searchInput.value = '';
@@ -539,6 +585,7 @@
                 filterHelper.setActiveChip(document.getElementById('quiz-status-mode-chips'), activeStatusMode, 'data-status-mode');
                 filterHelper.setActiveChip(document.getElementById('quiz-jenjang-chips'), activeQuizJenjang, 'data-jenjang');
                 filterHelper.setActiveChip(document.getElementById('quiz-tingkat-chips'), activeQuizTingkat, 'data-tingkat');
+                filterHelper.setActiveChip(document.getElementById('quiz-mapel-chips'), activeQuizMapel, 'data-mapel');
             }
             updateSortButtonUi();
             sortQuizCards();
@@ -561,6 +608,7 @@
             const statusContainer = document.getElementById('quiz-status-mode-chips');
             const jenjangContainer = document.getElementById('quiz-jenjang-chips');
             const tingkatContainer = document.getElementById('quiz-tingkat-chips');
+            const mapelContainer = document.getElementById('quiz-mapel-chips');
             const sortBtn = document.getElementById('quizSortToggleBtn');
             const resetBtn = document.getElementById('quizResetBtn');
 
@@ -611,6 +659,22 @@
                     activeQuizTingkat = btn.getAttribute('data-tingkat') || 'Semua Tingkat';
                     if (filterHelper) {
                         filterHelper.setActiveChip(tingkatContainer, activeQuizTingkat, 'data-tingkat');
+                    }
+                    filterCards();
+                });
+            }
+
+            if (mapelContainer) {
+                mapelContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-mapel]');
+                    if (!btn) return;
+                    if (hasServerQuizFilter) {
+                        window.location.href = quizResetUrl;
+                        return;
+                    }
+                    activeQuizMapel = btn.getAttribute('data-mapel') || 'Semua Mapel';
+                    if (filterHelper) {
+                        filterHelper.setActiveChip(mapelContainer, activeQuizMapel, 'data-mapel');
                     }
                     filterCards();
                 });

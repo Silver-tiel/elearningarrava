@@ -7,17 +7,26 @@ use App\Models\Modul;
 use App\Models\ModulSoal;
 use App\Models\ModulSoalPilihan;
 use App\Models\Quiz;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ModulSeeder extends Seeder
 {
     public function run(): void
     {
+        $hasMapel = Schema::hasTable('mapel') && Schema::hasColumn('modul', 'id_mapel');
+        $hasPembuat = Schema::hasColumn('modul', 'id_pembuat');
+        $defaultGuruId = ($hasPembuat && Schema::hasTable('user'))
+            ? User::where('id_tipeuser', 2)->value('id_user')
+            : null;
+
         $moduls = [
             [
                 'judul_modul' => 'Dasar-Dasar Matematika SD',
                 'id_jenjang' => 1,
+                'id_mapel' => 1,
                 'id_tipemodul' => 1,
                 'file_materi' => 'https://youtu.be/P88N7DmPiX8?si=9GP0EDNTi1TXBXVu',
                 'tipe_file' => 'link',
@@ -68,6 +77,7 @@ class ModulSeeder extends Seeder
             [
                 'judul_modul' => 'Ilmu Pengetahuan Alam SMP: Ekosistem',
                 'id_jenjang' => 2,
+                'id_mapel' => 4,
                 'id_tipemodul' => 1,
                 'file_materi' => 'https://youtu.be/IVm9sgRVp-0?si=ABHhq7avku8nfHQj',
                 'tipe_file' => 'link',
@@ -118,6 +128,7 @@ class ModulSeeder extends Seeder
             [
                 'judul_modul' => 'Fisika SMA: Kinematika Gerak Lurus',
                 'id_jenjang' => 3,
+                'id_mapel' => 11,
                 'id_tipemodul' => 1,
                 'file_materi' => 'https://youtu.be/5ikiX0gv5w4?si=Uz2COASiezVgFUvh',
                 'tipe_file' => 'link',
@@ -167,11 +178,21 @@ class ModulSeeder extends Seeder
             ],
         ];
 
-        DB::transaction(function () use ($moduls) {
+        DB::transaction(function () use ($moduls, $hasMapel, $hasPembuat, $defaultGuruId) {
             foreach ($moduls as $data) {
                 $catatanList = $data['catatan'] ?? [];
                 $soalList = $data['soal_modul'] ?? [];
+                $mapelId = $data['id_mapel'] ?? null;
                 unset($data['catatan'], $data['soal_modul']);
+
+                if (!$hasMapel || ($mapelId && !DB::table('mapel')->where('id_mapel', $mapelId)->exists())) {
+                    unset($data['id_mapel']);
+                    $mapelId = null;
+                }
+
+                if ($hasPembuat && $defaultGuruId) {
+                    $data['id_pembuat'] = $defaultGuruId;
+                }
 
                 $quizTerkait = Quiz::where('id_jenjang', $data['id_jenjang'])->first();
                 $data['id_quiz'] = $quizTerkait?->id_quiz;
@@ -180,6 +201,17 @@ class ModulSeeder extends Seeder
                     ['judul_modul' => $data['judul_modul']],
                     $data
                 );
+
+                $backfill = [];
+                if ($hasMapel && $mapelId && empty($modul->id_mapel)) {
+                    $backfill['id_mapel'] = $mapelId;
+                }
+                if ($hasPembuat && $defaultGuruId && empty($modul->id_pembuat)) {
+                    $backfill['id_pembuat'] = $defaultGuruId;
+                }
+                if (!empty($backfill)) {
+                    $modul->update($backfill);
+                }
 
                 foreach ($catatanList as $catatan) {
                     CatatanModul::firstOrCreate(

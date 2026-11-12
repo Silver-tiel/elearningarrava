@@ -484,6 +484,25 @@
                             </select>
                         </div>
 
+                        @if(isset($guruUsers) && $guruUsers->isNotEmpty())
+                            {{-- 1.3 GURU PEMBUAT / PENGAJAR --}}
+                            <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
+                                <label for="select-pembuat" class="block text-xs font-bold text-blue-900 mb-1.5 flex items-center justify-between">
+                                    <span>Guru Pembuat / Pengajar</span>
+                                    <span class="text-[10px] text-blue-500 font-normal">Opsional</span>
+                                </label>
+                                <select name="id_pembuat" id="select-pembuat"
+                                    class="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500">
+                                    <option value="">{{ isset($quiz) ? '-- Umum / Tanpa Pemilik Guru --' : '-- Otomatis Akun Saat Ini --' }}</option>
+                                    @foreach($guruUsers as $gUser)
+                                        <option value="{{ $gUser->id_user }}" @selected(old('id_pembuat', $quiz->id_pembuat ?? null) == $gUser->id_user)>
+                                            {{ $gUser->nama }} ({{ $gUser->email }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+
                         {{-- 1.5 TINGKAT QUIZ --}}
                         <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
                             <label class="block text-xs font-bold text-blue-900 mb-1.5 flex items-center gap-1.5">

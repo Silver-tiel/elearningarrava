@@ -109,6 +109,23 @@
                         @endif
                     </select>
                 </div>
+                @if(isset($guruUsers) && $guruUsers->isNotEmpty())
+                    <div>
+                        <label for="id_pembuat" class="block text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
+                            <span>Guru Pembuat / Pengajar</span>
+                            <span class="text-xs text-slate-400 font-normal">Opsional</span>
+                        </label>
+                        <select id="id_pembuat" name="id_pembuat"
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
+                            <option value="">-- Umum / Tanpa Pemilik Guru --</option>
+                            @foreach ($guruUsers as $gUser)
+                                <option value="{{ $gUser->id_user }}" {{ old('id_pembuat', $module->id_pembuat) == $gUser->id_user ? 'selected' : '' }}>
+                                    {{ $gUser->nama }} ({{ $gUser->email }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
                 <!-- 4. Kuis Evaluasi Modul & Poin Kelulusan (In-Module Quiz) -->
                 <div class="p-5 rounded-xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/40 space-y-5 shadow-sm">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-indigo-100/80 pb-3">

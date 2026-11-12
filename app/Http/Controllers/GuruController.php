@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class GuruController extends Controller
@@ -24,7 +25,20 @@ class GuruController extends Controller
 
     public function index()
     {
-        $gurus = Guru::with('user')->latest()->get();
+        $guruQuery = Guru::with('user')->latest();
+
+        $withCounts = [];
+        if (Schema::hasTable('modul') && Schema::hasColumn('modul', 'id_pembuat') && Schema::hasTable('user')) {
+            $withCounts[] = 'moduls';
+        }
+        if (Schema::hasTable('quiz') && Schema::hasColumn('quiz', 'id_pembuat') && Schema::hasTable('user')) {
+            $withCounts[] = 'quizzes';
+        }
+        if (!empty($withCounts)) {
+            $guruQuery->withCount($withCounts);
+        }
+
+        $gurus = $guruQuery->get();
 
         return view('admin.guru.index', compact('gurus'));
     }

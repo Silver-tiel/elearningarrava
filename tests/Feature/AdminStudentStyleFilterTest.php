@@ -195,6 +195,8 @@ class AdminStudentStyleFilterTest extends TestCase
         $response->assertSee('Wayground');
         $response->assertSee('Klasik');
         $response->assertSee('Semua Tingkat');
+        $response->assertSee('Semua Mapel');
+        $response->assertSee('Matematika');
         $response->assertSee('Kuis Wayground SD');
         $response->assertSee('Kuis Klasik Umum');
 

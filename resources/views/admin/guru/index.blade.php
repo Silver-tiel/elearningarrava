@@ -161,6 +161,17 @@
                                     <span>{{ $guru->no_telepon }}</span>
                                 </a>
                             </div>
+
+                            <div class="grid grid-cols-2 gap-1.5 pt-0.5">
+                                <div class="bg-[#F0F6FF] rounded-xl px-3 py-1.5 text-xs flex items-center justify-between border border-[#DCEFFF]">
+                                    <span class="text-[#465673] font-semibold">Modul</span>
+                                    <span class="text-[#007FBE] font-extrabold">{{ (int) ($guru->moduls_count ?? 0) }}</span>
+                                </div>
+                                <div class="bg-[#F0F6FF] rounded-xl px-3 py-1.5 text-xs flex items-center justify-between border border-[#DCEFFF]">
+                                    <span class="text-[#465673] font-semibold">Kuis</span>
+                                    <span class="text-[#007FBE] font-extrabold">{{ (int) ($guru->quizzes_count ?? 0) }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

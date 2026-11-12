@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\MemilikiPembuat;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,7 @@ use Illuminate\Support\Str;
  * @property int|null $id_tingkatquiz
  * @property int|null $id_jenjang
  * @property int|null $id_mapel
+ * @property int|null $id_pembuat
  * @property Carbon|null $waktu_kadaluarsa
  * @property string|null $mode_pengerjaan
  * @property int|null $durasi_total_menit
@@ -35,6 +37,7 @@ use Illuminate\Support\Str;
  * @property-read Mapel|null $mapel
  * @property-read TipeQuiz|null $tipeQuiz
  * @property-read TingkatQuiz|null $tingkatQuiz
+ * @property-read User|null $pembuat
  * @property-read Collection<int, Soal> $soal
  * @property-read Collection<int, HasilQuizModul> $hasil
  *
@@ -45,6 +48,8 @@ use Illuminate\Support\Str;
  */
 class Quiz extends Model
 {
+    use MemilikiPembuat;
+
     protected $table = 'quiz';
     protected $primaryKey = 'id_quiz';
     public $timestamps = true;
@@ -62,6 +67,7 @@ class Quiz extends Model
         'id_tingkatquiz',
         'id_jenjang',
         'id_mapel',
+        'id_pembuat',
         'waktu_kadaluarsa',
         'mode_pengerjaan',
         'durasi_total_menit',

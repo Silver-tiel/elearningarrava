@@ -103,18 +103,36 @@
                             <span>Mata Pelajaran (Mapel)</span>
                             <span class="text-xs text-slate-400 font-normal">Opsional</span>
                         </label>
-                        <select id="id_mapel" name="id_mapel"
+                        <select id="id_mapel" name="id_mapel" onchange="updatePreview()"
                             class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
                             <option value="">-- Pilih Mata Pelajaran --</option>
                             @if(isset($mapelList))
                                 @foreach ($mapelList as $m)
-                                    <option value="{{ $m->id_mapel }}" {{ old('id_mapel') == $m->id_mapel ? 'selected' : '' }}>
+                                    <option value="{{ $m->id_mapel }}" data-label="{{ $m->nama_mapel }}" {{ old('id_mapel') == $m->id_mapel ? 'selected' : '' }}>
                                         {{ $m->nama_mapel }}{{ $m->jenjang ? ' (' . $m->jenjang->nama_tipe . ')' : '' }}
                                     </option>
                                 @endforeach
                             @endif
                         </select>
                     </div>
+
+                    @if(isset($guruUsers) && $guruUsers->isNotEmpty())
+                        <div>
+                            <label for="id_pembuat" class="block text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
+                                <span>Guru Pembuat / Pengajar</span>
+                                <span class="text-xs text-slate-400 font-normal">Opsional</span>
+                            </label>
+                            <select id="id_pembuat" name="id_pembuat"
+                                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
+                                <option value="">-- Otomatis Akun Saat Ini --</option>
+                                @foreach ($guruUsers as $gUser)
+                                    <option value="{{ $gUser->id_user }}" {{ old('id_pembuat') == $gUser->id_user ? 'selected' : '' }}>
+                                        {{ $gUser->nama }} ({{ $gUser->email }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
 
                     <!-- 4. Kuis Evaluasi Modul & Poin Kelulusan (In-Module Quiz) -->
                     <div class="p-5 rounded-xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/40 space-y-5 shadow-sm">
@@ -357,8 +375,9 @@
 
                         <!-- Informasi Judul & Jenjang -->
                         <div class="space-y-2">
-                            <div class="flex items-center gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
                                 <span id="preview_jenjang_badge" class="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">Jenjang</span>
+                                <span id="preview_mapel_badge" class="hidden text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">Mapel</span>
                                 <span class="text-xs text-slate-400">• Tersedia</span>
                             </div>
                             <h3 id="preview_judul" class="text-base font-bold text-slate-900 leading-snug line-clamp-2">
@@ -528,6 +547,20 @@
             const jenjangSelect = document.getElementById('id_jenjang');
             const selectedJenjang = jenjangSelect.options[jenjangSelect.selectedIndex];
             document.getElementById('preview_jenjang_badge').textContent = selectedJenjang ? selectedJenjang.text : 'Jenjang';
+
+            // 4. Update Badge Mapel
+            const mapelSelect = document.getElementById('id_mapel');
+            const previewMapel = document.getElementById('preview_mapel_badge');
+            if (mapelSelect && previewMapel) {
+                const selectedMapel = mapelSelect.options[mapelSelect.selectedIndex];
+                const mapelLabel = selectedMapel ? (selectedMapel.getAttribute('data-label') || '') : '';
+                if (mapelSelect.value && mapelLabel) {
+                    previewMapel.textContent = mapelLabel;
+                    previewMapel.classList.remove('hidden');
+                } else {
+                    previewMapel.classList.add('hidden');
+                }
+            }
         }
         // Inisialisasi awal preview
         updatePreview();

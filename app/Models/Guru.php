@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
@@ -39,6 +40,22 @@ class Guru extends Model
     public function user(): HasOne
     {
         return $this->hasOne(User::class, 'nisn', 'nik');
+    }
+
+    /**
+     * Modul yang dibuat oleh akun guru ini (melalui User::id_user -> Modul::id_pembuat).
+     */
+    public function moduls(): HasManyThrough
+    {
+        return $this->hasManyThrough(Modul::class, User::class, 'nisn', 'id_pembuat', 'nik', 'id_user');
+    }
+
+    /**
+     * Quiz yang dibuat oleh akun guru ini (melalui User::id_user -> Quiz::id_pembuat).
+     */
+    public function quizzes(): HasManyThrough
+    {
+        return $this->hasManyThrough(Quiz::class, User::class, 'nisn', 'id_pembuat', 'nik', 'id_user');
     }
 
     /**
