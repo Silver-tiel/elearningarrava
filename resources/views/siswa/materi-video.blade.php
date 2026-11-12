@@ -66,7 +66,7 @@
                 </div>
 
             @else
-                {{-- Konten Artikel / Teks Standar --}}
+                {{-- Konten standar tanpa media --}}
                 <div class="w-full rounded-2xl border border-[#dce4ed] bg-white p-8 shadow-sm">
                     <h2 class="text-lg font-bold text-[#172033] mb-3">{{ $modul->judul_modul }}</h2>
                     <p class="text-sm text-[#52617a] leading-relaxed">

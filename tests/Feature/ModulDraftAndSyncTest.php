@@ -146,7 +146,6 @@ class ModulDraftAndSyncTest extends TestCase
         \Illuminate\Support\Facades\DB::table('tipemodul')->insert([
             ['id_tipemodul' => 1, 'nama_tipe' => 'Video'],
             ['id_tipemodul' => 2, 'nama_tipe' => 'PDF'],
-            ['id_tipemodul' => 3, 'nama_tipe' => 'Artikel'],
         ]);
     }
 
@@ -187,6 +186,22 @@ class ModulDraftAndSyncTest extends TestCase
         $this->assertNotNull($modul);
         $this->assertTrue($modul->isPublished());
         $this->assertSame('Tersedia', $modul->progressModul);
+    }
+
+    public function test_admin_cannot_publish_modul_with_removed_article_type(): void
+    {
+        $this->actingAs($this->makeAdmin());
+
+        $response = $this->post(route('admin.modul.store'), [
+            'action_type' => 'publish',
+            'judul_modul' => 'Modul Tipe Tidak Tersedia',
+            'id_jenjang' => 1,
+            'id_tipemodul' => 3,
+            'file_link' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        ]);
+
+        $response->assertSessionHasErrors('id_tipemodul');
+        $this->assertDatabaseMissing('modul', ['judul_modul' => 'Modul Tipe Tidak Tersedia']);
     }
 
     public function test_modul_quiz_sync_allows_quiz_with_same_jenjang(): void
