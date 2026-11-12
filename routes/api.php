@@ -21,6 +21,7 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
     Route::get('/student/dashboard', [DashboardController::class, 'studentDashboard']);
     Route::get('/student/profile', [DashboardController::class, 'studentProfile']);
     Route::match(['put', 'post'], '/student/profile', [DashboardController::class, 'updateStudentProfile']);
+    Route::match(['patch', 'post'], '/student/hero-theme', [DashboardController::class, 'updateStudentHeroTheme']);
     Route::get('/parent/dashboard', [DashboardController::class, 'parentDashboard']);
     Route::get('/leaderboard', [DashboardController::class, 'leaderboard']);
     Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard']);

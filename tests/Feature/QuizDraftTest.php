@@ -348,6 +348,49 @@ class QuizDraftTest extends TestCase
             ->assertSee('Soal pratinjau draf pertama');
     }
 
+    public function test_siswa_only_sees_quiz_matching_their_jenjang_without_jenjang_filter(): void
+    {
+        \Illuminate\Support\Facades\DB::table('jenjang')->insert(['id_jenjang' => 2, 'nama_tipe' => 'SMP']);
+
+        $siswa = User::create([
+            'nama' => 'Siswa SMA',
+            'email' => 'siswa-sma-only@example.com',
+            'password' => bcrypt('password123'),
+            'id_tipeuser' => 3,
+            'id_jenjang' => 1,
+        ]);
+
+        Quiz::create([
+            'judul' => 'Quiz Khusus SMA Siswa',
+            'id_jenjang' => 1,
+            'mode_pengerjaan' => 'wayground',
+            'proggressQuiz' => 'Tersedia',
+        ]);
+
+        Quiz::create([
+            'judul' => 'Quiz Khusus SMP Lain',
+            'id_jenjang' => 2,
+            'mode_pengerjaan' => 'wayground',
+            'proggressQuiz' => 'Tersedia',
+        ]);
+
+        $this->actingAs($siswa);
+
+        $this->get(route('siswa.quiz'))
+            ->assertOk()
+            ->assertSee('Quiz Khusus SMA Siswa')
+            ->assertDontSee('Quiz Khusus SMP Lain')
+            ->assertDontSee('quiz-jenjang-chips', false)
+            ->assertDontSee('Jenjang Saya');
+
+        $this->get(route('siswa.quiz', ['jenjang' => 'Semua']))
+            ->assertOk()
+            ->assertSee('Quiz Khusus SMA Siswa')
+            ->assertDontSee('Quiz Khusus SMP Lain')
+            ->assertDontSee('quiz-jenjang-chips', false)
+            ->assertDontSee('Jenjang Saya');
+    }
+
     private function makeAdmin(): User
     {
         return User::create([

@@ -294,7 +294,7 @@ class QuizController extends Controller
 
     public function update(Request $request, $id)
     {
-        $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
+        $quiz = Quiz::query()->where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
         if (auth()->check()) {
             Gate::authorize('update', $quiz);
         }
@@ -441,7 +441,7 @@ class QuizController extends Controller
 
     public function destroy($id)
     {
-        $quiz = Quiz::where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
+        $quiz = Quiz::query()->where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
         if (auth()->check()) {
             Gate::authorize('delete', $quiz);
         }
@@ -828,12 +828,14 @@ class QuizController extends Controller
             });
         }
 
-        $sort = $request->get('sort', 'terbaru');
+        $sort = $request->input('sort', 'terbaru');
         $query->orderBy('id_quiz', $sort === 'terlama' ? 'asc' : 'desc');
 
-        $quizzes = $query->get()->map(function ($quiz) {
-            return $this->formatQuizResource($quiz);
-        });
+        $quizzes = collect();
+        foreach ($query->get() as $quiz) {
+            /** @var Quiz $quiz */
+            $quizzes->push($this->formatQuizResource($quiz));
+        }
 
         return response()->json([
             'status' => 'success',
@@ -1034,7 +1036,7 @@ class QuizController extends Controller
 
     public function apiUpdate(Request $request, $id)
     {
-        $quiz = Quiz::find($id);
+        $quiz = Quiz::query()->find($id);
         if (!$quiz) {
             return response()->json([
                 'status' => 'error',
@@ -1235,7 +1237,7 @@ class QuizController extends Controller
 
     public function apiDestroy($id)
     {
-        $quiz = Quiz::find($id);
+        $quiz = Quiz::query()->find($id);
         if (!$quiz) {
             return response()->json([
                 'status' => 'error',
@@ -1280,7 +1282,7 @@ class QuizController extends Controller
             $query->where('pertanyaan', 'like', "%{$request->search}%");
         }
 
-        $questions = $query->latest('id_soal')->paginate($request->get('per_page', 20));
+        $questions = $query->latest('id_soal')->paginate($request->input('per_page', 20));
 
         return response()->json([
             'status' => 'success',
@@ -1290,7 +1292,7 @@ class QuizController extends Controller
 
     public function apiVerifyToken(Request $request, $id)
     {
-        $quiz = Quiz::find($id);
+        $quiz = Quiz::query()->find($id);
         if (!$quiz) {
             return response()->json(['status' => 'error', 'message' => 'Quiz tidak ditemukan.'], 404);
         }

@@ -61,6 +61,7 @@ class AuthController extends Controller
                 'id_jenjang' => $user->id_jenjang,
                 'status_akun' => $user->status_akun,
                 'foto_profil' => $user->foto_profil,
+                'hero_theme' => $user->resolvedHeroTheme(),
             ],
         ]);
     }
@@ -83,6 +84,7 @@ class AuthController extends Controller
                 'id_jenjang' => $user->id_jenjang,
                 'status_akun' => $user->status_akun,
                 'foto_profil' => $user->foto_profil,
+                'hero_theme' => $user->resolvedHeroTheme(),
             ],
         ]);
     }

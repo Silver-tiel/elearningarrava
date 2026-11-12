@@ -120,31 +120,10 @@ class SiswaController extends Controller
 
         $query = Modul::published()->with($relations);
 
-        // Filter jenjang persis seperti mobile ('Jenjang Saya', 'Semua', 'SD', 'SMP', 'SMA')
-        $selectedJenjang = $request->query('jenjang', 'Jenjang Saya');
-        $jenjangLower = strtolower(trim($selectedJenjang));
-
-        if ($jenjangLower === 'jenjang saya' || $jenjangLower === 'saya') {
-            if ($user && $user->id_jenjang) {
-                $query->where('id_jenjang', $user->id_jenjang);
-            }
-        } elseif ($jenjangLower === 'sd' || $jenjangLower === '1') {
-            $query->where(function ($q) {
-                $q->where('id_jenjang', 1)
-                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%sd%'));
-            });
-        } elseif ($jenjangLower === 'smp' || $jenjangLower === '2') {
-            $query->where(function ($q) {
-                $q->where('id_jenjang', 2)
-                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%smp%'));
-            });
-        } elseif ($jenjangLower === 'sma' || $jenjangLower === '3') {
-            $query->where(function ($q) {
-                $q->where('id_jenjang', 3)
-                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%sma%'));
-            });
+        // Batasi modul sesuai jenjang siswa yang sedang login
+        if ($user && $user->id_jenjang) {
+            $query->where('id_jenjang', $user->id_jenjang);
         }
-        // Jika 'semua' atau '0' atau 'all', tidak difilter berdasarkan jenjang
 
         // Filter tipe / status modul persis seperti mobile ('Semua', 'Video', 'PDF', 'Belum Tuntas', 'Tuntas')
         $selectedFilter = $request->query('filter', 'Semua');
@@ -186,7 +165,7 @@ class SiswaController extends Controller
 
         $moduls = $query->latest()->get();
 
-        return view('siswa.modul', compact('moduls', 'user', 'selectedJenjang', 'selectedFilter'));
+        return view('siswa.modul', compact('moduls', 'user', 'selectedFilter'));
     }
 
     public function materiVideo()
@@ -460,7 +439,6 @@ class SiswaController extends Controller
             'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
             'mapel' => ['nullable', 'integer', 'exists:mapel,id_mapel'],
             'sort' => ['nullable', 'in:terbaru,terlama'],
-            'jenjang' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
             'q' => ['nullable', 'string'],
         ]);
@@ -480,31 +458,10 @@ class SiswaController extends Controller
 
         $query = Quiz::published()->belumKadaluarsa()->with($relations);
 
-        // Filter jenjang persis seperti mobile ('Jenjang Saya', 'Semua', 'SD', 'SMP', 'SMA')
-        $selectedJenjang = $request->query('jenjang', 'Jenjang Saya');
-        $jenjangLower = strtolower(trim($selectedJenjang));
-
-        if ($jenjangLower === 'jenjang saya' || $jenjangLower === 'saya') {
-            if ($user && $user->id_jenjang) {
-                $query->where('id_jenjang', $user->id_jenjang);
-            }
-        } elseif ($jenjangLower === 'sd' || $jenjangLower === '1') {
-            $query->where(function ($q) {
-                $q->where('id_jenjang', 1)
-                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%sd%'));
-            });
-        } elseif ($jenjangLower === 'smp' || $jenjangLower === '2') {
-            $query->where(function ($q) {
-                $q->where('id_jenjang', 2)
-                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%smp%'));
-            });
-        } elseif ($jenjangLower === 'sma' || $jenjangLower === '3') {
-            $query->where(function ($q) {
-                $q->where('id_jenjang', 3)
-                  ->orWhereHas('jenjang', fn($j) => $j->where('nama_tipe', 'like', '%sma%'));
-            });
+        // Batasi kuis sesuai jenjang siswa yang sedang login
+        if ($user && $user->id_jenjang) {
+            $query->where('id_jenjang', $user->id_jenjang);
         }
-        // Jika 'semua' atau '0' atau 'all', tidak difilter berdasarkan jenjang
 
         // Filter Status Kuis persis seperti mobile ('Semua', 'Belum Dikerjakan', 'Lulus', 'Belum Lulus')
         $selectedStatus = $request->query('status', 'Semua');
@@ -556,7 +513,7 @@ class SiswaController extends Controller
         $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
         $mapelList = Schema::hasTable('mapel') ? Mapel::orderBy('nama_mapel')->get() : collect();
 
-        return view('siswa.quiz', compact('quizzes', 'tingkatQuizList', 'mapelList', 'user', 'selectedJenjang', 'selectedStatus'));
+        return view('siswa.quiz', compact('quizzes', 'tingkatQuizList', 'mapelList', 'user', 'selectedStatus'));
     }
 
     /* ---------------------------------------------------------------------

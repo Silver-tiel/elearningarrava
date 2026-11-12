@@ -13,7 +13,9 @@ use App\Models\Quiz;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 /**
  * Class DashboardController
@@ -112,6 +114,7 @@ class DashboardController extends Controller
                     'jenjang' => $user->jenjang->nama_jenjang ?? 'Umum',
                     'total_xp' => (int) ($user->total_poin ?? 0),
                     'foto_profil' => $this->resolvePhotoUrl($user->foto_profil),
+                    'hero_theme' => $user->resolvedHeroTheme(),
                     'rank_tier' => $user->rank_tier,
                 ],
                 'stats' => [
@@ -250,7 +253,7 @@ class DashboardController extends Controller
         $rankTier = $user->rank_tier;
         $qrPayload = method_exists($user, 'qrPayload') ? $user->qrPayload() : null;
 
-        $hasIsLulus = \Illuminate\Support\Facades\Schema::hasColumn('hasilquizmodul', 'is_lulus');
+        $hasIsLulus = Schema::hasColumn('hasilquizmodul', 'is_lulus');
         $kuisLulusExpr = $hasIsLulus
             ? 'COUNT(DISTINCT CASE WHEN is_lulus = 1 THEN id_quiz END) as kuis_lulus'
             : 'COUNT(DISTINCT id_quiz) as kuis_lulus';
@@ -315,6 +318,7 @@ class DashboardController extends Controller
                     'nama_jenjang' => $user->jenjang->nama_tipe ?? $user->jenjang->nama_jenjang ?? '-',
                     'total_poin' => (int) ($user->total_poin ?? 0),
                     'foto_profil' => $fotoUrl,
+                    'hero_theme' => $user->resolvedHeroTheme(),
                     'qr_payload' => $qrPayload,
                 ],
                 'orang_tua' => $orangTua,
@@ -356,6 +360,7 @@ class DashboardController extends Controller
             'asal_sekolah' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'min:6'],
             'foto_profil' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'hero_theme' => ['nullable', 'string', Rule::in(array_keys(User::HERO_THEMES))],
         ]);
 
         if (!empty($validated['username'])) {
@@ -369,6 +374,9 @@ class DashboardController extends Controller
         }
         if (!empty($validated['password'])) {
             $user->password = bcrypt($validated['password']);
+        }
+        if (!empty($validated['hero_theme']) && Schema::hasColumn('user', 'hero_theme')) {
+            $user->hero_theme = $validated['hero_theme'];
         }
 
         if ($request->hasFile('foto_profil')) {
@@ -393,6 +401,46 @@ class DashboardController extends Controller
                 'nomor_hp' => $user->nomor_hp,
                 'asal_sekolah' => $user->asal_sekolah,
                 'foto_profil' => $fotoUrl,
+                'hero_theme' => $user->resolvedHeroTheme(),
+            ],
+        ]);
+    }
+
+    /**
+     * Update tema hero dashboard Siswa (Mobile API)
+     */
+    public function updateStudentHeroTheme(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $validated = $request->validate([
+            'hero_theme' => ['required', 'string', Rule::in(array_keys(User::HERO_THEMES))],
+        ]);
+
+        $theme = $validated['hero_theme'];
+
+        if (!Schema::hasColumn('user', 'hero_theme')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kolom hero_theme belum tersedia di database. Jalankan php artisan migrate.',
+            ], 500);
+        }
+
+        $user->hero_theme = $theme;
+        $user->save();
+
+        $savedTheme = $user->resolvedHeroTheme();
+        $label = User::HERO_THEMES[$savedTheme]['label'] ?? ucfirst($savedTheme);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Tema hero dashboard berhasil diganti ke {$label}.",
+            'data' => [
+                'hero_theme' => $savedTheme,
+                'label' => $label,
             ],
         ]);
     }

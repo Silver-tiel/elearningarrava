@@ -402,7 +402,17 @@ class ModulDraftAndSyncTest extends TestCase
         $this->get(route('siswa.modul'))
             ->assertOk()
             ->assertSee('Matematika Dasar SD Khusus')
-            ->assertDontSee('Biologi Ekosistem SMP Khusus');
+            ->assertDontSee('Biologi Ekosistem SMP Khusus')
+            ->assertDontSee('modul-jenjang-chips', false)
+            ->assertDontSee('Jenjang Saya');
+
+        // Parameter jenjang=Semua harus diabaikan dan tetap terkunci ke jenjang siswa
+        $this->get(route('siswa.modul', ['jenjang' => 'Semua']))
+            ->assertOk()
+            ->assertSee('Matematika Dasar SD Khusus')
+            ->assertDontSee('Biologi Ekosistem SMP Khusus')
+            ->assertDontSee('modul-jenjang-chips', false)
+            ->assertDontSee('Jenjang Saya');
 
         // Dashboard siswa
         $this->get(route('siswa.dashboard'))

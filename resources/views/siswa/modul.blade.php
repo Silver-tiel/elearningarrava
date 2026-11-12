@@ -109,26 +109,6 @@
                 class="h-11 w-full rounded-2xl bg-white border-2 border-[#DCEFFF] pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#12233F] outline-none placeholder:text-[#94A3B8] focus:border-[#007FBE] focus:ring-4 focus:ring-[#DDF3FF] transition shadow-[0_2px_0_#DCEFFF]">
         </div>
 
-        {{-- Filter Jenjang (Filter Chips dari Mobile) --}}
-        <div class="space-y-1.5">
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="modul-jenjang-chips">
-                <span class="text-[11px] font-black uppercase tracking-wider text-[#465673] shrink-0 mr-1">Jenjang:</span>
-                @php
-                    $activeModulJenjang = $selectedJenjang ?? request('jenjang', 'Jenjang Saya');
-                @endphp
-                @foreach(['Jenjang Saya', 'Semua', 'SD', 'SMP', 'SMA'] as $j)
-                    @php
-                        $isJSelected = strcasecmp($activeModulJenjang, $j) === 0;
-                    @endphp
-                    <button type="button"
-                        data-jenjang="{{ $j }}"
-                        class="modul-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border {{ $isJSelected ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs' : 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] hover:bg-[#DBEAFE]' }}">
-                        {{ $j }}
-                    </button>
-                @endforeach
-            </div>
-        </div>
-
         {{-- Filter Tipe / Status Modul (Choice Chips dari Mobile: 'Semua', 'Video', 'PDF', 'Belum Tuntas', 'Tuntas') --}}
         <div class="space-y-1.5">
             <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="modul-filter-chips">
@@ -151,7 +131,6 @@
 
         {{-- Hidden GET Form for fallback / server sync --}}
         <form id="modulFilterForm" method="GET" action="{{ route('siswa.modul') }}" class="hidden">
-            <input type="hidden" name="jenjang" id="modul-input-jenjang" value="{{ $activeModulJenjang }}">
             <input type="hidden" name="filter" id="modul-input-filter" value="{{ $activeModulFilter }}">
             <input type="hidden" name="q" id="modul-input-q" value="{{ request('q') }}">
         </form>
@@ -165,8 +144,6 @@
             @endphp
             <div class="modul-card-item hover-frame group rounded-2xl border-2 border-[#DCEFFF] bg-white p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_5px_0_#007FBE] shadow-[0_3px_0_#B2E7FC]"
                 data-title="{{ strtolower($modul->judul_modul) }}"
-                data-jenjang-id="{{ $modul->id_jenjang }}"
-                data-jenjang-name="{{ strtolower($modul->jenjang->nama_jenjang ?? $modul->jenjang->nama_tipe ?? '') }}"
                 data-mapel="{{ strtolower($modul->mapel->nama_mapel ?? '') }}"
                 data-desc="{{ strtolower(strip_tags($modul->deskripsi ?? '')) }}"
                 data-is-video="{{ $isVideo ? '1' : '0' }}"
@@ -286,8 +263,6 @@
     const MODUL_CARDS_PER_PAGE = 8;
     let currentModulPage = 1;
 
-    const userJenjangId = {{ (int) (Auth::user()?->id_jenjang ?? 0) }};
-    let selectedModulJenjang = @json($selectedJenjang ?? request('jenjang', 'Jenjang Saya'));
     let selectedModulFilter = @json($selectedFilter ?? request('filter', 'Semua'));
 
     const modulCards = Array.from(document.querySelectorAll('.modul-card-item'));
@@ -301,9 +276,7 @@
     const modulBtnNext = document.getElementById('modul-btn-next');
     const modulCountBadge = document.getElementById('modul-count-badge');
 
-    const modulJenjangChips = Array.from(document.querySelectorAll('.modul-jenjang-chip'));
     const modulFilterChips = Array.from(document.querySelectorAll('.modul-filter-chip'));
-    const inputModulJenjang = document.getElementById('modul-input-jenjang');
     const inputModulFilter = document.getElementById('modul-input-filter');
     const inputModulQ = document.getElementById('modul-input-q');
 
@@ -321,20 +294,6 @@
                 if (!title.includes(query) && !mapel.includes(query) && !desc.includes(query)) {
                     return false;
                 }
-            }
-
-            // Match Jenjang
-            const cardJenjangId = parseInt(card.getAttribute('data-jenjang-id') || '0', 10);
-            const cardJenjangName = (card.getAttribute('data-jenjang-name') || '').toLowerCase().trim();
-
-            if (selectedModulJenjang === 'SD') {
-                if (cardJenjangId !== 1 && cardJenjangName !== 'sd') return false;
-            } else if (selectedModulJenjang === 'SMP') {
-                if (cardJenjangId !== 2 && cardJenjangName !== 'smp') return false;
-            } else if (selectedModulJenjang === 'SMA') {
-                if (cardJenjangId !== 3 && cardJenjangName !== 'sma') return false;
-            } else if (selectedModulJenjang === 'Jenjang Saya') {
-                if (userJenjangId > 0 && cardJenjangId !== userJenjangId) return false;
             }
 
             // Match Tipe / Status Modul ('Semua', 'Video', 'PDF', 'Belum Tuntas', 'Tuntas')
@@ -355,22 +314,6 @@
             return true;
         });
     }
-
-    // Event handler Chip Jenjang
-    modulJenjangChips.forEach(chip => {
-        chip.addEventListener('click', function () {
-            selectedModulJenjang = this.getAttribute('data-jenjang');
-            if (inputModulJenjang) inputModulJenjang.value = selectedModulJenjang;
-
-            modulJenjangChips.forEach(c => {
-                c.className = 'modul-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] hover:bg-[#DBEAFE]';
-            });
-            this.className = 'modul-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#2563EB] text-white border-[#2563EB] shadow-xs';
-
-            currentModulPage = 1;
-            renderModulPagination(true);
-        });
-    });
 
     // Event handler Chip Filter Tipe/Status
     modulFilterChips.forEach(chip => {

@@ -178,26 +178,6 @@
                     class="h-11 w-full rounded-2xl bg-white border-2 border-[#DCEFFF] pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#12233F] outline-none placeholder:text-[#94A3B8] focus:border-[#007FBE] focus:ring-4 focus:ring-[#DDF3FF] transition shadow-[0_2px_0_#DCEFFF]">
             </div>
 
-            {{-- Filter Jenjang (Filter Chips dari Mobile) --}}
-            <div class="space-y-1.5">
-                <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="quiz-jenjang-chips">
-                    <span class="text-[11px] font-black uppercase tracking-wider text-[#465673] shrink-0 mr-1">Jenjang:</span>
-                    @php
-                        $activeJenjang = $selectedJenjang ?? request('jenjang', 'Jenjang Saya');
-                    @endphp
-                    @foreach(['Jenjang Saya', 'Semua', 'SD', 'SMP', 'SMA'] as $j)
-                        @php
-                            $isJSelected = strcasecmp($activeJenjang, $j) === 0;
-                        @endphp
-                        <button type="button"
-                            data-jenjang="{{ $j }}"
-                            class="quiz-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border {{ $isJSelected ? 'bg-[#2563EB] text-white border-[#2563EB] shadow-xs' : 'bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] hover:bg-[#DBEAFE]' }}">
-                            {{ $j }}
-                        </button>
-                    @endforeach
-                </div>
-            </div>
-
             {{-- Filter Status Kuis (Choice Chips dari Mobile) --}}
             <div class="space-y-1.5">
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="quiz-status-chips">
@@ -221,7 +201,6 @@
             {{-- Secondary Filter Bar (Mapel, Tingkat, Urutkan) --}}
             <form id="quizFilterBar" method="GET" action="{{ route('siswa.quiz') }}"
                 class="pt-3 border-t border-[#DCEFFF]/70 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end">
-                <input type="hidden" name="jenjang" id="quiz-input-jenjang" value="{{ $activeJenjang }}">
                 <input type="hidden" name="status" id="quiz-input-status" value="{{ $activeStatus }}">
                 <input type="hidden" name="q" id="quiz-input-q" value="{{ request('q') }}">
                 <div>
@@ -326,8 +305,6 @@
                 @endphp
                 <div {{ $loop->first ? 'id="tourQuizCard"' : '' }} class="quiz-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white transition-all duration-200 {{ ($expired && !$quiz->perluToken()) ? 'cursor-not-allowed opacity-75 grayscale' : 'hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_6px_0_#007FBE] shadow-[0_4px_0_#B2E7FC]' }}"
                     data-title="{{ strtolower($quiz->judul) }}"
-                    data-jenjang-id="{{ $quiz->id_jenjang }}"
-                    data-jenjang-name="{{ strtolower($quiz->jenjang->nama_jenjang ?? $quiz->jenjang->nama_tipe ?? '') }}"
                     data-mapel="{{ strtolower($quiz->mapel->nama_mapel ?? '') }}"
                     data-desc="{{ strtolower(strip_tags($quiz->deskripsi ?? '')) }}"
                     data-status-taken="{{ $quiz->hasil->isNotEmpty() ? '1' : '0' }}"
@@ -674,8 +651,6 @@
             const CARDS_PER_PAGE = 8;
             let currentQuizPage = 1;
 
-            const userJenjangId = {{ (int) (Auth::user()?->id_jenjang ?? 0) }};
-            let selectedJenjang = @json($selectedJenjang ?? request('jenjang', 'Jenjang Saya'));
             let selectedStatus = @json($selectedStatus ?? request('status', 'Semua'));
 
             const quizCards = Array.from(document.querySelectorAll('.quiz-card-item'));
@@ -689,9 +664,7 @@
             const btnNext = document.getElementById('quiz-btn-next');
             const countBadge = document.getElementById('quiz-count-badge');
 
-            const jenjangChips = Array.from(document.querySelectorAll('.quiz-jenjang-chip'));
             const statusChips = Array.from(document.querySelectorAll('.quiz-status-chip'));
-            const inputJenjang = document.getElementById('quiz-input-jenjang');
             const inputStatus = document.getElementById('quiz-input-status');
             const inputQ = document.getElementById('quiz-input-q');
 
@@ -711,20 +684,6 @@
                         }
                     }
 
-                    // Match Jenjang
-                    const cardJenjangId = parseInt(card.getAttribute('data-jenjang-id') || '0', 10);
-                    const cardJenjangName = (card.getAttribute('data-jenjang-name') || '').toLowerCase().trim();
-
-                    if (selectedJenjang === 'SD') {
-                        if (cardJenjangId !== 1 && cardJenjangName !== 'sd') return false;
-                    } else if (selectedJenjang === 'SMP') {
-                        if (cardJenjangId !== 2 && cardJenjangName !== 'smp') return false;
-                    } else if (selectedJenjang === 'SMA') {
-                        if (cardJenjangId !== 3 && cardJenjangName !== 'sma') return false;
-                    } else if (selectedJenjang === 'Jenjang Saya') {
-                        if (userJenjangId > 0 && cardJenjangId !== userJenjangId) return false;
-                    }
-
                     // Match Status
                     const taken = card.getAttribute('data-status-taken') === '1';
                     const passed = card.getAttribute('data-status-passed') === '1';
@@ -740,22 +699,6 @@
                     return true;
                 });
             }
-
-            // Event handler untuk Chip Jenjang
-            jenjangChips.forEach(chip => {
-                chip.addEventListener('click', function () {
-                    selectedJenjang = this.getAttribute('data-jenjang');
-                    if (inputJenjang) inputJenjang.value = selectedJenjang;
-
-                    jenjangChips.forEach(c => {
-                        c.className = 'quiz-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE] hover:bg-[#DBEAFE]';
-                    });
-                    this.className = 'quiz-jenjang-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#2563EB] text-white border-[#2563EB] shadow-xs';
-
-                    currentQuizPage = 1;
-                    renderQuizPagination(true);
-                });
-            });
 
             // Event handler untuk Chip Status
             statusChips.forEach(chip => {
