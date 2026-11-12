@@ -40,31 +40,55 @@
     </div>
     @endif
 
-    <!-- FILTER & PENCARIAN -->
-    <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="relative flex-1 max-w-md">
-            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <input type="text" id="searchInput" oninput="filterCards()" placeholder="Cari nama, email, atau NIK guru..."
-                   class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50">
-        </div>
+    <!-- FILTER & PENCARIAN (GAYA CHOICE CHIP SISWA) -->
+    <x-student-style-filter-bar
+        title="Data Pengajar"
+        icon="👨‍🏫"
+        searchId="searchInput"
+        searchName="q"
+        searchPlaceholder="Cari nama, email, NIK, atau no. telepon guru..."
+        resetId="guruResetBtn"
+        :showReset="false">
 
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
-                Total: <span id="total-count">{{ $gurus->count() }}</span> Guru
+        <x-slot:headerActions>
+            <span class="inline-flex items-center px-3 py-1 rounded-full bg-white border border-[#DCEFFF] text-[11px] font-extrabold text-[#465673] shadow-xs">
+                Total:&nbsp;<span id="total-count">{{ $gurus->count() }}</span>&nbsp;Guru
             </span>
-        </div>
-    </div>
+        </x-slot:headerActions>
+
+        <x-student-style-filter-chip-bar
+            id="guru-filter-chips"
+            label="Filter"
+            chipClass="guru-filter-chip"
+            dataAttr="data-guru-filter"
+            :chips="[
+                ['value' => 'Semua', 'label' => 'Semua', 'active' => true],
+                ['value' => 'Aktif', 'label' => 'Aktif', 'active' => false],
+                ['value' => 'Nonaktif', 'label' => 'Nonaktif', 'active' => false],
+                ['value' => 'Tanpa Akun', 'label' => 'Tanpa Akun', 'active' => false],
+                ['value' => 'Ada Email', 'label' => 'Ada Email', 'active' => false],
+                ['value' => 'Ada Telepon', 'label' => 'Ada Telepon', 'active' => false],
+            ]" />
+    </x-student-style-filter-bar>
 
     <!-- GRID CARD FOTO GURU -->
     @if($gurus->isNotEmpty())
         <div id="guruGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @foreach($gurus as $guru)
+                @php
+                    $guruStatus = $guru->user ? ($guru->user->status_akun ?? 'Aktif') : 'Tanpa Akun';
+                    $guruStatusKey = $guru->user
+                        ? (strcasecmp($guruStatus, 'Nonaktif') === 0 ? 'nonaktif' : 'aktif')
+                        : 'tanpa_akun';
+                @endphp
                 <div class="guru-card bg-white rounded-2xl border border-gray-100 shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group"
                      data-nama="{{ strtolower($guru->nama) }}"
                      data-email="{{ strtolower($guru->user?->email ?? '') }}"
-                     data-nik="{{ $guru->nik }}">
+                     data-nik="{{ strtolower($guru->nik ?? '') }}"
+                     data-telepon="{{ strtolower($guru->no_telepon ?? '') }}"
+                     data-status="{{ $guruStatusKey }}"
+                     data-has-email="{{ !empty($guru->user?->email) ? '1' : '0' }}"
+                     data-has-telepon="{{ !empty($guru->no_telepon) ? '1' : '0' }}">
 
                     <!-- BANNER ATAS DENGAN STATUS -->
                     <div class="h-24 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 relative p-3.5 flex justify-between items-start">
@@ -171,12 +195,16 @@
             @endforeach
         </div>
 
-        <div id="noResults" class="hidden bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-xs">
-            <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div id="noResults" class="hidden bg-white rounded-2xl border-2 border-[#DCEFFF] p-12 text-center shadow-xs">
+            <svg class="w-12 h-12 text-[#007FBE]/40 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <p class="text-base font-bold text-slate-700">Guru tidak ditemukan</p>
-            <p class="text-xs text-slate-400 mt-1">Coba gunakan kata kunci pencarian yang lain.</p>
+            <p class="text-base font-bold text-[#082765]">Guru tidak ditemukan</p>
+            <p class="text-xs font-semibold text-[#465673] mt-1">Coba ubah kata kunci pencarian atau filter status yang dipilih.</p>
+            <button type="button" onclick="resetGuruFilters()"
+                class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#007FBE] hover:bg-[#00679A] px-4 py-2 text-xs font-extrabold text-white shadow-[0_2px_0_#005580] transition cursor-pointer">
+                Reset Filter
+            </button>
         </div>
     @else
         <!-- KOSONG (EMPTY STATE) -->
@@ -200,17 +228,38 @@
 </div>
 
 <script>
+    let activeGuruFilter = 'Semua';
+
     function filterCards() {
-        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const filterHelper = window.ArravaStudentFilter;
+        const searchInput = document.getElementById('searchInput');
+        const query = (searchInput?.value || '').toLowerCase().trim();
         const cards = document.querySelectorAll('.guru-card');
         let visibleCount = 0;
 
         cards.forEach(card => {
-            const nama = card.getAttribute('data-nama');
-            const email = card.getAttribute('data-email');
-            const nik = card.getAttribute('data-nik');
+            const nama = card.getAttribute('data-nama') || '';
+            const email = card.getAttribute('data-email') || '';
+            const nik = card.getAttribute('data-nik') || '';
+            const telepon = card.getAttribute('data-telepon') || '';
+            const status = card.getAttribute('data-status') || '';
+            const hasEmail = card.getAttribute('data-has-email') === '1';
+            const hasTelepon = card.getAttribute('data-has-telepon') === '1';
 
-            if (nama.includes(query) || email.includes(query) || nik.includes(query)) {
+            const matchesQuery = query === ''
+                || nama.includes(query)
+                || email.includes(query)
+                || nik.includes(query)
+                || telepon.includes(query);
+
+            let matchesChip = true;
+            if (activeGuruFilter === 'Aktif') matchesChip = status === 'aktif';
+            else if (activeGuruFilter === 'Nonaktif') matchesChip = status === 'nonaktif';
+            else if (activeGuruFilter === 'Tanpa Akun') matchesChip = status === 'tanpa_akun';
+            else if (activeGuruFilter === 'Ada Email') matchesChip = hasEmail;
+            else if (activeGuruFilter === 'Ada Telepon') matchesChip = hasTelepon;
+
+            if (matchesQuery && matchesChip) {
                 card.style.display = 'flex';
                 visibleCount++;
             } else {
@@ -218,15 +267,67 @@
             }
         });
 
+        const totalEl = document.getElementById('total-count');
+        if (totalEl) {
+            totalEl.textContent = visibleCount;
+        }
+
         const noResults = document.getElementById('noResults');
         if (noResults) {
-            if (visibleCount === 0 && cards.length > 0) {
-                noResults.classList.remove('hidden');
-            } else {
-                noResults.classList.add('hidden');
-            }
+            noResults.classList.toggle('hidden', !(visibleCount === 0 && cards.length > 0));
+        }
+
+        const resetBtn = document.getElementById('guruResetBtn');
+        const isDirty = query !== '' || activeGuruFilter !== 'Semua';
+        if (resetBtn) {
+            resetBtn.classList.toggle('hidden', !isDirty);
+            resetBtn.classList.toggle('inline-flex', isDirty);
         }
     }
+
+    function resetGuruFilters() {
+        const filterHelper = window.ArravaStudentFilter;
+        const searchInput = document.getElementById('searchInput');
+        const searchClear = document.getElementById('searchInputClear');
+        const chipsContainer = document.getElementById('guru-filter-chips');
+
+        activeGuruFilter = 'Semua';
+        if (searchInput) searchInput.value = '';
+        if (searchClear) {
+            searchClear.classList.add('hidden');
+            searchClear.classList.remove('inline-flex');
+        }
+        if (filterHelper && chipsContainer) {
+            filterHelper.setActiveChip(chipsContainer, activeGuruFilter, 'data-guru-filter');
+        }
+        filterCards();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const filterHelper = window.ArravaStudentFilter;
+        const searchInput = document.getElementById('searchInput');
+        const searchClear = document.getElementById('searchInputClear');
+        const chipsContainer = document.getElementById('guru-filter-chips');
+        const resetBtn = document.getElementById('guruResetBtn');
+
+        if (filterHelper) {
+            filterHelper.bindSearchClear(searchInput, searchClear, filterCards);
+        }
+        if (chipsContainer) {
+            chipsContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-guru-filter]');
+                if (!btn) return;
+                activeGuruFilter = btn.getAttribute('data-guru-filter') || 'Semua';
+                if (filterHelper) {
+                    filterHelper.setActiveChip(chipsContainer, activeGuruFilter, 'data-guru-filter');
+                }
+                filterCards();
+            });
+        }
+        if (resetBtn) {
+            resetBtn.addEventListener('click', resetGuruFilters);
+        }
+    });
 </script>
 
 @endsection

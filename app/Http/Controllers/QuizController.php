@@ -22,9 +22,10 @@ class QuizController extends Controller
     public function index(Request $request)
     {
         $filters = $request->validate([
-            'jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
+            'jenjang' => ['nullable', 'string', 'max:32'],
             'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
             'status' => ['nullable', 'in:all,published,draft,kadaluarsa'],
+            'mode' => ['nullable', 'in:all,wayground,biasa,klasik'],
             'sort' => ['nullable', 'in:terbaru,terlama'],
         ]);
 
@@ -44,15 +45,35 @@ class QuizController extends Controller
         }
 
         if (!empty($filters['jenjang'])) {
-            $query->where('id_jenjang', $filters['jenjang']);
+            $jenjangVal = trim($filters['jenjang']);
+            if (strtolower($jenjangVal) === 'umum') {
+                $query->where(function ($sub) {
+                    $sub->whereNull('id_jenjang')
+                        ->orWhereHas('jenjang', fn ($j) => $j->whereRaw('LOWER(nama_tipe) = ?', ['umum']));
+                });
+            } elseif (is_numeric($jenjangVal)) {
+                $query->where('id_jenjang', (int) $jenjangVal);
+            }
         }
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel') && !empty($filters['mapel'])) {
-            $query->where('id_mapel', $filters['mapel']);
+        if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel') && $request->filled('mapel')) {
+            $query->where('id_mapel', $request->input('mapel'));
         }
 
         if (!empty($filters['tingkat'])) {
             $query->where('id_tingkatquiz', $filters['tingkat']);
+        }
+
+        if (!empty($filters['mode']) && $filters['mode'] !== 'all') {
+            $mode = strtolower($filters['mode']);
+            if ($mode === 'wayground') {
+                $query->where(function ($sub) {
+                    $sub->where('mode_pengerjaan', 'wayground')
+                        ->orWhereNull('mode_pengerjaan');
+                });
+            } elseif (in_array($mode, ['biasa', 'klasik'], true)) {
+                $query->where('mode_pengerjaan', 'biasa');
+            }
         }
 
         if (!empty($filters['status']) && $filters['status'] !== 'all') {

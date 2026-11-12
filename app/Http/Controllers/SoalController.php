@@ -22,7 +22,9 @@ class SoalController extends Controller
         }
 
         $soals = Soal::query()
+            ->with(['quiz', 'jenjang', 'jenisSoal'])
             ->when(auth()->user() && auth()->user()->isGuru(), fn ($q) => $q->whereHas('quiz', fn ($k) => $k->where('id_pembuat', auth()->id())))
+            ->latest('id_soal')
             ->get();
 
         return view('admin.soal.index', ['soals' => $soals]);

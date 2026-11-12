@@ -174,12 +174,18 @@ class DashboardController extends Controller
      */
     public function teachers()
     {
-        $teachers = Guru::latest('id_guru')->get()->map(function ($g) {
+        $teachers = Guru::with('user')->latest('id_guru')->get()->map(function ($g) {
+            $status = $g->user
+                ? ($g->user->status_akun ?? 'Aktif')
+                : 'Tanpa Akun';
+
             return [
                 'id_guru' => $g->id_guru,
                 'nama' => $g->nama,
                 'nik' => $g->nik,
                 'no_telepon' => $g->no_telepon,
+                'email' => $g->user?->email,
+                'status' => $status,
             ];
         });
 

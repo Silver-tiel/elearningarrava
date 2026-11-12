@@ -55,6 +55,13 @@
         h1, h2, h3, .font-heading {
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
+        .scrollbar-none::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-none {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
     @stack('styles')
 </head>

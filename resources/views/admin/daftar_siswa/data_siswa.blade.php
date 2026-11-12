@@ -75,44 +75,56 @@
         
     </div>
 
-    {{-- Filter & Search Bar --}}
-    <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-        <form method="GET" action="{{ route('admin.daftar_siswa') }}" class="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div class="relative w-full md:w-96">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </span>
-                <input type="text" name="search" value="{{ request('search') }}"
-                    class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white focus:border-transparent transition"
-                    placeholder="Cari nama atau email siswa...">
-            </div>
+    {{-- Filter & Search Bar (Gaya Choice Chip Siswa) --}}
+    @php
+        $activeKelasFilter = trim((string) request('kelas', ''));
+        $activeStatusFilter = trim((string) request('status', ''));
+        $activeSearchFilter = trim((string) request('search', ''));
+        $hasActiveStudentFilter = $activeKelasFilter !== '' || $activeStatusFilter !== '' || $activeSearchFilter !== '';
+    @endphp
 
-            <div class="flex items-center gap-3 w-full md:w-auto">
-                <select
-                    name="kelas"
-                    onchange="filterData(this)"
-                    class="w-full md:w-auto bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    <option value="">Semua Kelas</option>
-                    @foreach($listKelas ?? [] as $k)
-                    <option value="{{ $k }}" {{ request('kelas') == $k ? 'selected' : '' }}>
-                        {{ $k }}
-                    </option>
-                    @endforeach
-                </select>
+    <form id="studentFilterForm" method="GET" action="{{ route('admin.daftar_siswa') }}">
+        <input type="hidden" name="kelas" id="student-input-kelas" value="{{ $activeKelasFilter }}">
+        <input type="hidden" name="status" id="student-input-status" value="{{ $activeStatusFilter }}">
 
-                <select
-                    name="status"
-                    onchange="filterData(this)"
-                    class="w-full md:w-auto bg-slate-50 border border-slate-200 text-slate-600 text-sm rounded-xl px-3.5 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                    <option value="">Status: Semua</option>
-                    <option value="Aktif" {{ request('status') == 'Aktif' ? 'selected' : '' }}>Status: Aktif</option>
-                    <option value="Nonaktif" {{ request('status') == 'Nonaktif' ? 'selected' : '' }}>Status: Nonaktif</option>
-                </select>
-            </div>
-        </form>
-    </div>
+        <x-student-style-filter-bar
+            title="Direktori Siswa"
+            icon="🎓"
+            countId="student-filtered-count"
+            countText="{{ $filteredStudentCount }} Siswa"
+            searchId="studentSearchInput"
+            searchName="search"
+            searchValue="{{ request('search') }}"
+            searchPlaceholder="Cari nama, NISN, kelas, atau email siswa..."
+            resetId="studentResetBtn"
+            resetUrl="{{ route('admin.daftar_siswa') }}"
+            :showReset="$hasActiveStudentFilter">
+
+            <x-student-style-filter-chip-bar
+                id="student-jenjang-chips"
+                label="Jenjang"
+                chipClass="student-jenjang-chip"
+                dataAttr="data-kelas"
+                :chips="[
+                    ['value' => '', 'label' => 'Semua Jenjang', 'active' => $activeKelasFilter === ''],
+                    ['value' => 'SD', 'label' => 'SD', 'active' => strcasecmp($activeKelasFilter, 'SD') === 0],
+                    ['value' => 'SMP', 'label' => 'SMP', 'active' => strcasecmp($activeKelasFilter, 'SMP') === 0],
+                    ['value' => 'SMA', 'label' => 'SMA', 'active' => strcasecmp($activeKelasFilter, 'SMA') === 0],
+                    ['value' => 'Umum', 'label' => 'Umum', 'active' => strcasecmp($activeKelasFilter, 'Umum') === 0],
+                ]" />
+
+            <x-student-style-filter-chip-bar
+                id="student-status-chips"
+                label="Status Akun"
+                chipClass="student-status-chip"
+                dataAttr="data-status"
+                :chips="[
+                    ['value' => '', 'label' => 'Semua Status', 'active' => $activeStatusFilter === ''],
+                    ['value' => 'Aktif', 'label' => 'Aktif', 'active' => strcasecmp($activeStatusFilter, 'Aktif') === 0],
+                    ['value' => 'Nonaktif', 'label' => 'Nonaktif', 'active' => strcasecmp($activeStatusFilter, 'Nonaktif') === 0],
+                ]" />
+        </x-student-style-filter-bar>
+    </form>
 
     <form id="bulk-jenjang-form" method="POST" action="{{ route('admin.siswa.jenjang.massal') }}">
         @csrf
@@ -199,7 +211,9 @@
                      data-id="{{ $siswa->id_user }}"
                      data-nama="{{ strtolower($siswa->nama) }}"
                      data-email="{{ strtolower($siswa->email) }}"
-                     data-nisn="{{ $siswa->nisn ?? '' }}">
+                     data-nisn="{{ strtolower($siswa->nisn ?? '') }}"
+                     data-kelas="{{ strtolower($siswa->kelas ?? ($siswa->jenjang->nama_tipe ?? '')) }}"
+                     data-jenjang="{{ strtolower($siswa->jenjang->nama_tipe ?? 'Umum') }}">
 
                     <!-- BANNER ATAS DENGAN STATUS & CHECKBOX -->
                     <div class="h-24 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 relative p-3.5 flex justify-between items-start">
@@ -761,11 +775,13 @@
         }
     }
 
-    function filterData(select) {
-        const form = select.form;
-        const search = form.querySelector('[name="search"]').value;
-        const kelas = form.querySelector('[name="kelas"]').value;
-        const status = form.querySelector('[name="status"]').value;
+    function submitStudentFilterForm() {
+        const form = document.getElementById('studentFilterForm');
+        if (!form) return;
+
+        const search = (form.querySelector('[name="search"]')?.value || '').trim();
+        const kelas = (form.querySelector('[name="kelas"]')?.value || '').trim();
+        const status = (form.querySelector('[name="status"]')?.value || '').trim();
 
         if (!search && !kelas && !status) {
             window.location.href = "{{ route('admin.daftar_siswa') }}";
@@ -774,6 +790,98 @@
 
         form.submit();
     }
+
+    (function initStudentChoiceChipFilters() {
+        const filterHelper = window.ArravaStudentFilter;
+        const form = document.getElementById('studentFilterForm');
+        const searchInput = document.getElementById('studentSearchInput');
+        const searchClear = document.getElementById('studentSearchInputClear');
+        const jenjangContainer = document.getElementById('student-jenjang-chips');
+        const statusContainer = document.getElementById('student-status-chips');
+        const inputKelas = document.getElementById('student-input-kelas');
+        const inputStatus = document.getElementById('student-input-status');
+        const resetBtn = document.getElementById('studentResetBtn');
+        const initialServerSearch = @json(trim((string) request('search', '')));
+        let searchSubmitTimer = null;
+
+        function filterVisibleStudentCards() {
+            if (!searchInput) return;
+            const keyword = searchInput.value.toLowerCase().trim();
+            document.querySelectorAll('.siswa-card').forEach(card => {
+                const nama = card.dataset.nama || '';
+                const nisn = card.dataset.nisn || '';
+                const kelas = card.dataset.kelas || '';
+                const email = card.dataset.email || '';
+                const jenjang = card.dataset.jenjang || '';
+
+                const matches = keyword === ''
+                    || nama.includes(keyword)
+                    || nisn.includes(keyword)
+                    || kelas.includes(keyword)
+                    || email.includes(keyword)
+                    || jenjang.includes(keyword);
+
+                card.style.display = matches ? 'flex' : 'none';
+            });
+        }
+
+        if (jenjangContainer && inputKelas) {
+            jenjangContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-kelas]');
+                if (!btn) return;
+                const val = btn.getAttribute('data-kelas') || '';
+                inputKelas.value = val;
+                if (filterHelper) {
+                    filterHelper.setActiveChip(jenjangContainer, val, 'data-kelas');
+                }
+                submitStudentFilterForm();
+            });
+        }
+
+        if (statusContainer && inputStatus) {
+            statusContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-status]');
+                if (!btn) return;
+                const val = btn.getAttribute('data-status') || '';
+                inputStatus.value = val;
+                if (filterHelper) {
+                    filterHelper.setActiveChip(statusContainer, val, 'data-status');
+                }
+                submitStudentFilterForm();
+            });
+        }
+
+        if (filterHelper && searchInput) {
+            filterHelper.bindSearchClear(searchInput, searchClear, () => {
+                filterVisibleStudentCards();
+                if (searchSubmitTimer) clearTimeout(searchSubmitTimer);
+                const current = searchInput.value.trim();
+                if (current === '' && initialServerSearch !== '') {
+                    submitStudentFilterForm();
+                    return;
+                }
+                if (current !== initialServerSearch) {
+                    searchSubmitTimer = setTimeout(submitStudentFilterForm, 600);
+                }
+            });
+        }
+
+        if (form && searchInput) {
+            form.addEventListener('submit', (e) => {
+                if (searchSubmitTimer) clearTimeout(searchSubmitTimer);
+                if (!searchInput.value.trim() && !inputKelas?.value.trim() && !inputStatus?.value.trim()) {
+                    e.preventDefault();
+                    window.location.href = "{{ route('admin.daftar_siswa') }}";
+                }
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                window.location.href = "{{ route('admin.daftar_siswa') }}";
+            });
+        }
+    })();
 
     // Modal Confirmation Logic
     function confirmStatusChange(id, name, selectElement) {

@@ -23,8 +23,11 @@ class ModulController extends Controller
             Gate::authorize('viewAny', Modul::class);
         }
 
+        $hasMapel = \Illuminate\Support\Facades\Schema::hasTable('mapel')
+            && \Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel');
+
         $relations = ['tipeModul', 'jenjang', 'quiz'];
-        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+        if ($hasMapel) {
             $relations[] = 'mapel';
         }
         $query = Modul::with($relations);
@@ -54,10 +57,16 @@ class ModulController extends Controller
             $query->where('id_tipemodul', (int) $tipeFilter);
         }
 
+        // Filter Mata Pelajaran
+        $mapelFilter = $request->query('mapel', 'all');
+        if ($hasMapel && $mapelFilter !== 'all' && is_numeric($mapelFilter)) {
+            $query->where('id_mapel', (int) $mapelFilter);
+        }
+
         // Pencarian Kata Kunci
         $search = trim((string) $request->query('q', ''));
         if ($search !== '') {
-            $query->where(function ($q) use ($search) {
+            $query->where(function ($q) use ($search, $hasMapel) {
                 $q->where('judul_modul', 'like', '%' . $search . '%')
                   ->orWhereHas('jenjang', function ($j) use ($search) {
                       $j->where('nama_tipe', 'like', '%' . $search . '%');
@@ -65,6 +74,12 @@ class ModulController extends Controller
                   ->orWhereHas('tipeModul', function ($t) use ($search) {
                       $t->where('nama_tipe', 'like', '%' . $search . '%');
                   });
+
+                if ($hasMapel) {
+                    $q->orWhereHas('mapel', function ($m) use ($search) {
+                        $m->where('nama_mapel', 'like', '%' . $search . '%');
+                    });
+                }
             });
         }
 
@@ -97,6 +112,9 @@ class ModulController extends Controller
 
         $masterJenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $masterTipe = TipeModul::all();
+        $masterMapel = \Illuminate\Support\Facades\Schema::hasTable('mapel')
+            ? \App\Models\Mapel::orderBy('nama_mapel')->get()
+            : collect();
 
         return view('admin.modul.index', compact(
             'moduls',
@@ -106,10 +124,12 @@ class ModulController extends Controller
             'statusFilter',
             'jenjangFilter',
             'tipeFilter',
+            'mapelFilter',
             'search',
             'sort',
             'masterJenjang',
-            'masterTipe'
+            'masterTipe',
+            'masterMapel'
         ));
     }
 

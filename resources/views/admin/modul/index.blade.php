@@ -141,92 +141,129 @@
         </div>
 
         {{-- =====================================================
-            FILTER & SORTIR TOOLBAR
+            FILTER & SORTIR TOOLBAR (GAYA CHOICE CHIP SISWA)
         ====================================================== --}}
-        <div class="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm mb-6">
-            <form action="{{ route('admin.modul') }}" method="GET" class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:flex xl:items-center mb-0">
-                {{-- Pencarian --}}
-                <div class="relative min-w-0 xl:flex-[1.5]">
-                    <input type="text" name="q" id="searchModule" value="{{ request('q', $search ?? '') }}"
-                        placeholder="Cari judul modul..."
-                        class="box-border h-10 w-full rounded-xl border border-slate-300 py-2 pl-9 pr-4 text-sm transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
+        @php
+            $activeStatusTipeChip = 'Semua';
+            if (($statusFilter ?? 'all') === 'published') {
+                $activeStatusTipeChip = 'Terbit';
+            } elseif (($statusFilter ?? 'all') === 'draft') {
+                $activeStatusTipeChip = 'Draft';
+            } elseif (($tipeFilter ?? 'all') != 'all') {
+                $matchedTipe = ($masterTipe ?? collect())->firstWhere('id_tipemodul', $tipeFilter);
+                if ($matchedTipe && stripos($matchedTipe->nama_tipe, 'video') !== false) {
+                    $activeStatusTipeChip = 'Video';
+                } elseif ($matchedTipe && stripos($matchedTipe->nama_tipe, 'pdf') !== false) {
+                    $activeStatusTipeChip = 'PDF';
+                }
+            }
 
-                {{-- Filter Status --}}
-                <div class="min-w-0 xl:flex-1">
-                    <select name="status" onchange="this.form.submit()"
-                        class="box-border h-10 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="all" {{ ($statusFilter ?? 'all') === 'all' ? 'selected' : '' }}>Semua Status</option>
-                        <option value="published" {{ ($statusFilter ?? '') === 'published' ? 'selected' : '' }}>✓ Terbit</option>
-                        <option value="draft" {{ ($statusFilter ?? '') === 'draft' ? 'selected' : '' }}>📝 Draf</option>
+            $activeJenjangChip = 'Semua Jenjang';
+            if (($jenjangFilter ?? 'all') !== 'all') {
+                $matchedJenjang = ($masterJenjang ?? collect())->firstWhere('id_jenjang', $jenjangFilter);
+                if ($matchedJenjang) {
+                    $activeJenjangChip = $matchedJenjang->nama_tipe;
+                }
+            }
+
+            $mapelCollection = collect($masterMapel ?? []);
+            if ($mapelCollection->isEmpty()) {
+                $mapelCollection = $moduleCollection->pluck('mapel')->filter()->unique('nama_mapel')->sortBy('nama_mapel')->values();
+            }
+
+            $activeMapelChip = 'Semua Mapel';
+            if (($mapelFilter ?? 'all') !== 'all') {
+                $matchedMapel = $mapelCollection->firstWhere('id_mapel', $mapelFilter);
+                if ($matchedMapel) {
+                    $activeMapelChip = $matchedMapel->nama_mapel;
+                }
+            }
+
+            $hasServerFilter = (($statusFilter ?? 'all') !== 'all')
+                || (($jenjangFilter ?? 'all') !== 'all')
+                || (($tipeFilter ?? 'all') !== 'all')
+                || (($mapelFilter ?? 'all') !== 'all')
+                || trim((string) request('q', $search ?? '')) !== '';
+        @endphp
+
+        <div class="mb-6">
+            <x-student-style-filter-bar
+                title="Modul Pembelajaran"
+                icon="📚"
+                countId="modul-count-badge"
+                countText="{{ $moduleCollection->count() }} Modul"
+                searchId="searchModule"
+                searchName="q"
+                searchValue="{{ request('q', $search ?? '') }}"
+                searchPlaceholder="Cari judul, mapel, jenjang, atau tipe modul..."
+                resetId="modulResetBtn"
+                resetUrl="{{ route('admin.modul') }}"
+                :showReset="$hasServerFilter || ($sort ?? 'latest') !== 'latest'">
+
+                <x-slot:headerActions>
+                    <select id="modulSortSelect" aria-label="Urutkan modul"
+                        class="h-7 rounded-full border border-[#DCEFFF] bg-white px-3 text-[11px] font-extrabold text-[#465673] outline-none focus:border-[#007FBE] transition cursor-pointer shadow-xs">
+                        <option value="latest" {{ ($sort ?? 'latest') === 'latest' ? 'selected' : '' }}>Urut: Terbaru</option>
+                        <option value="oldest" {{ ($sort ?? '') === 'oldest' ? 'selected' : '' }}>Urut: Terlama</option>
+                        <option value="title_asc" {{ ($sort ?? '') === 'title_asc' ? 'selected' : '' }}>Judul (A - Z)</option>
+                        <option value="title_desc" {{ ($sort ?? '') === 'title_desc' ? 'selected' : '' }}>Judul (Z - A)</option>
+                        <option value="type_pdf" {{ ($sort ?? '') === 'type_pdf' ? 'selected' : '' }}>Utamakan PDF</option>
+                        <option value="type_video" {{ ($sort ?? '') === 'type_video' ? 'selected' : '' }}>Utamakan Video</option>
                     </select>
-                </div>
+                </x-slot:headerActions>
 
-                {{-- Filter Jenjang --}}
-                <div class="min-w-0 xl:flex-1">
-                    <select name="jenjang" onchange="this.form.submit()"
-                        class="box-border h-10 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="all" {{ ($jenjangFilter ?? 'all') === 'all' ? 'selected' : '' }}>Semua Jenjang</option>
-                        @foreach(($masterJenjang ?? \App\Models\Jenjang::whereIn('id_jenjang', [1,2,3])->get()) as $j)
-                            <option value="{{ $j->id_jenjang }}" {{ ($jenjangFilter ?? '') == $j->id_jenjang ? 'selected' : '' }}>Jenjang {{ $j->nama_tipe }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                {{-- Chip Status & Tipe --}}
+                <x-student-style-filter-chip-bar
+                    id="modul-status-tipe-chips"
+                    label="Status & Tipe"
+                    chipClass="modul-status-chip"
+                    dataAttr="data-status-tipe"
+                    :chips="[
+                        ['value' => 'Semua', 'label' => 'Semua', 'active' => $activeStatusTipeChip === 'Semua'],
+                        ['value' => 'Terbit', 'label' => 'Terbit', 'active' => $activeStatusTipeChip === 'Terbit'],
+                        ['value' => 'Draft', 'label' => 'Draft', 'active' => $activeStatusTipeChip === 'Draft'],
+                        ['value' => 'Video', 'label' => 'Video', 'active' => $activeStatusTipeChip === 'Video'],
+                        ['value' => 'PDF', 'label' => 'PDF', 'active' => $activeStatusTipeChip === 'PDF'],
+                    ]" />
 
-                {{-- Filter Jenis Modul --}}
-                <div class="min-w-0 xl:flex-1">
-                    <select name="tipe" onchange="this.form.submit()"
-                        class="box-border h-10 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="all" {{ ($tipeFilter ?? 'all') === 'all' ? 'selected' : '' }}>Semua Jenis</option>
-                        @foreach(($masterTipe ?? \App\Models\TipeModul::all()) as $t)
-                            <option value="{{ $t->id_tipemodul }}" {{ ($tipeFilter ?? '') == $t->id_tipemodul ? 'selected' : '' }}>
-                                @if(stripos($t->nama_tipe, 'pdf') !== false) 📄
-                                @elseif(stripos($t->nama_tipe, 'video') !== false) 🎬
-                                @endif
-                                {{ $t->nama_tipe }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                {{-- Chip Jenjang --}}
+                @php
+                    $modulJenjangChips = [
+                        ['value' => 'Semua Jenjang', 'label' => 'Semua Jenjang', 'active' => $activeJenjangChip === 'Semua Jenjang'],
+                        ['value' => 'SD', 'label' => 'SD', 'active' => strcasecmp($activeJenjangChip, 'SD') === 0],
+                        ['value' => 'SMP', 'label' => 'SMP', 'active' => strcasecmp($activeJenjangChip, 'SMP') === 0],
+                        ['value' => 'SMA', 'label' => 'SMA', 'active' => strcasecmp($activeJenjangChip, 'SMA') === 0],
+                    ];
+                @endphp
+                <x-student-style-filter-chip-bar
+                    id="modul-jenjang-chips"
+                    label="Jenjang"
+                    chipClass="modul-jenjang-chip"
+                    dataAttr="data-jenjang"
+                    :chips="$modulJenjangChips" />
 
-                {{-- Sortir --}}
-                <div class="min-w-0 xl:flex-1">
-                    <select name="sort" onchange="this.form.submit()"
-                        class="box-border h-10 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <optgroup label="Urutan Waktu & Judul">
-                            <option value="latest" {{ ($sort ?? 'latest') === 'latest' ? 'selected' : '' }}>Urut: Terbaru</option>
-                            <option value="oldest" {{ ($sort ?? '') === 'oldest' ? 'selected' : '' }}>Urut: Terlama</option>
-                            <option value="title_asc" {{ ($sort ?? '') === 'title_asc' ? 'selected' : '' }}>Judul (A - Z)</option>
-                            <option value="title_desc" {{ ($sort ?? '') === 'title_desc' ? 'selected' : '' }}>Judul (Z - A)</option>
-                        </optgroup>
-                        <optgroup label="Urutan Berdasarkan Jenis Modul">
-                            <option value="type_pdf" {{ ($sort ?? '') === 'type_pdf' ? 'selected' : '' }}>📄 Utamakan: PDF</option>
-                            <option value="type_video" {{ ($sort ?? '') === 'type_video' ? 'selected' : '' }}>🎬 Utamakan: Video</option>
-                            <option value="type_asc" {{ ($sort ?? '') === 'type_asc' ? 'selected' : '' }}>Jenis Modul (A - Z)</option>
-                        </optgroup>
-                    </select>
-                </div>
-
-                {{-- Aksi Filter & Reset --}}
-                <div class="flex h-10 items-center gap-1.5 xl:w-24 xl:shrink-0">
-                    <button type="submit" title="Terapkan Filter"
-                        class="box-border h-full flex-1 rounded-xl bg-blue-600 px-3 text-center text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700">
-                        Filter
-                    </button>
-                    @if(request()->hasAny(['q', 'status', 'jenjang', 'tipe', 'sort']))
-                        <a href="{{ route('admin.modul') }}"
-                            title="Reset Filter"
-                            class="box-border inline-flex h-full w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 text-slate-500 transition hover:bg-slate-100">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
-                        </a>
-                    @endif
-                </div>
-            </form>
+                {{-- Chip Mata Pelajaran Dinamis --}}
+                @if($mapelCollection->isNotEmpty())
+                    @php
+                        $modulMapelChips = [
+                            ['value' => 'Semua Mapel', 'label' => 'Semua Mapel', 'active' => $activeMapelChip === 'Semua Mapel'],
+                        ];
+                        foreach ($mapelCollection as $mItem) {
+                            $modulMapelChips[] = [
+                                'value' => $mItem->nama_mapel,
+                                'label' => $mItem->nama_mapel,
+                                'active' => strcasecmp($activeMapelChip, $mItem->nama_mapel) === 0,
+                            ];
+                        }
+                    @endphp
+                    <x-student-style-filter-chip-bar
+                        id="modul-mapel-chips"
+                        label="Mapel"
+                        chipClass="modul-mapel-chip"
+                        dataAttr="data-mapel"
+                        :chips="$modulMapelChips" />
+                @endif
+            </x-student-style-filter-bar>
         </div>
 
         {{-- =====================================================
@@ -245,11 +282,20 @@
                     $moduleType = strtolower($module->tipeModul->nama_tipe ?? '');
                     $isPdf = $module->tipe_file === 'pdf' || str_ends_with(strtolower($module->file_materi ?? ''), '.pdf');
                     $isVideo = $module->youtube_id || $module->tipe_file === 'link' || str_contains($moduleType, 'video');
+                    $modulMapelNama = $module->mapel->nama_mapel ?? '';
+                    $modulJenjangNama = $module->jenjang->nama_tipe ?? 'Umum';
                 @endphp
 
                 <article
                     class="module-card group bg-white border border-gray-100 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
-                    data-search="{{ strtolower(($module->judul_modul ?? '') . ' ' . ($module->tipeModul->nama_tipe ?? '') . ' ' . ($module->jenjang->nama_tipe ?? '')) }}">
+                    data-status="{{ $isDraft ? 'draft' : 'terbit' }}"
+                    data-tipe="{{ $isVideo ? 'video' : ($isPdf ? 'pdf' : 'lainnya') }}"
+                    data-jenjang="{{ strtolower($modulJenjangNama) }}"
+                    data-mapel="{{ strtolower($modulMapelNama) }}"
+                    data-title="{{ strtolower($module->judul_modul ?? '') }}"
+                    data-id="{{ (int) $module->id_modul }}"
+                    data-created="{{ $module->created_at?->timestamp ?? (int) $module->id_modul }}"
+                    data-search="{{ strtolower(($module->judul_modul ?? '') . ' ' . $modulMapelNama . ' ' . ($module->tipeModul->nama_tipe ?? '') . ' ' . $modulJenjangNama . ' ' . ($module->deskripsi ?? '')) }}">
 
                     <div class="relative flex h-24 items-start justify-between gap-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 p-3.5">
                         <span class="inline-flex min-w-0 items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-xs">
@@ -325,6 +371,11 @@
                                 <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
                                     {{ $isPdf ? 'Dokumen' : ($isVideo ? 'Video' : ($module->tipeModul->nama_tipe ?? 'Materi')) }}
                                 </span>
+                                @if(!empty($modulMapelNama))
+                                    <span class="inline-flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-0.5 text-[11px] font-bold text-indigo-700">
+                                        {{ $modulMapelNama }}
+                                    </span>
+                                @endif
                             </div>
                         </div>
 
@@ -403,25 +454,204 @@
 
         </div>
 
+        @if($moduleCollection->isNotEmpty())
+            <div id="moduleNoResults" class="hidden mt-6 bg-white rounded-2xl border-2 border-[#DCEFFF] p-12 text-center shadow-xs">
+                <div class="w-14 h-14 rounded-2xl bg-[#F0F6FF] text-[#007FBE] flex items-center justify-center mx-auto mb-3 text-2xl">
+                    🔍
+                </div>
+                <p class="text-base font-bold text-[#082765]">Modul tidak ditemukan</p>
+                <p class="text-xs font-semibold text-[#465673] mt-1">Coba ubah kata kunci pencarian atau filter chip yang dipilih.</p>
+                <button type="button" id="moduleNoResultsReset"
+                    class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#007FBE] hover:bg-[#00679A] px-4 py-2 text-xs font-extrabold text-white shadow-[0_2px_0_#005580] transition cursor-pointer">
+                    Reset Filter
+                </button>
+            </div>
+        @endif
+
     </main>
     @endsection
 
-    {{-- Search sederhana --}}
+    @push('scripts')
     <script>
-        const searchInput = document.getElementById('searchModule');
+        (function () {
+            const filterHelper = window.ArravaStudentFilter;
+            const searchInput = document.getElementById('searchModule');
+            const searchClear = document.getElementById('searchModuleClear');
+            const statusContainer = document.getElementById('modul-status-tipe-chips');
+            const jenjangContainer = document.getElementById('modul-jenjang-chips');
+            const mapelContainer = document.getElementById('modul-mapel-chips');
+            const sortSelect = document.getElementById('modulSortSelect');
+            const resetBtn = document.getElementById('modulResetBtn');
+            const emptyResetBtn = document.getElementById('moduleNoResultsReset');
+            const countBadge = document.getElementById('modul-count-badge');
+            const noResultsEl = document.getElementById('moduleNoResults');
+            const grid = document.getElementById('moduleGrid');
+            const hasServerFilter = @json($hasServerFilter);
+            const resetUrl = @json(route('admin.modul'));
 
-        if (searchInput) {
-            searchInput.addEventListener('input', function () {
-                const keyword = this.value.toLowerCase().trim();
+            let activeStatusTipe = @json($activeStatusTipeChip);
+            let activeJenjang = @json($activeJenjangChip);
+            let activeMapel = @json($activeMapelChip);
 
-                document.querySelectorAll('.module-card').forEach(card => {
-                    const data = card.dataset.search || '';
-                    card.classList.toggle('hidden', keyword !== '' && !data.includes(keyword));
+            function sortModuleCards() {
+                if (!grid || !sortSelect) return;
+                const mode = sortSelect.value;
+                const cards = Array.from(grid.querySelectorAll('.module-card'));
+                if (cards.length < 2) return;
+
+                cards.sort((a, b) => {
+                    const idA = parseInt(a.dataset.id || '0', 10);
+                    const idB = parseInt(b.dataset.id || '0', 10);
+                    const titleA = a.dataset.title || '';
+                    const titleB = b.dataset.title || '';
+                    const tipeA = a.dataset.tipe || '';
+                    const tipeB = b.dataset.tipe || '';
+
+                    if (mode === 'oldest') return idA - idB;
+                    if (mode === 'title_asc') return titleA.localeCompare(titleB);
+                    if (mode === 'title_desc') return titleB.localeCompare(titleA);
+                    if (mode === 'type_pdf') {
+                        const pA = tipeA === 'pdf' ? 0 : 1;
+                        const pB = tipeB === 'pdf' ? 0 : 1;
+                        return pA !== pB ? pA - pB : idB - idA;
+                    }
+                    if (mode === 'type_video') {
+                        const vA = tipeA === 'video' ? 0 : 1;
+                        const vB = tipeB === 'video' ? 0 : 1;
+                        return vA !== vB ? vA - vB : idB - idA;
+                    }
+                    return idB - idA;
                 });
-            });
-        }
+
+                cards.forEach(card => grid.appendChild(card));
+            }
+
+            function applyModuleFilters() {
+                const keyword = (searchInput?.value || '').toLowerCase().trim();
+                const cards = Array.from(document.querySelectorAll('.module-card'));
+                let visibleCount = 0;
+
+                cards.forEach(card => {
+                    const status = (card.dataset.status || '').toLowerCase();
+                    const tipe = (card.dataset.tipe || '').toLowerCase();
+                    const jenjang = (card.dataset.jenjang || '').toLowerCase();
+                    const mapel = (card.dataset.mapel || '').toLowerCase();
+                    const searchText = (card.dataset.search || '').toLowerCase();
+
+                    const matchSearch = keyword === '' || searchText.includes(keyword);
+
+                    let matchStatusTipe = true;
+                    const st = activeStatusTipe.toLowerCase();
+                    if (st === 'terbit') matchStatusTipe = status === 'terbit';
+                    else if (st === 'draft') matchStatusTipe = status === 'draft';
+                    else if (st === 'video') matchStatusTipe = tipe === 'video';
+                    else if (st === 'pdf') matchStatusTipe = tipe === 'pdf';
+
+                    const matchJenjang = filterHelper.matchesJenjangFilter(jenjang, activeJenjang);
+
+                    const mp = activeMapel.toLowerCase();
+                    const matchMapel = mp === 'semua mapel' || mapel === mp;
+
+                    const visible = matchSearch && matchStatusTipe && matchJenjang && matchMapel;
+                    card.classList.toggle('hidden', !visible);
+                    if (visible) visibleCount++;
+                });
+
+                if (countBadge) {
+                    countBadge.textContent = `${visibleCount} Modul`;
+                }
+                if (noResultsEl && cards.length > 0) {
+                    noResultsEl.classList.toggle('hidden', visibleCount > 0);
+                }
+
+                const isDirty = keyword !== ''
+                    || activeStatusTipe !== 'Semua'
+                    || activeJenjang !== 'Semua Jenjang'
+                    || activeMapel !== 'Semua Mapel'
+                    || (sortSelect && sortSelect.value !== 'latest')
+                    || hasServerFilter;
+
+                if (resetBtn) {
+                    resetBtn.classList.toggle('hidden', !isDirty);
+                    resetBtn.classList.toggle('inline-flex', isDirty);
+                }
+            }
+
+            function resetAllFilters() {
+                if (hasServerFilter) {
+                    window.location.href = resetUrl;
+                    return;
+                }
+                activeStatusTipe = 'Semua';
+                activeJenjang = 'Semua Jenjang';
+                activeMapel = 'Semua Mapel';
+                if (searchInput) searchInput.value = '';
+                if (searchClear) {
+                    searchClear.classList.add('hidden');
+                    searchClear.classList.remove('inline-flex');
+                }
+                if (sortSelect) sortSelect.value = 'latest';
+                filterHelper.setActiveChip(statusContainer, activeStatusTipe, 'data-status-tipe');
+                filterHelper.setActiveChip(jenjangContainer, activeJenjang, 'data-jenjang');
+                if (mapelContainer) filterHelper.setActiveChip(mapelContainer, activeMapel, 'data-mapel');
+                sortModuleCards();
+                applyModuleFilters();
+            }
+
+            if (statusContainer) {
+                statusContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-status-tipe]');
+                    if (!btn) return;
+                    if (hasServerFilter) {
+                        window.location.href = resetUrl;
+                        return;
+                    }
+                    activeStatusTipe = btn.getAttribute('data-status-tipe') || 'Semua';
+                    filterHelper.setActiveChip(statusContainer, activeStatusTipe, 'data-status-tipe');
+                    applyModuleFilters();
+                });
+            }
+
+            if (jenjangContainer) {
+                jenjangContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-jenjang]');
+                    if (!btn) return;
+                    if (hasServerFilter) {
+                        window.location.href = resetUrl;
+                        return;
+                    }
+                    activeJenjang = btn.getAttribute('data-jenjang') || 'Semua Jenjang';
+                    filterHelper.setActiveChip(jenjangContainer, activeJenjang, 'data-jenjang');
+                    applyModuleFilters();
+                });
+            }
+
+            if (mapelContainer) {
+                mapelContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-mapel]');
+                    if (!btn) return;
+                    if (hasServerFilter) {
+                        window.location.href = resetUrl;
+                        return;
+                    }
+                    activeMapel = btn.getAttribute('data-mapel') || 'Semua Mapel';
+                    filterHelper.setActiveChip(mapelContainer, activeMapel, 'data-mapel');
+                    applyModuleFilters();
+                });
+            }
+
+            if (sortSelect) {
+                sortSelect.addEventListener('change', () => {
+                    sortModuleCards();
+                    applyModuleFilters();
+                });
+            }
+
+            filterHelper.bindSearchClear(searchInput, searchClear, applyModuleFilters);
+            if (resetBtn) resetBtn.addEventListener('click', resetAllFilters);
+            if (emptyResetBtn) emptyResetBtn.addEventListener('click', resetAllFilters);
+
+            applyModuleFilters();
+        })();
     </script>
-
-</body>
-
-</html>
+    @endpush

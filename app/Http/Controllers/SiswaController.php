@@ -1067,8 +1067,8 @@ class SiswaController extends Controller
             ->whereNotIn('status_akun', ['Aktif', 'Nonaktif'])
             ->count();
 
-        // Opsi dropdown filter kelas.
-        $listKelas = ['SD', 'SMP', 'SMA'];
+        // Opsi dropdown/chip filter kelas/jenjang.
+        $listKelas = ['SD', 'SMP', 'SMA', 'Umum'];
         $jenjangs = Jenjang::orderBy('nama_tipe')->get();
 
         return view('admin.daftar_siswa.data_siswa', compact(
@@ -1088,19 +1088,39 @@ class SiswaController extends Controller
         $query = User::where('id_tipeuser', 3);
 
         if ($request->filled('search')) {
-            $search = $request->input('search');
+            $search = trim((string) $request->input('search'));
+            $hasNisn = Schema::hasColumn('user', 'nisn');
+            $hasKelas = Schema::hasColumn('user', 'kelas');
 
-            $query->where(function ($q) use ($search) {
+            $query->where(function ($q) use ($search, $hasNisn, $hasKelas) {
                 $q->where('nama', 'like', '%' . $search . '%')
                     ->orWhere('email', 'like', '%' . $search . '%');
+
+                if ($hasNisn) {
+                    $q->orWhere('nisn', 'like', '%' . $search . '%');
+                }
+
+                if ($hasKelas) {
+                    $q->orWhere('kelas', 'like', '%' . $search . '%');
+                }
             });
         }
 
         if ($request->filled('kelas')) {
-            $kelas = $request->input('kelas');
-            $query->whereHas('jenjang', function ($q) use ($kelas) {
-                $q->where('nama_tipe', $kelas);
-            });
+            $kelas = trim((string) $request->input('kelas'));
+
+            if (strcasecmp($kelas, 'Umum') === 0) {
+                $query->where(function ($q) {
+                    $q->whereNull('id_jenjang')
+                        ->orWhereHas('jenjang', function ($j) {
+                            $j->whereRaw('LOWER(nama_tipe) = ?', ['umum']);
+                        });
+                });
+            } else {
+                $query->whereHas('jenjang', function ($q) use ($kelas) {
+                    $q->where('nama_tipe', $kelas);
+                });
+            }
         }
 
         if ($request->filled('status')) {
