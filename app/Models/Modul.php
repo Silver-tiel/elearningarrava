@@ -36,8 +36,9 @@ use Illuminate\Support\Facades\Storage;
  * @property-read Quiz|null $quiz
  * @property-read User|null $pembuat
  *
- * @method static Builder|Modul published()
- * @method static Builder|Modul draft()
+ * @method static Builder<Modul> published()
+ * @method static Builder<Modul> draft()
+ * @mixin Builder<Modul>
  */
 class Modul extends Model
 {

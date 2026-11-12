@@ -10,6 +10,7 @@ use App\Models\Jenjang;
 use App\Models\Quiz;
 use App\Models\ProgresModulSiswa;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -143,7 +144,7 @@ class ModulController extends Controller
 
         $masterJenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $masterTipe = TipeModul::all();
-        $masterMapel = \Illuminate\Support\Facades\Schema::hasTable('mapel')
+        $masterMapel = Schema::hasTable('mapel')
             ? \App\Models\Mapel::orderBy('nama_mapel')->get()
             : collect();
 
@@ -299,7 +300,7 @@ class ModulController extends Controller
         $modul = Modul::with(['tipeModul', 'jenjang', 'quiz'])->findOrFail($id);
 
         if ((int) $request->user()->id_tipeuser === 4) {
-            $siswa = \App\Models\User::where('id_tipeuser', 3)
+            $siswa = User::where('id_tipeuser', 3)
                 ->whereIn('id_user', \App\Models\OrangtuaSiswa::where('id_orangtua', $request->user()->id_user)->select('id_siswa'))
                 ->when($request->filled('siswa_id'), fn ($query) => $query->where('id_user', $request->input('siswa_id')))
                 ->where('id_jenjang', $modul->id_jenjang)
@@ -621,10 +622,10 @@ class ModulController extends Controller
     public function apiIndex(Request $request)
     {
         $user = $request->user();
-        $supportsPembuat = \Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_pembuat')
-            && \Illuminate\Support\Facades\Schema::hasTable('user');
+        $supportsPembuat = Schema::hasColumn('modul', 'id_pembuat')
+            && Schema::hasTable('user');
         $relations = ['tipeModul', 'jenjang', 'quiz'];
-        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+        if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
         if ($supportsPembuat) {
@@ -649,7 +650,7 @@ class ModulController extends Controller
             $query->where('id_jenjang', $user->id_jenjang);
         }
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel') && $request->filled('mapel')) {
+        if (Schema::hasColumn('modul', 'id_mapel') && $request->filled('mapel')) {
             $query->where('id_mapel', $request->mapel);
         }
 
@@ -669,7 +670,9 @@ class ModulController extends Controller
             });
         }
 
-        $moduls = $query->latest()->get()->map(function ($modul) use ($user) {
+        /** @var Collection<int, Modul> $modulCollection */
+        $modulCollection = $query->latest()->get();
+        $moduls = $modulCollection->map(function (Modul $modul) use ($user) {
             return $this->formatModuleResource($modul, $user);
         });
 
@@ -684,11 +687,11 @@ class ModulController extends Controller
     public function apiShow(Request $request, $id)
     {
         $relations = ['tipeModul', 'jenjang', 'quiz', 'catatan', 'soalModul.pilihan'];
-        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+        if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
-        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_pembuat')
-            && \Illuminate\Support\Facades\Schema::hasTable('user')) {
+        if (Schema::hasColumn('modul', 'id_pembuat')
+            && Schema::hasTable('user')) {
             $relations[] = 'pembuat';
         }
         $modul = Modul::with($relations)->find($id);
@@ -875,7 +878,8 @@ class ModulController extends Controller
     // API: update data modul
     public function apiUpdate(Request $request, $id)
     {
-        $module = Modul::find($id);
+        /** @var Modul|null $module */
+        $module = Modul::query()->find($id);
 
         if (!$module) {
             return response()->json([
@@ -935,7 +939,7 @@ class ModulController extends Controller
             'id_quiz' => $request->id_quiz ?: null,
             'foto_modul' => $pathFoto,
         ];
-        if (\Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_mapel')) {
+        if (Schema::hasColumn('modul', 'id_mapel')) {
             $updateData['id_mapel'] = $request->id_mapel ?: null;
         }
         $module->update($updateData);
@@ -950,7 +954,8 @@ class ModulController extends Controller
     // API: hapus modul
     public function apiDestroy($id)
     {
-        $modul = Modul::find($id);
+        /** @var Modul|null $modul */
+        $modul = Modul::query()->find($id);
 
         if (!$modul) {
             return response()->json([

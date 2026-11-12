@@ -296,7 +296,7 @@
                 @forelse($quiz->soal as $idx => $s)
                     @php
                         $namaJenis = $s->jenisSoal->nama_jenis ?? 'Kuis';
-                        $pertanyaanTeks = trim(strip_tags($s->pertanyaan)) ?: ('Pertanyaan #' . ($idx + 1));
+                        $pertanyaanTeks = trim(strip_tags((string) ($s->pertanyaan ?? ''))) ?: ($s->foto_soal ? ('[Gambar Soal #' . ($idx + 1) . ']') : ('Pertanyaan #' . ($idx + 1)));
                     @endphp
                     <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden transition hover:border-slate-300 question-row" data-soal-id="{{ $s->id_soal }}">
                         {{-- Baris Utama Soal --}}

@@ -233,9 +233,11 @@
                             </div>
 
                             {{-- Pertanyaan --}}
-                            <div class="my-4 bg-slate-900 text-white rounded-xl p-5 text-center text-lg font-bold shadow-inner">
-                                "{{ $soal->pertanyaan }}"
-                            </div>
+                            @if(!empty(trim($soal->pertanyaan ?? '')))
+                                <div class="my-4 bg-slate-900 text-white rounded-xl p-5 text-center text-lg font-bold shadow-inner">
+                                    "{{ $soal->pertanyaan }}"
+                                </div>
+                            @endif
 
                             @if($soal->foto_soal)
                                 <div class="my-4 flex justify-center">

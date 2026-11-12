@@ -977,7 +977,7 @@ Tingkat Quiz
                     </div>
                     <div class="h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded p-1.5 flex flex-col justify-between shadow-inner">
                         <div class="bg-white/90 rounded text-[9px] font-bold text-gray-700 px-1 truncate">
-                            ${soal.pertanyaan || 'Pertanyaan...'}
+                            ${soal.pertanyaan || ((soal.foto_soal || (typeof fotoPreviews !== 'undefined' && fotoPreviews[idx])) ? '🖼️ [Gambar Soal]' : 'Pertanyaan...')}
                         </div>
                         <div class="grid grid-cols-4 gap-0.5">
                             <div class="h-1 rounded-sm ${soal.pilihan[0] && soal.pilihan[0].is_correct ? 'bg-emerald-400' : 'bg-red-400'}"></div>
@@ -1259,8 +1259,11 @@ Tingkat Quiz
                     const s = soalList[i];
                     const noSoal = i + 1;
 
-                    if (!s.pertanyaan || !s.pertanyaan.trim()) {
-                        firstErrorMsg = `⚠️ Kesalahan pada Soal #${noSoal}:\nTeks pertanyaan wajib diisi sebelum kuis dipublikasikan!`;
+                    const hasFoto = Boolean(s.foto_soal || (typeof fotoFiles !== 'undefined' && fotoFiles[i]) || (typeof fotoPreviews !== 'undefined' && fotoPreviews[i]));
+                    const hasText = Boolean(s.pertanyaan && s.pertanyaan.trim());
+
+                    if (!hasText && !hasFoto) {
+                        firstErrorMsg = `⚠️ Kesalahan pada Soal #${noSoal}:\nTeks pertanyaan atau gambar soal wajib diisi sebelum kuis dipublikasikan!`;
                         firstErrorIdx = i;
                         valid = false;
                         break;

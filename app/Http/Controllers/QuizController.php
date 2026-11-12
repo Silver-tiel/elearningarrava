@@ -86,7 +86,7 @@ class QuizController extends Controller
             }
         }
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel') && $request->filled('mapel')) {
+        if (Schema::hasColumn('quiz', 'id_mapel') && $request->filled('mapel')) {
             $query->where('id_mapel', $request->input('mapel'));
         }
 
@@ -132,7 +132,7 @@ class QuizController extends Controller
         $quizzes = $query->get();
         $jenjangList = Jenjang::orderBy('id_jenjang')->get();
         $tingkatQuizList = \App\Models\TingkatQuiz::orderBy('id_tingkatquiz')->get();
-        $mapelList = \Illuminate\Support\Facades\Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $mapelList = Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
 
         return view('admin.quiz.index', compact('quizzes', 'jenjangList', 'tingkatQuizList', 'mapelList'));
     }
@@ -197,6 +197,194 @@ class QuizController extends Controller
         return view('admin.quiz.create', compact('quiz', 'jenjangList', 'tingkatQuizList', 'mapelList', 'guruUsers', 'questions'));
     }
 
+    /**
+     * Mengambil MD5 hash gambar soal baik dari file upload, string base64, path storage, maupun foto lama.
+     */
+    private function resolveQuestionImageHash(Request $request, int $index, ?string $existingPath = null, ?string $rawString = null): ?string
+    {
+        // 1. Cek file yang diunggah via request
+        foreach (["soal_foto.$index", "soal.$index.foto_soal"] as $fileKey) {
+            if ($request->hasFile($fileKey) && $request->file($fileKey)->isValid()) {
+                $path = $request->file($fileKey)->getRealPath();
+                if ($path && file_exists($path)) {
+                    return md5_file($path) ?: null;
+                }
+            }
+        }
+
+        // 2. Cek base64 data string (dari API mobile)
+        if (!empty($rawString) && str_starts_with($rawString, 'data:image/')) {
+            $data = substr($rawString, strpos($rawString, ',') + 1);
+            $decoded = base64_decode($data);
+            if ($decoded !== false) {
+                return md5($decoded);
+            }
+        }
+
+        // 3. Cek path storage jika berupa string nama file yang tersimpan
+        $targetPath = $existingPath ?: (!empty($rawString) && !str_starts_with($rawString, 'http') ? $rawString : null);
+        if ($targetPath && Storage::disk('public')->exists($targetPath)) {
+            $fullPath = Storage::disk('public')->path($targetPath);
+            if (file_exists($fullPath)) {
+                return md5_file($fullPath) ?: null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Mencegah soal duplikat (teks, gambar, atau identik penuh) dalam satu submission kuis,
+     * serta mencegah duplikat dengan kuis lain pada mapel dan jenjang yang sama (Opsi C).
+     */
+    private function validateNoDuplicateQuestions(
+        Request $request,
+        array $soalInput,
+        int $idJenjang,
+        ?int $idMapel = null,
+        ?int $currentQuizId = null,
+        array $existingPhotos = []
+    ): void {
+        $items = [];
+        foreach (array_values($soalInput) as $idx => $s) {
+            $teksRaw = trim((string) ($s['pertanyaan'] ?? ''));
+            $teks = mb_strtolower($teksRaw);
+            $rawStr = is_string($s['foto_soal'] ?? null) ? $s['foto_soal'] : null;
+            $exist = $existingPhotos[$idx] ?? null;
+            $hash = $this->resolveQuestionImageHash($request, $idx, $exist, $rawStr);
+
+            $items[] = [
+                'nomor'     => $idx + 1,
+                'idx'       => $idx,
+                'teks'      => $teks,
+                'teks_raw'  => $teksRaw,
+                'hash'      => $hash,
+            ];
+        }
+
+        $count = count($items);
+        $identikReportedPairs = [];
+        $dupMessages = [];
+
+        // 1. Cek Pasangan Identik Penuh (Teks SAMA + Gambar SAMA)
+        for ($i = 0; $i < $count; $i++) {
+            for ($j = $i + 1; $j < $count; $j++) {
+                $itemI = $items[$i];
+                $itemJ = $items[$j];
+
+                $sameText = ($itemI['teks'] !== '' && $itemI['teks'] === $itemJ['teks']);
+                $sameImage = ($itemI['hash'] !== null && $itemI['hash'] === $itemJ['hash']);
+
+                if ($sameText && $sameImage) {
+                    $pairKey = "{$i}_{$j}";
+                    $identikReportedPairs[$pairKey] = true;
+                    $dupMessages[] = "Soal no. {$itemI['nomor']} dan {$itemJ['nomor']} benar-benar IDENTIK (teks & gambar sama persis)!";
+                }
+            }
+        }
+
+        // 2. Cek Kesamaan Teks Saja (hanya jika belum dilaporkan sebagai identik penuh)
+        $textGroups = [];
+        foreach ($items as $item) {
+            if ($item['teks'] !== '') {
+                $textGroups[$item['teks']][] = $item;
+            }
+        }
+        foreach ($textGroups as $teksKey => $groupItems) {
+            if (count($groupItems) > 1) {
+                $unreportedNomor = [];
+                for ($a = 0; $a < count($groupItems); $a++) {
+                    for ($b = $a + 1; $b < count($groupItems); $b++) {
+                        $idxA = $groupItems[$a]['idx'];
+                        $idxB = $groupItems[$b]['idx'];
+                        $pairKey = min($idxA, $idxB) . '_' . max($idxA, $idxB);
+                        if (empty($identikReportedPairs[$pairKey])) {
+                            $unreportedNomor[$groupItems[$a]['nomor']] = true;
+                            $unreportedNomor[$groupItems[$b]['nomor']] = true;
+                        }
+                    }
+                }
+                if (!empty($unreportedNomor)) {
+                    $nomorList = array_keys($unreportedNomor);
+                    sort($nomorList);
+                    $preview = mb_strlen($groupItems[0]['teks_raw']) > 60
+                        ? mb_substr($groupItems[0]['teks_raw'], 0, 60) . '…'
+                        : $groupItems[0]['teks_raw'];
+                    $dupMessages[] = 'Soal no. ' . implode(', ', $nomorList)
+                        . ' memiliki teks pertanyaan yang sama persis: "' . $preview . '"';
+                }
+            }
+        }
+
+        // 3. Cek Kesamaan Gambar Saja (hanya jika belum dilaporkan sebagai identik penuh)
+        $hashGroups = [];
+        foreach ($items as $item) {
+            if ($item['hash'] !== null) {
+                $hashGroups[$item['hash']][] = $item;
+            }
+        }
+        foreach ($hashGroups as $hashKey => $groupItems) {
+            if (count($groupItems) > 1) {
+                $unreportedNomor = [];
+                for ($a = 0; $a < count($groupItems); $a++) {
+                    for ($b = $a + 1; $b < count($groupItems); $b++) {
+                        $idxA = $groupItems[$a]['idx'];
+                        $idxB = $groupItems[$b]['idx'];
+                        $pairKey = min($idxA, $idxB) . '_' . max($idxA, $idxB);
+                        if (empty($identikReportedPairs[$pairKey])) {
+                            $unreportedNomor[$groupItems[$a]['nomor']] = true;
+                            $unreportedNomor[$groupItems[$b]['nomor']] = true;
+                        }
+                    }
+                }
+                if (!empty($unreportedNomor)) {
+                    $nomorList = array_keys($unreportedNomor);
+                    sort($nomorList);
+                    $dupMessages[] = 'Soal no. ' . implode(', ', $nomorList) . ' memiliki gambar yang sama persis!';
+                }
+            }
+        }
+
+        // 4. Cek Duplikat Antar-Kuis (Opsi C: Jenjang & Mapel yang sama)
+        if (Schema::hasTable('quiz') && Schema::hasTable('soal')) {
+            $crossErrors = [];
+            foreach ($items as $item) {
+                if ($item['teks'] === '') {
+                    continue;
+                }
+
+                $query = DB::table('soal')
+                    ->join('quiz', 'soal.id_quiz', '=', 'quiz.id_quiz')
+                    ->where('quiz.id_jenjang', $idJenjang)
+                    ->whereRaw('LOWER(TRIM(soal.pertanyaan)) = ?', [$item['teks']]);
+
+                if ($idMapel !== null && Schema::hasColumn('quiz', 'id_mapel')) {
+                    $query->where('quiz.id_mapel', $idMapel);
+                }
+                if ($currentQuizId !== null) {
+                    $query->where('quiz.id_quiz', '!=', $currentQuizId);
+                }
+
+                $found = $query->select('quiz.judul')->first();
+                if ($found) {
+                    $preview = mb_strlen($item['teks_raw']) > 50
+                        ? mb_substr($item['teks_raw'], 0, 50) . '…'
+                        : $item['teks_raw'];
+                    $crossErrors[] = "Soal no. {$item['nomor']} sudah pernah digunakan pada Kuis '{$found->judul}' untuk jenjang dan mapel yang sama (\"{$preview}\").";
+                }
+            }
+            if (!empty($crossErrors)) {
+                $dupMessages = array_merge($dupMessages, $crossErrors);
+            }
+        }
+
+        if (!empty($dupMessages)) {
+            throw ValidationException::withMessages([
+                'soal' => implode(' | ', array_values(array_unique($dupMessages))),
+            ]);
+        }
+    }
+
     // Menyimpan kuis baru beserta soal dan pilihan jawaban ke database.
     public function store(Request $request)
     {
@@ -236,7 +424,7 @@ class QuizController extends Controller
                 'soal_foto.*'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ], $this->quizValidationMessages());
-            $questions = $this->normalizeQuestionAnswers($validated['soal'] ?? [], true);
+            $questions = $this->normalizeQuestionAnswers($validated['soal'] ?? [], true, $request);
         } else {
             $validated = $request->validate([
                 'judul'            => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
@@ -254,7 +442,7 @@ class QuizController extends Controller
                 'token'            => 'nullable|required_if:use_token,1|string|max:50',
                 'foto_quiz'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'soal'             => 'required|array|min:1',
-                'soal.*.pertanyaan' => 'required|string',
+                'soal.*.pertanyaan' => 'nullable|string',
                 'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
                 'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
                 'soal.*.poin'      => 'nullable|integer|min:0',
@@ -267,8 +455,16 @@ class QuizController extends Controller
                 'soal_foto.*'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ], $this->quizValidationMessages());
-            $questions = $this->normalizeQuestionAnswers($validated['soal'], false);
+            $questions = $this->normalizeQuestionAnswers($validated['soal'], false, $request);
         }
+
+        // Cegah soal duplikat dalam satu kuis & antar-kuis pada jenjang/mapel yang sama
+        $this->validateNoDuplicateQuestions(
+            $request,
+            $validated['soal'] ?? [],
+            (int) $request->id_jenjang,
+            $request->filled('id_mapel') ? (int) $request->id_mapel : null
+        );
 
         if (!$isDraft && $request->filled('waktu_kadaluarsa')) {
             $waktuKadaluarsa = \Carbon\Carbon::parse($request->waktu_kadaluarsa);
@@ -361,6 +557,9 @@ class QuizController extends Controller
         }
         $isDraft = $request->input('action_type') === 'draft';
 
+        $oldSoalList = $quiz->soal()->orderBy('id_soal')->get();
+        $existingPhotos = $oldSoalList->mapWithKeys(fn($item, $idx) => [$idx => $item->foto_soal])->all();
+
         if ($isDraft) {
             $validated = $request->validate([
                 'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
@@ -393,7 +592,7 @@ class QuizController extends Controller
                 'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ], $this->quizValidationMessages());
 
-            $questions = $this->normalizeQuestionAnswers($validated['soal'] ?? [], true);
+            $questions = $this->normalizeQuestionAnswers($validated['soal'] ?? [], true, $request, $existingPhotos);
         } else {
             $validated = $request->validate([
                 'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
@@ -412,7 +611,7 @@ class QuizController extends Controller
                 'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'hapus_foto_quiz' => 'nullable|boolean',
                 'soal' => 'required|array|min:1',
-                'soal.*.pertanyaan' => 'required|string',
+                'soal.*.pertanyaan' => 'nullable|string',
                 'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
                 'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
                 'soal.*.poin' => 'nullable|integer|min:0',
@@ -426,8 +625,18 @@ class QuizController extends Controller
                 'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ], $this->quizValidationMessages());
 
-            $questions = $this->normalizeQuestionAnswers($validated['soal'], false);
+            $questions = $this->normalizeQuestionAnswers($validated['soal'], false, $request, $existingPhotos);
         }
+
+        // Cegah soal duplikat dalam satu kuis & antar-kuis pada jenjang/mapel yang sama
+        $this->validateNoDuplicateQuestions(
+            $request,
+            $validated['soal'] ?? [],
+            (int) $validated['id_jenjang'],
+            !empty($validated['id_mapel']) ? (int) $validated['id_mapel'] : null,
+            (int) $quiz->id_quiz,
+            $existingPhotos
+        );
 
         // Cegah unggah gambar yang sama persis pada soal yang sama saat edit kuis
         $oldSoalList = $quiz->soal()->orderBy('id_soal')->get();
@@ -585,7 +794,7 @@ class QuizController extends Controller
         }
     }
 
-    private function normalizeQuestionAnswers(array $questions, bool $isDraft = false): array
+    private function normalizeQuestionAnswers(array $questions, bool $isDraft = false, ?Request $request = null, array $existingPhotos = []): array
     {
         $normalized = [];
         $errors = [];
@@ -596,18 +805,23 @@ class QuizController extends Controller
             $pertanyaanRaw = trim((string) ($question['pertanyaan'] ?? ''));
             $pertanyaanKey = mb_strtolower($pertanyaanRaw);
 
+            $hasPhoto = false;
+            if ($request) {
+                $hasPhoto = $request->hasFile("soal_foto.$index")
+                    || $request->hasFile("soal.$index.foto_soal")
+                    || !empty($existingPhotos[$index])
+                    || !empty($question['foto_soal']);
+            }
+
             if ($pertanyaanKey !== '') {
-                if (in_array($pertanyaanKey, $seenQuestions, true)) {
-                    if (!$isDraft) {
-                        $errors["soal.$index.pertanyaan"] = "Soal #{$nomorSoal}: Pertanyaan tidak boleh sama dengan soal lain dalam quiz ini.";
-                    }
-                } else {
-                    $seenQuestions[] = $pertanyaanKey;
-                }
+                // Teks pertanyaan terisi
+            } elseif ($hasPhoto) {
+                // Teks kosong tetapi ada foto -> valid untuk soal hanya gambar
+                $pertanyaanRaw = '';
             } elseif ($isDraft) {
                 $pertanyaanRaw = '(Draf Soal #' . $nomorSoal . ')';
             } else {
-                $errors["soal.$index.pertanyaan"] = "Soal #{$nomorSoal}: Teks pertanyaan wajib diisi.";
+                $errors["soal.$index.pertanyaan"] = "Soal #{$nomorSoal}: Teks pertanyaan atau foto soal wajib diisi (tidak boleh kosong keduanya).";
             }
 
             $type = $question['jenis_soal'] ?? 'kuis';
@@ -703,7 +917,7 @@ class QuizController extends Controller
             }
 
             $normalized[] = [
-                'pertanyaan' => $pertanyaanRaw ?: '(Draf Soal #' . ($index + 1) . ')',
+                'pertanyaan' => ($pertanyaanRaw !== '' && $pertanyaanRaw !== null) ? $pertanyaanRaw : ($isDraft && !$hasPhoto ? '(Draf Soal #' . ($index + 1) . ')' : null),
                 'id_jenis_soal' => $idJenisSoal,
                 'jawaban_benar' => $answer ?: 'A',
                 'poin' => (int) ($question['poin'] ?? 10),
@@ -850,10 +1064,10 @@ class QuizController extends Controller
 
     public function apiIndex(Request $request)
     {
-        $supportsPembuat = \Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_pembuat')
-            && \Illuminate\Support\Facades\Schema::hasTable('user');
+        $supportsPembuat = Schema::hasColumn('quiz', 'id_pembuat')
+            && Schema::hasTable('user');
         $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
-        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+        if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
         if ($supportsPembuat) {
@@ -876,7 +1090,7 @@ class QuizController extends Controller
             $query->where('id_jenjang', $user->id_jenjang);
         }
 
-        if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_mapel') && $request->filled('mapel')) {
+        if (Schema::hasColumn('quiz', 'id_mapel') && $request->filled('mapel')) {
             $query->where('id_mapel', $request->mapel);
         }
 
@@ -922,11 +1136,11 @@ class QuizController extends Controller
     public function apiShow($id)
     {
         $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
-        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+        if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
-        if (\Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_pembuat')
-            && \Illuminate\Support\Facades\Schema::hasTable('user')) {
+        if (Schema::hasColumn('quiz', 'id_pembuat')
+            && Schema::hasTable('user')) {
             $relations[] = 'pembuat';
         }
         $quiz = Quiz::with($relations)
@@ -973,7 +1187,7 @@ class QuizController extends Controller
             'token' => 'nullable|string|max:50',
             'foto_quiz' => 'nullable|string',
             'soal' => $isDraft ? 'nullable|array' : 'required|array|min:1',
-            'soal.*.pertanyaan' => $isDraft ? 'nullable|string' : 'required|string',
+            'soal.*.pertanyaan' => 'nullable|string',
             'soal.*.jenis_soal' => 'nullable|in:kuis,true_false,isian_singkat',
             'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
             'soal.*.poin' => 'nullable|integer|min:0',
@@ -986,6 +1200,14 @@ class QuizController extends Controller
         ];
 
         $validated = $request->validate($rules, $this->quizValidationMessages());
+
+        // Cegah soal duplikat dalam satu kuis & antar-kuis pada jenjang/mapel yang sama
+        $this->validateNoDuplicateQuestions(
+            $request,
+            $request->input('soal', []),
+            (int) $validated['id_jenjang'],
+            !empty($validated['id_mapel']) ? (int) $validated['id_mapel'] : null
+        );
 
         $token = $request->boolean('use_token')
             ? ($request->filled('token') ? trim($request->input('token')) : strtoupper(Str::random(6)))
@@ -1034,7 +1256,32 @@ class QuizController extends Controller
                 foreach ($soalInput as $index => $soalData) {
                     $typeStr = $soalData['jenis_soal'] ?? 'kuis';
                     $idJenisSoal = $typeStr === 'true_false' ? 3 : ($typeStr === 'isian_singkat' ? 2 : 1);
-                    $pertanyaan = trim($soalData['pertanyaan'] ?? '') ?: 'Pertanyaan ' . ($index + 1);
+                    $fotoPath = null;
+                    if ($request->hasFile("soal_foto.$index")) {
+                        $foto = $request->file("soal_foto.$index");
+                        if ($foto && $foto->isValid()) $fotoPath = $foto->store('soal/foto', 'public');
+                    } elseif ($request->hasFile("soal.$index.foto_soal")) {
+                        $foto = $request->file("soal.$index.foto_soal");
+                        if ($foto && $foto->isValid()) $fotoPath = $foto->store('soal/foto', 'public');
+                    } elseif (!empty($soalData['foto_soal'])) {
+                        $rawFoto = $soalData['foto_soal'];
+                        if (str_starts_with($rawFoto, 'data:image/')) {
+                            $fotoPath = $this->saveBase64Image($rawFoto, 'soal/foto');
+                        } elseif (!str_starts_with($rawFoto, 'http')) {
+                            $fotoPath = $rawFoto;
+                        }
+                    }
+
+                    $pertanyaan = trim($soalData['pertanyaan'] ?? '');
+                    if ($pertanyaan === '') {
+                        $pertanyaan = $fotoPath ? null : ($isDraft ? '(Draf Soal ' . ($index + 1) . ')' : null);
+                    }
+                    if (!$isDraft && empty($pertanyaan) && empty($fotoPath)) {
+                        throw ValidationException::withMessages([
+                            'soal' => "Soal no. " . ($index + 1) . " harus memiliki teks pertanyaan atau foto soal (tidak boleh kosong keduanya).",
+                        ]);
+                    }
+
                     $poin = (int) ($soalData['poin'] ?? 10);
                     $durasiDetik = (int) ($soalData['durasi_detik'] ?? 20);
 
@@ -1050,22 +1297,6 @@ class QuizController extends Controller
                                 $jawabanBenar = $p['label'] ?? 'A';
                                 break;
                             }
-                        }
-                    }
-
-                    $fotoPath = null;
-                    if ($request->hasFile("soal_foto.$index")) {
-                        $foto = $request->file("soal_foto.$index");
-                        if ($foto && $foto->isValid()) $fotoPath = $foto->store('soal/foto', 'public');
-                    } elseif ($request->hasFile("soal.$index.foto_soal")) {
-                        $foto = $request->file("soal.$index.foto_soal");
-                        if ($foto && $foto->isValid()) $fotoPath = $foto->store('soal/foto', 'public');
-                    } elseif (!empty($soalData['foto_soal'])) {
-                        $rawFoto = $soalData['foto_soal'];
-                        if (str_starts_with($rawFoto, 'data:image/')) {
-                            $fotoPath = $this->saveBase64Image($rawFoto, 'soal/foto');
-                        } elseif (!str_starts_with($rawFoto, 'http')) {
-                            $fotoPath = $rawFoto;
                         }
                     }
 
@@ -1108,7 +1339,7 @@ class QuizController extends Controller
         });
 
         $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
-        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+        if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
         $quiz->load($relations)->loadCount(['soal', 'hasil as participants_count']);
@@ -1161,6 +1392,20 @@ class QuizController extends Controller
         ];
 
         $validated = $request->validate($rules, $this->quizValidationMessages());
+
+        // Cegah soal duplikat dalam satu kuis & antar-kuis pada jenjang/mapel yang sama
+        if ($request->has('soal') && is_array($request->input('soal'))) {
+            $oldSoalList = $quiz->soal()->orderBy('id_soal')->get();
+            $existingPhotos = $oldSoalList->mapWithKeys(fn($item, $idx) => [$idx => $item->foto_soal])->all();
+            $this->validateNoDuplicateQuestions(
+                $request,
+                $request->input('soal', []),
+                (int) ($validated['id_jenjang'] ?? $quiz->id_jenjang),
+                isset($validated['id_mapel']) ? ($validated['id_mapel'] ? (int) $validated['id_mapel'] : null) : ($quiz->id_mapel ? (int) $quiz->id_mapel : null),
+                (int) $quiz->id_quiz,
+                $existingPhotos
+            );
+        }
 
         DB::transaction(function () use ($quiz, $request, $validated, $isDraft) {
             $updateData = [];
@@ -1219,7 +1464,6 @@ class QuizController extends Controller
                 foreach ($request->input('soal') as $index => $soalData) {
                     $typeStr = $soalData['jenis_soal'] ?? 'kuis';
                     $idJenisSoal = $typeStr === 'true_false' ? 3 : ($typeStr === 'isian_singkat' ? 2 : 1);
-                    $pertanyaan = trim($soalData['pertanyaan'] ?? '') ?: 'Pertanyaan ' . ($index + 1);
                     $poin = (int) ($soalData['poin'] ?? 10);
                     $durasiDetik = (int) ($soalData['durasi_detik'] ?? 20);
 
@@ -1272,6 +1516,16 @@ class QuizController extends Controller
                         }
                     }
 
+                    $pertanyaan = trim($soalData['pertanyaan'] ?? '');
+                    if ($pertanyaan === '') {
+                        $pertanyaan = $fotoPath ? null : ($isDraft ? '(Draf Soal ' . ($index + 1) . ')' : null);
+                    }
+                    if (!$isDraft && empty($pertanyaan) && empty($fotoPath)) {
+                        throw ValidationException::withMessages([
+                            'soal' => "Soal no. " . ($index + 1) . " harus memiliki teks pertanyaan atau foto soal (tidak boleh kosong keduanya).",
+                        ]);
+                    }
+
                     $soal = Soal::create([
                         'id_quiz' => $quiz->id_quiz,
                         'id_jenjang' => $quiz->id_jenjang,
@@ -1309,7 +1563,7 @@ class QuizController extends Controller
         });
 
         $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
-        if (\Illuminate\Support\Facades\Schema::hasTable('mapel')) {
+        if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
         $quiz->load($relations)->loadCount(['soal', 'hasil as participants_count']);
