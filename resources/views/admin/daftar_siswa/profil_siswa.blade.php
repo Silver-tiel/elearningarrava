@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('header')
-<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
+<div class="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
     <div class="flex items-center gap-3">
         <a href="{{ route('admin.daftar_siswa') }}" 
            class="h-9 w-9 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition shadow-xs" 

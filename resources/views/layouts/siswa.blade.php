@@ -79,7 +79,7 @@
 
             <!-- TOPBAR / NAVBAR (Sesuai Tema Arrava Mobile) -->
             <header
-                class="h-16 bg-white/95 backdrop-blur-md border-b border-[#DCEFFF] flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30 shadow-[0_2px_12px_rgba(0,127,190,0.04)]">
+                class="min-h-16 bg-white/95 backdrop-blur-md border-b border-[#DCEFFF] flex items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8 sticky top-0 z-30 shadow-[0_2px_12px_rgba(0,127,190,0.04)]">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <!-- Tombol Garis 3 (Hamburger Menu) untuk Layar Kecil -->
                     @unless($sidebarHidden)
@@ -93,28 +93,33 @@
                         </button>
                     @endunless
 
-                    <div class="flex-1 min-w-0">
+                    <div class="flex flex-1 min-w-0 items-center justify-between gap-4">
                         @yield('header')
                         @yield('header-left')
                     </div>
                 </div>
 
                 <!-- Bagian Kanan Header: Pengaturan Suara & Aksi Tambahan -->
-                <div class="flex items-center gap-3 shrink-0 ml-4">
+                <div class="flex items-center gap-2 sm:gap-3 shrink-0 ml-2 sm:ml-4">
                     @include('components.sound-settings')
                     @yield('header-right')
                     @auth
                         @php
                             $headerUser = Auth::user();
                         @endphp
-                        <a href="{{ route('siswa.profil') }}" class="group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white ring-2 ring-[#DCEFFF] transition hover:ring-[#007FBE] overflow-hidden shadow-xs" title="Profil {{ $headerUser->nama }}">
-                            @if(!empty($headerUser->foto_profil_url))
-                                <img src="{{ $headerUser->foto_profil_url }}" alt="{{ $headerUser->nama }}" class="h-full w-full object-cover">
-                            @else
-                                <span class="text-xs font-extrabold text-[#007FBE] group-hover:scale-110 transition">
-                                    {{ strtoupper(substr($headerUser->nama ?? 'U', 0, 1)) }}
-                                </span>
-                            @endif
+                        <a href="{{ route('siswa.profil') }}" class="group flex items-center gap-2 rounded-xl border border-[#DCEFFF] bg-[#F0F6FF]/70 px-2 py-1.5 transition hover:border-[#007FBE] sm:px-2.5" title="Profil {{ $headerUser->nama }}">
+                            <span class="hidden max-w-32 truncate text-sm font-bold text-[#082765] lg:block">
+                                {{ $headerUser->nama }}
+                            </span>
+                            <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white ring-2 ring-[#DCEFFF] transition group-hover:ring-[#007FBE] overflow-hidden shadow-xs">
+                                @if(!empty($headerUser->foto_profil_url))
+                                    <img src="{{ $headerUser->foto_profil_url }}" alt="{{ $headerUser->nama }}" class="h-full w-full object-cover">
+                                @else
+                                    <span class="text-xs font-extrabold text-[#007FBE] group-hover:scale-110 transition">
+                                        {{ strtoupper(substr($headerUser->nama ?? 'U', 0, 1)) }}
+                                    </span>
+                                @endif
+                            </span>
                         </a>
                     @endauth
                 </div>

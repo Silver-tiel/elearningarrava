@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Jenjang;
+use App\Models\LogAktivitas;
 use App\Models\OrangtuaSiswa;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -175,6 +176,7 @@ class PendaftaranController extends Controller
             }
 
             $siswa = User::create($siswaData);
+            LogAktivitas::catat($siswa, 'Mendaftar sebagai siswa.');
 
             // 2. Hubungkan atau Buat Akun Orang Tua jika data orang tua diisi
             if (!empty($validated['nama_orangtua']) && !empty($validated['email_orangtua'])) {
