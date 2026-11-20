@@ -248,22 +248,17 @@
         </div>
     </details>
 
-    {{-- BAGIAN DAFTAR PERTANYAAN (KAHOOT STYLE - TANPA GAMBAR DI SOAL) --}}
+    {{-- BAGIAN DAFTAR PERTANYAAN (RINGKAS & AMAN: TANPA BOCORAN KUNCI JAWABAN) --}}
     <div class="space-y-3 pt-2">
         <div class="flex items-center justify-between">
             <h2 class="text-base sm:text-lg font-black text-slate-800 tracking-tight">
                 Pertanyaan ({{ $totalSoalCount }})
             </h2>
 
-            <div class="flex items-center gap-2">
-                <button type="button" id="toggle-all-btn" onclick="toggleAllAnswers()" class="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                    </svg>
-                    <span id="toggle-all-label">Tampilkan jawaban</span>
-                </button>
-            </div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
+                <span>📋</span>
+                <span>{{ $totalPoinCount }} Total Poin</span>
+            </span>
         </div>
 
         @if(($quiz->opsi_preview ?? 'lengkap') === 'tipe_saja')
@@ -291,21 +286,25 @@
                 </div>
             </div>
         @else
-            {{-- Mode Lengkap: Tampilkan baris soal ala Kahoot (layout bersih tanpa gambar soal) --}}
+            {{-- Mode Lengkap: Tampilkan daftar pertanyaan bersih tanpa membocorkan pilihan atau kunci jawaban --}}
             <div class="space-y-2.5">
                 @forelse($quiz->soal as $idx => $s)
                     @php
                         $namaJenis = $s->jenisSoal->nama_jenis ?? 'Kuis';
                         $pertanyaanTeks = trim(strip_tags((string) ($s->pertanyaan ?? ''))) ?: ($s->foto_soal ? ('[Gambar Soal #' . ($idx + 1) . ']') : ('Pertanyaan #' . ($idx + 1)));
                     @endphp
-                    <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden transition hover:border-slate-300 question-row" data-soal-id="{{ $s->id_soal }}">
-                        {{-- Baris Utama Soal --}}
-                        <div class="p-4 sm:p-5 flex items-start justify-between gap-4 cursor-pointer select-none" onclick="toggleSingleQuestion('{{ $s->id_soal }}')">
+                    <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm p-4 sm:p-5 flex items-start justify-between gap-4 transition hover:border-[#B2E7FC]">
+                        <div class="flex items-start gap-3 min-w-0">
+                            {{-- Nomor Soal --}}
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#007FBE] text-white text-xs font-black mt-0.5">
+                                {{ $idx + 1 }}
+                            </span>
+
                             <div class="flex-1 min-w-0">
                                 {{-- Label Tipe Soal (Slide, Kuis, Benar atau salah, dll) --}}
                                 <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-[11px] font-semibold tracking-wide text-slate-400 capitalize">
-                                        {{ $namaJenis }}
+                                    <span class="text-[11px] font-bold tracking-wide text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 capitalize">
+                                        🏷️ {{ $namaJenis }}
                                     </span>
                                 </div>
 
@@ -314,62 +313,17 @@
                                     {{ $pertanyaanTeks }}
                                 </h3>
                             </div>
-
-                            {{-- Poin, Durasi & Chevron Expand --}}
-                            <div class="shrink-0 flex items-center gap-2 pt-0.5">
-                                <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                                    +{{ $s->poin ?? 10 }} poin
-                                </span>
-                                @if($s->durasi_detik)
-                                    <span class="hidden sm:inline-flex text-xs font-medium text-slate-400">
-                                        ⏱️ {{ $s->durasi_detik }} dtk
-                                    </span>
-                                @endif
-                                <div class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 transition">
-                                    <svg id="chevron-{{ $s->id_soal }}" class="w-4 h-4 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </div>
-                            </div>
                         </div>
 
-                        {{-- Area Pilihan Jawaban (Collapsible) --}}
-                        <div id="answer-box-{{ $s->id_soal }}" class="hidden px-4 sm:px-5 pb-4 pt-2 border-t border-slate-100 bg-slate-50/70 answer-container">
-                            @if($s->pilihanSoal && $s->pilihanSoal->isNotEmpty())
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                    @php
-                                        $kahootColors = [
-                                            0 => ['badge' => 'bg-[#E21B3C] text-white', 'symbol' => '▲'],
-                                            1 => ['badge' => 'bg-[#1368CE] text-white', 'symbol' => '◆'],
-                                            2 => ['badge' => 'bg-[#D89E00] text-white', 'symbol' => '●'],
-                                            3 => ['badge' => 'bg-[#26890C] text-white', 'symbol' => '■'],
-                                        ];
-                                    @endphp
-                                    @foreach($s->pilihanSoal as $pIdx => $p)
-                                        @php
-                                            $c = $kahootColors[$pIdx % 4];
-                                            $isCorrect = !empty($p->is_correct);
-                                        @endphp
-                                        <div class="p-2.5 rounded-lg bg-white border border-slate-200/90 shadow-sm flex items-center justify-between gap-2 text-xs">
-                                            <div class="flex items-center gap-2 min-w-0">
-                                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold {{ $c['badge'] }}">
-                                                    {{ $c['symbol'] }}
-                                                </span>
-                                                <span class="font-bold text-slate-700 mr-0.5">{{ $p->label ?: chr(65 + $pIdx) }}.</span>
-                                                <span class="truncate font-medium text-slate-800">{{ $p->teks_pilihan }}</span>
-                                            </div>
-                                            @if($isCorrect)
-                                                <span class="shrink-0 flex items-center gap-1 text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                                    ✓ Kunci
-                                                </span>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div class="py-1 text-xs text-slate-500 italic">
-                                    Pertanyaan ini bertipe isian / teks terbuka.
-                                </div>
+                        {{-- Poin & Durasi --}}
+                        <div class="shrink-0 flex items-center gap-2 pt-0.5">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                                +{{ $s->poin ?? 10 }} poin
+                            </span>
+                            @if($s->durasi_detik)
+                                <span class="hidden sm:inline-flex text-xs font-medium text-slate-400">
+                                    ⏱️ {{ $s->durasi_detik }} dtk
+                                </span>
                             @endif
                         </div>
                     </div>
@@ -458,51 +412,6 @@
             fullEl.classList.add('hidden');
             shortEl.classList.remove('hidden');
             btn.textContent = 'Tampilkan lebih banyak';
-        }
-    }
-
-    // Toggle 1 Pertanyaan (Expand/Collapse pilihan jawaban)
-    function toggleSingleQuestion(id) {
-        const box = document.getElementById('answer-box-' + id);
-        const chevron = document.getElementById('chevron-' + id);
-        if (!box) return;
-
-        const isHidden = box.classList.contains('hidden');
-        if (isHidden) {
-            box.classList.remove('hidden');
-            if (chevron) chevron.classList.add('rotate-180');
-        } else {
-            box.classList.add('hidden');
-            if (chevron) chevron.classList.remove('rotate-180');
-        }
-    }
-
-    // Toggle Semua Jawaban (Expand/Collapse All)
-    let allExpanded = false;
-    function toggleAllAnswers() {
-        allExpanded = !allExpanded;
-        const boxes = document.querySelectorAll('.answer-container');
-        const chevrons = document.querySelectorAll('[id^="chevron-"]');
-        const label = document.getElementById('toggle-all-label');
-
-        boxes.forEach(box => {
-            if (allExpanded) {
-                box.classList.remove('hidden');
-            } else {
-                box.classList.add('hidden');
-            }
-        });
-
-        chevrons.forEach(ch => {
-            if (allExpanded) {
-                ch.classList.add('rotate-180');
-            } else {
-                ch.classList.remove('rotate-180');
-            }
-        });
-
-        if (label) {
-            label.textContent = allExpanded ? 'Sembunyikan jawaban' : 'Tampilkan jawaban';
         }
     }
 

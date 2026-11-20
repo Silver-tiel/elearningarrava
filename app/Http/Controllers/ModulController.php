@@ -176,7 +176,7 @@ class ModulController extends Controller
         $tipeModul = TipeModul::all();
         // Hanya ambil jenjang SD, SMP, SMA (id 1, 2, 3)
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
-        $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
+        $quizzes = Quiz::bukanDungeon()->with('jenjang')->orderBy('judul')->get();
         $mapelList = Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
         $guruUsers = $this->guruUsersForAssignment(auth()->user());
 
@@ -234,9 +234,14 @@ class ModulController extends Controller
         // Validasi keunikan media (file berkas & tautan video)
         $this->validateUniqueMedia($request);
 
-        // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul
+        // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul dan bukan bertipe Dungeon
         if (!empty($validated['id_quiz'])) {
             $quiz = Quiz::find($validated['id_quiz']);
+            if ($quiz && $quiz->isDungeon()) {
+                throw ValidationException::withMessages([
+                    'id_quiz' => 'Kuis bertipe Dungeon tidak dapat dikaitkan dengan modul pembelajaran.',
+                ]);
+            }
             if ($quiz && $quiz->id_jenjang && (int) $quiz->id_jenjang !== (int) $validated['id_jenjang']) {
                 $namaJenjangModul = Jenjang::find($validated['id_jenjang'])?->nama_tipe ?? 'yang dipilih';
                 $namaJenjangQuiz = $quiz->jenjang?->nama_tipe ?? 'lain';
@@ -330,7 +335,7 @@ class ModulController extends Controller
         }
         $tipeModul = TipeModul::all();
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
-        $quizzes = Quiz::with('jenjang')->orderBy('judul')->get();
+        $quizzes = Quiz::bukanDungeon()->with('jenjang')->orderBy('judul')->get();
         $mapelList = Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
         $guruUsers = $this->guruUsersForAssignment(auth()->user());
 
@@ -391,9 +396,14 @@ class ModulController extends Controller
         // Validasi keunikan media (file berkas & tautan video, abaikan modul ini)
         $this->validateUniqueMedia($request, $module->id_modul);
 
-        // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul
+        // Sinkronisasi: Quiz yang dikaitkan harus memiliki jenjang yang sama dengan modul dan bukan bertipe Dungeon
         if (!empty($validated['id_quiz'])) {
             $quiz = Quiz::find($validated['id_quiz']);
+            if ($quiz && $quiz->isDungeon()) {
+                throw ValidationException::withMessages([
+                    'id_quiz' => 'Kuis bertipe Dungeon tidak dapat dikaitkan dengan modul pembelajaran.',
+                ]);
+            }
             if ($quiz && $quiz->id_jenjang && (int) $quiz->id_jenjang !== (int) $validated['id_jenjang']) {
                 $namaJenjangModul = Jenjang::find($validated['id_jenjang'])?->nama_tipe ?? 'yang dipilih';
                 $namaJenjangQuiz = $quiz->jenjang?->nama_tipe ?? 'lain';
@@ -829,6 +839,16 @@ class ModulController extends Controller
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
+        if ($request->filled('id_quiz')) {
+            $quiz = Quiz::find($request->id_quiz);
+            if ($quiz && $quiz->isDungeon()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Kuis bertipe Dungeon tidak dapat dikaitkan dengan modul.',
+                ], 422);
+            }
+        }
+
         $pathFile = null;
         $tipeFile = null;
 
@@ -901,6 +921,16 @@ class ModulController extends Controller
             'file_link' => 'nullable|url',
             'foto_modul' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
+
+        if ($request->filled('id_quiz')) {
+            $quiz = Quiz::find($request->id_quiz);
+            if ($quiz && $quiz->isDungeon()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Kuis bertipe Dungeon tidak dapat dikaitkan dengan modul.',
+                ], 422);
+            }
+        }
 
         $pathFile = $module->file_materi;
         $tipeFile = $module->tipe_file;

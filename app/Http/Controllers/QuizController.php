@@ -79,7 +79,7 @@ class QuizController extends Controller
             if (strtolower($jenjangVal) === 'umum') {
                 $query->where(function ($sub) {
                     $sub->whereNull('id_jenjang')
-                        ->orWhereHas('jenjang', fn ($j) => $j->whereRaw('LOWER(nama_tipe) = ?', ['umum']));
+                        ->orWhereHas('jenjang', fn($j) => $j->whereRaw('LOWER(nama_tipe) = ?', ['umum']));
                 });
             } elseif (is_numeric($jenjangVal)) {
                 $query->where('id_jenjang', (int) $jenjangVal);
@@ -182,6 +182,7 @@ class QuizController extends Controller
                 'id_soal' => $soal->id_soal,
                 'kode_soal' => $soal->kode_soal,
                 'jenis_soal' => $type,
+                'tingkat_soal' => $soal->tingkat_soal ?? 'sedang',
                 'pertanyaan' => $soal->pertanyaan,
                 'timer' => (string) ($soal->durasi_detik ?? 20),
                 'poin' => (int) ($soal->poin ?? 10),
@@ -254,11 +255,11 @@ class QuizController extends Controller
             $hash = $this->resolveQuestionImageHash($request, $idx, $exist, $rawStr);
 
             $items[] = [
-                'nomor'     => $idx + 1,
-                'idx'       => $idx,
-                'teks'      => $teks,
-                'teks_raw'  => $teksRaw,
-                'hash'      => $hash,
+                'nomor' => $idx + 1,
+                'idx' => $idx,
+                'teks' => $teks,
+                'teks_raw' => $teksRaw,
+                'hash' => $hash,
             ];
         }
 
@@ -347,7 +348,14 @@ class QuizController extends Controller
 
         // 4. Cek Duplikat Antar-Kuis (Opsi C: Jenjang & Mapel yang sama)
         if (Schema::hasTable('quiz') && Schema::hasTable('soal')) {
+            $currentQuiz = $currentQuizId ? Quiz::find($currentQuizId) : null;
+            $tipeDungeonId = Schema::hasTable('tipequiz') ? DB::table('tipequiz')->whereRaw("LOWER(COALESCE(nama_tipe, '')) = 'dungeon'")->value('id_tipequiz') : null;
+            $isCurrentDungeon = ($currentQuiz && $currentQuiz->isDungeon())
+                || ($tipeDungeonId !== null && (int) $request->input('id_tipequiz') === (int) $tipeDungeonId);
+
             $crossErrors = [];
+            $crossWarnings = [];
+
             foreach ($items as $item) {
                 if ($item['teks'] === '') {
                     continue;
@@ -365,13 +373,40 @@ class QuizController extends Controller
                     $query->where('quiz.id_quiz', '!=', $currentQuizId);
                 }
 
-                $found = $query->select('quiz.judul')->first();
-                if ($found) {
-                    $preview = mb_strlen($item['teks_raw']) > 50
-                        ? mb_substr($item['teks_raw'], 0, 50) . '…'
-                        : $item['teks_raw'];
-                    $crossErrors[] = "Soal no. {$item['nomor']} sudah pernah digunakan pada Kuis '{$found->judul}' untuk jenjang dan mapel yang sama (\"{$preview}\").";
+                if ($isCurrentDungeon) {
+                    // Untuk Dungeon: hanya cocokkan dengan Ujian / Evaluasi / Ulangan, beri PERINGATAN (bukan penolakan)
+                    if (Schema::hasTable('tipequiz')) {
+                        $query->join('tipequiz', 'quiz.id_tipequiz', '=', 'tipequiz.id_tipequiz')
+                            ->whereIn(DB::raw("LOWER(COALESCE(tipequiz.nama_tipe, ''))"), ['ulangan', 'ujian', 'evaluasi']);
+                    }
+                    $found = $query->select('quiz.judul')->first();
+                    if ($found) {
+                        $preview = mb_strlen($item['teks_raw']) > 50
+                            ? mb_substr($item['teks_raw'], 0, 50) . '…'
+                            : $item['teks_raw'];
+                        $crossWarnings[] = "Soal no. {$item['nomor']} cocok dengan kuis bertipe Ujian/Evaluasi '{$found->judul}' (\"{$preview}\").";
+                    }
+                } else {
+                    // Untuk kuis biasa: kecualikan kuis bertipe Dungeon
+                    if (Schema::hasTable('tipequiz')) {
+                        $query->leftJoin('tipequiz', 'quiz.id_tipequiz', '=', 'tipequiz.id_tipequiz')
+                            ->where(function ($sub) {
+                                $sub->whereNull('quiz.id_tipequiz')
+                                    ->orWhere(DB::raw("LOWER(COALESCE(tipequiz.nama_tipe, ''))"), '!=', 'dungeon');
+                            });
+                    }
+                    $found = $query->select('quiz.judul')->first();
+                    if ($found) {
+                        $preview = mb_strlen($item['teks_raw']) > 50
+                            ? mb_substr($item['teks_raw'], 0, 50) . '…'
+                            : $item['teks_raw'];
+                        $crossErrors[] = "Soal no. {$item['nomor']} sudah pernah digunakan pada Kuis '{$found->judul}' untuk jenjang dan mapel yang sama (\"{$preview}\").";
+                    }
                 }
+            }
+
+            if (!empty($crossWarnings)) {
+                session()->flash('warning_dungeon', implode(' | ', $crossWarnings));
             }
             if (!empty($crossErrors)) {
                 $dupMessages = array_merge($dupMessages, $crossErrors);
@@ -394,68 +429,86 @@ class QuizController extends Controller
 
         $isDraft = $request->input('action_type') === 'draft';
 
+        $tipeDungeonId = Schema::hasTable('tipequiz') ? DB::table('tipequiz')->whereRaw("LOWER(COALESCE(nama_tipe, '')) = 'dungeon'")->value('id_tipequiz') : null;
+        $isDungeon = ($tipeDungeonId !== null && (int) $request->input('id_tipequiz') === (int) $tipeDungeonId);
+
         if ($isDraft) {
             $validated = $request->validate([
-                'judul'            => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
-                'deskripsi'        => 'nullable|string|max:3000',
-                'id_jenjang'       => 'required|integer',
-                'id_mapel'         => 'nullable|integer',
-                'id_pembuat'       => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
-                'id_tipequiz'      => 'nullable|integer',
-                'id_tingkatquiz'   => 'nullable|integer',
+                'judul' => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
+                'deskripsi' => 'nullable|string|max:3000',
+                'id_jenjang' => 'required|integer',
+                'id_mapel' => 'nullable|integer',
+                'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
+                'id_tipequiz' => 'nullable|integer',
+                'id_tingkatquiz' => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date'],
-                'mode_pengerjaan'  => 'nullable|in:wayground,biasa',
+                'mode_pengerjaan' => 'nullable|in:wayground,biasa',
                 'durasi_total_menit' => 'nullable|integer|min:1|max:360',
-                'opsi_preview'     => 'nullable|in:lengkap,tipe_saja',
-                'use_token'        => 'nullable|boolean',
-                'token'            => 'nullable|string|max:50',
-                'foto_quiz'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-                'soal'             => 'nullable|array',
+                'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
+                'use_token' => 'nullable|boolean',
+                'token' => 'nullable|string|max:50',
+                'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal' => 'nullable|array',
                 'soal.*.pertanyaan' => 'nullable|string',
                 'soal.*.jenis_soal' => 'nullable|in:kuis,true_false,isian_singkat',
+                'soal.*.tingkat_soal' => 'nullable|in:mudah,sedang,sulit',
                 'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
-                'soal.*.poin'      => 'nullable|integer|min:0',
+                'soal.*.poin' => 'nullable|integer|min:0',
                 'soal.*.durasi_detik' => 'nullable|integer',
-                'soal.*.pilihan'   => 'nullable|array',
+                'soal.*.pilihan' => 'nullable|array',
                 'soal.*.pilihan.*.label' => 'nullable|in:A,B,C,D',
                 'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
                 'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
-                'soal_foto'        => 'nullable|array',
-                'soal_foto.*'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal.*.pilihan.*.tetap_di_bawah' => 'nullable|boolean',
+                'soal_foto' => 'nullable|array',
+                'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ], $this->quizValidationMessages());
             $questions = $this->normalizeQuestionAnswers($validated['soal'] ?? [], true, $request);
         } else {
             $validated = $request->validate([
-                'judul'            => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
-                'deskripsi'        => 'nullable|string|max:3000',
-                'id_jenjang'       => 'required|integer',
-                'id_mapel'         => 'nullable|integer',
-                'id_pembuat'       => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
-                'id_tipequiz'      => 'nullable|integer',
-                'id_tingkatquiz'   => 'nullable|integer',
+                'judul' => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
+                'deskripsi' => 'nullable|string|max:3000',
+                'id_jenjang' => 'required|integer',
+                'id_mapel' => 'nullable|integer',
+                'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
+                'id_tipequiz' => 'nullable|integer',
+                'id_tingkatquiz' => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date', 'after_or_equal:now'],
-                'mode_pengerjaan'  => 'required|in:wayground,biasa',
+                'mode_pengerjaan' => 'required|in:wayground,biasa',
                 'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
-                'opsi_preview'     => 'nullable|in:lengkap,tipe_saja',
-                'use_token'        => 'nullable|boolean',
-                'token'            => 'nullable|required_if:use_token,1|string|max:50',
-                'foto_quiz'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-                'soal'             => 'required|array|min:1',
+                'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
+                'use_token' => 'nullable|boolean',
+                'token' => 'nullable|required_if:use_token,1|string|max:50',
+                'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal' => $isDungeon ? 'nullable|array' : 'required|array|min:1',
                 'soal.*.pertanyaan' => 'nullable|string',
                 'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
+                'soal.*.tingkat_soal' => $isDungeon ? 'required_with:soal|in:mudah,sedang,sulit' : 'nullable|in:mudah,sedang,sulit',
                 'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
-                'soal.*.poin'      => 'nullable|integer|min:0',
+                'soal.*.poin' => 'nullable|integer|min:0',
                 'soal.*.durasi_detik' => 'nullable|required_if:mode_pengerjaan,wayground|integer|in:10,20,30,60',
-                'soal.*.pilihan'   => 'nullable|array',
+                'soal.*.pilihan' => 'nullable|array',
                 'soal.*.pilihan.*.label' => 'required|in:A,B,C,D',
                 'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
                 'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
-                'soal_foto'        => 'nullable|array',
-                'soal_foto.*'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'soal.*.pilihan.*.tetap_di_bawah' => 'nullable|boolean',
+                'soal_foto' => 'nullable|array',
+                'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ], $this->quizValidationMessages());
-            $questions = $this->normalizeQuestionAnswers($validated['soal'], false, $request);
+
+            if ($isDungeon && !empty($validated['soal'])) {
+                foreach ($validated['soal'] as $sIdx => $sData) {
+                    if (($sData['jenis_soal'] ?? '') === 'true_false' && ($sData['tingkat_soal'] ?? '') !== 'mudah') {
+                        throw ValidationException::withMessages([
+                            "soal.{$sIdx}.tingkat_soal" => "Soal no. " . ($sIdx + 1) . ": Soal Benar/Salah hanya boleh dibuat pada tingkat Mudah di kuis Dungeon.",
+                        ]);
+                    }
+                }
+            }
+
+            $questions = !empty($validated['soal']) ? $this->normalizeQuestionAnswers($validated['soal'], false, $request) : [];
         }
 
         // Cegah soal duplikat dalam satu kuis & antar-kuis pada jenjang/mapel yang sama
@@ -487,18 +540,18 @@ class QuizController extends Controller
         DB::transaction(function () use ($request, $questions, $token, $fotoQuizPath, $isDraft) {
             // 1. Simpan quiz
             $quizData = [
-                'judul'            => $request->judul,
-                'deskripsi'        => $request->deskripsi ?: null,
-                'id_jenjang'       => $request->id_jenjang,
-                'id_tipequiz'      => $request->id_tipequiz ?? 1,
-                'id_tingkatquiz'   => $request->id_tingkatquiz ?? 1,
+                'judul' => $request->judul,
+                'deskripsi' => $request->deskripsi ?: null,
+                'id_jenjang' => $request->id_jenjang,
+                'id_tipequiz' => $request->id_tipequiz ?? 1,
+                'id_tingkatquiz' => $request->id_tingkatquiz ?? 1,
                 'waktu_kadaluarsa' => $request->waktu_kadaluarsa ?: null,
-                'mode_pengerjaan'  => $request->mode_pengerjaan ?: 'wayground',
+                'mode_pengerjaan' => $request->mode_pengerjaan ?: 'wayground',
                 'durasi_total_menit' => $request->mode_pengerjaan === 'biasa' ? $request->durasi_total_menit : null,
-                'opsi_preview'     => $request->input('opsi_preview', 'lengkap'),
-                'token'            => $token,
-                'foto_quiz'        => $fotoQuizPath,
-                'proggressQuiz'    => $isDraft ? 'Draft' : 'Tersedia',
+                'opsi_preview' => $request->input('opsi_preview', 'lengkap'),
+                'token' => $token,
+                'foto_quiz' => $fotoQuizPath,
+                'proggressQuiz' => $isDraft ? 'Draft' : 'Tersedia',
             ];
             if (Schema::hasColumn('quiz', 'id_mapel')) {
                 $quizData['id_mapel'] = $request->id_mapel ?: null;
@@ -524,24 +577,41 @@ class QuizController extends Controller
                     $fotoPath = $foto->store('soal/foto', 'public');
                 }
 
-                $soal = Soal::create([
-                    'id_quiz'       => $quiz->id_quiz,
-                    'id_jenjang'    => $request->id_jenjang,
-                    'pertanyaan'    => $soalData['pertanyaan'],
+                $soalInsertData = [
+                    'id_quiz' => $quiz->id_quiz,
+                    'id_mapel' => $quiz->id_mapel,
+                    'parent_soal_id' => $soalData['parent_soal_id'] ?? null,
+                    'id_jenjang' => $request->id_jenjang,
+                    'pertanyaan' => $soalData['pertanyaan'],
                     'id_jenis_soal' => $soalData['id_jenis_soal'],
                     'jawaban_benar' => $soalData['jawaban_benar'],
-                    'poin'          => $soalData['poin'],
-                    'durasi_detik'  => $soalData['durasi_detik'] ?? 20,
-                    'foto_soal'     => $fotoPath,
-                ]);
+                    'poin' => $soalData['poin'],
+                    'durasi_detik' => $soalData['durasi_detik'] ?? 20,
+                    'foto_soal' => $fotoPath,
+                ];
+                if (Schema::hasColumn('soal', 'tingkat_soal')) {
+                    $soalInsertData['tingkat_soal'] = $soalData['tingkat_soal'] ?? null;
+                }
+                if (Schema::hasColumn('soal', 'id_penulis')) {
+                    $soalInsertData['id_penulis'] = auth()->id();
+                }
+                if (Schema::hasColumn('soal', 'aktif')) {
+                    $soalInsertData['aktif'] = true;
+                }
+
+                $soal = Soal::create($soalInsertData);
 
                 foreach ($soalData['pilihan'] as $pilihanData) {
-                    PilihanSoal::create([
-                        'id_soal'      => $soal->id_soal,
-                        'label'        => $pilihanData['label'],
+                    $pilihanInsertData = [
+                        'id_soal' => $soal->id_soal,
+                        'label' => $pilihanData['label'],
                         'teks_pilihan' => $pilihanData['teks_pilihan'],
-                        'is_correct'   => $pilihanData['is_correct'],
-                    ]);
+                        'is_correct' => $pilihanData['is_correct'],
+                    ];
+                    if (Schema::hasColumn('pilihan_soal', 'tetap_di_bawah')) {
+                        $pilihanInsertData['tetap_di_bawah'] = !empty($pilihanData['tetap_di_bawah']);
+                    }
+                    PilihanSoal::create($pilihanInsertData);
                 }
             }
         });
@@ -594,6 +664,7 @@ class QuizController extends Controller
 
             $questions = $this->normalizeQuestionAnswers($validated['soal'] ?? [], true, $request, $existingPhotos);
         } else {
+            $isDungeon = $quiz->isDungeon();
             $validated = $request->validate([
                 'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
                 'deskripsi' => 'nullable|string|max:3000',
@@ -610,9 +681,10 @@ class QuizController extends Controller
                 'token' => 'nullable|required_if:use_token,1|string|max:50',
                 'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'hapus_foto_quiz' => 'nullable|boolean',
-                'soal' => 'required|array|min:1',
+                'soal' => $isDungeon ? 'nullable|array' : 'required|array|min:1',
                 'soal.*.pertanyaan' => 'nullable|string',
                 'soal.*.jenis_soal' => 'required|in:kuis,true_false,isian_singkat',
+                'soal.*.tingkat_soal' => $isDungeon ? 'required_with:soal|in:mudah,sedang,sulit' : 'nullable|in:mudah,sedang,sulit',
                 'soal.*.jawaban_singkat' => 'nullable|string|max:1000',
                 'soal.*.poin' => 'nullable|integer|min:0',
                 'soal.*.durasi_detik' => 'nullable|required_if:mode_pengerjaan,wayground|integer|in:10,20,30,60',
@@ -620,12 +692,23 @@ class QuizController extends Controller
                 'soal.*.pilihan.*.label' => 'required|in:A,B,C,D',
                 'soal.*.pilihan.*.teks_pilihan' => 'nullable|string|max:1000',
                 'soal.*.pilihan.*.is_correct' => 'nullable|boolean',
+                'soal.*.pilihan.*.tetap_di_bawah' => 'nullable|boolean',
                 'soal_foto' => 'nullable|array',
                 'soal_foto.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'soal.*.foto_soal' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             ], $this->quizValidationMessages());
 
-            $questions = $this->normalizeQuestionAnswers($validated['soal'], false, $request, $existingPhotos);
+            if ($isDungeon && !empty($validated['soal'])) {
+                foreach ($validated['soal'] as $sIdx => $sData) {
+                    if (($sData['jenis_soal'] ?? '') === 'true_false' && ($sData['tingkat_soal'] ?? '') !== 'mudah') {
+                        throw ValidationException::withMessages([
+                            "soal.{$sIdx}.tingkat_soal" => "Soal no. " . ($sIdx + 1) . ": Soal Benar/Salah hanya boleh dibuat pada tingkat Mudah di kuis Dungeon.",
+                        ]);
+                    }
+                }
+            }
+
+            $questions = !empty($validated['soal']) ? $this->normalizeQuestionAnswers($validated['soal'], false, $request, $existingPhotos) : [];
         }
 
         // Cegah soal duplikat dalam satu kuis & antar-kuis pada jenjang/mapel yang sama
@@ -711,6 +794,10 @@ class QuizController extends Controller
             $this->replaceQuestions($quiz, $questions, (int) $validated['id_jenjang'], $request);
         });
 
+        if ($quiz->isDungeon()) {
+            return redirect()->route('dungeon.index', ['jenjang' => $quiz->id_jenjang])->with('success', 'Bank soal Dungeon berhasil diperbarui! 🎉');
+        }
+
         return redirect()->route('admin.quiz')->with('success', $isDraft ? 'Draf quiz berhasil diperbarui! 📝' : 'Quiz berhasil dipublikasikan! 🎉');
     }
 
@@ -724,7 +811,7 @@ class QuizController extends Controller
         DB::transaction(function () use ($quiz) {
             $oldSoalList = $quiz->soal()->get();
             $questionIds = $oldSoalList->pluck('id_soal');
-            
+
             // Hapus cover quiz jika ada
             if ($quiz->foto_quiz && Storage::disk('public')->exists($quiz->foto_quiz)) {
                 Storage::disk('public')->delete($quiz->foto_quiz);
@@ -749,7 +836,7 @@ class QuizController extends Controller
     {
         $oldSoalList = $quiz->soal()->orderBy('id_soal')->get();
         $oldPhotosByIndex = $oldSoalList->mapWithKeys(fn($item, $idx) => [$idx => $item->foto_soal]);
-        
+
         $questionIds = $oldSoalList->pluck('id_soal');
         PilihanSoal::whereIn('id_soal', $questionIds)->delete();
         $quiz->soal()->delete();
@@ -772,8 +859,10 @@ class QuizController extends Controller
                 }
             }
 
-            $soal = Soal::create([
+            $soalInsertData = [
                 'id_quiz' => $quiz->id_quiz,
+                'id_mapel' => $quiz->id_mapel,
+                'parent_soal_id' => $questionData['parent_soal_id'] ?? null,
                 'id_jenjang' => $idJenjang,
                 'id_jenis_soal' => $questionData['id_jenis_soal'],
                 'pertanyaan' => $questionData['pertanyaan'],
@@ -781,15 +870,34 @@ class QuizController extends Controller
                 'poin' => $questionData['poin'],
                 'durasi_detik' => $questionData['durasi_detik'] ?? 20,
                 'foto_soal' => $fotoPath,
-            ]);
+            ];
+            if (Schema::hasColumn('soal', 'tingkat_soal')) {
+                $tingkat = $questionData['tingkat_soal'] ?? ($quiz->isDungeon() ? 'sedang' : null);
+                if ($quiz->isDungeon() && (int)$questionData['id_jenis_soal'] === 3) {
+                    $tingkat = 'mudah';
+                }
+                $soalInsertData['tingkat_soal'] = $tingkat;
+            }
+            if (Schema::hasColumn('soal', 'id_penulis')) {
+                $soalInsertData['id_penulis'] = auth()->id();
+            }
+            if (Schema::hasColumn('soal', 'aktif')) {
+                $soalInsertData['aktif'] = true;
+            }
+
+            $soal = Soal::create($soalInsertData);
 
             foreach ($questionData['pilihan'] as $choice) {
-                PilihanSoal::create([
+                $pilihanInsertData = [
                     'id_soal' => $soal->id_soal,
                     'label' => $choice['label'],
                     'teks_pilihan' => $choice['teks_pilihan'],
                     'is_correct' => $choice['is_correct'],
-                ]);
+                ];
+                if (Schema::hasColumn('pilihan_soal', 'tetap_di_bawah')) {
+                    $pilihanInsertData['tetap_di_bawah'] = !empty($choice['tetap_di_bawah']);
+                }
+                PilihanSoal::create($pilihanInsertData);
             }
         }
     }
@@ -886,14 +994,19 @@ class QuizController extends Controller
                         $seenTexts[] = $textKey;
                     }
 
-                    $choices[] = ['label' => $label ?: 'A', 'teks_pilihan' => $text, 'is_correct' => $isCorrect];
+                    $choices[] = [
+                        'label' => $label ?: 'A',
+                        'teks_pilihan' => $text,
+                        'is_correct' => $isCorrect,
+                        'tetap_di_bawah' => !empty($choice['tetap_di_bawah']),
+                    ];
                     if ($isCorrect && !$correctChoice) {
                         $correctChoice = $choices[array_key_last($choices)];
                     }
                 }
 
                 if (!$isDraft) {
-                    $correctCount = count(array_filter($choices, fn (array $choice): bool => $choice['is_correct']));
+                    $correctCount = count(array_filter($choices, fn(array $choice): bool => $choice['is_correct']));
                     if (count($choices) < 2) {
                         $errors["soal.$index.pilihan"] = "Soal #{$nomorSoal}: Soal pilihan ganda wajib memiliki minimal dua pilihan terisi.";
                     }
@@ -919,10 +1032,12 @@ class QuizController extends Controller
             $normalized[] = [
                 'pertanyaan' => ($pertanyaanRaw !== '' && $pertanyaanRaw !== null) ? $pertanyaanRaw : ($isDraft && !$hasPhoto ? '(Draf Soal #' . ($index + 1) . ')' : null),
                 'id_jenis_soal' => $idJenisSoal,
+                'tingkat_soal' => $question['tingkat_soal'] ?? null,
                 'jawaban_benar' => $answer ?: 'A',
                 'poin' => (int) ($question['poin'] ?? 10),
                 'durasi_detik' => (int) ($question['durasi_detik'] ?? 20),
                 'pilihan' => $choices,
+                'parent_soal_id' => !empty($question['parent_soal_id']) ? (int) $question['parent_soal_id'] : null,
             ];
         }
 
@@ -964,7 +1079,8 @@ class QuizController extends Controller
 
                 if ($type === 'true_false') {
                     $text = $index === 0 ? 'Benar' : ($index === 1 ? 'Salah' : '');
-                    if ($index > 1) $correct = 0;
+                    if ($index > 1)
+                        $correct = 0;
                 } elseif ($type === 'isian_singkat') {
                     $text = '';
                     $correct = 0;
@@ -974,11 +1090,13 @@ class QuizController extends Controller
                     'label' => $label,
                     'teks' => is_scalar($text) ? (string) $text : '',
                     'is_correct' => $correct,
+                    'tetap_di_bawah' => !empty($choice['tetap_di_bawah']),
                 ];
             })->all();
 
             return [
                 'jenis_soal' => $type,
+                'tingkat_soal' => $question['tingkat_soal'] ?? null,
                 'pertanyaan' => is_scalar($question['pertanyaan'] ?? null) ? (string) $question['pertanyaan'] : '',
                 'timer' => is_scalar($timer) ? (string) $timer : '20',
                 'poin' => is_scalar($points) ? $points : 10,
@@ -990,7 +1108,7 @@ class QuizController extends Controller
 
     private function emptyEditorChoices(): array
     {
-        return collect(['A', 'B', 'C', 'D'])->map(fn (string $label) => [
+        return collect(['A', 'B', 'C', 'D'])->map(fn(string $label) => [
             'label' => $label,
             'teks' => '',
             'is_correct' => 0,
@@ -1046,7 +1164,8 @@ class QuizController extends Controller
 
     private function saveBase64Image(?string $base64Data, string $folder = 'soal/foto'): ?string
     {
-        if (empty($base64Data)) return null;
+        if (empty($base64Data))
+            return null;
         if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $type)) {
             $data = substr($base64Data, strpos($base64Data, ',') + 1);
             $type = strtolower($type[1]);
@@ -1054,7 +1173,8 @@ class QuizController extends Controller
                 $type = 'png';
             }
             $decoded = base64_decode($data);
-            if ($decoded === false) return null;
+            if ($decoded === false)
+                return null;
             $filename = $folder . '/' . Str::random(40) . '.' . $type;
             Storage::disk('public')->put($filename, $decoded);
             return $filename;
@@ -1073,7 +1193,7 @@ class QuizController extends Controller
         if ($supportsPembuat) {
             $relations[] = 'pembuat';
         }
-        $query = Quiz::with($relations)
+        $query = Quiz::bukanDungeon()->with($relations)
             ->withCount(['soal', 'hasil as participants_count']);
 
         $user = $request->user();
@@ -1113,8 +1233,8 @@ class QuizController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('judul', 'like', "%{$search}%")
-                  ->orWhere('deskripsi', 'like', "%{$search}%")
-                  ->orWhere('kode_quiz', 'like', "%{$search}%");
+                    ->orWhere('deskripsi', 'like', "%{$search}%")
+                    ->orWhere('kode_quiz', 'like', "%{$search}%");
             });
         }
 
@@ -1139,13 +1259,21 @@ class QuizController extends Controller
         if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
-        if (Schema::hasColumn('quiz', 'id_pembuat')
-            && Schema::hasTable('user')) {
+        if (
+            Schema::hasColumn('quiz', 'id_pembuat')
+            && Schema::hasTable('user')
+        ) {
             $relations[] = 'pembuat';
         }
-        $quiz = Quiz::with($relations)
-            ->withCount(['soal', 'hasil as participants_count'])
-            ->find($id);
+        $query = Quiz::with($relations)
+            ->withCount(['soal', 'hasil as participants_count']);
+
+        $user = request()->user();
+        if ($user && $user->isSiswa()) {
+            $query->bukanDungeon();
+        }
+
+        $quiz = $query->find($id);
 
         if (!$quiz) {
             return response()->json([
@@ -1155,7 +1283,7 @@ class QuizController extends Controller
         }
 
         $user = request()->user();
-        if ($user && $user->isSiswa() && $user->id_jenjang && $quiz->id_jenjang && (int)$quiz->id_jenjang !== (int)$user->id_jenjang) {
+        if ($user && $user->isSiswa() && $user->id_jenjang && $quiz->id_jenjang && (int) $quiz->id_jenjang !== (int) $user->id_jenjang) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Kuis ini tidak tersedia untuk jenjang pendidikan Anda.',
@@ -1259,10 +1387,12 @@ class QuizController extends Controller
                     $fotoPath = null;
                     if ($request->hasFile("soal_foto.$index")) {
                         $foto = $request->file("soal_foto.$index");
-                        if ($foto && $foto->isValid()) $fotoPath = $foto->store('soal/foto', 'public');
+                        if ($foto && $foto->isValid())
+                            $fotoPath = $foto->store('soal/foto', 'public');
                     } elseif ($request->hasFile("soal.$index.foto_soal")) {
                         $foto = $request->file("soal.$index.foto_soal");
-                        if ($foto && $foto->isValid()) $fotoPath = $foto->store('soal/foto', 'public');
+                        if ($foto && $foto->isValid())
+                            $fotoPath = $foto->store('soal/foto', 'public');
                     } elseif (!empty($soalData['foto_soal'])) {
                         $rawFoto = $soalData['foto_soal'];
                         if (str_starts_with($rawFoto, 'data:image/')) {
@@ -1409,16 +1539,26 @@ class QuizController extends Controller
 
         DB::transaction(function () use ($quiz, $request, $validated, $isDraft) {
             $updateData = [];
-            if ($request->has('judul')) $updateData['judul'] = $validated['judul'];
-            if ($request->has('deskripsi')) $updateData['deskripsi'] = $validated['deskripsi'];
-            if ($request->has('id_jenjang')) $updateData['id_jenjang'] = $validated['id_jenjang'];
-            if ($request->has('id_mapel')) $updateData['id_mapel'] = $validated['id_mapel'] ?? null;
-            if ($request->has('id_tipequiz')) $updateData['id_tipequiz'] = $validated['id_tipequiz'];
-            if ($request->has('id_tingkatquiz')) $updateData['id_tingkatquiz'] = $validated['id_tingkatquiz'];
-            if ($request->has('waktu_kadaluarsa')) $updateData['waktu_kadaluarsa'] = $validated['waktu_kadaluarsa'];
-            if ($request->has('mode_pengerjaan')) $updateData['mode_pengerjaan'] = $validated['mode_pengerjaan'];
-            if ($request->has('durasi_total_menit')) $updateData['durasi_total_menit'] = $validated['durasi_total_menit'];
-            if ($request->has('opsi_preview')) $updateData['opsi_preview'] = $validated['opsi_preview'];
+            if ($request->has('judul'))
+                $updateData['judul'] = $validated['judul'];
+            if ($request->has('deskripsi'))
+                $updateData['deskripsi'] = $validated['deskripsi'];
+            if ($request->has('id_jenjang'))
+                $updateData['id_jenjang'] = $validated['id_jenjang'];
+            if ($request->has('id_mapel'))
+                $updateData['id_mapel'] = $validated['id_mapel'] ?? null;
+            if ($request->has('id_tipequiz'))
+                $updateData['id_tipequiz'] = $validated['id_tipequiz'];
+            if ($request->has('id_tingkatquiz'))
+                $updateData['id_tingkatquiz'] = $validated['id_tingkatquiz'];
+            if ($request->has('waktu_kadaluarsa'))
+                $updateData['waktu_kadaluarsa'] = $validated['waktu_kadaluarsa'];
+            if ($request->has('mode_pengerjaan'))
+                $updateData['mode_pengerjaan'] = $validated['mode_pengerjaan'];
+            if ($request->has('durasi_total_menit'))
+                $updateData['durasi_total_menit'] = $validated['durasi_total_menit'];
+            if ($request->has('opsi_preview'))
+                $updateData['opsi_preview'] = $validated['opsi_preview'];
             if ($request->has('action_type')) {
                 $updateData['proggressQuiz'] = $isDraft ? 'Draft' : 'Tersedia';
             }
@@ -1612,7 +1752,11 @@ class QuizController extends Controller
 
     public function apiQuestionBank(Request $request)
     {
-        $query = Soal::with(['pilihanSoal', 'jenjang', 'jenisSoal', 'quiz']);
+        $query = Soal::with(['pilihanSoal', 'jenjang', 'jenisSoal', 'quiz', 'mapel', 'penulis'])
+            ->where(function ($q) {
+                $q->whereNull('id_quiz')
+                    ->orWhereHas('quiz', fn($k) => $k->bukanDungeon());
+            });
 
         if ($request->filled('jenjang')) {
             $query->where('id_jenjang', $request->jenjang);
@@ -1622,7 +1766,7 @@ class QuizController extends Controller
             $query->where('pertanyaan', 'like', "%{$request->search}%");
         }
 
-        $questions = $query->latest('id_soal')->paginate($request->input('per_page', 20));
+        $questions = $query->latest('id_soal')->paginate($request->input('per_page', 50));
 
         return response()->json([
             'status' => 'success',
@@ -1632,7 +1776,7 @@ class QuizController extends Controller
 
     public function apiVerifyToken(Request $request, $id)
     {
-        $quiz = Quiz::query()->find($id);
+        $quiz = Quiz::bukanDungeon()->find($id);
         if (!$quiz) {
             return response()->json(['status' => 'error', 'message' => 'Quiz tidak ditemukan.'], 404);
         }
@@ -1663,7 +1807,7 @@ class QuizController extends Controller
 
     public function apiSubmitQuiz(Request $request, $id)
     {
-        $quiz = Quiz::with('soal.pilihanSoal')->find($id);
+        $quiz = Quiz::bukanDungeon()->with('soal.pilihanSoal')->find($id);
         if (!$quiz) {
             return response()->json(['status' => 'error', 'message' => 'Quiz tidak ditemukan.'], 404);
         }
@@ -1837,23 +1981,24 @@ class QuizController extends Controller
             'participants_count' => (int) ($quiz->participants_count ?? 0),
             'total_points' => $totalPoints,
             'user_result' => $userResult,
-            'soal' => $quiz->relationLoaded('soal') ? $quiz->soal->map(function ($s) {
+            'soal' => $quiz->relationLoaded('soal') ? $quiz->soal->map(function ($s) use ($user) {
+                $isStudent = $user && $user->isSiswa();
                 return [
                     'id_soal' => (int) $s->id_soal,
                     'kode_soal' => $s->kode_soal,
                     'pertanyaan' => $s->pertanyaan,
                     'id_jenis_soal' => (int) $s->id_jenis_soal,
                     'jenis_soal' => $s->id_jenis_soal == 3 ? 'true_false' : ($s->id_jenis_soal == 2 ? 'isian_singkat' : 'kuis'),
-                    'jawaban_benar' => $s->jawaban_benar,
+                    'jawaban_benar' => $isStudent ? null : $s->jawaban_benar,
                     'poin' => (int) ($s->poin ?? 10),
                     'durasi_detik' => (int) ($s->durasi_detik ?? 20),
                     'foto_soal' => $s->foto_soal ? asset('storage/' . $s->foto_soal) : null,
-                    'pilihan' => $s->relationLoaded('pilihanSoal') ? $s->pilihanSoal->map(function ($p) {
+                    'pilihan' => $s->relationLoaded('pilihanSoal') ? $s->pilihanSoal->map(function ($p) use ($isStudent) {
                         return [
                             'id_pilihan' => (int) $p->id_pilihan,
                             'label' => $p->label,
                             'teks_pilihan' => $p->teks_pilihan,
-                            'is_correct' => (bool) $p->is_correct,
+                            'is_correct' => $isStudent ? false : (bool) $p->is_correct,
                         ];
                     })->values()->all() : [],
                 ];
@@ -1867,7 +2012,7 @@ class QuizController extends Controller
         if ($request->filled('jenjang')) {
             $query->where(function ($q) use ($request) {
                 $q->where('id_jenjang', $request->jenjang)
-                  ->orWhereNull('id_jenjang');
+                    ->orWhereNull('id_jenjang');
             });
         }
         $mapels = $query->orderBy('nama_mapel')->get()->map(function ($m) {

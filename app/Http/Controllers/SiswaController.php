@@ -75,7 +75,7 @@ class SiswaController extends Controller
 
         $modulCount = $modulQuery->count();
         $quizCount = $quizQuery->count();
-        $moduls = $modulQuery->with(['tipeModul', 'jenjang'])->latest()->take(6)->get();
+        $moduls = $modulQuery->with(['tipeModul', 'jenjang', 'mapel'])->latest()->take(6)->get();
 
         $hasHasilQuizTable = Schema::hasTable('hasilquizmodul');
 
@@ -475,7 +475,7 @@ class SiswaController extends Controller
             $relations[] = 'mapel';
         }
 
-        $query = Quiz::published()->belumKadaluarsa()->with($relations);
+        $query = Quiz::published()->belumKadaluarsa()->bukanDungeon()->with($relations);
 
         // Batasi kuis sesuai jenjang siswa yang sedang login
         if ($user && $user->id_jenjang) {
@@ -943,7 +943,7 @@ class SiswaController extends Controller
     // Wayground bergantung pada indeks soal, jadi urutannya tidak boleh berubah.
     private function muatQuiz($identifier): Quiz
     {
-        return Quiz::with([
+        return Quiz::bukanDungeon()->with([
             'soal' => fn($q) => $q->orderBy('id_soal'),
             'soal.jenisSoal',
             'soal.pilihanSoal' => fn($q) => $q->orderBy('label'),

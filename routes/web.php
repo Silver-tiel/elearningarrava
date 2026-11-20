@@ -23,6 +23,7 @@ use App\Http\Controllers\MateriPembelajaranController;
 use App\Http\Controllers\PencapaianController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\QrAdminController;
+use App\Http\Controllers\DungeonController;
 use App\Http\Controllers\PresensiController;
 use App\Http\Controllers\SiswaQrController;
 
@@ -192,12 +193,15 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru']
     Route::post('/quiz/store',  [QuizController::class, 'store'])->name('quiz.store');
     Route::post('/quiz/store',  [QuizController::class, 'store'])->name('admin.quiz.store');
 
-    Route::get('/soal',         [SoalController::class, 'index'])->name('admin.soal');
-    Route::get('/soal/create',  [SoalController::class, 'create'])->name('soal.create');
-    Route::post('/soal/store',  [SoalController::class, 'store'])->name('soal.store');
-    Route::get('/soal/{id}/edit', [SoalController::class, 'edit'])->name('soal.edit');
-    Route::put('/soal/{id}',    [SoalController::class, 'update'])->name('soal.update');
-    Route::delete('/soal/{id}', [SoalController::class, 'destroy'])->name('soal.destroy');
+    Route::get('/soal',                 [SoalController::class, 'index'])->name('admin.soal');
+    Route::get('/soal/create',          [SoalController::class, 'create'])->name('soal.create');
+    Route::post('/soal/store',          [SoalController::class, 'store'])->name('soal.store');
+    Route::get('/soal/bank-data',       [SoalController::class, 'apiBankSoal'])->name('soal.bank.data');
+    Route::post('/soal/assign-to-quiz', [SoalController::class, 'assignToQuiz'])->name('soal.assign');
+    Route::post('/soal/copy-to-bank',   [SoalController::class, 'copyToBank'])->name('soal.copy.to.bank');
+    Route::get('/soal/{id}/edit',       [SoalController::class, 'edit'])->name('soal.edit');
+    Route::put('/soal/{id}',            [SoalController::class, 'update'])->name('soal.update');
+    Route::delete('/soal/{id}',         [SoalController::class, 'destroy'])->name('soal.destroy');
 });
 
 // ADMIN SAJA: manajemen user/data siswa, guru, penghargaan, kelas, penugasan, QR.
@@ -252,6 +256,27 @@ Route::prefix('guru/presensi')->name('guru.presensi.')->middleware(['auth', 'act
     Route::post('/sesi/{id}/tutup', [PresensiController::class, 'tutup'])->whereNumber('id')->name('tutup');
     Route::post('/sesi/{id}/scan', [PresensiController::class, 'prosesScan'])
         ->whereNumber('id')->middleware('throttle:scan-qr')->name('proses');
+});
+
+// DUNGEON SOAL: Mode tantangan gamifikasi endless quiz (nyawa 3, multiplier lantai)
+Route::prefix('dungeon')->name('dungeon.')->middleware(['auth', 'active.student', 'role:siswa,guru,admin'])->group(function () {
+    Route::get('/', [DungeonController::class, 'index'])->name('index');
+    Route::get('/riwayat', [DungeonController::class, 'riwayat'])->name('riwayat');
+    Route::get('/{mapel}', [DungeonController::class, 'show'])->name('show');
+    Route::post('/{mapel}/mulai', [DungeonController::class, 'mulai'])->name('mulai');
+    Route::get('/{mapel}/aktif', [DungeonController::class, 'ambilSoalAktif'])->name('aktif');
+    Route::post('/{mapel}/jawab', [DungeonController::class, 'jawab'])->name('jawab');
+    Route::post('/{mapel}/selesai', [DungeonController::class, 'selesai'])->name('selesai');
+    Route::post('/{mapel}/lapor', [DungeonController::class, 'lapor'])->name('lapor');
+    Route::post('/{mapel}/impor', [DungeonController::class, 'imporSoal'])->name('impor');
+});
+
+// DUNGEON ADMIN & GURU: Bank Soal & Moderasi Laporan
+Route::prefix('admin/dungeon')->name('dungeon.admin.')->middleware(['auth', 'active.student', 'role:admin,guru'])->group(function () {
+    Route::get('/bank', [DungeonController::class, 'adminBank'])->name('bank');
+    Route::get('/laporan', [DungeonController::class, 'adminLaporan'])->name('laporan');
+    Route::post('/laporan/{id}/putuskan', [DungeonController::class, 'adminPutuskanLaporan'])->name('laporan.putuskan');
+    Route::post('/soal/{id}/toggle', [DungeonController::class, 'adminToggleSoal'])->name('soal.toggle');
 });
 
 // Fallback route untuk melayani file storage secara andal (mendukung php artisan serve / Windows junction)

@@ -11,7 +11,7 @@
     <!-- Google Fonts: Nunito Sans & Plus Jakarta Sans (Sesuai Arrava Mobile) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,300..900;1,6..12,300..900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito+Sans:ital,opsz,wght@0,6..12,300..900;1,6..12,300..900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- CDN Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -21,8 +21,11 @@
                     fontFamily: {
                         sans: ['"Nunito Sans"', 'sans-serif'],
                         heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        display: ['"Fredoka"', 'sans-serif'],
                     },
                     colors: {
+                        ink: '#0f3a5f',
+                        paper: '#f7fcff',
                         samudra: {
                             DEFAULT: '#007FBE',
                             dark: '#00628E',
@@ -38,6 +41,9 @@
                         }
                     },
                     boxShadow: {
+                        'card': '0 8px 0 #0f3a5f',
+                        'btn': '0 5px 0 #0f3a5f',
+                        'btn-down': '0 1px 0 #0f3a5f',
                         '3d': '0 4px 0 #B2E7FC',
                         '3d-sm': '0 3px 0 #B2E7FC',
                         '3d-btn': '0 3px 0 #00628E',

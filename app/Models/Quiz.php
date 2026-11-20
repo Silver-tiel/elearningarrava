@@ -44,6 +44,7 @@ use Illuminate\Support\Str;
  * @method static Builder<Quiz> published()
  * @method static Builder<Quiz> draft()
  * @method static Builder<Quiz> belumKadaluarsa()
+ * @method static Builder<Quiz> bukanDungeon()
  * @mixin Builder<Quiz>
  */
 class Quiz extends Model
@@ -148,6 +149,33 @@ class Quiz extends Model
     public function scopeDraft(Builder $query): Builder
     {
         return $query->whereRaw("LOWER(COALESCE(proggressQuiz, '')) = ?", ['draft']);
+    }
+
+    public function scopeBukanDungeon(Builder $query): Builder
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('tipequiz')) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $sub) {
+            $sub->whereNull('id_tipequiz')
+                ->orWhereDoesntHave('tipeQuiz', function (Builder $q) {
+                    $q->whereRaw("LOWER(COALESCE(nama_tipe, '')) = ?", ['dungeon']);
+                });
+        });
+    }
+
+    public function isDungeon(): bool
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('tipequiz')) {
+            return false;
+        }
+
+        if ($this->relationLoaded('tipeQuiz') && $this->tipeQuiz) {
+            return strtolower((string) $this->tipeQuiz->nama_tipe) === 'dungeon';
+        }
+
+        return strtolower((string) ($this->tipeQuiz()->value('nama_tipe') ?? '')) === 'dungeon';
     }
 
     public function scopeBelumKadaluarsa(Builder $query): Builder

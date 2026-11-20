@@ -15,6 +15,12 @@ class PilihanSoal extends Model
         'label',
         'teks_pilihan',
         'is_correct',
+        'tetap_di_bawah',
+    ];
+
+    protected $casts = [
+        'is_correct' => 'boolean',
+        'tetap_di_bawah' => 'boolean',
     ];
 
     public function soal()

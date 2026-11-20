@@ -89,7 +89,7 @@ class OrangtuaController extends Controller
             ->get();
 
         $totalQuizDikerjakan = $hasilList->count();
-        $totalQuizTersedia   = Quiz::count();
+        $totalQuizTersedia   = Quiz::bukanDungeon()->count();
 
         // Nilai rata-rata (persentase benar)
         $avgNilai = 0;

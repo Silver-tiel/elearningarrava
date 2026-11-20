@@ -36,7 +36,8 @@ class QuizSeeder extends Seeder
             $this->quizzesEkonomi(),
             $this->quizzesGeografi(),
             $this->quizzesSosiologi(),
-            $this->quizzesSejarahIndonesia()
+            $this->quizzesSejarahIndonesia(),
+            QuizExpandedDataset::getQuizzes()
         );
 
         DB::transaction(function () use ($quizList) {

@@ -1,19 +1,18 @@
 @extends('layouts.app')
 
 @section('header')
-    {{-- Header / Topbar Quiz --}}
-    <div class="flex items-center gap-3 min-w-0">
-
-        <div class="min-w-0">
-
+    {{-- Header / Topbar Quiz & Bank Soal --}}
+    <div class="flex items-center justify-between gap-4 w-full">
+        <div class="min-w-0 hidden md:block">
             <h1 class="font-bold text-lg text-slate-800 leading-tight truncate">
                 Kelola Kuis Pembelajaran
             </h1>
-
             <p class="text-xs text-slate-500 truncate">
                 Daftar kuis interaktif yang tersedia di platform
             </p>
         </div>
+
+        <x-quiz-header-tabs />
     </div>
 @endsection
 @section('content')
@@ -48,33 +47,27 @@
             </div>
         @endif
 
-        {{-- Hero Banner --}}
-        <div
-            class="bg-gradient-to-r from-[#46178F] via-[#1368CE] to-[#0B4FB3] rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-8 relative overflow-hidden">
-            {{-- Background Decoration --}}
-            <div class="absolute -right-10 -bottom-10 opacity-20 pointer-events-none">
-                <svg class="w-72 h-72 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2L2 19h20L12 2z" />
-                </svg>
+        {{-- Page Heading & Action Button --}}
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-7">
+            <div>
+                <h2 class="text-[24px] font-extrabold tracking-tight text-slate-900">
+                    Daftar Kuis
+                </h2>
+                <p class="text-sm text-slate-500 mt-1">
+                    Kelola kuis interaktif, atur mode pengerjaan, dan pantau status publikasi kuis.
+                </p>
             </div>
 
-            <div class="relative z-10 max-w-2xl">
-                <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
-                    Buat Pengalaman Belajar Seru untuk Siswa
-                </h2>
-
-                <p class="text-white/80 text-sm mb-6">
-                    Tambahkan soal pilihan ganda warna-warni,
-                    timer detik, serta kunci jawaban langsung
-                    dalam satu tampilan visual yang intuitif.
-                </p>
-
+            <div class="flex items-center gap-2.5">
+                <a href="{{ route('admin.soal') }}"
+                    class="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-[#007FBE] border border-[#B2E7FC] font-bold text-sm px-4 py-2.5 rounded-xl shadow-xs transition hover:-translate-y-0.5">
+                    <span>📚</span>
+                    <span>Buka Bank Soal</span>
+                </a>
                 <a href="{{ route('admin.quiz.create') }}"
-                    class="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-extrabold text-sm px-5 py-3 rounded-xl shadow-lg transition transform hover:scale-105">
-
-                    <span>
-                        ⚡ Buka Editor Kuis Baru
-                    </span>
+                    class="inline-flex items-center justify-center gap-2 bg-[#007FBE] hover:bg-[#00689E] text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-[0_3px_0_#005580] transition hover:-translate-y-0.5">
+                    <span class="text-lg leading-none">+</span>
+                    <span>Buat Kuis Baru</span>
                 </a>
             </div>
         </div>

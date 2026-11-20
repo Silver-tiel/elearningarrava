@@ -1,3 +1,6 @@
+@php
+    $sidebarHidden = ($hideSidebar ?? false) || View::hasSection('hideSidebar');
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 
@@ -8,7 +11,7 @@
     <!-- Google Fonts: Nunito Sans & Plus Jakarta Sans (Sesuai Arrava Siswa & Mobile) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,300..900;1,6..12,300..900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito+Sans:ital,opsz,wght@0,6..12,300..900;1,6..12,300..900&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- CDN Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -18,8 +21,11 @@
                     fontFamily: {
                         sans: ['"Nunito Sans"', 'sans-serif'],
                         heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        display: ['"Fredoka"', 'sans-serif'],
                     },
                     colors: {
+                        ink: '#0f3a5f',
+                        paper: '#f7fcff',
                         samudra: {
                             DEFAULT: '#007FBE',
                             dark: '#00628E',
@@ -36,6 +42,9 @@
                         }
                     },
                     boxShadow: {
+                        'card': '0 8px 0 #0f3a5f',
+                        'btn': '0 5px 0 #0f3a5f',
+                        'btn-down': '0 1px 0 #0f3a5f',
                         '3d': '0 4px 0 #B2E7FC',
                         '3d-sm': '0 3px 0 #B2E7FC',
                         '3d-btn': '0 3px 0 #00628E',
@@ -66,7 +75,7 @@
     @stack('styles')
 </head>
 
-<body class="bg-[#F0F6FF] text-[#12233F] font-sans antialiased">
+<body class="bg-[#F0F6FF] text-[#12233F] font-sans antialiased {{ $sidebarHidden ? 'sidebar-hidden' : '' }}">
     @include('components.page-loader')
     @include('components.nav-buttons-sprite')
     @include('components.parallax-pixel-effect', ['sidebarOffset' => '16rem'])
@@ -74,7 +83,9 @@
     <div class="flex min-h-screen relative z-10">
 
         <!-- SIDEBAR -->
-        <x-sidebar />
+        @unless($sidebarHidden)
+            <x-sidebar />
+        @endunless
 
         <!-- MAIN CONTENT AREA -->
         <main class="flex-1 min-w-0 flex flex-col relative z-10">
@@ -83,17 +94,20 @@
             <header
                 class="h-16 bg-white/95 backdrop-blur-md border-b border-[#DCEFFF] flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30 shadow-[0_2px_12px_rgba(0,127,190,0.04)]">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
-                    <button data-sidebar-toggle type="button"
-                        class="lg:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#DCEFFF] text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] transition"
-                        aria-label="Buka Menu">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
+                    @unless($sidebarHidden)
+                        <button data-sidebar-toggle type="button"
+                            class="lg:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#DCEFFF] text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] transition"
+                            aria-label="Buka Menu">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    @endunless
 
                     <div class="flex-1 min-w-0">
                         @yield('header')
+                        @yield('header-left')
                     </div>
                 </div>
 

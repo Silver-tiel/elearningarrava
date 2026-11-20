@@ -51,7 +51,7 @@
                     $actAdminDash = request()->is('admin/dashboard*') || request()->is('admin');
                     $actAdminSiswa = request()->is('admin/siswa*') || request()->is('admin/data*');
                     $actAdminModul = request()->is('admin/modul*');
-                    $actAdminQuiz = request()->is('admin/quiz*') || request()->is('admin/soal*');
+                    $actAdminQuiz = request()->is('quiz*') || request()->is('admin/quiz*') || request()->is('soal*') || request()->is('admin/soal*') || request()->is('dungeon*');
                     $actAdminAchieve = request()->is('admin/achievement*');
                     $actAdminGuru = request()->is('admin/guru*');
                     $actAdminProfil = request()->is('admin/profil*');
@@ -262,7 +262,7 @@
                 @php
                     $actSiswaDash = request()->is('siswa/dashboard*');
                     $actSiswaBelajar = request()->is('siswa/belajar*');
-                    $actSiswaQuiz = request()->is('siswa/quiz*');
+                    $actSiswaQuiz = request()->is('siswa/quiz*') || request()->is('dungeon*');
                     $actSiswaLeaderboard = request()->is('siswa/leaderboard*');
                     $actSiswaProfil = request()->is('siswa/profil*');
                 @endphp

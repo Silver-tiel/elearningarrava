@@ -152,11 +152,26 @@ class DashboardController extends Controller
         $totalGuru = Guru::count();
         $totalModul = (clone $modulQuery)->count();
         $totalQuiz = (clone $quizQuery)->count();
+        $totalAchievement = Achievement::count();
+
+        $siswaTerbaru = User::where('id_tipeuser', 3)
+            ->latest('id_user')
+            ->take(5)
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id_user' => $s->id_user,
+                    'nama' => $s->nama,
+                    'email' => $s->email,
+                    'foto_profil' => $this->resolvePhotoUrl($s->foto_profil),
+                    'created_at' => $s->created_at ? $s->created_at->diffForHumans() : '-',
+                ];
+            });
 
         $recentModules = (clone $modulQuery)
             ->with(['tipeModul', 'jenjang'])
-            ->latest()
-            ->take(4)
+            ->latest('id_modul')
+            ->take(5)
             ->get()
             ->map(function ($m) {
                 return [
@@ -165,19 +180,32 @@ class DashboardController extends Controller
                     'deskripsi' => $m->deskripsi,
                     'status' => $m->progressModul ?? 'Tersedia',
                     'tipe' => $m->tipeModul->nama_tipe ?? 'Umum',
-                    'jenjang' => $m->jenjang->nama_jenjang ?? 'Semua',
+                    'jenjang' => $m->jenjang->nama_jenjang ?? $m->jenjang->nama_tipe ?? 'Semua Jenjang',
+                    'foto_modul' => $this->resolvePhotoUrl($m->foto_modul),
+                    'youtube_id' => $m->youtube_id,
+                    'created_at' => $m->created_at ? $m->created_at->diffForHumans() : '-',
                 ];
             });
 
         return response()->json([
             'success' => true,
             'data' => [
+                'user' => [
+                    'id_user' => $user->id_user,
+                    'nama' => $user->nama,
+                    'email' => $user->email,
+                    'id_tipeuser' => $user->id_tipeuser,
+                    'role_label' => $isGuru ? 'Guru' : 'Administrator',
+                    'foto_profil' => $this->resolvePhotoUrl($user->foto_profil),
+                ],
                 'stats' => [
                     'total_siswa' => $totalSiswa,
                     'total_guru' => $totalGuru,
                     'total_modul' => $totalModul,
                     'total_quiz' => $totalQuiz,
+                    'total_achievement' => $totalAchievement,
                 ],
+                'siswa_terbaru' => $siswaTerbaru,
                 'recent_modules' => $recentModules,
             ],
         ]);

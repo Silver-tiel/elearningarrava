@@ -60,31 +60,6 @@
     .animate-bounce-in {
         animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
-    @keyframes loading-stripes {
-        0% { transform: translateX(-100%); }
-        50% { transform: translateX(20%); }
-        100% { transform: translateX(100%); }
-    }
-    .animate-loading-bar {
-        animation: loading-stripes 1.8s infinite ease-in-out;
-    }
-    @keyframes quiz-char-track {
-        0% { left: 0%; transform: scaleX(1); }
-        48% { left: calc(100% - 56px); transform: scaleX(1); }
-        50% { left: calc(100% - 56px); transform: scaleX(-1); }
-        98% { left: 0%; transform: scaleX(-1); }
-        100% { left: 0%; transform: scaleX(1); }
-    }
-    .animate-quiz-char-track {
-        animation: quiz-char-track 3.6s infinite ease-in-out;
-    }
-    @keyframes quiz-char-bob {
-        0%, 100% { transform: translateY(0) rotate(0deg); }
-        50% { transform: translateY(-8px) rotate(4deg); }
-    }
-    .animate-quiz-char-bob {
-        animation: quiz-char-bob 0.5s infinite ease-in-out;
-    }
 </style>
 @endpush
 
@@ -141,58 +116,6 @@
                 <button type="button" id="btn-close-unanswered-modal" class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition transform hover:-translate-y-0.5">
                     Lengkapi Jawaban Sekarang →
                 </button>
-            </div>
-        </div>
-    </div>
-
-    {{-- Modal Loading Transisi & Hiburan saat Submit Quiz --}}
-    <div id="quizSubmitLoadingModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full text-center border-t-8 border-emerald-500 animate-bounce-in relative overflow-hidden">
-            <div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-100 rounded-full blur-2xl pointer-events-none opacity-60"></div>
-            <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-indigo-100 rounded-full blur-2xl pointer-events-none opacity-60"></div>
-
-            <div class="relative w-20 h-20 mx-auto mb-5">
-                <div class="absolute inset-0 rounded-full bg-emerald-200 animate-ping opacity-60"></div>
-                <div class="relative w-20 h-20 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30 text-4xl">
-                    <span id="quizLoadingIcon" class="animate-bounce">🚀</span>
-                </div>
-            </div>
-            
-            <h3 id="quizLoadingTitle" class="text-xl font-extrabold text-slate-800 mb-1.5">
-                Menyimpan Jawabanmu...
-            </h3>
-            <p id="quizLoadingSubtitle" class="text-xs text-slate-500 mb-5 font-medium leading-relaxed">
-                Mohon tunggu sebentar, sistem sedang memverifikasi jawaban dan menghitung perolehan skor...
-            </p>
-
-            {{-- Progress Bar Animasi Berjalan & Karakter Interaktif --}}
-            <div class="w-full mb-5 text-left">
-                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden relative shadow-inner">
-                    <div class="bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 h-full w-full rounded-full animate-loading-bar"></div>
-                </div>
-
-                {{-- Karakter yang bergerak bolak-balik bersamaan bar dengan efek memantul/bobbing --}}
-                {{-- PANDUAN GANTI GAMBAR: Ubah src pada tag <img> di bawah --}}
-                <div class="relative w-full h-14 mt-1.5 pointer-events-none select-none">
-                    <div class="absolute top-0 animate-quiz-char-track will-change-[left,transform]">
-                        <div class="animate-quiz-char-bob">
-                            <img src="{{ asset('assets/foto_karakter/loading/silverwolfloading.png') }}" 
-                                 alt="Quiz Loading Mascot" 
-                                 class="w-14 sm:w-16 h-auto [image-rendering:pixelated] drop-shadow-[0_4px_10px_rgba(16,185,129,0.45)]">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Kartu Edukasi / Hiburan Trivia --}}
-            <div class="bg-gradient-to-br from-indigo-50/80 to-blue-50/80 rounded-2xl p-4 border border-indigo-100/80 text-left">
-                <div class="flex items-center gap-2 mb-1.5">
-                    <span class="text-base">💡</span>
-                    <span class="text-[11px] font-black uppercase tracking-wider text-indigo-700">Tahukah Kamu?</span>
-                </div>
-                <p id="quizTriviaText" class="text-xs text-slate-600 leading-relaxed font-medium">
-                    "Otak manusia memiliki sekitar 86 miliar neuron yang selalu siap menyerap hal-hal baru!"
-                </p>
             </div>
         </div>
     </div>
@@ -539,38 +462,16 @@
             quizNavigation.hidden = true;
         }
 
-        const educationalTrivia = [
-            "Otak manusia memiliki sekitar 86 miliar neuron yang aktif membentuk koneksi baru saat kamu belajar hal baru!",
-            "Istirahat 5 menit setelah belajar 25 menit (Teknik Pomodoro) melipatgandakan daya ingat dan fokusmu.",
-            "Menjelaskan materi kuis dengan kata-katamu sendiri dapat meningkatkan pemahaman konsep hingga 85%.",
-            "Otak mengonsumsi sekitar 20% dari seluruh energi tubuh meskipun beratnya hanya 2% dari bobot badanmu.",
-            "Mencoba menjawab soal melatih 'retrieval practice', metode terbukti paling efektif untuk mengingat jangka panjang.",
-            "Tidur cukup setelah belajar membantu otak menyortir dan mengunci informasi ke dalam memori permanen."
-        ];
-
         let isQuizSubmitting = false;
 
-        function showQuizSubmitModal() {
+        function handleQuizSubmit() {
             if (isQuizSubmitting) return;
             isQuizSubmitting = true;
 
-            const modal = document.getElementById('quizSubmitLoadingModal');
-            const triviaText = document.getElementById('quizTriviaText');
             const submitBtn = document.querySelector('#quiz-submit-controls button[type="submit"]');
-
-            if (triviaText && educationalTrivia.length > 0) {
-                const randomIndex = Math.floor(Math.random() * educationalTrivia.length);
-                triviaText.textContent = `"${educationalTrivia[randomIndex]}"`;
-            }
-
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
-            }
-
-            if (modal) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
             }
 
             if (window.PageLoader) {
@@ -685,7 +586,7 @@
                     }
                 }
 
-                showQuizSubmitModal();
+                handleQuizSubmit();
             });
         }
 
