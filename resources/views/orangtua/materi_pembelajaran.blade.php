@@ -71,7 +71,7 @@
     <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
 
         {{-- Total Materi Terjadwal --}}
-        <div class="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
+        <div class="bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-3">
                 <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Total Materi Terjadwal</p>
                 <div class="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
@@ -92,7 +92,7 @@
         </div>
 
         {{-- Materi Selesai --}}
-        <div class="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
+        <div class="bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-3">
                 <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Materi Selesai</p>
                 <div class="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
@@ -116,7 +116,7 @@
         </div>
 
         {{-- Sedang Dipelajari --}}
-        <div class="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
+        <div class="bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-3">
                 <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Sedang Dipelajari</p>
                 <div class="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
@@ -137,7 +137,7 @@
         </div>
 
         {{-- Belum Dimulai --}}
-        <div class="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
+        <div class="bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-3">
                 <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Belum Dimulai</p>
                 <div class="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">

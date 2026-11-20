@@ -161,6 +161,24 @@ $navItems = [
             </div>
         </a>
 
+        {{-- Absensi --}}
+        <a href="{{ route('orangtua.absensi') }}"
+            class="sidebar-menu-item group relative flex items-center gap-3 pl-3 pr-14 py-2.5 rounded-xl text-sm transition
+                {{ request()->routeIs('orangtua.absensi') ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}">
+            <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span>Absensi</span>
+            <div class="sidebar-pop-wrap" aria-hidden="true">
+                <div class="sidebar-pop-box">
+                    <img src="{{ asset('assets/sidebar/sidebarBerandaIcon.webp') }}" alt="" class="sidebar-pop-img" draggable="false">
+                </div>
+            </div>
+        </a>
+
         {{-- Separator --}}
         <div class="pt-3 pb-1 px-2">
             <p class="text-[10px] font-black uppercase tracking-widest text-[#72839E]">Pengaturan &amp; Akun</p>
