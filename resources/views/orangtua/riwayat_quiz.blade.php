@@ -75,7 +75,7 @@
 
     {{-- Statistik hasil quiz --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border-2 border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-500">Rata-rata Nilai</p>
                 <span class="rounded-xl bg-blue-50 p-2 text-blue-600">%</span>
@@ -86,7 +86,7 @@
             <p class="mt-1 text-xs text-slate-500">Dari seluruh pengerjaan kuis</p>
         </div>
 
-        <div class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border-2 border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-500">Kuis Lulus</p>
                 <span class="rounded-xl bg-emerald-50 p-2 text-emerald-600">✓</span>
@@ -97,7 +97,7 @@
             <p class="mt-1 text-xs text-slate-500">Kuis berhasil dilewati</p>
         </div>
 
-        <div class="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border-2 border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-500">Belum Lulus</p>
                 <span class="rounded-xl bg-amber-50 p-2 text-amber-600">!</span>
@@ -108,7 +108,7 @@
             <p class="mt-1 text-xs text-slate-500">Perlu ditinjau kembali</p>
         </div>
 
-        <div class="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border-2 border-[#DCEFFF] bg-white p-5 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-slate-500">Nilai Tertinggi</p>
                 <span class="rounded-xl bg-violet-50 p-2 text-violet-600">★</span>

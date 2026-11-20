@@ -105,6 +105,9 @@ Route::prefix('orangtua')
 
         Route::get('/aktivitas-belajar', [OrangtuaController::class, 'aktivitasBelajar'])
         ->name('aktivitas-belajar');
+
+        Route::get('/absensi', [OrangtuaController::class, 'absensi'])
+        ->name('absensi');
     });
 
 // Route Notifikasi Presensi Realtime (Siswa & Orang Tua)
