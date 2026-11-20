@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Quiz;
+use App\Models\LogAktivitas;
 use App\Models\Soal;
 use App\Models\PilihanSoal;
 use App\Models\Jenjang;
@@ -616,6 +617,11 @@ class QuizController extends Controller
             }
         });
 
+        LogAktivitas::catat(
+            $request->user() ?? auth()->user(),
+            ($isDraft ? 'Menyimpan draf' : 'Menerbitkan') . " kuis {$validated['judul']}."
+        );
+
         return redirect()->route('admin.quiz')->with('success', $isDraft ? 'Draf quiz berhasil disimpan! 📝' : 'Quiz berhasil dipublikasikan! 🎉');
     }
 
@@ -794,6 +800,11 @@ class QuizController extends Controller
             $this->replaceQuestions($quiz, $questions, (int) $validated['id_jenjang'], $request);
         });
 
+        LogAktivitas::catat(
+            $request->user() ?? auth()->user(),
+            ($isDraft ? 'Memperbarui draf' : 'Memperbarui') . " kuis {$quiz->judul}."
+        );
+
         if ($quiz->isDungeon()) {
             return redirect()->route('dungeon.index', ['jenjang' => $quiz->id_jenjang])->with('success', 'Bank soal Dungeon berhasil diperbarui! 🎉');
         }
@@ -804,6 +815,7 @@ class QuizController extends Controller
     public function destroy($id)
     {
         $quiz = Quiz::query()->where('id_quiz', $id)->orWhere('kode_quiz', $id)->firstOrFail();
+        $judulQuiz = $quiz->judul;
         if (auth()->check()) {
             Gate::authorize('delete', $quiz);
         }
@@ -828,6 +840,8 @@ class QuizController extends Controller
             $quiz->soal()->delete();
             $quiz->delete();
         });
+
+        LogAktivitas::catat(auth()->user(), "Menghapus kuis {$judulQuiz}.");
 
         return redirect()->route('admin.quiz')->with('success', 'Quiz dan seluruh soalnya berhasil dihapus.');
     }

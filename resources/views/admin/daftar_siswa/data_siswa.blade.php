@@ -201,6 +201,7 @@
             @forelse($siswas as $index => $siswa)
                 @php
                     $status = $siswa->status_akun ?? 'Aktif';
+                    $monitor = $monitoringSiswa->get($siswa->id_user, []);
                     $badgeClass = match($status) {
                         'Aktif' => 'bg-emerald-500/90 text-white border-emerald-400',
                         'Nonaktif' => 'bg-rose-500/90 text-white border-rose-400',
@@ -328,6 +329,37 @@
                                     <span class="text-slate-400 italic text-[11px]">Belum dibuat</span>
                                 @endif
                             </div>
+                        </div>
+
+                        <div class="mt-4 rounded-xl border border-blue-100 bg-blue-50/60 p-3 space-y-2.5">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[11px] font-extrabold text-slate-700">Progres modul</span>
+                                <span class="text-[11px] font-black text-blue-700">
+                                    {{ $monitor['modul_tuntas'] ?? 0 }}/{{ $monitor['jumlah_modul'] ?? 0 }} · {{ $monitor['persen_progres'] ?? 0 }}%
+                                </span>
+                            </div>
+                            <div class="h-1.5 rounded-full bg-white overflow-hidden">
+                                <div class="h-full rounded-full bg-blue-500" style="width: {{ $monitor['persen_progres'] ?? 0 }}%"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-600">
+                                <span>Rata-rata kuis</span>
+                                <span class="text-right text-slate-800">
+                                    {{ isset($monitor['rata_nilai']) ? number_format($monitor['rata_nilai'], 1) . '%' : 'Belum ada nilai' }}
+                                </span>
+                                <span>Kuis dikerjakan</span>
+                                <span class="text-right text-slate-800">{{ $monitor['jumlah_kuis'] ?? 0 }}</span>
+                                <span>Kehadiran tercatat</span>
+                                <span class="text-right text-slate-800">{{ $monitor['jumlah_hadir'] ?? 0 }} kali</span>
+                                <span>Aktivitas terakhir</span>
+                                <span class="text-right text-slate-800">
+                                    {{ ($monitor['aktivitas_terakhir'] ?? null)?->diffForHumans() ?? 'Belum ada' }}
+                                </span>
+                            </div>
+                            @if($monitor['perlu_perhatian'] ?? false)
+                                <p class="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[10px] font-extrabold text-amber-800">
+                                    Perlu perhatian: {{ $monitor['perlu_perhatian'] }}
+                                </p>
+                            @endif
                         </div>
                     </div>
 

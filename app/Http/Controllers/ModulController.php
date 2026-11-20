@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Modul;
+use App\Models\LogAktivitas;
 use App\Models\ModulSoal;
 use App\Models\ModulSoalPilihan;
 use App\Models\TipeModul;
@@ -295,6 +296,10 @@ class ModulController extends Controller
         $modulBaru = Modul::create($modulData);
 
         $this->saveSoalModul($modulBaru, $request->input('soal'));
+        LogAktivitas::catat(
+            $request->user() ?? auth()->user(),
+            ($isDraft ? 'Menyimpan draf' : 'Menerbitkan') . " modul {$modulBaru->judul_modul}."
+        );
 
         return redirect()->route('admin.modul')->with('success', $isDraft ? 'Draf modul berhasil disimpan! 📝' : 'Modul pembelajaran berhasil ditambahkan & dipublikasikan! 🎉');
     }
@@ -464,6 +469,10 @@ class ModulController extends Controller
         $module->update($updateData);
 
         $this->saveSoalModul($module, $request->input('soal'));
+        LogAktivitas::catat(
+            $request->user() ?? auth()->user(),
+            ($isDraft ? 'Memperbarui draf' : 'Memperbarui') . " modul {$module->judul_modul}."
+        );
 
         return redirect()->route('admin.modul')->with('success', $isDraft ? 'Draf modul berhasil diperbarui! 📝' : 'Modul pembelajaran berhasil diperbarui & dipublikasikan! 🎉');
     }
@@ -610,6 +619,7 @@ class ModulController extends Controller
     public function destroy($id)
     {
         $modul = Modul::findOrFail($id);
+        $judulModul = $modul->judul_modul;
         if (auth()->check()) {
             Gate::authorize('delete', $modul);
         }
@@ -625,6 +635,7 @@ class ModulController extends Controller
         }
 
         $modul->delete();
+        LogAktivitas::catat(auth()->user(), "Menghapus modul {$judulModul}.");
 
         return redirect()->route('admin.modul')->with('success', 'Modul berhasil dihapus.');
     }

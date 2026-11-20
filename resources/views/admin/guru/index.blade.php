@@ -172,6 +172,29 @@
                                     <span class="text-[#007FBE] font-extrabold">{{ (int) ($guru->quizzes_count ?? 0) }}</span>
                                 </div>
                             </div>
+
+                            <div class="grid grid-cols-2 gap-1.5">
+                                <div class="bg-indigo-50 rounded-xl px-3 py-1.5 text-xs flex items-center justify-between border border-indigo-100">
+                                    <span class="text-indigo-700 font-semibold">Kelas aktif</span>
+                                    <span class="text-indigo-700 font-extrabold">{{ $guru->kelas_aktif_count }}</span>
+                                </div>
+                                <div class="bg-indigo-50 rounded-xl px-3 py-1.5 text-xs flex items-center justify-between border border-indigo-100">
+                                    <span class="text-indigo-700 font-semibold">Siswa diampu</span>
+                                    <span class="text-indigo-700 font-extrabold">{{ $guru->siswa_diajar_count }}</span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px]">
+                                <p class="font-semibold text-slate-500">Aktivitas konten terakhir</p>
+                                @if($guru->aktivitas_konten_terakhir)
+                                    <p class="mt-0.5 font-bold text-slate-700">
+                                        Memperbarui {{ $guru->aktivitas_konten_terakhir['jenis'] }}
+                                        · {{ \Illuminate\Support\Carbon::parse($guru->aktivitas_konten_terakhir['waktu'])->diffForHumans() }}
+                                    </p>
+                                @else
+                                    <p class="mt-0.5 text-slate-400">Belum ada konten yang dikelola.</p>
+                                @endif
+                            </div>
                         </div>
                     </div>
 

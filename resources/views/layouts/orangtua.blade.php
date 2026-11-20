@@ -114,8 +114,8 @@
         <main class="flex-1 min-w-0 flex flex-col lg:ml-60">
             {{-- TOPBAR (Sesuai Tema Arrava Samudra 3D) --}}
             <header
-                class="h-16 bg-white/95 backdrop-blur-md border-b border-[#DCEFFF] flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 shadow-[0_2px_12px_rgba(0,127,190,0.04)]">
-                <div class="flex items-center gap-3">
+                class="min-h-16 bg-white/95 backdrop-blur-md border-b border-[#DCEFFF] flex items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8 sticky top-0 z-30 shadow-[0_2px_12px_rgba(0,127,190,0.04)]">
+                <div class="flex items-center gap-2 sm:gap-3">
                     <button id="otSidebarToggle" type="button"
                         class="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl border border-[#DCEFFF] text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] transition"
                         aria-label="Buka Menu">
@@ -145,7 +145,7 @@
                     @yield('header-right')
 
                     {{-- Avatar + nama orang tua --}}
-                    <div class="flex items-center gap-2.5">
+                    <div class="flex items-center gap-2.5 rounded-xl border border-[#DCEFFF] bg-[#F0F6FF]/70 px-2 py-1.5 sm:px-2.5">
                         <div
                             class="w-9 h-9 rounded-full bg-[#DDF3FF] ring-2 ring-[#DCEFFF] flex items-center justify-center text-[#007FBE] font-black text-sm shrink-0 shadow-xs">
                             {{ strtoupper(substr(Auth::user()->nama ?? 'O', 0, 1)) }}

@@ -65,7 +65,7 @@
     <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
 
         {{-- Rata-rata Nilai --}}
-        <div class="stat-card bg-white rounded-xl border border-slate-100 p-4 relative overflow-hidden">
+        <div class="stat-card bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 relative overflow-hidden shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-2">
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Rata-Rata Nilai</p>
                 <div class="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
@@ -93,7 +93,7 @@
         </div>
 
         {{-- Nilai Tertinggi --}}
-        <div class="stat-card bg-white rounded-xl border border-slate-100 p-4 relative overflow-hidden">
+        <div class="stat-card bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 relative overflow-hidden shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-2">
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Nilai Tertinggi</p>
                 <div class="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
@@ -110,7 +110,7 @@
         </div>
 
         {{-- Nilai Terbaru --}}
-        <div class="stat-card bg-white rounded-xl border border-slate-100 p-4 relative overflow-hidden">
+        <div class="stat-card bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 relative overflow-hidden shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-2">
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Nilai Terbaru</p>
                 <div class="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center">
@@ -127,7 +127,7 @@
         </div>
 
         {{-- Tingkat Ketuntasan --}}
-        <div class="stat-card bg-white rounded-xl border border-slate-100 p-4 relative overflow-hidden">
+        <div class="stat-card bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 relative overflow-hidden shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-2">
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tingkat Ketuntasan</p>
                 <div class="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
