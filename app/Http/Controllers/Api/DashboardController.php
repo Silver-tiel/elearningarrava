@@ -246,6 +246,7 @@ class DashboardController extends Controller
                 'nama' => $s->nama,
                 'nisn' => $s->nisn,
                 'email' => $s->email,
+                'foto_profil' => $this->resolvePhotoUrl($s->foto_profil),
                 'kelas' => $s->kelas,
                 'jenjang' => $s->jenjang->nama_jenjang ?? 'Umum',
                 'status' => $s->status_akun ?? 'Aktif',
