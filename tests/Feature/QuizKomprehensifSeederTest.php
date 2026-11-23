@@ -9,6 +9,7 @@ use App\Models\PilihanSoal;
 use Database\Seeders\MasterDataSeeder;
 use Database\Seeders\QuizSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 class QuizKomprehensifSeederTest extends TestCase
 {
@@ -20,8 +21,32 @@ class QuizKomprehensifSeederTest extends TestCase
         $this->seed(MasterDataSeeder::class);
         $this->seed(QuizSeeder::class);
 
-        // 1. Verifikasi jumlah Quiz dibuat (9 Kuis total)
-        $this->assertGreaterThanOrEqual(9, Quiz::count());
+        // 1. Verifikasi jumlah Quiz dibuat:
+        //    11 mapel umum × 3 jenjang × 10 quiz = 330 + 6 mapel peminatan SMA × 10 quiz = 60 => 390 quiz
+        $this->assertSame(390, Quiz::count(), 'Total kuis dari QuizSeeder harus berjumlah 390');
+
+        $mapels = DB::table('mapel')->orderBy('id_mapel')->get();
+        $jenjangIds = [1, 2, 3];
+        foreach ($mapels as $mapel) {
+            if ($mapel->id_jenjang === null) {
+                foreach ($jenjangIds as $jenjangId) {
+                    $this->assertSame(
+                        10,
+                        Quiz::where('id_mapel', $mapel->id_mapel)->where('id_jenjang', $jenjangId)->count(),
+                        "Mapel umum '{$mapel->nama_mapel}' jenjang {$jenjangId} harus memiliki tepat 10 quiz"
+                    );
+                }
+            } else {
+                foreach ($jenjangIds as $jenjangId) {
+                    $expectedCount = ((int) $jenjangId === (int) $mapel->id_jenjang) ? 10 : 0;
+                    $this->assertSame(
+                        $expectedCount,
+                        Quiz::where('id_mapel', $mapel->id_mapel)->where('id_jenjang', $jenjangId)->count(),
+                        "Mapel peminatan '{$mapel->nama_mapel}' jenjang {$jenjangId} harus memiliki tepat {$expectedCount} quiz"
+                    );
+                }
+            }
+        }
 
         // 2. Verifikasi cakupan Jenjang: SD (1), SMP (2), SMA (3)
         $this->assertTrue(Quiz::where('id_jenjang', 1)->exists(), 'Kuis untuk SD harus tersedia');
@@ -78,8 +103,10 @@ class QuizKomprehensifSeederTest extends TestCase
         }
 
         // 6. Verifikasi Idempotensi: seeding dua kali tidak boleh error / menduplikasi aneh
+        $soalCountBefore = Soal::count();
         $this->seed(QuizSeeder::class);
-        $this->assertCount(9, Quiz::all(), 'Jumlah kuis harus tetap 9 (idempotent)');
+        $this->assertSame(390, Quiz::count(), 'Jumlah kuis harus tetap 390 (idempotent)');
+        $this->assertSame($soalCountBefore, Soal::count(), 'Jumlah soal harus tetap sama (idempotent)');
     }
 }
 

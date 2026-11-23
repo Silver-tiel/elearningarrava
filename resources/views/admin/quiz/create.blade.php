@@ -173,12 +173,16 @@
                 {{-- Bottom Buttons --}}
                 <div class="p-3 border-t border-gray-200 space-y-2 bg-gray-50">
                     <button type="button" id="btn-add-soal"
-                        class="w-full py-2.5 bg-[#1368CE] hover:bg-[#0B4FB3] text-white font-bold text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5">
+                        class="w-full py-2.5 bg-[#1368CE] hover:bg-[#0B4FB3] text-white font-bold text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                 d="M12 4v16m8-8H4" />
                         </svg>
                         Tambahkan Soal
+                    </button>
+                    <button type="button" id="btn-open-bank-soal"
+                        class="w-full py-2.5 bg-sky-50 hover:bg-sky-100 text-[#007FBE] border border-[#B2E7FC] font-extrabold text-xs rounded-lg shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span>📚 Ambil dari Bank Soal</span>
                     </button>
                 </div>
             </aside>
@@ -402,6 +406,22 @@
                                     <option value="kuis">Kuis (Pilihan Ganda)</option>
                                     <option value="true_false">Benar atau Salah</option>
                                     <option value="isian_singkat">Isian Singkat</option>
+                                </select>
+                            </div>
+
+                            {{-- TINGKAT KESULITAN SOAL (Wajib untuk Dungeon) --}}
+                            <div id="question-tingkat-wrapper">
+                                <label for="select-tingkat-soal" class="block text-xs font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                                    <span>Tingkat Kesulitan</span>
+                                    @if(isset($quiz) && $quiz->isDungeon())
+                                        <span class="text-[10px] text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded font-extrabold">Wajib Dungeon</span>
+                                    @endif
+                                </label>
+                                <select id="select-tingkat-soal"
+                                    class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold text-gray-800 focus:ring-2 focus:ring-purple-500 transition">
+                                    <option value="mudah">Mudah</option>
+                                    <option value="sedang" selected>Sedang</option>
+                                    <option value="sulit">Sulit</option>
                                 </select>
                             </div>
 
@@ -692,6 +712,113 @@ Tingkat Quiz
         <div id="hidden-inputs-container"></div>
     </form>
 
+    {{-- MODAL PICKER BANK SOAL --}}
+    <div id="modalBankSoal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div class="bg-white rounded-3xl border-2 border-[#DCEFFF] max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {{-- Modal Header --}}
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-sky-50 via-white to-sky-50">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-2xl bg-[#007FBE] text-white flex items-center justify-center text-lg font-bold shadow-xs">
+                        📚
+                    </span>
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900">Ambil Soal dari Bank Soal</h3>
+                        <p class="text-xs text-slate-500">Pilih pertanyaan untuk disalin ke kuis ini. Soal yang sudah ada di kuis otomatis dilewati.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('soal.create') }}" target="_blank"
+                        class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-200 bg-sky-50 hover:bg-sky-100 text-[#007FBE] text-xs font-bold transition">
+                        <span>+ Buat Soal di Bank</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <button type="button" id="closeModalBankSoalBtn" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center cursor-pointer transition">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            {{-- Modal Filter Bar --}}
+            <div class="p-4 bg-slate-50 border-b border-slate-200/80 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">🔍</span>
+                        <input type="text" id="bankModalSearch" placeholder="Cari pertanyaan, kode soal, atau kunci jawaban..."
+                            class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:border-[#007FBE]">
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <select id="bankModalMapel"
+                            class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-[#007FBE]">
+                            <option value="">Semua Mapel</option>
+                            @if(isset($mapelList))
+                                @foreach($mapelList as $mpl)
+                                    <option value="{{ $mpl->id_mapel }}" @selected(isset($quiz) && $quiz->id_mapel == $mpl->id_mapel)>{{ $mpl->nama_mapel }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+
+                        <select id="bankModalJenjang"
+                            class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-[#007FBE]">
+                            <option value="">Semua Jenjang</option>
+                            @if(isset($jenjangList))
+                                @foreach($jenjangList as $jj)
+                                    <option value="{{ $jj->id_jenjang }}" @selected(isset($quiz) && $quiz->id_jenjang == $jj->id_jenjang)>{{ $jj->nama_tipe ?? $jj->nama_jenjang }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-t border-slate-200/60">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-500">Sumber:</span>
+                        <select id="bankModalSumber"
+                            class="px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-[#007FBE] cursor-pointer">
+                            <option value="bank">📚 Bank Soal Saja</option>
+                            <option value="all">🌐 Semua Soal (Bank & Kuis)</option>
+                            <option value="quiz">🎯 Kuis Lain Saja</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-500">Tingkat:</span>
+                        <button type="button" class="bank-tingkat-chip px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border bg-[#007FBE] text-white border-[#007FBE] cursor-pointer" data-value="">Semua</button>
+                        <button type="button" class="bank-tingkat-chip px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border bg-white text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer" data-value="mudah">Mudah</button>
+                        <button type="button" class="bank-tingkat-chip px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border bg-white text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer" data-value="sedang">Sedang</button>
+                        <button type="button" class="bank-tingkat-chip px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border bg-white text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer" data-value="sulit">Sulit</button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Modal Body: Scrollable List of Bank Soal --}}
+            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="bankModalListContainer">
+                <div class="py-12 text-center text-slate-400">
+                    <div class="animate-spin w-8 h-8 border-4 border-[#007FBE] border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p class="text-xs font-bold">Memuat bank soal...</p>
+                </div>
+            </div>
+
+            {{-- Modal Footer --}}
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div class="text-xs font-extrabold text-slate-700" id="bankModalSelectedCount">
+                    0 soal dipilih
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="cancelModalBankSoalBtn"
+                        class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 font-bold text-xs hover:bg-slate-100 transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="button" id="importBankSoalSubmitBtn"
+                        class="px-5 py-2 rounded-xl bg-[#007FBE] hover:bg-[#00689E] text-white font-extrabold text-xs shadow-[0_3px_0_#005580] transition disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                        disabled>
+                        Masukkan Soal Terpilih
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- ==================== JAVASCRIPT STATE & EVENT LOGIC ==================== --}}
     <script>
         // Data State Soal
@@ -723,6 +850,7 @@ Tingkat Quiz
         const thumbContainer = document.getElementById('thumb-container');
         const inputPertanyaan = document.getElementById('input-pertanyaan');
         const selectJenisSoal = document.getElementById('select-jenis-soal');
+        const selectTingkatSoal = document.getElementById('select-tingkat-soal');
         const selectTimer = document.getElementById('select-timer');
         const selectModeQuiz = document.getElementById('select-mode-quiz');
         const totalDurationWrapper = document.getElementById('total-duration-wrapper');
@@ -977,7 +1105,7 @@ Tingkat Quiz
                     </div>
                     <div class="h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded p-1.5 flex flex-col justify-between shadow-inner">
                         <div class="bg-white/90 rounded text-[9px] font-bold text-gray-700 px-1 truncate">
-                            ${soal.pertanyaan || 'Pertanyaan...'}
+                            ${soal.pertanyaan || ((soal.foto_soal || (typeof fotoPreviews !== 'undefined' && fotoPreviews[idx])) ? '🖼️ [Gambar Soal]' : 'Pertanyaan...')}
                         </div>
                         <div class="grid grid-cols-4 gap-0.5">
                             <div class="h-1 rounded-sm ${soal.pilihan[0] && soal.pilihan[0].is_correct ? 'bg-emerald-400' : 'bg-red-400'}"></div>
@@ -1007,6 +1135,9 @@ Tingkat Quiz
             soalList[currentIndex].timer = selectTimer.value;
             soalList[currentIndex].poin = parseInt(inputPoin.value) || 0;
             soalList[currentIndex].jenis_soal = selectJenisSoal.value;
+            if (selectTingkatSoal) {
+                soalList[currentIndex].tingkat_soal = selectTingkatSoal.value;
+            }
             soalList[currentIndex].jawaban_singkat = inputJawabanSingkat.value;
             // foto_soal sudah di-sync langsung di onFileSelected/removeCurrentImage
 
@@ -1030,6 +1161,9 @@ Tingkat Quiz
             selectTimer.value = currentSoal.timer || '20';
             inputPoin.value = currentSoal.poin !== undefined ? currentSoal.poin : 10;
             selectJenisSoal.value = currentSoal.jenis_soal || 'kuis';
+            if (selectTingkatSoal) {
+                selectTingkatSoal.value = currentSoal.tingkat_soal || 'sedang';
+            }
             inputJawabanSingkat.value = currentSoal.jawaban_singkat || '';
 
             // Restore foto state untuk soal aktif
@@ -1096,6 +1230,15 @@ Tingkat Quiz
             loadCurrentState();
             renderThumbnails();
         });
+
+        // Toggle Tingkat Soal
+        if (selectTingkatSoal) {
+            selectTingkatSoal.addEventListener('change', () => {
+                if (soalList[currentIndex]) {
+                    soalList[currentIndex].tingkat_soal = selectTingkatSoal.value;
+                }
+            });
+        }
 
         // Toggle Jawaban Benar
         document.querySelectorAll('.btn-toggle-correct').forEach(btn => {
@@ -1259,8 +1402,11 @@ Tingkat Quiz
                     const s = soalList[i];
                     const noSoal = i + 1;
 
-                    if (!s.pertanyaan || !s.pertanyaan.trim()) {
-                        firstErrorMsg = `⚠️ Kesalahan pada Soal #${noSoal}:\nTeks pertanyaan wajib diisi sebelum kuis dipublikasikan!`;
+                    const hasFoto = Boolean(s.foto_soal || (typeof fotoFiles !== 'undefined' && fotoFiles[i]) || (typeof fotoPreviews !== 'undefined' && fotoPreviews[i]));
+                    const hasText = Boolean(s.pertanyaan && s.pertanyaan.trim());
+
+                    if (!hasText && !hasFoto) {
+                        firstErrorMsg = `⚠️ Kesalahan pada Soal #${noSoal}:\nTeks pertanyaan atau gambar soal wajib diisi sebelum kuis dipublikasikan!`;
                         firstErrorIdx = i;
                         valid = false;
                         break;
@@ -1320,6 +1466,31 @@ Tingkat Quiz
                 inputJenis.value = soal.jenis_soal;
                 hiddenInputs.appendChild(inputJenis);
 
+                // Input Tingkat Soal
+                const inputTingkat = document.createElement('input');
+                inputTingkat.type = 'hidden';
+                inputTingkat.name = `soal[${sIdx}][tingkat_soal]`;
+                inputTingkat.value = soal.tingkat_soal || 'sedang';
+                hiddenInputs.appendChild(inputTingkat);
+
+                // Input Parent Soal ID (jika disalin dari Bank Soal)
+                if (soal.parent_soal_id) {
+                    const inputParent = document.createElement('input');
+                    inputParent.type = 'hidden';
+                    inputParent.name = `soal[${sIdx}][parent_soal_id]`;
+                    inputParent.value = soal.parent_soal_id;
+                    hiddenInputs.appendChild(inputParent);
+                }
+
+                // Input Foto Soal (jika sudah ada foto yang tersimpan sebelumnya di server)
+                if (soal.foto_soal) {
+                    const inputFoto = document.createElement('input');
+                    inputFoto.type = 'hidden';
+                    inputFoto.name = `soal[${sIdx}][foto_soal]`;
+                    inputFoto.value = soal.foto_soal;
+                    hiddenInputs.appendChild(inputFoto);
+                }
+
                 // Input Pertanyaan
                 const inputP = document.createElement('input');
                 inputP.type = 'hidden';
@@ -1370,6 +1541,289 @@ Tingkat Quiz
                 }
             });
         });
+
+        // ==================== LOGIKA MODAL BANK SOAL ====================
+        const modalBankSoal = document.getElementById('modalBankSoal');
+        const btnOpenBankSoal = document.getElementById('btn-open-bank-soal');
+        const btnCloseModalBank = document.getElementById('closeModalBankSoalBtn');
+        const btnCancelModalBank = document.getElementById('cancelModalBankSoalBtn');
+        const bankModalListContainer = document.getElementById('bankModalListContainer');
+        const bankModalSearch = document.getElementById('bankModalSearch');
+        const bankModalMapel = document.getElementById('bankModalMapel');
+        const bankModalJenjang = document.getElementById('bankModalJenjang');
+        const bankModalSelectedCount = document.getElementById('bankModalSelectedCount');
+        const btnImportBankSubmit = document.getElementById('importBankSoalSubmitBtn');
+        const bankTingkatChips = Array.from(document.querySelectorAll('.bank-tingkat-chip'));
+
+        let bankSoalData = [];
+        let selectedBankSoal = new Set();
+        let activeBankTingkat = '';
+        let bankSearchDebounceTimer = null;
+
+        function openBankSoalModal() {
+            saveCurrentState();
+
+            // Set default mapel/jenjang dari form quiz jika belum diset
+            const quizMapelSelect = document.getElementById('select-mapel');
+            const quizJenjangSelect = document.getElementById('select-jenjang');
+            if (quizMapelSelect && quizMapelSelect.value && !bankModalMapel.value) {
+                bankModalMapel.value = quizMapelSelect.value;
+            }
+            if (quizJenjangSelect && quizJenjangSelect.value && !bankModalJenjang.value) {
+                bankModalJenjang.value = quizJenjangSelect.value;
+            }
+
+            selectedBankSoal.clear();
+            updateBankSelectedCountUI();
+            modalBankSoal.classList.remove('hidden');
+            fetchBankSoal();
+        }
+
+        function closeBankSoalModal() {
+            modalBankSoal.classList.add('hidden');
+        }
+
+        async function fetchBankSoal() {
+            bankModalListContainer.innerHTML = `
+                <div class="py-12 text-center text-slate-400">
+                    <div class="animate-spin w-8 h-8 border-4 border-[#007FBE] border-t-transparent rounded-full mx-auto mb-2"></div>
+                    <p class="text-xs font-bold">Memuat pertanyaan dari Bank Soal...</p>
+                </div>
+            `;
+
+            const bankModalSumber = document.getElementById('bankModalSumber');
+            const params = new URLSearchParams();
+            if (bankModalSumber && bankModalSumber.value) params.append('sumber', bankModalSumber.value);
+            if (bankModalMapel.value) params.append('mapel_id', bankModalMapel.value);
+            if (bankModalJenjang.value) params.append('jenjang_id', bankModalJenjang.value);
+            if (activeBankTingkat) params.append('tingkat_soal', activeBankTingkat);
+            if (bankModalSearch.value.trim()) params.append('q', bankModalSearch.value.trim());
+
+            try {
+                const response = await fetch(`{{ route('soal.bank.data') }}?${params.toString()}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    bankSoalData = result.data || [];
+                    renderBankSoalList();
+                } else {
+                    bankModalListContainer.innerHTML = `
+                        <div class="py-10 text-center text-rose-500 font-bold text-xs">
+                            Gagal mengambil data dari Bank Soal.
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                bankModalListContainer.innerHTML = `
+                    <div class="py-10 text-center text-rose-500 font-bold text-xs">
+                        Terjadi kesalahan koneksi saat memuat Bank Soal.
+                    </div>
+                `;
+            }
+        }
+
+        function renderBankSoalList() {
+            if (bankSoalData.length === 0) {
+                bankModalListContainer.innerHTML = `
+                    <div class="py-12 text-center text-slate-400">
+                        <span class="text-3xl block mb-2">📭</span>
+                        <p class="text-sm font-bold text-slate-700">Tidak ada soal ditemukan</p>
+                        <p class="text-xs text-slate-500 mt-1">Sesuaikan filter mapel atau kata kunci pencarian Anda.</p>
+                        <div class="mt-4">
+                            <a href="{{ route('soal.create') }}" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#007FBE] hover:bg-[#00689E] text-white text-xs font-bold shadow-xs transition">
+                                <span>+ Buat Soal Baru di Bank Soal</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Normalisasi pertanyaan yang sudah ada di kuis saat ini
+            const existingQuestionTexts = new Set(
+                soalList.map(s => (s.pertanyaan || '').trim().toLowerCase()).filter(t => t.length > 0)
+            );
+            const existingParentIds = new Set(
+                soalList.map(s => s.parent_soal_id).filter(id => id != null)
+            );
+
+            let html = '';
+            bankSoalData.forEach(item => {
+                const itemTextLower = (item.pertanyaan || '').trim().toLowerCase();
+                const isAlreadyInQuiz = (itemTextLower && existingQuestionTexts.has(itemTextLower))
+                    || existingParentIds.has(item.id_soal);
+                const isChecked = selectedBankSoal.has(item.id_soal);
+
+                const jenisBadge = item.jenis_soal === 'true_false'
+                    ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200">Benar/Salah</span>'
+                    : (item.jenis_soal === 'isian_singkat'
+                        ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-50 text-purple-700 border border-purple-200">Isian</span>'
+                        : '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-sky-50 text-[#007FBE] border border-[#B2E7FC]">Pilihan Ganda</span>');
+
+                const tingkatBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">${item.tingkat_soal}</span>`;
+
+                html += `
+                    <div class="p-3.5 rounded-2xl border-2 transition ${isAlreadyInQuiz ? 'bg-slate-50 border-slate-200 opacity-60' : (isChecked ? 'bg-[#F0F6FF] border-[#007FBE]' : 'bg-white border-slate-200 hover:border-[#B2E7FC]')} flex items-start gap-3">
+                        <div class="pt-0.5 shrink-0">
+                            <input type="checkbox"
+                                class="bank-item-checkbox rounded text-[#007FBE] focus:ring-0 w-4 h-4 cursor-pointer"
+                                data-id="${item.id_soal}"
+                                ${isAlreadyInQuiz ? 'disabled' : ''}
+                                ${isChecked ? 'checked' : ''}>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+                                ${jenisBadge}
+                                ${tingkatBadge}
+                                <span class="text-[10px] font-bold text-slate-500">📖 ${item.mapel_nama}</span>
+                                <span class="text-[10px] font-bold text-slate-400">• ${item.poin} Poin</span>
+                                <span class="text-[10px] font-bold text-slate-400">• ${item.timer}d</span>
+                                ${isAlreadyInQuiz ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">✓ Sudah Ada di Kuis Ini</span>' : ''}
+                            </div>
+                            <p class="text-xs font-bold text-slate-800 leading-relaxed break-words">
+                                ${item.pertanyaan}
+                            </p>
+                            <div class="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
+                                <span>Kunci: <strong class="text-emerald-700">${item.jawaban_benar || '-'}</strong></span>
+                                <span class="text-slate-400 text-[10px]">Oleh: ${item.penulis_nama}</span>
+                            </div>
+                        </div>
+                        ${item.foto_url ? `
+                            <img src="${item.foto_url}" class="w-14 h-12 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-50">
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            bankModalListContainer.innerHTML = html;
+
+            // Bind checkbox events
+            bankModalListContainer.querySelectorAll('.bank-item-checkbox:not(:disabled)').forEach(cb => {
+                cb.addEventListener('change', function () {
+                    const id = parseInt(this.dataset.id);
+                    if (this.checked) {
+                        selectedBankSoal.add(id);
+                    } else {
+                        selectedBankSoal.delete(id);
+                    }
+                    updateBankSelectedCountUI();
+                    renderBankSoalList();
+                });
+            });
+        }
+
+        function updateBankSelectedCountUI() {
+            const count = selectedBankSoal.size;
+            bankModalSelectedCount.textContent = `${count} soal dipilih`;
+            btnImportBankSubmit.disabled = count === 0;
+            btnImportBankSubmit.textContent = count > 0 ? `Masukkan ${count} Soal Terpilih` : 'Masukkan Soal Terpilih';
+        }
+
+        // Event listeners untuk filter modal
+        if (btnOpenBankSoal) btnOpenBankSoal.addEventListener('click', openBankSoalModal);
+        if (btnCloseModalBank) btnCloseModalBank.addEventListener('click', closeBankSoalModal);
+        if (btnCancelModalBank) btnCancelModalBank.addEventListener('click', closeBankSoalModal);
+        if (modalBankSoal) {
+            modalBankSoal.addEventListener('click', e => {
+                if (e.target === modalBankSoal) closeBankSoalModal();
+            });
+        }
+
+        if (bankModalSearch) {
+            bankModalSearch.addEventListener('input', () => {
+                clearTimeout(bankSearchDebounceTimer);
+                bankSearchDebounceTimer = setTimeout(fetchBankSoal, 300);
+            });
+        }
+        const bankModalSumber = document.getElementById('bankModalSumber');
+        if (bankModalSumber) bankModalSumber.addEventListener('change', fetchBankSoal);
+        if (bankModalMapel) bankModalMapel.addEventListener('change', fetchBankSoal);
+        if (bankModalJenjang) bankModalJenjang.addEventListener('change', fetchBankSoal);
+
+        bankTingkatChips.forEach(chip => {
+            chip.addEventListener('click', function () {
+                activeBankTingkat = this.dataset.value;
+                bankTingkatChips.forEach(c => {
+                    const isActive = c.dataset.value === activeBankTingkat;
+                    c.className = isActive
+                        ? 'bank-tingkat-chip px-3 py-1 rounded-full text-[11px] font-extrabold border bg-[#007FBE] text-white border-[#007FBE] cursor-pointer'
+                        : 'bank-tingkat-chip px-3 py-1 rounded-full text-[11px] font-extrabold border bg-white text-slate-600 border-slate-200 hover:bg-slate-50 cursor-pointer';
+                });
+                fetchBankSoal();
+            });
+        });
+
+        // Submit import button handler
+        if (btnImportBankSubmit) {
+            btnImportBankSubmit.addEventListener('click', function () {
+                if (selectedBankSoal.size === 0) return;
+
+                const selectedItems = bankSoalData.filter(item => selectedBankSoal.has(item.id_soal));
+
+                // Jika soalList saat ini hanya berisi 1 soal default yang kosong total, gantikan item pertama
+                const isSingleBlank = soalList.length === 1
+                    && (!soalList[0].pertanyaan || soalList[0].pertanyaan.trim() === '')
+                    && !soalList[0].foto_soal;
+
+                let startIndex = 0;
+                if (isSingleBlank && selectedItems.length > 0) {
+                    const first = selectedItems[0];
+                    soalList[0] = {
+                        parent_soal_id: first.id_soal,
+                        jenis_soal: first.jenis_soal,
+                        tingkat_soal: first.tingkat_soal || 'sedang',
+                        pertanyaan: first.pertanyaan,
+                        timer: String(first.durasi_detik || 20),
+                        poin: parseInt(first.poin) || 10,
+                        jawaban_singkat: first.jawaban_singkat || '',
+                        foto_soal: first.foto_soal || null,
+                        foto_url: first.foto_url || null,
+                        pilihan: first.pilihan && first.pilihan.length ? first.pilihan : [
+                            { label: "A", teks: "", is_correct: 0 },
+                            { label: "B", teks: "", is_correct: 0 },
+                            { label: "C", teks: "", is_correct: 0 },
+                            { label: "D", teks: "", is_correct: 0 },
+                        ]
+                    };
+                    if (first.foto_url) {
+                        fotoPreviews[0] = first.foto_url;
+                    }
+                    startIndex = 1;
+                }
+
+                for (let i = startIndex; i < selectedItems.length; i++) {
+                    const item = selectedItems[i];
+                    const newIdx = soalList.length;
+                    const newEntry = {
+                        parent_soal_id: item.id_soal,
+                        jenis_soal: item.jenis_soal,
+                        tingkat_soal: item.tingkat_soal || 'sedang',
+                        pertanyaan: item.pertanyaan,
+                        timer: String(item.durasi_detik || 20),
+                        poin: parseInt(item.poin) || 10,
+                        jawaban_singkat: item.jawaban_singkat || '',
+                        foto_soal: item.foto_soal || null,
+                        foto_url: item.foto_url || null,
+                        pilihan: item.pilihan && item.pilihan.length ? item.pilihan : [
+                            { label: "A", teks: "", is_correct: 0 },
+                            { label: "B", teks: "", is_correct: 0 },
+                            { label: "C", teks: "", is_correct: 0 },
+                            { label: "D", teks: "", is_correct: 0 },
+                        ]
+                    };
+                    soalList.push(newEntry);
+                    if (item.foto_url) {
+                        fotoPreviews[newIdx] = item.foto_url;
+                    }
+                }
+
+                closeBankSoalModal();
+                loadCurrentState();
+                renderThumbnails();
+            });
+        }
 
         // Init
         loadCurrentState();

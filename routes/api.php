@@ -7,6 +7,7 @@ use App\Http\Controllers\ModulController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\PresensiController;
+use App\Http\Controllers\SoalController;
 
 // AUTH
 Route::post('/login', [AuthController::class, 'login']);
@@ -43,6 +44,18 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
     Route::post('/quizzes/{id}/verify-token', [QuizController::class, 'apiVerifyToken']);
     Route::post('/quizzes/{id}/submit', [QuizController::class, 'apiSubmitQuiz']);
 
+    // Dungeon API
+    Route::prefix('dungeon')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\DungeonApiController::class, 'index']);
+        Route::get('/riwayat', [\App\Http\Controllers\Api\DungeonApiController::class, 'riwayat']);
+        Route::get('/{mapel}', [\App\Http\Controllers\Api\DungeonApiController::class, 'status']);
+        Route::post('/{mapel}/mulai', [\App\Http\Controllers\Api\DungeonApiController::class, 'mulai']);
+        Route::get('/{mapel}/soal', [\App\Http\Controllers\Api\DungeonApiController::class, 'ambilSoalAktif']);
+        Route::post('/{mapel}/jawab', [\App\Http\Controllers\Api\DungeonApiController::class, 'jawab']);
+        Route::post('/{mapel}/selesai', [\App\Http\Controllers\Api\DungeonApiController::class, 'selesai']);
+        Route::post('/{mapel}/lapor', [\App\Http\Controllers\Api\DungeonApiController::class, 'lapor']);
+    });
+
     // Tulis: hanya admin/guru (kepemilikan dicek lagi lewat Policy).
     Route::middleware('role:admin,guru')->group(function () {
         Route::post('/modules', [ModulController::class, 'apiStore']);
@@ -53,6 +66,12 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
         Route::put('/quizzes/{id}', [QuizController::class, 'apiUpdate']);
         Route::delete('/quizzes/{id}', [QuizController::class, 'apiDestroy']);
         Route::get('/quizzes/questions/bank', [QuizController::class, 'apiQuestionBank']);
+
+        // Bank Soal API
+        Route::get('/soal/bank-data', [SoalController::class, 'apiBankSoal']);
+        Route::post('/soal/copy-to-bank', [SoalController::class, 'copyToBank']);
+        Route::post('/soal/assign-to-quiz', [SoalController::class, 'assignToQuiz']);
+        Route::delete('/soal/{id}', [SoalController::class, 'destroy']);
 
         Route::get('/sesi-aktif', [PresensiController::class, 'sesiAktif']);
         Route::get('/sesi/{id_sesi}/rekap', [PresensiController::class, 'rekapApi']);

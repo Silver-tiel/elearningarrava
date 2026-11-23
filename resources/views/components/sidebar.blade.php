@@ -51,18 +51,18 @@
                     $actAdminDash = request()->is('admin/dashboard*') || request()->is('admin');
                     $actAdminSiswa = request()->is('admin/siswa*') || request()->is('admin/data*');
                     $actAdminModul = request()->is('admin/modul*');
-                    $actAdminQuiz = request()->is('admin/quiz*') || request()->is('admin/soal*');
+                    $actAdminQuiz = request()->is('quiz*') || request()->is('admin/quiz*') || request()->is('soal*') || request()->is('admin/soal*') || request()->is('dungeon*');
                     $actAdminAchieve = request()->is('admin/achievement*');
                     $actAdminGuru = request()->is('admin/guru*');
                     $actAdminProfil = request()->is('admin/profil*');
                 @endphp
 
                 @if($idTipe == 1)
-                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#082765]">
                         Manajemen
                     </div>
                 @else
-                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#082765]">
                         Guru
                     </div>
                 @endif
@@ -145,7 +145,7 @@
                         <span class="truncate">Kelas</span>
                     </a>
 
-                    <div class="px-3 pt-4 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                    <div class="px-3 pt-4 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#082765]">
                         Pembelajaran
                     </div>
                 @endif
@@ -262,7 +262,7 @@
                 @php
                     $actSiswaDash = request()->is('siswa/dashboard*');
                     $actSiswaBelajar = request()->is('siswa/belajar*');
-                    $actSiswaQuiz = request()->is('siswa/quiz*');
+                    $actSiswaQuiz = request()->is('siswa/quiz*') || request()->is('dungeon*');
                     $actSiswaLeaderboard = request()->is('siswa/leaderboard*');
                     $actSiswaProfil = request()->is('siswa/profil*');
                 @endphp

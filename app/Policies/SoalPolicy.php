@@ -24,7 +24,20 @@ class SoalPolicy
             return true;
         }
 
-        $quiz = $soal->quiz;
+        // Bank Soal standalone (tanpa quiz)
+        if ($soal->id_quiz === null) {
+            return $user->isGuru()
+                && $soal->id_penulis !== null
+                && (int) $soal->id_penulis === (int) $user->id_user;
+        }
+
+        $quiz = $soal->relationLoaded('quiz') ? $soal->quiz : \App\Models\Quiz::find($soal->id_quiz);
+
+        if ($quiz && $quiz->isDungeon()) {
+            return $user->isGuru()
+                && $soal->id_penulis !== null
+                && (int) $soal->id_penulis === (int) $user->id_user;
+        }
 
         return $user->isGuru()
             && $quiz !== null

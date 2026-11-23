@@ -117,7 +117,7 @@
         $showPresensi = ($index % 2 === 0);
         @endphp
 
-        <article class="stat-card flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+        <article class="stat-card flex min-w-0 flex-col overflow-hidden rounded-2xl border-2 border-[#DCEFFF] bg-white shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
 
             <div class="px-5 pt-5 sm:px-6 sm:pt-6">
 
