@@ -274,16 +274,39 @@ class OrangtuaController extends Controller
         return view('orangtua.pengaturan', compact('user'));
     }
 
+    public function profilApi(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $request->user()->only(['nama', 'email', 'nomor_hp', 'foto_profil']),
+        ]);
+    }
+
+    public function ubahPasswordApi(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+        $user->password = $validated['password'];
+        $user->save();
+
+        return response()->json(['success' => true]);
+    }
+
     public function updatePengaturan(Request $request)
     {
-        $user = Auth::user();
+        $user = $request->user();
+        $isApi = $request->routeIs('api.parent.profile.update');
 
         $request->validate([
             'nama'       => ['required', 'string', 'max:100'],
             'email'      => ['required', 'email', Rule::unique('user', 'email')->ignore($user->id_user, 'id_user')],
             'nomor_hp'   => ['nullable', 'string', 'max:20'],
             'foto_profil'=> ['nullable', 'image', 'max:2048'],
-            'password'   => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password'   => $isApi ? ['prohibited'] : ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
         $data = [
@@ -302,6 +325,11 @@ class OrangtuaController extends Controller
         }
 
         DB::table('user')->where('id_user', $user->id_user)->update($data);
+
+        if ($isApi) {
+            $user->refresh();
+            return $this->profilApi($request);
+        }
 
         return redirect()->route('orangtua.pengaturan')
             ->with('success', 'Perubahan berhasil disimpan.');
