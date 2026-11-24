@@ -496,7 +496,10 @@
                                 <option value="">-- Pilih Mata Pelajaran --</option>
                                 @if(isset($mapelList) && count($mapelList) > 0)
                                     @foreach($mapelList as $m)
-                                        <option value="{{ $m->id_mapel }}" @selected(old('id_mapel', $quiz->id_mapel ?? null) == $m->id_mapel)>
+                                        <option value="{{ $m->id_mapel }}"
+                                            data-jenjang="{{ $m->id_jenjang ?? '' }}"
+                                            data-name="{{ $m->nama_mapel }}"
+                                            @selected(old('id_mapel', $quiz->id_mapel ?? null) == $m->id_mapel)>
                                             {{ $m->nama_mapel }}{{ $m->jenjang ? ' (' . $m->jenjang->nama_tipe . ')' : '' }}
                                         </option>
                                     @endforeach
@@ -753,7 +756,10 @@ Tingkat Quiz
                             <option value="">Semua Mapel</option>
                             @if(isset($mapelList))
                                 @foreach($mapelList as $mpl)
-                                    <option value="{{ $mpl->id_mapel }}" @selected(isset($quiz) && $quiz->id_mapel == $mpl->id_mapel)>{{ $mpl->nama_mapel }}</option>
+                                    <option value="{{ $mpl->id_mapel }}"
+                                        data-jenjang="{{ $mpl->id_jenjang ?? '' }}"
+                                        data-name="{{ $mpl->nama_mapel }}"
+                                        @selected(isset($quiz) && $quiz->id_mapel == $mpl->id_mapel)>{{ $mpl->nama_mapel }}</option>
                                 @endforeach
                             @endif
                         </select>
@@ -1823,6 +1829,67 @@ Tingkat Quiz
                 loadCurrentState();
                 renderThumbnails();
             });
+        }
+
+        // Filter Mapel berdasarkan Jenjang
+        function applyJenjangMapelFilter(jenjangSelect, mapelSelect) {
+            if (!jenjangSelect || !mapelSelect) return;
+            const jenjangId = parseInt(jenjangSelect.value) || 0;
+            const currentVal = mapelSelect.value;
+            let currentValid = false;
+
+            // ID Mapel SMA khusus: 11 (Fisika), 12 (Kimia), 13 (Biologi)
+            const smaOnlyIds = [11, 12, 13];
+            // ID Mapel IPA Umum: 4
+            const ipaUmumId = 4;
+
+            Array.from(mapelSelect.options).forEach(opt => {
+                if (!opt.value) {
+                    opt.hidden = false;
+                    return;
+                }
+
+                const mapelId = parseInt(opt.value);
+                const mapelJenjang = opt.getAttribute('data-jenjang') ? parseInt(opt.getAttribute('data-jenjang')) : null;
+                const mapelName = (opt.getAttribute('data-name') || opt.text || '').toLowerCase();
+                let visible = true;
+
+                const isSmaOnly = mapelJenjang === 3 || smaOnlyIds.includes(mapelId) ||
+                    mapelName.includes('fisika') || mapelName.includes('kimia') || mapelName.includes('biologi');
+                const isIpaIpsUmum = mapelId === 4 || mapelId === 5 ||
+                    mapelName.includes('ilmu pengetahuan alam') || mapelName.includes('ilmu pengetahuan sosial');
+
+                if (jenjangId === 1 || jenjangId === 2) {
+                    // SD & SMP: Sembunyikan mapel SMA (Fisika, Kimia, Biologi)
+                    if (isSmaOnly) visible = false;
+                } else if (jenjangId === 3) {
+                    // SMA: Sembunyikan IPA umum & IPS umum (karena IPA dipecah Fisika/Kimia/Biologi, IPS untuk SD/SMP)
+                    if (isIpaIpsUmum) visible = false;
+                }
+
+                opt.hidden = !visible;
+                opt.disabled = !visible;
+
+                if (opt.value === currentVal && visible) {
+                    currentValid = true;
+                }
+            });
+
+            if (!currentValid && currentVal) {
+                mapelSelect.value = '';
+            }
+        }
+
+        const quizJenjangSelectEl = document.getElementById('select-jenjang');
+        const quizMapelSelectEl = document.getElementById('select-mapel');
+        if (quizJenjangSelectEl && quizMapelSelectEl) {
+            quizJenjangSelectEl.addEventListener('change', () => applyJenjangMapelFilter(quizJenjangSelectEl, quizMapelSelectEl));
+            applyJenjangMapelFilter(quizJenjangSelectEl, quizMapelSelectEl);
+        }
+
+        if (bankModalJenjang && bankModalMapel) {
+            bankModalJenjang.addEventListener('change', () => applyJenjangMapelFilter(bankModalJenjang, bankModalMapel));
+            applyJenjangMapelFilter(bankModalJenjang, bankModalMapel);
         }
 
         // Init

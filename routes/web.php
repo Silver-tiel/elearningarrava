@@ -35,7 +35,7 @@ use App\Http\Controllers\SiswaQrController;
 
 // Halaman pendaftaran.
 Route::get('/pendaftaran', function () {
-    $jenjang = App\Models\jenjang::all();
+    $jenjang = App\Models\Jenjang::all();
     return view('pendaftaran', ['jenjang' => $jenjang]);
 })->name('pendaftaran');
 
@@ -102,13 +102,13 @@ Route::prefix('orangtua')
         Route::get('/pencapaian', [PencapaianController::class, 'index'])->name('pencapaian');
 
         Route::get('/riwayat-quiz', [OrangtuaController::class, 'riwayatQuiz'])
-        ->name('riwayat-quiz');
+            ->name('riwayat-quiz');
 
         Route::get('/aktivitas-belajar', [OrangtuaController::class, 'aktivitasBelajar'])
-        ->name('aktivitas-belajar');
+            ->name('aktivitas-belajar');
 
         Route::get('/absensi', [OrangtuaController::class, 'absensi'])
-        ->name('absensi');
+            ->name('absensi');
     });
 
 // Route Notifikasi Presensi Realtime (Siswa & Orang Tua)
@@ -121,7 +121,12 @@ Route::middleware(['auth', 'active.student', 'role:siswa,orangtua'])->group(func
 Route::get('/modul/{id}/show', [ModulController::class, 'show'])->name('modul.show')->middleware(['auth', 'active.student', 'role:admin,guru,siswa,orangtua']);
 
 // Admin dashboard.
-Route::get('/admin', function () {
+/**
+ * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+ * @intelephense-suppress 6613
+ * @suppress PHP6613
+ */
+Route::get('/admin', function (): \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse {
     $user = Auth::user();
     // Siswa tidak boleh akses halaman admin
     if ($user && $user->id_tipeuser == 3) {
@@ -136,16 +141,16 @@ Route::get('/admin', function () {
     $quizQuery = Quiz::query();
 
     if (in_array($dashboardView, ['overview', 'guru'], true)) {
-        if ($isGuru && \Illuminate\Support\Facades\Schema::hasColumn('modul', 'id_pembuat')) {
+        if ($isGuru && Schema::hasColumn('modul', 'id_pembuat')) {
             $modulQuery->where('id_pembuat', $user->id_user);
         }
-        if ($isGuru && \Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_pembuat')) {
+        if ($isGuru && Schema::hasColumn('quiz', 'id_pembuat')) {
             $quizQuery->where('id_pembuat', $user->id_user);
         }
     }
 
     $logAktivitasTersedia = $dashboardView === 'overview' && Schema::hasTable('logaktivitas');
-    $awalMinggu = now()->startOfWeek(Carbon::MONDAY)->startOfDay();
+    $awalMinggu = now()->startOfWeek()->startOfDay();
     $akhirMinggu = $awalMinggu->copy()->addDays(6)->endOfDay();
     $grafikPenyelesaianMingguan = collect();
     $hasilKuisMingguIni = collect();
@@ -167,239 +172,239 @@ Route::get('/admin', function () {
     $jenjangDashboard = collect();
 
     if ($dashboardView === 'siswa') {
-    $hasilKuisHarian = Schema::hasTable('hasilquizmodul')
-        ? DB::table('hasilquizmodul')
-            ->whereIn('id_user', User::where('id_tipeuser', 3)->select('id_user'))
-            ->whereBetween('waktu_dapat', [$awalMinggu, $akhirMinggu])
-            ->selectRaw('DATE(waktu_dapat) as tanggal, COUNT(*) as jumlah')
-            ->groupByRaw('DATE(waktu_dapat)')
-            ->pluck('jumlah', 'tanggal')
-        : collect();
-    $modulTuntasHarian = Schema::hasTable('progres_modul_siswa')
-        ? DB::table('progres_modul_siswa')
-            ->whereIn('id_user', User::where('id_tipeuser', 3)->select('id_user'))
-            ->where('is_tuntas', true)
-            ->whereBetween('waktu_tuntas', [$awalMinggu, $akhirMinggu])
-            ->selectRaw('DATE(waktu_tuntas) as tanggal, COUNT(*) as jumlah')
-            ->groupByRaw('DATE(waktu_tuntas)')
-            ->pluck('jumlah', 'tanggal')
-        : collect();
-    $grafikPenyelesaianMingguan = collect(range(0, 6))->map(function (int $offset) use ($awalMinggu, $hasilKuisHarian, $modulTuntasHarian) {
-        $tanggal = $awalMinggu->copy()->addDays($offset);
-        $tanggalKey = $tanggal->toDateString();
+        $hasilKuisHarian = Schema::hasTable('hasilquizmodul')
+            ? DB::table('hasilquizmodul')
+                ->whereIn('id_user', User::where('id_tipeuser', 3)->select('id_user'))
+                ->whereBetween('waktu_dapat', [$awalMinggu, $akhirMinggu])
+                ->selectRaw('DATE(waktu_dapat) as tanggal, COUNT(*) as jumlah')
+                ->groupByRaw('DATE(waktu_dapat)')
+                ->pluck('jumlah', 'tanggal')
+            : collect();
+        $modulTuntasHarian = Schema::hasTable('progres_modul_siswa')
+            ? DB::table('progres_modul_siswa')
+                ->whereIn('id_user', User::where('id_tipeuser', 3)->select('id_user'))
+                ->where('is_tuntas', true)
+                ->whereBetween('waktu_tuntas', [$awalMinggu, $akhirMinggu])
+                ->selectRaw('DATE(waktu_tuntas) as tanggal, COUNT(*) as jumlah')
+                ->groupByRaw('DATE(waktu_tuntas)')
+                ->pluck('jumlah', 'tanggal')
+            : collect();
+        $grafikPenyelesaianMingguan = collect(range(0, 6))->map(function (int $offset) use ($awalMinggu, $hasilKuisHarian, $modulTuntasHarian) {
+            $tanggal = $awalMinggu->copy()->addDays($offset);
+            $tanggalKey = $tanggal->toDateString();
 
-        return [
-            'tanggal' => $tanggalKey,
-            'label' => $tanggal->locale('id')->translatedFormat('l'),
-            'kuis' => (int) ($hasilKuisHarian->get($tanggalKey) ?? 0),
-            'modul' => (int) ($modulTuntasHarian->get($tanggalKey) ?? 0),
-        ];
-    });
-    $siswaAktifQuery = fn () => User::where('id_tipeuser', 3)
-        ->where(function ($query) {
-            $query->whereNull('status_akun')->orWhere('status_akun', '!=', 'Nonaktif');
+            return [
+                'tanggal' => $tanggalKey,
+                'label' => $tanggal->locale('id')->translatedFormat('l'),
+                'kuis' => (int) ($hasilKuisHarian->get($tanggalKey) ?? 0),
+                'modul' => (int) ($modulTuntasHarian->get($tanggalKey) ?? 0),
+            ];
         });
-    $jenjangDashboard = Schema::hasTable('jenjang')
-        ? DB::table('jenjang')->select('id_jenjang', 'nama_tipe')->orderBy('nama_tipe')->get()
-        : collect();
-
-    $hasilKuisMingguIni = Schema::hasTable('hasilquizmodul')
-        ? DB::table('hasilquizmodul as hasil')
-            ->join('user as siswa', 'siswa.id_user', '=', 'hasil.id_user')
-            ->where('siswa.id_tipeuser', 3)
-            ->whereBetween('hasil.waktu_dapat', [$awalMinggu, now()])
-            ->select('siswa.id_jenjang')
-            ->selectRaw('COUNT(*) as jumlah_submit')
-            ->selectRaw('AVG(CASE WHEN hasil.total_poin > 0 THEN hasil.poin_didapat * 100.0 / hasil.total_poin END) as rata_nilai')
-            ->selectRaw('COUNT(CASE WHEN hasil.total_poin > 0 THEN 1 END) as jumlah_nilai')
-            ->selectRaw('SUM(CASE WHEN hasil.is_lulus = 1 THEN 1 ELSE 0 END) as jumlah_lulus')
-            ->groupBy('siswa.id_jenjang')
-            ->get()
-            ->keyBy('id_jenjang')
-        : collect();
-
-    $jumlahSubmitKuis = (int) $hasilKuisMingguIni->sum('jumlah_submit');
-    $jumlahKuisLulus = (int) $hasilKuisMingguIni->sum('jumlah_lulus');
-    $jumlahNilaiKuis = (int) $hasilKuisMingguIni->sum('jumlah_nilai');
-    $rataNilaiKuis = $jumlahNilaiKuis > 0
-        ? round((float) (
-            $hasilKuisMingguIni->sum(fn ($row) => (float) ($row->rata_nilai ?? 0) * (int) $row->jumlah_nilai)
-            / $jumlahNilaiKuis
-        ), 1)
-        : null;
-    $persentaseLulusKuis = $jumlahSubmitKuis > 0
-        ? round(($jumlahKuisLulus / $jumlahSubmitKuis) * 100, 1)
-        : null;
-
-    if (Schema::hasTable('modul') && Schema::hasTable('progres_modul_siswa')) {
-        $modulPerJenjang = Modul::published()
-            ->select('id_jenjang')
-            ->selectRaw('COUNT(*) as jumlah_modul')
-            ->groupBy('id_jenjang')
-            ->pluck('jumlah_modul', 'id_jenjang');
-        $jumlahSiswaPerJenjang = $siswaAktifQuery()
-            ->select('id_jenjang')
-            ->selectRaw('COUNT(*) as jumlah_siswa')
-            ->groupBy('id_jenjang')
-            ->pluck('jumlah_siswa', 'id_jenjang');
-        $modulTuntasPerJenjang = DB::table('progres_modul_siswa as progres')
-            ->join('user as siswa', 'siswa.id_user', '=', 'progres.id_user')
-            ->join('modul', 'modul.id_modul', '=', 'progres.id_modul')
-            ->where('siswa.id_tipeuser', 3)
+        $siswaAktifQuery = fn() => User::where('id_tipeuser', 3)
             ->where(function ($query) {
-                $query->whereNull('siswa.status_akun')->orWhere('siswa.status_akun', '!=', 'Nonaktif');
-            })
-            ->where('progres.is_tuntas', true)
-            ->whereColumn('modul.id_jenjang', 'siswa.id_jenjang')
-            ->where(function ($query) {
-                $query->whereNull('modul.progressModul')->orWhere('modul.progressModul', '!=', 'Draft');
-            })
-            ->whereNotNull('siswa.id_jenjang')
-            ->select('siswa.id_jenjang')
-            ->selectRaw('COUNT(*) as jumlah_tuntas')
-            ->groupBy('siswa.id_jenjang')
-            ->pluck('jumlah_tuntas', 'id_jenjang');
+                $query->whereNull('status_akun')->orWhere('status_akun', '!=', 'Nonaktif');
+            });
+        $jenjangDashboard = Schema::hasTable('jenjang')
+            ? DB::table('jenjang')->select('id_jenjang', 'nama_tipe')->orderBy('nama_tipe')->get()
+            : collect();
 
-        $progressPerJenjang = $jenjangDashboard->map(function ($jenjang) use ($modulPerJenjang, $jumlahSiswaPerJenjang, $modulTuntasPerJenjang) {
-            $jumlahModul = (int) ($modulPerJenjang->get($jenjang->id_jenjang) ?? 0);
-            $jumlahSiswa = (int) ($jumlahSiswaPerJenjang->get($jenjang->id_jenjang) ?? 0);
-            $jumlahPeluangTuntas = $jumlahModul * $jumlahSiswa;
-            $jumlahTuntas = (int) ($modulTuntasPerJenjang->get($jenjang->id_jenjang) ?? 0);
+        $hasilKuisMingguIni = Schema::hasTable('hasilquizmodul')
+            ? DB::table('hasilquizmodul as hasil')
+                ->join('user as siswa', 'siswa.id_user', '=', 'hasil.id_user')
+                ->where('siswa.id_tipeuser', 3)
+                ->whereBetween('hasil.waktu_dapat', [$awalMinggu, now()])
+                ->select('siswa.id_jenjang')
+                ->selectRaw('COUNT(*) as jumlah_submit')
+                ->selectRaw('AVG(CASE WHEN hasil.total_poin > 0 THEN hasil.poin_didapat * 100.0 / hasil.total_poin END) as rata_nilai')
+                ->selectRaw('COUNT(CASE WHEN hasil.total_poin > 0 THEN 1 END) as jumlah_nilai')
+                ->selectRaw('SUM(CASE WHEN hasil.is_lulus = 1 THEN 1 ELSE 0 END) as jumlah_lulus')
+                ->groupBy('siswa.id_jenjang')
+                ->get()
+                ->keyBy('id_jenjang')
+            : collect();
+
+        $jumlahSubmitKuis = (int) $hasilKuisMingguIni->sum('jumlah_submit');
+        $jumlahKuisLulus = (int) $hasilKuisMingguIni->sum('jumlah_lulus');
+        $jumlahNilaiKuis = (int) $hasilKuisMingguIni->sum('jumlah_nilai');
+        $rataNilaiKuis = $jumlahNilaiKuis > 0
+            ? round((float) (
+                $hasilKuisMingguIni->sum(fn($row) => (float) ($row->rata_nilai ?? 0) * (int) $row->jumlah_nilai)
+                / $jumlahNilaiKuis
+            ), 1)
+            : null;
+        $persentaseLulusKuis = $jumlahSubmitKuis > 0
+            ? round(($jumlahKuisLulus / $jumlahSubmitKuis) * 100, 1)
+            : null;
+
+        if (Schema::hasTable('modul') && Schema::hasTable('progres_modul_siswa')) {
+            $modulPerJenjang = Modul::published()
+                ->select('id_jenjang')
+                ->selectRaw('COUNT(*) as jumlah_modul')
+                ->groupBy('id_jenjang')
+                ->pluck('jumlah_modul', 'id_jenjang');
+            $jumlahSiswaPerJenjang = $siswaAktifQuery()
+                ->select('id_jenjang')
+                ->selectRaw('COUNT(*) as jumlah_siswa')
+                ->groupBy('id_jenjang')
+                ->pluck('jumlah_siswa', 'id_jenjang');
+            $modulTuntasPerJenjang = DB::table('progres_modul_siswa as progres')
+                ->join('user as siswa', 'siswa.id_user', '=', 'progres.id_user')
+                ->join('modul', 'modul.id_modul', '=', 'progres.id_modul')
+                ->where('siswa.id_tipeuser', 3)
+                ->where(function ($query) {
+                    $query->whereNull('siswa.status_akun')->orWhere('siswa.status_akun', '!=', 'Nonaktif');
+                })
+                ->where('progres.is_tuntas', true)
+                ->whereColumn('modul.id_jenjang', 'siswa.id_jenjang')
+                ->where(function ($query) {
+                    $query->whereNull('modul.progressModul')->orWhere('modul.progressModul', '!=', 'Draft');
+                })
+                ->whereNotNull('siswa.id_jenjang')
+                ->select('siswa.id_jenjang')
+                ->selectRaw('COUNT(*) as jumlah_tuntas')
+                ->groupBy('siswa.id_jenjang')
+                ->pluck('jumlah_tuntas', 'id_jenjang');
+
+            $progressPerJenjang = $jenjangDashboard->map(function ($jenjang) use ($modulPerJenjang, $jumlahSiswaPerJenjang, $modulTuntasPerJenjang) {
+                $jumlahModul = (int) ($modulPerJenjang->get($jenjang->id_jenjang) ?? 0);
+                $jumlahSiswa = (int) ($jumlahSiswaPerJenjang->get($jenjang->id_jenjang) ?? 0);
+                $jumlahPeluangTuntas = $jumlahModul * $jumlahSiswa;
+                $jumlahTuntas = (int) ($modulTuntasPerJenjang->get($jenjang->id_jenjang) ?? 0);
+
+                return [
+                    'jenjang' => $jenjang->nama_tipe,
+                    'jumlah_siswa' => $jumlahSiswa,
+                    'jumlah_modul' => $jumlahModul,
+                    'jumlah_tuntas' => $jumlahTuntas,
+                    'persentase' => $jumlahPeluangTuntas > 0
+                        ? min(100, round(($jumlahTuntas / $jumlahPeluangTuntas) * 100, 1))
+                        : null,
+                ];
+            })->values();
+        }
+
+        $aktivitasMingguIni = collect();
+        $aktivitas14HariIni = collect();
+        if (Schema::hasTable('hasilquizmodul')) {
+            $aktivitasMingguIni = $aktivitasMingguIni->merge(
+                DB::table('hasilquizmodul')
+                    ->whereIn('id_user', $siswaAktifQuery()->select('id_user'))
+                    ->whereBetween('waktu_dapat', [$awalMinggu, now()])
+                    ->distinct()
+                    ->pluck('id_user')
+            );
+            $aktivitas14HariIni = $aktivitas14HariIni->merge(
+                DB::table('hasilquizmodul')
+                    ->whereIn('id_user', $siswaAktifQuery()->select('id_user'))
+                    ->whereBetween('waktu_dapat', [now()->copy()->subDays(14), now()])
+                    ->distinct()
+                    ->pluck('id_user')
+            );
+        }
+        if (Schema::hasTable('progres_modul_siswa')) {
+            $aktivitasMingguIni = $aktivitasMingguIni->merge(
+                DB::table('progres_modul_siswa')
+                    ->whereIn('id_user', $siswaAktifQuery()->select('id_user'))
+                    ->whereBetween('updated_at', [$awalMinggu, now()])
+                    ->distinct()
+                    ->pluck('id_user')
+            );
+            $aktivitas14HariIni = $aktivitas14HariIni->merge(
+                DB::table('progres_modul_siswa')
+                    ->whereIn('id_user', $siswaAktifQuery()->select('id_user'))
+                    ->whereBetween('updated_at', [now()->copy()->subDays(14), now()])
+                    ->distinct()
+                    ->pluck('id_user')
+            );
+        }
+        $siswaAktifMingguIni = $aktivitasMingguIni->unique()->count();
+        $siswaAktif14HariIni = $aktivitas14HariIni->unique()->count();
+        $siswaTidakAktif14Hari = max(0, (int) $siswaAktifQuery()->count() - $siswaAktif14HariIni);
+
+        $presensiTersedia = Schema::hasTable('sesi_presensi')
+            && Schema::hasTable('presensi')
+            && Schema::hasTable('kelas');
+        $presensiMingguan = collect();
+        if ($presensiTersedia) {
+            $hadirPerSesi = DB::table('presensi as presensi')
+                ->join('user as siswa', 'siswa.id_user', '=', 'presensi.id_siswa')
+                ->where('siswa.id_tipeuser', 3)
+                ->where(function ($query) {
+                    $query->whereNull('siswa.status_akun')->orWhere('siswa.status_akun', '!=', 'Nonaktif');
+                })
+                ->select('presensi.id_sesi')
+                ->selectRaw('COUNT(DISTINCT presensi.id_siswa) as jumlah_hadir')
+                ->groupBy('presensi.id_sesi');
+            $presensiMingguan = DB::table('sesi_presensi as sesi')
+                ->join('kelas', 'kelas.id_kelas', '=', 'sesi.id_kelas')
+                ->leftJoinSub($hadirPerSesi, 'rekap_hadir', function ($join) {
+                    $join->on('rekap_hadir.id_sesi', '=', 'sesi.id_sesi');
+                })
+                ->whereNotNull('kelas.id_jenjang')
+                ->whereBetween('sesi.tanggal', [$awalMinggu->toDateString(), now()->toDateString()])
+                ->where(function ($query) {
+                    $query->where('sesi.tanggal', '<', now()->toDateString())
+                        ->orWhere(function ($today) {
+                            $today->where('sesi.tanggal', now()->toDateString())
+                                ->where('sesi.status', 'tutup');
+                        });
+                })
+                ->select('sesi.id_sesi', 'kelas.id_jenjang')
+                ->selectRaw('COALESCE(rekap_hadir.jumlah_hadir, 0) as jumlah_hadir')
+                ->get();
+        }
+        $jumlahSiswaPresensiPerJenjang = [];
+        foreach ($presensiMingguan as $sesi) {
+            $idJenjang = (int) $sesi->id_jenjang;
+            if (!array_key_exists($idJenjang, $jumlahSiswaPresensiPerJenjang)) {
+                $jumlahSiswaPresensiPerJenjang[$idJenjang] = (int) $siswaAktifQuery()
+                    ->where('id_jenjang', $idJenjang)
+                    ->count();
+            }
+            $peserta = $jumlahSiswaPresensiPerJenjang[$idJenjang];
+            if ($peserta === 0) {
+                continue;
+            }
+            $jumlahPesertaSeharusnya += $peserta;
+            $jumlahHadir = min($peserta, (int) $sesi->jumlah_hadir);
+            $jumlahHadirMingguan += $jumlahHadir;
+            $sesiPresensiSelesai++;
+
+            $rekapJenjang = $presensiPerJenjang->get($idJenjang, [
+                'jenjang' => $jenjangDashboard->firstWhere('id_jenjang', $idJenjang)?->nama_tipe ?? 'Lainnya',
+                'jumlah_hadir' => 0,
+                'jumlah_peserta' => 0,
+                'jumlah_sesi' => 0,
+            ]);
+            $rekapJenjang['jumlah_hadir'] += $jumlahHadir;
+            $rekapJenjang['jumlah_peserta'] += $peserta;
+            $rekapJenjang['jumlah_sesi']++;
+            $presensiPerJenjang->put($idJenjang, $rekapJenjang);
+        }
+        $persentaseHadirMingguan = $jumlahPesertaSeharusnya > 0
+            ? round(($jumlahHadirMingguan / $jumlahPesertaSeharusnya) * 100, 1)
+            : null;
+        $presensiPerJenjang = $presensiPerJenjang->map(function ($rekap) {
+            $rekap['persentase'] = $rekap['jumlah_peserta'] > 0
+                ? round(($rekap['jumlah_hadir'] / $rekap['jumlah_peserta']) * 100, 1)
+                : null;
+
+            return $rekap;
+        })->values();
+        $jumlahSiswaAktif = (int) $siswaAktifQuery()->count();
+        $hasilKuisPerJenjang = $jenjangDashboard->map(function ($jenjang) use ($hasilKuisMingguIni) {
+            $hasil = $hasilKuisMingguIni->get($jenjang->id_jenjang);
+            $jumlahSubmit = (int) ($hasil->jumlah_submit ?? 0);
 
             return [
                 'jenjang' => $jenjang->nama_tipe,
-                'jumlah_siswa' => $jumlahSiswa,
-                'jumlah_modul' => $jumlahModul,
-                'jumlah_tuntas' => $jumlahTuntas,
-                'persentase' => $jumlahPeluangTuntas > 0
-                    ? min(100, round(($jumlahTuntas / $jumlahPeluangTuntas) * 100, 1))
+                'jumlah_submit' => $jumlahSubmit,
+                'rata_nilai' => $hasil?->rata_nilai !== null ? round((float) $hasil->rata_nilai, 1) : null,
+                'persentase_lulus' => $jumlahSubmit > 0
+                    ? round(((int) $hasil->jumlah_lulus / $jumlahSubmit) * 100, 1)
                     : null,
             ];
         })->values();
-    }
-
-    $aktivitasMingguIni = collect();
-    $aktivitas14HariIni = collect();
-    if (Schema::hasTable('hasilquizmodul')) {
-        $aktivitasMingguIni = $aktivitasMingguIni->merge(
-            DB::table('hasilquizmodul')
-                ->whereIn('id_user', $siswaAktifQuery()->select('id_user'))
-                ->whereBetween('waktu_dapat', [$awalMinggu, now()])
-                ->distinct()
-                ->pluck('id_user')
-        );
-        $aktivitas14HariIni = $aktivitas14HariIni->merge(
-            DB::table('hasilquizmodul')
-                ->whereIn('id_user', $siswaAktifQuery()->select('id_user'))
-                ->whereBetween('waktu_dapat', [now()->copy()->subDays(14), now()])
-                ->distinct()
-                ->pluck('id_user')
-        );
-    }
-    if (Schema::hasTable('progres_modul_siswa')) {
-        $aktivitasMingguIni = $aktivitasMingguIni->merge(
-            DB::table('progres_modul_siswa')
-                ->whereIn('id_user', $siswaAktifQuery()->select('id_user'))
-                ->whereBetween('updated_at', [$awalMinggu, now()])
-                ->distinct()
-                ->pluck('id_user')
-        );
-        $aktivitas14HariIni = $aktivitas14HariIni->merge(
-            DB::table('progres_modul_siswa')
-                ->whereIn('id_user', $siswaAktifQuery()->select('id_user'))
-                ->whereBetween('updated_at', [now()->copy()->subDays(14), now()])
-                ->distinct()
-                ->pluck('id_user')
-        );
-    }
-    $siswaAktifMingguIni = $aktivitasMingguIni->unique()->count();
-    $siswaAktif14HariIni = $aktivitas14HariIni->unique()->count();
-    $siswaTidakAktif14Hari = max(0, (int) $siswaAktifQuery()->count() - $siswaAktif14HariIni);
-
-    $presensiTersedia = Schema::hasTable('sesi_presensi')
-        && Schema::hasTable('presensi')
-        && Schema::hasTable('kelas');
-    $presensiMingguan = collect();
-    if ($presensiTersedia) {
-        $hadirPerSesi = DB::table('presensi as presensi')
-            ->join('user as siswa', 'siswa.id_user', '=', 'presensi.id_siswa')
-            ->where('siswa.id_tipeuser', 3)
-            ->where(function ($query) {
-                $query->whereNull('siswa.status_akun')->orWhere('siswa.status_akun', '!=', 'Nonaktif');
-            })
-            ->select('presensi.id_sesi')
-            ->selectRaw('COUNT(DISTINCT presensi.id_siswa) as jumlah_hadir')
-            ->groupBy('presensi.id_sesi');
-        $presensiMingguan = DB::table('sesi_presensi as sesi')
-            ->join('kelas', 'kelas.id_kelas', '=', 'sesi.id_kelas')
-            ->leftJoinSub($hadirPerSesi, 'rekap_hadir', function ($join) {
-                $join->on('rekap_hadir.id_sesi', '=', 'sesi.id_sesi');
-            })
-            ->whereNotNull('kelas.id_jenjang')
-            ->whereBetween('sesi.tanggal', [$awalMinggu->toDateString(), now()->toDateString()])
-            ->where(function ($query) {
-                $query->where('sesi.tanggal', '<', now()->toDateString())
-                    ->orWhere(function ($today) {
-                        $today->where('sesi.tanggal', now()->toDateString())
-                            ->where('sesi.status', 'tutup');
-                    });
-            })
-            ->select('sesi.id_sesi', 'kelas.id_jenjang')
-            ->selectRaw('COALESCE(rekap_hadir.jumlah_hadir, 0) as jumlah_hadir')
-            ->get();
-    }
-    $jumlahSiswaPresensiPerJenjang = [];
-    foreach ($presensiMingguan as $sesi) {
-        $idJenjang = (int) $sesi->id_jenjang;
-        if (!array_key_exists($idJenjang, $jumlahSiswaPresensiPerJenjang)) {
-            $jumlahSiswaPresensiPerJenjang[$idJenjang] = (int) $siswaAktifQuery()
-                ->where('id_jenjang', $idJenjang)
-                ->count();
-        }
-        $peserta = $jumlahSiswaPresensiPerJenjang[$idJenjang];
-        if ($peserta === 0) {
-            continue;
-        }
-        $jumlahPesertaSeharusnya += $peserta;
-        $jumlahHadir = min($peserta, (int) $sesi->jumlah_hadir);
-        $jumlahHadirMingguan += $jumlahHadir;
-        $sesiPresensiSelesai++;
-
-        $rekapJenjang = $presensiPerJenjang->get($idJenjang, [
-            'jenjang' => $jenjangDashboard->firstWhere('id_jenjang', $idJenjang)?->nama_tipe ?? 'Lainnya',
-            'jumlah_hadir' => 0,
-            'jumlah_peserta' => 0,
-            'jumlah_sesi' => 0,
-        ]);
-        $rekapJenjang['jumlah_hadir'] += $jumlahHadir;
-        $rekapJenjang['jumlah_peserta'] += $peserta;
-        $rekapJenjang['jumlah_sesi']++;
-        $presensiPerJenjang->put($idJenjang, $rekapJenjang);
-    }
-    $persentaseHadirMingguan = $jumlahPesertaSeharusnya > 0
-        ? round(($jumlahHadirMingguan / $jumlahPesertaSeharusnya) * 100, 1)
-        : null;
-    $presensiPerJenjang = $presensiPerJenjang->map(function ($rekap) {
-        $rekap['persentase'] = $rekap['jumlah_peserta'] > 0
-            ? round(($rekap['jumlah_hadir'] / $rekap['jumlah_peserta']) * 100, 1)
-            : null;
-
-        return $rekap;
-    })->values();
-    $jumlahSiswaAktif = (int) $siswaAktifQuery()->count();
-    $hasilKuisPerJenjang = $jenjangDashboard->map(function ($jenjang) use ($hasilKuisMingguIni) {
-        $hasil = $hasilKuisMingguIni->get($jenjang->id_jenjang);
-        $jumlahSubmit = (int) ($hasil->jumlah_submit ?? 0);
-
-        return [
-            'jenjang' => $jenjang->nama_tipe,
-            'jumlah_submit' => $jumlahSubmit,
-            'rata_nilai' => $hasil?->rata_nilai !== null ? round((float) $hasil->rata_nilai, 1) : null,
-            'persentase_lulus' => $jumlahSubmit > 0
-                ? round(((int) $hasil->jumlah_lulus / $jumlahSubmit) * 100, 1)
-                : null,
-        ];
-    })->values();
     }
 
     $registrasiBulanan = collect();
@@ -409,16 +414,16 @@ Route::get('/admin', function () {
         $registrasiBulananRaw = User::whereIn('id_tipeuser', $tipeRegistrasi)
             ->whereBetween('created_at', [$awalBulanRegistrasi, now()])
             ->get(['id_tipeuser', 'created_at'])
-            ->groupBy(fn (User $registeredUser) => $registeredUser->created_at?->format('Y-m'));
+            ->groupBy(fn(User $registeredUser) => $registeredUser->created_at?->format('Y-m'));
         $registrasiBulanan = collect(range(0, 5))->map(function (int $offset) use ($awalBulanRegistrasi, $registrasiBulananRaw) {
-        $bulan = $awalBulanRegistrasi->copy()->addMonths($offset);
-        $dataBulan = $registrasiBulananRaw->get($bulan->format('Y-m'), collect());
+            $bulan = $awalBulanRegistrasi->copy()->addMonths($offset);
+            $dataBulan = $registrasiBulananRaw->get($bulan->format('Y-m'), collect());
 
-        return [
-            'bulan' => $bulan->locale('id')->translatedFormat('M Y'),
-            'siswa' => $dataBulan->where('id_tipeuser', 3)->count(),
-            'guru' => $dataBulan->where('id_tipeuser', 2)->count(),
-        ];
+            return [
+                'bulan' => $bulan->locale('id')->translatedFormat('M Y'),
+                'siswa' => $dataBulan->where('id_tipeuser', 3)->count(),
+                'guru' => $dataBulan->where('id_tipeuser', 2)->count(),
+            ];
         });
     }
 
@@ -499,25 +504,25 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru']
     Route::put('/modul/{id}', [ModulController::class, 'update'])->name('admin.modul.update');
     Route::delete('/modul/{id}', [ModulController::class, 'destroy'])->name('admin.modul.destroy');
 
-    Route::get('/quiz',         [QuizController::class, 'index'])->name('admin.quiz');
-    Route::get('/quiz/create',  [QuizController::class, 'create'])->name('quiz.create');
-    Route::get('/quiz/create',  [QuizController::class, 'create'])->name('admin.quiz.create');
+    Route::get('/quiz', [QuizController::class, 'index'])->name('admin.quiz');
+    Route::get('/quiz/create', [QuizController::class, 'create'])->name('quiz.create');
+    Route::get('/quiz/create', [QuizController::class, 'create'])->name('admin.quiz.create');
     Route::get('/quiz/{id}/edit', [QuizController::class, 'edit'])->name('admin.quiz.edit');
     Route::put('/quiz/{id}', [QuizController::class, 'update'])->name('admin.quiz.update');
     Route::delete('/quiz/{id}', [QuizController::class, 'destroy'])->name('admin.quiz.destroy');
     Route::get('/quiz/{id}/preview', [SiswaController::class, 'previewQuiz'])->name('admin.quiz.preview');
-    Route::post('/quiz/store',  [QuizController::class, 'store'])->name('quiz.store');
-    Route::post('/quiz/store',  [QuizController::class, 'store'])->name('admin.quiz.store');
+    Route::post('/quiz/store', [QuizController::class, 'store'])->name('quiz.store');
+    Route::post('/quiz/store', [QuizController::class, 'store'])->name('admin.quiz.store');
 
-    Route::get('/soal',                 [SoalController::class, 'index'])->name('admin.soal');
-    Route::get('/soal/create',          [SoalController::class, 'create'])->name('soal.create');
-    Route::post('/soal/store',          [SoalController::class, 'store'])->name('soal.store');
-    Route::get('/soal/bank-data',       [SoalController::class, 'apiBankSoal'])->name('soal.bank.data');
+    Route::get('/soal', [SoalController::class, 'index'])->name('admin.soal');
+    Route::get('/soal/create', [SoalController::class, 'create'])->name('soal.create');
+    Route::post('/soal/store', [SoalController::class, 'store'])->name('soal.store');
+    Route::get('/soal/bank-data', [SoalController::class, 'apiBankSoal'])->name('soal.bank.data');
     Route::post('/soal/assign-to-quiz', [SoalController::class, 'assignToQuiz'])->name('soal.assign');
-    Route::post('/soal/copy-to-bank',   [SoalController::class, 'copyToBank'])->name('soal.copy.to.bank');
-    Route::get('/soal/{id}/edit',       [SoalController::class, 'edit'])->name('soal.edit');
-    Route::put('/soal/{id}',            [SoalController::class, 'update'])->name('soal.update');
-    Route::delete('/soal/{id}',         [SoalController::class, 'destroy'])->name('soal.destroy');
+    Route::post('/soal/copy-to-bank', [SoalController::class, 'copyToBank'])->name('soal.copy.to.bank');
+    Route::get('/soal/{id}/edit', [SoalController::class, 'edit'])->name('soal.edit');
+    Route::put('/soal/{id}', [SoalController::class, 'update'])->name('soal.update');
+    Route::delete('/soal/{id}', [SoalController::class, 'destroy'])->name('soal.destroy');
 });
 
 // ADMIN SAJA: manajemen user/data siswa, guru, penghargaan, kelas, penugasan, QR.

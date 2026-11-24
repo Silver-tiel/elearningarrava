@@ -102,7 +102,7 @@
                         <option value="">-- Pilih Mata Pelajaran --</option>
                         @if(isset($mapelList))
                             @foreach ($mapelList as $m)
-                                <option value="{{ $m->id_mapel }}" {{ old('id_mapel', $module->id_mapel) == $m->id_mapel ? 'selected' : '' }}>
+                                <option value="{{ $m->id_mapel }}" data-jenjang="{{ $m->id_jenjang ?? '' }}" data-name="{{ $m->nama_mapel }}" {{ old('id_mapel', $module->id_mapel) == $m->id_mapel ? 'selected' : '' }}>
                                     {{ $m->nama_mapel }}{{ $m->jenjang ? ' (' . $m->jenjang->nama_tipe . ')' : '' }}
                                 </option>
                             @endforeach
@@ -397,8 +397,53 @@
             }));
         }
 
+        function applyJenjangMapelFilter(jenjangSelect, mapelSelect) {
+            if (!jenjangSelect || !mapelSelect) return;
+            const jenjangId = parseInt(jenjangSelect.value) || 0;
+            const currentVal = mapelSelect.value;
+            let currentValid = false;
+            const smaOnlyIds = [11, 12, 13];
+            const ipaUmumId = 4;
+
+            Array.from(mapelSelect.options).forEach(opt => {
+                if (!opt.value) {
+                    opt.hidden = false;
+                    return;
+                }
+                const mapelId = parseInt(opt.value);
+                const mapelJenjang = opt.getAttribute('data-jenjang') ? parseInt(opt.getAttribute('data-jenjang')) : null;
+                const mapelName = (opt.getAttribute('data-name') || opt.text || '').toLowerCase();
+                let visible = true;
+
+                const isSmaOnly = mapelJenjang === 3 || smaOnlyIds.includes(mapelId) ||
+                    mapelName.includes('fisika') || mapelName.includes('kimia') || mapelName.includes('biologi');
+                const isIpaIpsUmum = mapelId === 4 || mapelId === 5 ||
+                    mapelName.includes('ilmu pengetahuan alam') || mapelName.includes('ilmu pengetahuan sosial');
+
+                if (jenjangId === 1 || jenjangId === 2) {
+                    if (isSmaOnly) visible = false;
+                } else if (jenjangId === 3) {
+                    if (isIpaIpsUmum) visible = false;
+                }
+
+                opt.hidden = !visible;
+                opt.disabled = !visible;
+
+                if (opt.value === currentVal && visible) {
+                    currentValid = true;
+                }
+            });
+
+            if (!currentValid && currentVal) {
+                mapelSelect.value = '';
+            }
+        }
+
         function filterAndSortQuizzes() {
             const jenjangSelect = document.getElementById('id_jenjang');
+            const mapelSelect = document.getElementById('id_mapel');
+            applyJenjangMapelFilter(jenjangSelect, mapelSelect);
+
             const quizSelect = document.getElementById('id_quiz');
             const searchInput = document.getElementById('search_quiz_input');
             const sortSelect = document.getElementById('sort_quiz_select');

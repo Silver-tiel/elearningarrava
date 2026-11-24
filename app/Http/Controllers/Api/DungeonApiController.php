@@ -33,10 +33,7 @@ class DungeonApiController extends Controller
         $user = $request->user();
         $idJenjang = $user->id_jenjang ?? 1;
 
-        $mapelList = Mapel::where(function ($q) use ($idJenjang) {
-                $q->whereNull('id_jenjang')
-                  ->orWhere('id_jenjang', $idJenjang);
-            })
+        $mapelList = Mapel::forJenjang($idJenjang)
             ->orderBy('nama_mapel')
             ->get();
 

@@ -398,7 +398,7 @@
                                 class="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500 transition">
                                 <option value="">-- Pilih Mata Pelajaran --</option>
                                 @foreach($mapelList as $mapel)
-                                    <option value="{{ $mapel->id_mapel }}" @selected(old('id_mapel') == $mapel->id_mapel)>
+                                    <option value="{{ $mapel->id_mapel }}" data-jenjang="{{ $mapel->id_jenjang ?? '' }}" data-name="{{ $mapel->nama_mapel }}" @selected(old('id_mapel') == $mapel->id_mapel)>
                                         {{ $mapel->nama_mapel }}
                                     </option>
                                 @endforeach
@@ -965,6 +965,56 @@
                 }
             });
         });
+
+        // Filter Mapel berdasarkan Jenjang
+        function applyJenjangMapelFilter(jenjangSelect, mapelSelect) {
+            if (!jenjangSelect || !mapelSelect) return;
+            const jenjangId = parseInt(jenjangSelect.value) || 0;
+            const currentVal = mapelSelect.value;
+            let currentValid = false;
+            const smaOnlyIds = [11, 12, 13];
+            const ipaUmumId = 4;
+
+            Array.from(mapelSelect.options).forEach(opt => {
+                if (!opt.value) {
+                    opt.hidden = false;
+                    return;
+                }
+                const mapelId = parseInt(opt.value);
+                const mapelJenjang = opt.getAttribute('data-jenjang') ? parseInt(opt.getAttribute('data-jenjang')) : null;
+                const mapelName = (opt.getAttribute('data-name') || opt.text || '').toLowerCase();
+                let visible = true;
+
+                const isSmaOnly = mapelJenjang === 3 || smaOnlyIds.includes(mapelId) ||
+                    mapelName.includes('fisika') || mapelName.includes('kimia') || mapelName.includes('biologi');
+                const isIpaIpsUmum = mapelId === 4 || mapelId === 5 ||
+                    mapelName.includes('ilmu pengetahuan alam') || mapelName.includes('ilmu pengetahuan sosial');
+
+                if (jenjangId === 1 || jenjangId === 2) {
+                    if (isSmaOnly) visible = false;
+                } else if (jenjangId === 3) {
+                    if (isIpaIpsUmum) visible = false;
+                }
+
+                opt.hidden = !visible;
+                opt.disabled = !visible;
+
+                if (opt.value === currentVal && visible) {
+                    currentValid = true;
+                }
+            });
+
+            if (!currentValid && currentVal) {
+                mapelSelect.value = '';
+            }
+        }
+
+        const soalJenjangSelect = document.getElementById('select-jenjang');
+        const soalMapelSelect = document.getElementById('select-mapel');
+        if (soalJenjangSelect && soalMapelSelect) {
+            soalJenjangSelect.addEventListener('change', () => applyJenjangMapelFilter(soalJenjangSelect, soalMapelSelect));
+            applyJenjangMapelFilter(soalJenjangSelect, soalMapelSelect);
+        }
 
         // Inisialisasi awal
         loadCurrentState();

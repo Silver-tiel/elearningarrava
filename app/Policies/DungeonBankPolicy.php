@@ -47,7 +47,7 @@ class DungeonBankPolicy
         }
 
         $quiz = $soal->relationLoaded('quiz') ? $soal->quiz : Quiz::find($soal->id_quiz);
-        if ($quiz && $quiz->isDungeon()) {
+        if ($quiz instanceof Quiz && $quiz->isDungeon()) {
             return $soal->id_penulis !== null && (int) $soal->id_penulis === (int) $user->id_user;
         }
 

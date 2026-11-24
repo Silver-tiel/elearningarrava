@@ -108,7 +108,7 @@
                         class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-800 focus:outline-none focus:border-[#007FBE]">
                         <option value="">-- Pilih Mata Pelajaran --</option>
                         @foreach($mapelList as $mapel)
-                            <option value="{{ $mapel->id_mapel }}" @selected(old('id_mapel', $soal->id_mapel ?? $soal->quiz?->id_mapel) == $mapel->id_mapel)>
+                            <option value="{{ $mapel->id_mapel }}" data-jenjang="{{ $mapel->id_jenjang ?? '' }}" data-name="{{ $mapel->nama_mapel }}" @selected(old('id_mapel', $soal->id_mapel ?? $soal->quiz?->id_mapel) == $mapel->id_mapel)>
                                 {{ $mapel->nama_mapel }}
                             </option>
                         @endforeach
@@ -356,6 +356,53 @@ document.addEventListener('DOMContentLoaded', function () {
     const previewContainer = document.getElementById('imagePreviewContainer');
     const previewImg = document.getElementById('imagePreview');
     const removeFotoBtn = document.getElementById('removeFotoBtn');
+
+    function applyJenjangMapelFilter(jenjangSelectEl, mapelSelectEl) {
+        if (!jenjangSelectEl || !mapelSelectEl) return;
+        const jenjangId = parseInt(jenjangSelectEl.value) || 0;
+        const currentVal = mapelSelectEl.value;
+        let currentValid = false;
+        const smaOnlyIds = [11, 12, 13];
+        const ipaUmumId = 4;
+
+        Array.from(mapelSelectEl.options).forEach(opt => {
+            if (!opt.value) {
+                opt.hidden = false;
+                return;
+            }
+            const mapelId = parseInt(opt.value);
+            const mapelJenjang = opt.getAttribute('data-jenjang') ? parseInt(opt.getAttribute('data-jenjang')) : null;
+            const mapelName = (opt.getAttribute('data-name') || opt.text || '').toLowerCase();
+            let visible = true;
+
+            const isSmaOnly = mapelJenjang === 3 || smaOnlyIds.includes(mapelId) ||
+                mapelName.includes('fisika') || mapelName.includes('kimia') || mapelName.includes('biologi');
+            const isIpaIpsUmum = mapelId === 4 || mapelId === 5 ||
+                mapelName.includes('ilmu pengetahuan alam') || mapelName.includes('ilmu pengetahuan sosial');
+
+            if (jenjangId === 1 || jenjangId === 2) {
+                if (isSmaOnly) visible = false;
+            } else if (jenjangId === 3) {
+                if (isIpaIpsUmum) visible = false;
+            }
+
+            opt.hidden = !visible;
+            opt.disabled = !visible;
+
+            if (opt.value === currentVal && visible) {
+                currentValid = true;
+            }
+        });
+
+        if (!currentValid && currentVal) {
+            mapelSelectEl.value = '';
+        }
+    }
+
+    if (jenjangSelect && mapelSelect) {
+        jenjangSelect.addEventListener('change', () => applyJenjangMapelFilter(jenjangSelect, mapelSelect));
+        applyJenjangMapelFilter(jenjangSelect, mapelSelect);
+    }
 
     // Auto-update mapel and jenjang when quiz is selected
     quizSelect.addEventListener('change', function () {

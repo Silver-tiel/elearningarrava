@@ -20,11 +20,8 @@ $navItems = [
     {{-- Brand --}}
     <div class="flex items-center justify-between px-4 py-4 shrink-0 border-b border-[#DCEFFF]">
         <a href="{{ route('orangtua.dashboard') }}" class="flex items-center gap-2.5 no-underline group">
-            <svg viewBox="0 0 40 40" class="h-9 w-9 shrink-0 transition-transform duration-200 group-hover:scale-105" fill="none" aria-hidden="true">
-                <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-                <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
-            </svg>
+            <img src="{{ asset('assets/icon/appIconARRAVA.png') }}" alt="Logo Arrava"
+                class="h-9 w-9 shrink-0 object-contain transition-transform duration-200 group-hover:scale-105">
             <div class="leading-tight">
                 <p class="text-[17px] font-black tracking-[-0.5px] text-[#082765]">Arrava</p>
                 <p class="text-[11px] font-bold text-[#72839E]">Portal Orang Tua</p>

@@ -846,7 +846,7 @@ class QuizController extends Controller
         return redirect()->route('admin.quiz')->with('success', 'Quiz dan seluruh soalnya berhasil dihapus.');
     }
 
-    private function replaceQuestions(Quiz $quiz, array $questions, int $idJenjang, Request $request = null): void
+    private function replaceQuestions(Quiz $quiz, array $questions, int $idJenjang, ?Request $request = null): void
     {
         $oldSoalList = $quiz->soal()->orderBy('id_soal')->get();
         $oldPhotosByIndex = $oldSoalList->mapWithKeys(fn($item, $idx) => [$idx => $item->foto_soal]);
@@ -887,7 +887,7 @@ class QuizController extends Controller
             ];
             if (Schema::hasColumn('soal', 'tingkat_soal')) {
                 $tingkat = $questionData['tingkat_soal'] ?? ($quiz->isDungeon() ? 'sedang' : null);
-                if ($quiz->isDungeon() && (int)$questionData['id_jenis_soal'] === 3) {
+                if ($quiz->isDungeon() && (int) $questionData['id_jenis_soal'] === 3) {
                     $tingkat = 'mudah';
                 }
                 $soalInsertData['tingkat_soal'] = $tingkat;
@@ -2024,10 +2024,7 @@ class QuizController extends Controller
     {
         $query = \App\Models\Mapel::with('jenjang');
         if ($request->filled('jenjang')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('id_jenjang', $request->jenjang)
-                    ->orWhereNull('id_jenjang');
-            });
+            $query->forJenjang($request->jenjang);
         }
         $mapels = $query->orderBy('nama_mapel')->get()->map(function ($m) {
             return [

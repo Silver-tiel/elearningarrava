@@ -381,7 +381,7 @@ class OrangtuaController extends Controller
 
             return [
                 'tanggal' => $hasil->waktu_dapat
-                    ? \Carbon\Carbon::parse($hasil->waktu_dapat)->format('d/m/y')
+                    ? Carbon::parse($hasil->waktu_dapat)->format('d/m/y')
                     : '-',
                 'judul' => $hasil->quiz?->judul ?? 'Kuis',
                 'nilai' => $totalPoin > 0

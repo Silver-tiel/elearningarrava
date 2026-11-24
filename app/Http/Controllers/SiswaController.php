@@ -541,7 +541,9 @@ class SiswaController extends Controller
 
         $quizzes = $query->get();
         $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
-        $mapelList = Schema::hasTable('mapel') ? Mapel::orderBy('nama_mapel')->get() : collect();
+        $mapelList = Schema::hasTable('mapel')
+            ? Mapel::forJenjang($user->id_jenjang ?? null)->orderBy('nama_mapel')->get()
+            : collect();
 
         return view('siswa.quiz', compact('quizzes', 'tingkatQuizList', 'mapelList', 'user', 'selectedStatus'));
     }

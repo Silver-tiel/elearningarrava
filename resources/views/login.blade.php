@@ -284,11 +284,7 @@
 
     <div class="login-brand">
       <a href="{{ url('/') }}" class="inline-flex items-center gap-2 mb-1 no-underline">
-        <svg viewBox="0 0 40 40" class="h-8 w-8" fill="none" aria-hidden="true">
-          <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-          <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-          <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
-        </svg>
+        <img src="{{ asset('assets/icon/appIconARRAVA.png') }}" alt="Logo Arrava" class="h-8 w-8 shrink-0 object-contain">
         <span class="text-[22px] font-extrabold tracking-[-0.7px] text-[#082765]">Arrava</span>
       </a>
       <p class="text-[10px] leading-4 text-[#536DA1]">E-Learning untuk Masa Depan yang Lebih Baik</p>
