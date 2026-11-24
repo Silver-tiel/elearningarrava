@@ -199,14 +199,18 @@
                     Nomor WhatsApp / HP Siswa <span class="text-red-500">*</span>
                 </label>
                 <input
-                    id="nomor_handphone"
-                    name="nomor_handphone"
-                    type="tel"
-                    value="{{ old('nomor_handphone', old('nomor_hp')) }}"
-                    placeholder="Contoh: 081234567890"
-                    required
-                    inputmode="tel"
-                    class="auth-field">
+                        id="nomor_handphone"
+                        name="nomor_handphone"
+                        type="text"
+                        value="{{ old('nomor_handphone', old('nomor_hp')) }}"
+                        placeholder="Contoh: 081234567890"
+                        inputmode="numeric"
+                        pattern="[0-9]+"
+                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                        class="auth-field"
+                        required
+                    >
+
                 <p id="err_nomor_handphone" class="client-err mt-1 text-[10.5px] font-semibold text-[#C52D2D] hidden"></p>
                 @error('nomor_handphone')
                 <p class="server-err mt-1 text-[10.5px] font-semibold text-[#C52D2D]">{{ $message }}</p>
@@ -350,9 +354,12 @@
                     name="nomor_hp_orangtua"
                     type="tel"
                     value="{{ old('nomor_hp_orangtua') }}"
-                    placeholder="Contoh: 081298765432"
-                    inputmode="tel"
-                    class="auth-field">
+                   placeholder="Contoh: 081234567890"
+                    inputmode="numeric"
+                    pattern="[0-9]+"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                    class="auth-field"
+                    required>
                 <p id="err_nomor_hp_orangtua" class="client-err mt-1 text-[10.5px] font-semibold text-[#C52D2D] hidden"></p>
                 @error('nomor_hp_orangtua')
                 <p class="server-err mt-1 text-[10.5px] font-semibold text-[#C52D2D]">{{ $message }}</p>

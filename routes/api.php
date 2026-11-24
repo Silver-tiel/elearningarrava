@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\ModulController;
+use App\Http\Controllers\OrangtuaController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\PresensiController;
@@ -25,6 +26,11 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
     Route::match(['put', 'post'], '/student/profile', [DashboardController::class, 'updateStudentProfile']);
     Route::match(['patch', 'post'], '/student/hero-theme', [DashboardController::class, 'updateStudentHeroTheme']);
     Route::get('/parent/dashboard', [DashboardController::class, 'parentDashboard']);
+    Route::prefix('parent')->middleware('role:orangtua')->group(function () {
+        Route::get('/profile', [OrangtuaController::class, 'profilApi']);
+        Route::post('/profile', [OrangtuaController::class, 'updatePengaturan'])->name('api.parent.profile.update');
+        Route::put('/password', [OrangtuaController::class, 'ubahPasswordApi']);
+    });
     Route::get('/leaderboard', [DashboardController::class, 'leaderboard']);
     Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard']);
     Route::get('/teachers', [DashboardController::class, 'teachers']);
