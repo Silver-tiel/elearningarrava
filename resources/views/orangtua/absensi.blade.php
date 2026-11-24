@@ -55,7 +55,7 @@
                             $carbonBulan = \Carbon\Carbon::createFromFormat('Y-m', $bln);
                         @endphp
                         <option value="{{ $bln }}" {{ $filterBulan === $bln ? 'selected' : '' }}>
-                            {{ $carbonBulan->translatedFormat('F Y') }}
+                            {{ $carbonBulan->locale('id')->translatedFormat('F Y') }}
                         </option>
                         @endforeach
                     </select>
@@ -85,7 +85,7 @@
         <div class="rounded-xl bg-white px-4 py-3 border border-[#DCEFFF]">
             <p class="text-xs text-[#72839E]">Periode</p>
             <p class="mt-1 text-sm font-bold text-[#082765]">
-                {{ \Carbon\Carbon::createFromFormat('Y-m', $filterBulan)->translatedFormat('F Y') }}
+                {{ \Carbon\Carbon::createFromFormat('Y-m', $filterBulan)->locale('id')->translatedFormat('F Y') }}
             </p>
         </div>
         @endif
@@ -262,7 +262,7 @@
                     @endphp
                     <tr class="hover:bg-slate-50/60 transition">
                         <td class="px-5 py-4 font-medium text-slate-800">
-                            {{ $item->sesi?->tanggal ? $item->sesi->tanggal->translatedFormat('l, d M Y') : '-' }}
+                            {{ $item->sesi?->tanggal ? $item->sesi->tanggal->locale('id')->translatedFormat('l, d M Y') : '-' }}
                         </td>
                         <td class="px-5 py-4 text-slate-600">
                             {{ $item->sesi?->kelas?->nama ?? '-' }}
@@ -307,7 +307,7 @@
                 <div class="flex items-start justify-between">
                     <div>
                         <p class="font-semibold text-slate-800 text-sm">
-                            {{ $item->sesi?->tanggal ? $item->sesi->tanggal->translatedFormat('l, d M Y') : '-' }}
+                            {{ $item->sesi?->tanggal ? $item->sesi->tanggal->locale('id')->translatedFormat('l, d M Y') : '-' }}
                         </p>
                         <p class="text-xs text-slate-500 mt-0.5">
                             {{ $item->sesi?->kelas?->nama ?? '-' }}
@@ -350,7 +350,7 @@
             <p class="mx-auto mt-2 max-w-sm text-sm text-slate-500">
                 Belum ada riwayat presensi kelas yang tercatat untuk siswa ini
                 @if ($filterBulan)
-                pada bulan {{ \Carbon\Carbon::createFromFormat('Y-m', $filterBulan)->translatedFormat('F Y') }}.
+                pada bulan {{ \Carbon\Carbon::createFromFormat('Y-m', $filterBulan)->locale('id')->translatedFormat('F Y') }}.
                 @else
                 .
                 @endif
@@ -390,7 +390,7 @@
                 </div>
                 <div class="flex-1">
                     <p class="font-semibold text-slate-800 text-sm">
-                        {{ \Carbon\Carbon::parse($item->waktu_absensi)->translatedFormat('l, d F Y') }}
+                        {{ \Carbon\Carbon::parse($item->waktu_absensi)->locale('id')->translatedFormat('l, d F Y') }}
                     </p>
                     <p class="text-xs text-slate-500 mt-0.5">
                         Login pukul {{ \Carbon\Carbon::parse($item->waktu_absensi)->format('H:i') }} WIB
