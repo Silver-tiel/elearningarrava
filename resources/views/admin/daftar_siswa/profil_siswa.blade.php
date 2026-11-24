@@ -480,6 +480,10 @@
                         <span class="font-semibold text-slate-700">{{ $siswa->kelas ?: '-' }}</span>
                     </div>
                     <div class="flex justify-between py-1.5 border-b border-slate-100">
+                        <span class="text-slate-400">Tingkat Kelas</span>
+                        <span class="font-semibold text-blue-600">{{ $siswa->tingkatKelas->nama ?? '-' }}</span>
+                    </div>
+                    <div class="flex justify-between py-1.5 border-b border-slate-100">
                         <span class="text-slate-400">Akun Orang Tua Terkait</span>
                         <span class="font-semibold text-slate-700">
                             @if($orangtuaList->isNotEmpty())
@@ -561,17 +565,28 @@
             @method('PATCH')
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">Jenjang Pendidikan</label>
-                <div class="flex gap-2">
-                    <select name="id_jenjang" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <option value="">-- Belum Ditentukan --</option>
-                        @foreach ($jenjangs as $j)
-                            <option value="{{ $j->id_jenjang }}" {{ $siswa->id_jenjang == $j->id_jenjang ? 'selected' : '' }}>{{ $j->nama_tipe }}</option>
+                <select name="id_jenjang" id="profile_modal_jenjang" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none mb-2.5">
+                    <option value="">-- Belum Ditentukan --</option>
+                    @foreach ($jenjangs as $j)
+                        <option value="{{ $j->id_jenjang }}" {{ $siswa->id_jenjang == $j->id_jenjang ? 'selected' : '' }}>{{ $j->nama_tipe }}</option>
+                    @endforeach
+                </select>
+
+                <label class="block text-xs font-bold text-slate-700 mb-1">Tingkat Kelas</label>
+                <select name="id_tingkat_kelas" id="profile_modal_tingkat" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none mb-3">
+                    <option value="">-- Semua / Belum Ditentukan --</option>
+                    @if(isset($tingkats))
+                        @foreach ($tingkats as $tk)
+                            <option value="{{ $tk->id_tingkat }}" data-jenjang="{{ $tk->id_jenjang }}" {{ $siswa->id_tingkat_kelas == $tk->id_tingkat ? 'selected' : '' }}>
+                                {{ $tk->nama }}
+                            </option>
                         @endforeach
-                    </select>
-                    <button type="submit" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition">
-                        Simpan
-                    </button>
-                </div>
+                    @endif
+                </select>
+
+                <button type="submit" class="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition">
+                    Simpan Perubahan
+                </button>
             </div>
         </form>
 
@@ -598,10 +613,29 @@
 <script>
     function openStatusModal() {
         document.getElementById('statusModal').classList.remove('hidden');
+        filterModalTingkatKelas();
     }
     function closeStatusModal() {
         document.getElementById('statusModal').classList.add('hidden');
     }
+
+    function filterModalTingkatKelas() {
+        const jVal = document.getElementById('profile_modal_jenjang')?.value;
+        const tSelect = document.getElementById('profile_modal_tingkat');
+        if (!tSelect) return;
+        const currentVal = tSelect.value;
+        let valid = false;
+        Array.from(tSelect.options).forEach(opt => {
+            if (!opt.value) return;
+            const optJenjang = opt.getAttribute('data-jenjang');
+            const show = !jVal || optJenjang === jVal;
+            opt.hidden = !show;
+            opt.disabled = !show;
+            if (opt.value === currentVal && show) valid = true;
+        });
+        if (!valid && currentVal) tSelect.value = '';
+    }
+    document.getElementById('profile_modal_jenjang')?.addEventListener('change', filterModalTingkatKelas);
 
     // Inisialisasi Chart.js
     document.addEventListener('DOMContentLoaded', function () {

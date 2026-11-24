@@ -10,6 +10,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(MasterDataSeeder::class);
         $this->call(MapelSeeder::class);
+        $this->call(TingkatKelasSeeder::class);
         $this->call(UserAwalSeeder::class);
         $this->call(OrangtuaSeeder::class);
         $this->call(KelasPresensiSeeder::class);

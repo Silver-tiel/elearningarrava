@@ -27,6 +27,7 @@ use App\Http\Controllers\PerkembanganNilaiController;
 use App\Http\Controllers\MateriPembelajaranController;
 use App\Http\Controllers\PencapaianController;
 use App\Http\Controllers\KelasController;
+use App\Http\Controllers\TingkatKelasController;
 use App\Http\Controllers\QrAdminController;
 use App\Http\Controllers\DungeonController;
 use App\Http\Controllers\PresensiController;
@@ -564,6 +565,12 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin'])->gr
     Route::post('/kelas/{id}/guru', [KelasController::class, 'tambahGuru'])->whereNumber('id')->name('admin.kelas.guru.tambah');
     Route::delete('/kelas/{id}/guru/{guru}', [KelasController::class, 'hapusGuru'])->whereNumber(['id', 'guru'])->name('admin.kelas.guru.hapus');
 
+    // Tingkat Kelas per Jenjang
+    Route::get('/tingkat-kelas', [TingkatKelasController::class, 'index'])->name('admin.tingkat-kelas');
+    Route::post('/tingkat-kelas', [TingkatKelasController::class, 'store'])->name('admin.tingkat-kelas.store');
+    Route::put('/tingkat-kelas/{id}', [TingkatKelasController::class, 'update'])->whereNumber('id')->name('admin.tingkat-kelas.update');
+    Route::delete('/tingkat-kelas/{id}', [TingkatKelasController::class, 'destroy'])->whereNumber('id')->name('admin.tingkat-kelas.destroy');
+
     // QR siswa (generate ulang)
     Route::get('/qr', [QrAdminController::class, 'index'])->name('admin.qr');
     Route::post('/qr/{siswa}/regenerate', [QrAdminController::class, 'regenerate'])->whereNumber('siswa')->name('admin.qr.regenerate');
@@ -574,6 +581,7 @@ Route::prefix('guru/presensi')->name('guru.presensi.')->middleware(['auth', 'act
     Route::get('/', [PresensiController::class, 'index'])->name('index');
     Route::get('/sesi/{id}', [PresensiController::class, 'scan'])->whereNumber('id')->name('scan');
     Route::get('/sesi/{id}/rekap', [PresensiController::class, 'rekap'])->whereNumber('id')->name('rekap');
+    Route::post('/sesi/{id}/nilai', [PresensiController::class, 'simpanNilai'])->whereNumber('id')->name('nilai');
     Route::post('/sesi/{id}/tutup', [PresensiController::class, 'tutup'])->whereNumber('id')->name('tutup');
     Route::post('/sesi/{id}/scan', [PresensiController::class, 'prosesScan'])
         ->whereNumber('id')->middleware('throttle:scan-qr')->name('proses');

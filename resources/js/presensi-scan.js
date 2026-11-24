@@ -147,7 +147,7 @@ if (root) {
             }
             if (!scanner) {
                 scanner = new QrScanner(video, (r) => kirim(r.data), {
-                    preferredCamera: 'environment',
+                    preferredCamera: 'user',
                     highlightScanRegion: true,
                     highlightCodeOutline: true,
                     maxScansPerSecond: 5,
