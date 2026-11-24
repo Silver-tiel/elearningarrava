@@ -581,6 +581,7 @@ Route::prefix('guru/presensi')->name('guru.presensi.')->middleware(['auth', 'act
     Route::get('/', [PresensiController::class, 'index'])->name('index');
     Route::get('/sesi/{id}', [PresensiController::class, 'scan'])->whereNumber('id')->name('scan');
     Route::get('/sesi/{id}/rekap', [PresensiController::class, 'rekap'])->whereNumber('id')->name('rekap');
+    Route::post('/sesi/{id}/nilai', [PresensiController::class, 'simpanNilai'])->whereNumber('id')->name('nilai');
     Route::post('/sesi/{id}/tutup', [PresensiController::class, 'tutup'])->whereNumber('id')->name('tutup');
     Route::post('/sesi/{id}/scan', [PresensiController::class, 'prosesScan'])
         ->whereNumber('id')->middleware('throttle:scan-qr')->name('proses');
