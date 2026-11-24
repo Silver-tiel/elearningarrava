@@ -158,7 +158,7 @@
   margin: 0;
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
   font-weight: 800;
-  font-size: 26px;
+  font-size: 22px;
   letter-spacing: -.02em;
   line-height: 1.15;
   color: #fff;
@@ -208,6 +208,14 @@
   transform: scale(1.08);
 }
 
+.guru-card svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  max-width: 100%;
+  max-height: 100%;
+}
+
 /* tombol buka info */
 .guru-card .toggle {
   width: 100%;
@@ -216,13 +224,13 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 48px;
+  height: 44px;
   border: 0;
   border-radius: 16px;
   background: rgba(255,255,255,.96);
   color: #2a2f9e;
   font-weight: 700;
-  font-size: 14.5px;
+  font-size: 13.5px;
   box-shadow: 0 10px 24px -10px rgba(0,0,0,.5);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -234,6 +242,7 @@
 .guru-card .toggle svg {
   width: 18px;
   height: 18px;
+  flex-shrink: 0;
   transition: transform 0.2s;
 }
 
@@ -279,14 +288,20 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 52px;
+  height: 46px;
   border: 0;
   background: transparent;
   color: var(--brand);
   font-weight: 700;
-  font-size: 14.5px;
+  font-size: 13.5px;
   border-radius: 26px 26px 0 0;
   cursor: pointer;
+}
+.guru-card .sheet-head svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transition: transform 0.2s;
 }
 .guru-card .grab {
   position: absolute;
@@ -361,6 +376,11 @@
   cursor: pointer;
   transition: all 0.15s;
 }
+.guru-card .mini svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
 .guru-card .mini:hover {
   color: var(--brand);
   border-color: var(--brand);
@@ -425,16 +445,21 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 44px;
+  height: 42px;
   border-radius: 14px;
   border: 1px solid var(--line);
   background: var(--card);
   color: var(--ink);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13.5px;
   cursor: pointer;
   text-decoration: none;
   transition: all 0.15s;
+}
+.guru-card .btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 .guru-card .btn:hover {
   border-color: var(--brand);
@@ -443,10 +468,20 @@
 }
 .guru-card .btn.del {
   flex: none;
-  width: 44px;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--danger);
   border-color: var(--danger-soft);
   background: var(--danger-soft);
+}
+.guru-card .btn.del svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 .guru-card .btn.del:hover {
   border-color: var(--danger);
@@ -719,7 +754,7 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                                     aria-expanded="false"
                                     aria-controls="sheet-{{ $guru->id_guru }}">
                                 <span>Lihat info lengkap</span>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <svg width="18" height="18" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="m6 15 6-6 6 6"/>
                                 </svg>
                             </button>
@@ -738,7 +773,7 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                                 aria-controls="sheet-{{ $guru->id_guru }}">
                             <i class="grab"></i>
                             <span>Sembunyikan info</span>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <svg width="18" height="18" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="m6 9 6 6 6-6"/>
                             </svg>
                         </button>
@@ -772,7 +807,7 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                                                 data-target="nik-text-{{ $guru->id_guru }}"
                                                 aria-label="Tampilkan / Sembunyikan NIK"
                                                 title="Lihat / Tutup NIK">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <svg width="15" height="15" class="w-[15px] h-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/>
                                                 <circle cx="12" cy="12" r="3"/>
                                             </svg>
@@ -783,7 +818,7 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                                                 data-nama="{{ $guru->nama }}"
                                                 aria-label="Salin NIK"
                                                 title="Salin NIK">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <svg width="15" height="15" class="w-[15px] h-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                 <rect x="9" y="9" width="11" height="11" rx="2"/>
                                                 <path d="M5 15V6a2 2 0 0 1 2-2h9"/>
                                             </svg>
@@ -828,7 +863,7 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                             <!-- TOMBOL AKSI: EDIT & HAPUS -->
                             <div class="actions">
                                 <a href="{{ route('admin.guru.edit', $guru->id_guru) }}" class="btn" title="Edit Data Pengajar">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg width="18" height="18" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M4 20h4L19 9l-4-4L4 16z"/>
                                         <path d="m13.5 6.5 4 4"/>
                                     </svg>
@@ -842,7 +877,11 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                                         data-delete-url="{{ route('admin.guru.destroy', $guru->id_guru) }}"
                                         aria-label="Hapus pengajar {{ $guru->nama }}"
                                         title="Hapus Pengajar">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg width="18" height="18" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>
+                                    </svg>
+                                </button>
+                            </div>
                                         <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>
                                     </svg>
                                 </button>
