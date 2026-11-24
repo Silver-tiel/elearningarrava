@@ -4,7 +4,7 @@
     $userName = $user->nama ?? 'Sobat Arrava';
 @endphp
 
-<!-- ================= QUIZ ONBOARDING TOUR (GUIDED BY NIERE) ================= -->
+<!-- ================= QUIZ ONBOARDING TOUR ================= -->
 <div id="quiz-tour-overlay" style="display: none; position: fixed; inset: 0; z-index: 99990; pointer-events: auto; background: transparent;">
     <!-- Spotlight Box -->
     <div id="quiz-tour-spotlight" style="position: fixed; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(10, 18, 42, 0.65), 0 0 20px rgba(56, 189, 248, 0.6); border: 2.5px solid #38bdf8; pointer-events: none; transition: top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease, opacity 0.25s ease; opacity: 0; z-index: 99991;"></div>
@@ -15,9 +15,11 @@
     <!-- Bubble Header -->
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1.5px dashed rgba(59,79,209,0.25); padding-bottom: 6px;">
         <div style="display: flex; align-items: center; gap: 8px;">
-            <img id="quiz-tour-mascot-img" src="{{ asset('assets/niere/niereTalk.gif') }}" alt="Niere" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated;">
-            <span style="background: #ffc83d; color: #1b2350; border: 2px solid #1b2350; border-radius: 6px; padding: 1px 7px; font-weight: 700; font-size: 12px;">
-                Niere • Panduan Kuis
+            <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: #E0F2FE; color: #0284C7; font-size: 15px; border: 1.5px solid #BAE6FD;">
+                🧭
+            </span>
+            <span style="background: #ffc83d; color: #1b2350; border: 2px solid #1b2350; border-radius: 6px; padding: 2px 8px; font-weight: 800; font-size: 11px;">
+                Panduan Kuis
             </span>
         </div>
         <button type="button" id="quiz-tour-close-btn" style="background: #fee2e2; color: #991b1b; border: 2px solid #991b1b; border-radius: 6px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; cursor: pointer;" title="Tutup Panduan">
@@ -65,17 +67,10 @@
     const USER_ID = @json($userId);
     const USER_NAME = @json($userName);
 
-    const SP = {
-        talk: "{{ asset('assets/niere/niereTalk.gif') }}",
-        idle: "{{ asset('assets/niere/niereIdle.gif') }}",
-        shock: "{{ asset('assets/niere/niereShock.gif') }}"
-    };
-
     const overlay = document.getElementById("quiz-tour-overlay");
     const spotlight = document.getElementById("quiz-tour-spotlight");
     const bubble = document.getElementById("quiz-tour-bubble");
     const say = document.getElementById("quiz-tour-say");
-    const mascotImg = document.getElementById("quiz-tour-mascot-img");
     const closeBtn = document.getElementById("quiz-tour-close-btn");
     const controls = document.getElementById("quiz-tour-controls");
     const promptBox = document.getElementById("quiz-tour-prompt");
@@ -173,10 +168,9 @@
         }
     ];
 
-    function typeWriter(text, poseName) {
+    function typeWriter(text) {
         clearTimeout(typeTimer);
         say.textContent = "";
-        if (mascotImg) mascotImg.src = SP[poseName] || SP.talk;
 
         let idx = 0;
         const len = text.length;
@@ -189,8 +183,6 @@
                 }
                 idx++;
                 typeTimer = setTimeout(step, 18);
-            } else {
-                if (mascotImg) mascotImg.src = SP.idle;
             }
         }
         step();
@@ -337,7 +329,7 @@
                 if (controls) controls.style.display = "none";
                 if (promptBox) promptBox.style.display = "flex";
 
-                typeWriter(`Halo ${USER_NAME}! Selamat datang di Ruang Kuis Arrava. 🎯\n\nMau Niere pandu cara memilih dan memulai latihan kuis?`, "talk");
+                typeWriter(`Halo ${USER_NAME}! Selamat datang di Ruang Kuis Arrava. 🎯\n\nMau panduan singkat cara memilih dan memulai latihan kuis?`);
             }, 1200);
         }
     }

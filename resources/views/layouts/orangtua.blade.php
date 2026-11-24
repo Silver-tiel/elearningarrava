@@ -198,7 +198,9 @@
                 window.addEventListener('resize', function () { if (window.innerWidth >= 1024) closeSidebar(); });
             })();
         </script>
-    @include('components.niere-widget')
+    @if(request()->routeIs('orangtua.dashboard'))
+        @include('components.dashboard-tour', ['role' => 'orangtua'])
+    @endif
 </body>
 
 </html>

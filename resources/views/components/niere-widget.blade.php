@@ -1,11 +1,7 @@
 @php
-  $currentUser = Auth::user();
-
-  // Niere widget hanya untuk Siswa (id_tipeuser = 3) dan Orang Tua (id_tipeuser = 4), serta halaman login
-  // TIDAK PERNAH muncul untuk Admin (1) atau Guru (2)
-  if ($currentUser && in_array((int) $currentUser->id_tipeuser, [1, 2])) {
-      return;
-  }
+  // Niere widget dinonaktifkan sesuai permintaan pengguna (digantikan oleh komponen tur mandiri).
+  return;
+@endphp
 
   $isLoginPage = request()->routeIs('login') || request()->is('login');
   $isPendaftaranPage = request()->routeIs('pendaftaran') || request()->is('pendaftaran*');

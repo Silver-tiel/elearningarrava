@@ -12,6 +12,12 @@
 @endsection
 
 @section('header-right')
+    <button type="button" id="btnStartDashboardTour" onclick="window.startDashboardTour && window.startDashboardTour()"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border border-[#DCEFFF] bg-[#F0F6FF] text-[#007FBE] hover:bg-white hover:border-[#007FBE] text-xs font-bold shadow-[0_2px_0_#B2E7FC] active:translate-y-0.5 transition cursor-pointer"
+        title="Buka panduan interaktif dashboard">
+        <span>🧭</span>
+        <span class="hidden sm:inline">Panduan</span>
+    </button>
     {{-- Notifikasi Presensi khusus Dashboard Siswa --}}
     <x-notifikasi-presensi :notifikasi="$notifikasiPresensi ?? []" :user-id="$user->id_user ?? 0" role="siswa" />
 @endsection

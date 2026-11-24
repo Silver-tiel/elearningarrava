@@ -141,8 +141,8 @@
 
     @include('components.hover-effects')
     @include('components.logout-modal')
-    @if(!View::hasSection('hideNiere') && empty($hideNiere) && request()->routeIs('siswa.dashboard'))
-        @include('components.niere-widget')
+    @if(request()->routeIs('siswa.dashboard'))
+        @include('components.dashboard-tour', ['role' => 'siswa'])
     @endif
     @stack('scripts')
 </body>
