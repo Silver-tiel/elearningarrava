@@ -211,9 +211,38 @@
 .guru-card svg {
   display: inline-block;
   vertical-align: middle;
-  flex-shrink: 0;
-  max-width: 100%;
-  max-height: 100%;
+  flex-shrink: 0 !important;
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+}
+.guru-card .badges svg {
+  width: 14px !important;
+  height: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+}
+.guru-card .photo-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+}
+.guru-card .mini svg {
+  width: 15px !important;
+  height: 15px !important;
+  max-width: 15px !important;
+  max-height: 15px !important;
+}
+.guru-card .toggle svg,
+.guru-card .sheet-head svg,
+.guru-card .btn svg,
+.guru-card .btn.del svg {
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
 }
 
 /* tombol buka info */
@@ -754,7 +783,7 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                                     aria-expanded="false"
                                     aria-controls="sheet-{{ $guru->id_guru }}">
                                 <span>Lihat info lengkap</span>
-                                <svg width="18" height="18" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <svg width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;flex-shrink:0;" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="m6 15 6-6 6 6"/>
                                 </svg>
                             </button>
@@ -773,7 +802,7 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                                 aria-controls="sheet-{{ $guru->id_guru }}">
                             <i class="grab"></i>
                             <span>Sembunyikan info</span>
-                            <svg width="18" height="18" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <svg width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;flex-shrink:0;" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="m6 9 6 6 6-6"/>
                             </svg>
                         </button>
@@ -863,7 +892,7 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                             <!-- TOMBOL AKSI: EDIT & HAPUS -->
                             <div class="actions">
                                 <a href="{{ route('admin.guru.edit', $guru->id_guru) }}" class="btn" title="Edit Data Pengajar">
-                                    <svg width="18" height="18" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;flex-shrink:0;" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M4 20h4L19 9l-4-4L4 16z"/>
                                         <path d="m13.5 6.5 4 4"/>
                                     </svg>
@@ -877,11 +906,7 @@ dialog.guru-delete-dlg .btn-dlg.danger:hover {
                                         data-delete-url="{{ route('admin.guru.destroy', $guru->id_guru) }}"
                                         aria-label="Hapus pengajar {{ $guru->nama }}"
                                         title="Hapus Pengajar">
-                                    <svg width="18" height="18" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>
-                                    </svg>
-                                </button>
-                            </div>
+                                    <svg width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;flex-shrink:0;" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                         <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>
                                     </svg>
                                 </button>

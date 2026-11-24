@@ -169,9 +169,13 @@ class User extends Authenticatable
             return $this->foto_profil;
         }
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->exists($this->foto_profil)
-            ? \Illuminate\Support\Facades\Storage::url($this->foto_profil)
-            : null;
+        $cleanPath = preg_replace('#^storage/#', '', ltrim($this->foto_profil, '/'));
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanPath) || file_exists(storage_path('app/public/' . $cleanPath))) {
+            return asset('storage/' . $cleanPath);
+        }
+
+        return null;
     }
 
     public function pastikanQrToken(): string
