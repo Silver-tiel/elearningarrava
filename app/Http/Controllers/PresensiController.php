@@ -151,6 +151,8 @@ class PresensiController extends Controller
                     'nisn' => $user->nisn,
                     'status' => $catatan?->status ?? 'tidak_hadir',
                     'waktu_scan' => $catatan?->waktu_scan?->format('H:i'),
+                    'nilai' => $catatan?->nilai !== null ? (float) $catatan->nilai : null,
+                    'is_bintang' => (bool) ($catatan?->is_bintang ?? false),
                 ];
             })
             ->values();
@@ -335,9 +337,12 @@ class PresensiController extends Controller
         $baris = $anggota->map(function ($a) use ($presensi) {
             $p = $presensi->get($a->id_user);
             return [
+                'id_siswa' => $a->id_user,
                 'nama' => $a->nama,
                 'status' => $p?->status ?? 'tidak_hadir',
                 'waktu' => $p?->waktu_scan?->format('H:i'),
+                'nilai' => $p?->nilai,
+                'is_bintang' => (bool) ($p?->is_bintang ?? false),
             ];
         });
 
@@ -346,6 +351,55 @@ class PresensiController extends Controller
             'baris' => $baris,
             'ringkasan' => $this->ringkasan($sesi),
         ]);
+    }
+
+    public function simpanNilai(Request $request, $id)
+    {
+        $sesi = SesiPresensi::with('kelas')->findOrFail($id);
+        Gate::authorize('view', $sesi);
+
+        $request->validate([
+            'nilai' => ['required', 'array'],
+            'nilai.*' => ['nullable', 'numeric', 'between:0,100'],
+            'bintang' => ['nullable', 'integer'],
+        ], [
+            'nilai.required' => 'Tidak ada data nilai yang dikirim.',
+            'nilai.*.numeric' => 'Nilai harus berupa angka.',
+            'nilai.*.between' => 'Nilai harus berada antara 0 sampai 100.',
+        ]);
+
+        $idSiswaHadir = Presensi::where('id_sesi', $sesi->id_sesi)
+            ->whereIn('status', ['hadir', 'terlambat'])
+            ->pluck('id_siswa')
+            ->all();
+
+        $disimpan = 0;
+        DB::transaction(function () use ($request, $sesi, $idSiswaHadir, &$disimpan) {
+            foreach ((array) $request->input('nilai', []) as $idSiswa => $nilai) {
+                $idSiswa = (int) $idSiswa;
+                if (!in_array($idSiswa, $idSiswaHadir, true)) {
+                    continue;
+                }
+
+                $nilai = $nilai === '' || $nilai === null ? null : (float) str_replace(',', '.', $nilai);
+                $diperbarui = Presensi::where('id_sesi', $sesi->id_sesi)
+                    ->where('id_siswa', $idSiswa)
+                    ->update(['nilai' => $nilai]);
+                $disimpan += $diperbarui;
+            }
+
+            Presensi::where('id_sesi', $sesi->id_sesi)->update(['is_bintang' => false]);
+
+            $idSiswaBintang = (int) $request->input('bintang');
+            if ($idSiswaBintang > 0 && in_array($idSiswaBintang, $idSiswaHadir, true)) {
+                Presensi::where('id_sesi', $sesi->id_sesi)
+                    ->where('id_siswa', $idSiswaBintang)
+                    ->update(['is_bintang' => true]);
+            }
+        });
+
+        return redirect()->route('guru.presensi.rekap', $sesi->id_sesi)
+            ->with('success', "Nilai dan siswa bintang berhasil disimpan.");
     }
 
     private function ringkasan(SesiPresensi $sesi): array
