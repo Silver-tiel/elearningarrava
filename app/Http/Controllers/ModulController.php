@@ -179,9 +179,10 @@ class ModulController extends Controller
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::bukanDungeon()->with('jenjang')->orderBy('judul')->get();
         $mapelList = Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $tingkatKelasList = Schema::hasTable('tingkat_kelas') ? \App\Models\TingkatKelas::where('aktif', true)->orderBy('urutan')->get() : collect();
         $guruUsers = $this->guruUsersForAssignment(auth()->user());
 
-        return view('admin.modul.create', compact('tipeModul', 'jenjang', 'quizzes', 'mapelList', 'guruUsers'));
+        return view('admin.modul.create', compact('tipeModul', 'jenjang', 'quizzes', 'mapelList', 'tingkatKelasList', 'guruUsers'));
     }
 
     // Menyimpan data modul baru & memproses upload file fisik / draf
@@ -199,6 +200,7 @@ class ModulController extends Controller
         $rules = [
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul',
             'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
+            'id_tingkat_kelas' => 'nullable|integer',
             'id_mapel' => 'nullable|integer',
             'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
             'id_tipemodul' => $isDraft ? 'nullable|integer' : 'required|integer|exists:tipemodul,id_tipemodul',
@@ -287,6 +289,9 @@ class ModulController extends Controller
         if (Schema::hasColumn('modul', 'id_mapel')) {
             $modulData['id_mapel'] = $validated['id_mapel'] ?? null;
         }
+        if (Schema::hasColumn('modul', 'id_tingkat_kelas')) {
+            $modulData['id_tingkat_kelas'] = $validated['id_tingkat_kelas'] ?? null;
+        }
         if (Schema::hasColumn('modul', 'id_pembuat')) {
             $pembuatId = $this->resolvePembuatIdForStore($request);
             if ($pembuatId !== null) {
@@ -342,9 +347,10 @@ class ModulController extends Controller
         $jenjang = Jenjang::whereIn('id_jenjang', [1, 2, 3])->get();
         $quizzes = Quiz::bukanDungeon()->with('jenjang')->orderBy('judul')->get();
         $mapelList = Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $tingkatKelasList = Schema::hasTable('tingkat_kelas') ? \App\Models\TingkatKelas::where('aktif', true)->orderBy('urutan')->get() : collect();
         $guruUsers = $this->guruUsersForAssignment(auth()->user());
 
-        return view('admin.modul.edit', compact('module', 'tipeModul', 'jenjang', 'quizzes', 'mapelList', 'guruUsers'));
+        return view('admin.modul.edit', compact('module', 'tipeModul', 'jenjang', 'quizzes', 'mapelList', 'tingkatKelasList', 'guruUsers'));
     }
 
     // Memproses update data modul (bisa simpan draf atau publikasikan)
@@ -362,6 +368,7 @@ class ModulController extends Controller
         $rules = [
             'judul_modul' => 'required|string|max:255|unique:modul,judul_modul,' . $module->id_modul . ',id_modul',
             'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
+            'id_tingkat_kelas' => 'nullable|integer',
             'id_mapel' => 'nullable|integer',
             'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
             'id_tipemodul' => $isDraft ? 'nullable|integer' : 'required|integer|exists:tipemodul,id_tipemodul',
@@ -462,6 +469,9 @@ class ModulController extends Controller
         ];
         if (Schema::hasColumn('modul', 'id_mapel')) {
             $updateData['id_mapel'] = $validated['id_mapel'] ?? null;
+        }
+        if (Schema::hasColumn('modul', 'id_tingkat_kelas')) {
+            $updateData['id_tingkat_kelas'] = $validated['id_tingkat_kelas'] ?? null;
         }
         if (Schema::hasColumn('modul', 'id_pembuat') && auth()->user()?->isAdmin() && $request->has('id_pembuat')) {
             $updateData['id_pembuat'] = $request->filled('id_pembuat') ? (int) $request->input('id_pembuat') : null;
@@ -646,6 +656,9 @@ class ModulController extends Controller
         $supportsPembuat = Schema::hasColumn('modul', 'id_pembuat')
             && Schema::hasTable('user');
         $relations = ['tipeModul', 'jenjang', 'quiz'];
+        if (Schema::hasTable('tingkat_kelas')) {
+            $relations[] = 'tingkatKelas';
+        }
         if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
@@ -669,6 +682,16 @@ class ModulController extends Controller
             $query->where('id_jenjang', $request->jenjang);
         } elseif ($user && $user->isSiswa() && $user->id_jenjang && !$request->has('jenjang')) {
             $query->where('id_jenjang', $user->id_jenjang);
+        }
+
+        // Filter tingkat kelas: utamakan request jika ada, jika siswa default ke kelasnya atau konten umum sejenjang
+        if ($request->filled('tingkat_kelas') && $request->tingkat_kelas !== 'all' && $request->tingkat_kelas !== '0') {
+            $query->where('id_tingkat_kelas', $request->tingkat_kelas);
+        } elseif ($user && $user->isSiswa() && $user->id_tingkat_kelas && !$request->has('tingkat_kelas')) {
+            $query->where(function ($sub) use ($user) {
+                $sub->whereNull('id_tingkat_kelas')
+                    ->orWhere('id_tingkat_kelas', $user->id_tingkat_kelas);
+            });
         }
 
         if (Schema::hasColumn('modul', 'id_mapel') && $request->filled('mapel')) {
@@ -729,6 +752,12 @@ class ModulController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Materi modul ini tidak tersedia untuk jenjang Anda.',
+            ], 403);
+        }
+        if ($user && $user->isSiswa() && $user->id_tingkat_kelas && $modul->id_tingkat_kelas && (int)$modul->id_tingkat_kelas !== (int)$user->id_tingkat_kelas) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Materi modul ini tidak tersedia untuk tingkat kelas Anda.',
             ], 403);
         }
 
@@ -800,6 +829,8 @@ class ModulController extends Controller
             'nama_tipe' => $modul->tipeModul->nama_tipe ?? ($modul->id_tipemodul == 2 ? 'PDF' : 'Video'),
             'id_jenjang' => $modul->id_jenjang ? (int) $modul->id_jenjang : null,
             'nama_jenjang' => $modul->jenjang->nama_tipe ?? $modul->jenjang->nama_jenjang ?? null,
+            'id_tingkat_kelas' => $modul->id_tingkat_kelas ? (int) $modul->id_tingkat_kelas : null,
+            'nama_tingkat_kelas' => ($modul->relationLoaded('tingkatKelas') && $modul->tingkatKelas) ? $modul->tingkatKelas->nama : null,
             'id_mapel' => $modul->id_mapel ? (int) $modul->id_mapel : null,
             'nama_mapel' => $modul->mapel->nama_mapel ?? null,
             'id_pembuat' => !empty($modul->id_pembuat) ? (int) $modul->id_pembuat : null,
@@ -844,6 +875,7 @@ class ModulController extends Controller
             'judul_modul' => 'required|string|max:255',
             'id_tipemodul' => 'required|integer',
             'id_jenjang' => 'required|integer',
+            'id_tingkat_kelas' => 'nullable|integer',
             'id_mapel' => 'nullable|integer',
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
@@ -891,6 +923,9 @@ class ModulController extends Controller
         if (Schema::hasColumn('modul', 'id_mapel')) {
             $modulData['id_mapel'] = $request->id_mapel ?: null;
         }
+        if (Schema::hasColumn('modul', 'id_tingkat_kelas')) {
+            $modulData['id_tingkat_kelas'] = $request->id_tingkat_kelas ?: null;
+        }
         if (Schema::hasColumn('modul', 'id_pembuat')) {
             $pembuatId = $this->resolvePembuatIdForStore($request);
             if ($pembuatId !== null) {
@@ -927,6 +962,7 @@ class ModulController extends Controller
             'judul_modul' => 'required|string|max:255',
             'id_tipemodul' => 'required|integer',
             'id_jenjang' => 'required|integer',
+            'id_tingkat_kelas' => 'nullable|integer',
             'id_mapel' => 'nullable|integer',
             'file_upload' => 'nullable|file|mimes:pdf,ppt,pptx|max:51200',
             'file_link' => 'nullable|url',
@@ -982,6 +1018,9 @@ class ModulController extends Controller
         ];
         if (Schema::hasColumn('modul', 'id_mapel')) {
             $updateData['id_mapel'] = $request->id_mapel ?: null;
+        }
+        if (Schema::hasColumn('modul', 'id_tingkat_kelas')) {
+            $updateData['id_tingkat_kelas'] = $request->id_tingkat_kelas ?: null;
         }
         $module->update($updateData);
 

@@ -480,6 +480,32 @@
                             </select>
                         </div>
 
+                        {{-- 1.1 TINGKAT KELAS --}}
+                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100" id="wrapper-tingkat-kelas">
+                            <label class="block text-xs font-bold text-blue-900 mb-1.5 flex items-center justify-between">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                    </svg>
+                                    Tingkat Kelas
+                                </span>
+                                <span class="text-[10px] text-blue-500 font-normal">Opsional (Semua Kelas)</span>
+                            </label>
+                            <select name="id_tingkat_kelas" id="select-tingkat-kelas"
+                                class="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- Semua Kelas (Umum Sejenjang) --</option>
+                                @if(isset($tingkatKelasList) && count($tingkatKelasList) > 0)
+                                    @foreach($tingkatKelasList as $tk)
+                                        <option value="{{ $tk->id_tingkat }}"
+                                            data-jenjang="{{ $tk->id_jenjang }}"
+                                            @selected(old('id_tingkat_kelas', $quiz->id_tingkat_kelas ?? null) == $tk->id_tingkat)>
+                                            {{ $tk->nama }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+
                         {{-- 1.2 MATA PELAJARAN (MAPEL) --}}
                         <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
                             <label class="block text-xs font-bold text-blue-900 mb-1.5 flex items-center justify-between">
@@ -1880,8 +1906,39 @@ Tingkat Quiz
             }
         }
 
+        // Filter Tingkat Kelas berdasarkan Jenjang
+        function applyJenjangTingkatKelasFilter(jenjangSelect, tingkatSelect) {
+            if (!jenjangSelect || !tingkatSelect) return;
+            const jenjangId = parseInt(jenjangSelect.value) || 0;
+            const currentVal = tingkatSelect.value;
+            let currentValid = false;
+
+            Array.from(tingkatSelect.options).forEach(opt => {
+                if (!opt.value) {
+                    opt.hidden = false;
+                    return;
+                }
+                const optJenjang = opt.getAttribute('data-jenjang') ? parseInt(opt.getAttribute('data-jenjang')) : null;
+                const visible = (jenjangId === 0) || (optJenjang === jenjangId);
+                opt.hidden = !visible;
+                opt.disabled = !visible;
+                if (opt.value === currentVal && visible) {
+                    currentValid = true;
+                }
+            });
+
+            if (!currentValid && currentVal) {
+                tingkatSelect.value = '';
+            }
+        }
+
         const quizJenjangSelectEl = document.getElementById('select-jenjang');
+        const quizTingkatSelectEl = document.getElementById('select-tingkat-kelas');
         const quizMapelSelectEl = document.getElementById('select-mapel');
+        if (quizJenjangSelectEl && quizTingkatSelectEl) {
+            quizJenjangSelectEl.addEventListener('change', () => applyJenjangTingkatKelasFilter(quizJenjangSelectEl, quizTingkatSelectEl));
+            applyJenjangTingkatKelasFilter(quizJenjangSelectEl, quizTingkatSelectEl);
+        }
         if (quizJenjangSelectEl && quizMapelSelectEl) {
             quizJenjangSelectEl.addEventListener('change', () => applyJenjangMapelFilter(quizJenjangSelectEl, quizMapelSelectEl));
             applyJenjangMapelFilter(quizJenjangSelectEl, quizMapelSelectEl);

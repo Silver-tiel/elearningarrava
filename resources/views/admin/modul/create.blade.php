@@ -97,6 +97,25 @@
                         </select>
                     </div>
 
+                    <!-- 3.1 Pilihan Tingkat Kelas -->
+                    <div>
+                        <label for="id_tingkat_kelas" class="block text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
+                            <span>Tingkat Kelas</span>
+                            <span class="text-xs text-slate-400 font-normal">Opsional (Semua Kelas)</span>
+                        </label>
+                        <select id="id_tingkat_kelas" name="id_tingkat_kelas"
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition">
+                            <option value="">-- Semua Kelas (Umum Sejenjang) --</option>
+                            @if(isset($tingkatKelasList))
+                                @foreach ($tingkatKelasList as $tk)
+                                    <option value="{{ $tk->id_tingkat }}" data-jenjang="{{ $tk->id_jenjang }}" {{ old('id_tingkat_kelas') == $tk->id_tingkat ? 'selected' : '' }}>
+                                        {{ $tk->nama }}
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
+
                     <!-- 3.5 Pilihan Mata Pelajaran (Mapel) -->
                     <div>
                         <label for="id_mapel" class="block text-sm font-medium text-slate-700 mb-1 flex items-center justify-between">
@@ -574,8 +593,35 @@
             }
         }
 
+        // Filter Tingkat Kelas berdasarkan Jenjang
+        function applyJenjangTingkatKelasFilter(jenjangSelect, tingkatSelect) {
+            if (!jenjangSelect || !tingkatSelect) return;
+            const jenjangId = parseInt(jenjangSelect.value) || 0;
+            const currentVal = tingkatSelect.value;
+            let currentValid = false;
+
+            Array.from(tingkatSelect.options).forEach(opt => {
+                if (!opt.value) {
+                    opt.hidden = false;
+                    return;
+                }
+                const optJenjang = opt.getAttribute('data-jenjang') ? parseInt(opt.getAttribute('data-jenjang')) : null;
+                const visible = (jenjangId === 0) || (optJenjang === jenjangId);
+                opt.hidden = !visible;
+                opt.disabled = !visible;
+                if (opt.value === currentVal && visible) {
+                    currentValid = true;
+                }
+            });
+
+            if (!currentValid && currentVal) {
+                tingkatSelect.value = '';
+            }
+        }
+
         function updatePreview() {
-            // Filter Mapel berdasarkan Jenjang
+            // Filter Tingkat Kelas & Mapel berdasarkan Jenjang
+            applyJenjangTingkatKelasFilter(document.getElementById('id_jenjang'), document.getElementById('id_tingkat_kelas'));
             applyJenjangMapelFilter(document.getElementById('id_jenjang'), document.getElementById('id_mapel'));
 
             // 1. Update Judul

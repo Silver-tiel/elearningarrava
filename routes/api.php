@@ -12,6 +12,7 @@ use App\Http\Controllers\SoalController;
 
 // AUTH
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/tingkat-kelas/{idJenjang?}', [\App\Http\Controllers\TingkatKelasController::class, 'byJenjang']);
 
 Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
 

@@ -39,7 +39,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $user->load(['tipeUser', 'jenjang']);
+        $user->load(['tipeUser', 'jenjang', 'tingkatKelas']);
 
         // Hapus token lama jika ingin satu sesi per perangkat.
         $user->tokens()->delete();
@@ -59,6 +59,8 @@ class AuthController extends Controller
                 'nisn' => $user->nisn,
                 'id_tipeuser' => $user->id_tipeuser,
                 'id_jenjang' => $user->id_jenjang,
+                'id_tingkat_kelas' => $user->id_tingkat_kelas ? (int) $user->id_tingkat_kelas : null,
+                'nama_tingkat_kelas' => $user->tingkatKelas->nama ?? null,
                 'status_akun' => $user->status_akun,
                 'foto_profil' => $user->foto_profil,
                 'hero_theme' => $user->resolvedHeroTheme(),
@@ -82,6 +84,8 @@ class AuthController extends Controller
                 'nisn' => $user->nisn,
                 'id_tipeuser' => $user->id_tipeuser,
                 'id_jenjang' => $user->id_jenjang,
+                'id_tingkat_kelas' => $user->id_tingkat_kelas ? (int) $user->id_tingkat_kelas : null,
+                'nama_tingkat_kelas' => $user->tingkatKelas->nama ?? null,
                 'status_akun' => $user->status_akun,
                 'foto_profil' => $user->foto_profil,
                 'hero_theme' => $user->resolvedHeroTheme(),
