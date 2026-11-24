@@ -13,35 +13,35 @@
         : $todayStr;
     $minSampai = ($dari && $dari > $todayStr) ? $dari : $todayStr;
 @endphp
-<fieldset class="sm:col-span-4 rounded-xl border border-slate-200 p-4">
-    <legend class="px-2 text-sm font-semibold text-slate-700">Jadwal &amp; masa berlaku presensi (opsional)</legend>
-    <p class="text-xs text-slate-500 mb-3">Sesi presensi dibuat otomatis sesuai hari dan masa berlaku. Tanggal yang sudah lewat dinonaktifkan untuk menjaga validitas data presensi.</p>
+<fieldset class="sm:col-span-4 rounded-2xl border-2 border-[#DCEFFF] bg-[#F0F6FF]/40 p-4">
+    <legend class="px-2 text-sm font-black text-[#082765]">Jadwal &amp; masa berlaku presensi (opsional)</legend>
+    <p class="text-xs font-medium text-[#72839E] mb-3">Sesi presensi dibuat otomatis sesuai hari dan masa berlaku. Tanggal yang sudah lewat dinonaktifkan untuk menjaga validitas data presensi.</p>
     <div class="flex flex-wrap gap-2 mb-4">
         @foreach(\App\Models\Kelas::HARI as $angka => $nama)
-            <label class="inline-flex items-center gap-2 h-11 px-3 rounded-xl border border-slate-300 bg-white text-sm cursor-pointer hover:bg-slate-50 transition">
-                <input type="checkbox" name="hari[]" value="{{ $angka }}" @checked(in_array($angka, $hariTerpilih, true)) class="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                <span class="font-semibold text-slate-700">{{ $nama }}</span>
+            <label class="inline-flex items-center gap-2 h-11 px-3 rounded-xl border border-[#B2E7FC] bg-white text-sm cursor-pointer hover:bg-[#F0F6FF] transition">
+                <input type="checkbox" name="hari[]" value="{{ $angka }}" @checked(in_array($angka, $hariTerpilih, true)) class="h-5 w-5 rounded border-[#B2E7FC] text-[#007FBE] focus:ring-[#007FBE]">
+                <span class="font-bold text-[#465673]">{{ $nama }}</span>
             </label>
         @endforeach
     </div>
     <div class="grid gap-4 sm:grid-cols-2">
         <div>
             <div class="flex items-center justify-between mb-1">
-                <label for="berlaku_dari" class="block text-sm font-medium text-slate-700">Berlaku dari</label>
+                <label for="berlaku_dari" class="block text-sm font-bold text-[#465673]">Berlaku dari</label>
                 <span class="text-[11px] text-blue-600 font-semibold">Min: Hari Ini ({{ now()->translatedFormat('d M Y') }})</span>
             </div>
             <input id="berlaku_dari" name="berlaku_dari" type="date" value="{{ $dari }}" min="{{ $minDari }}"
-                   class="w-full h-12 rounded-xl border border-slate-300 px-4 text-base focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition">
-            <p class="text-[11px] text-slate-400 mt-1">Tanggal mulai presensi (tanggal lampau dinonaktifkan).</p>
+                     class="w-full h-12 rounded-xl border border-[#B2E7FC] px-4 text-base text-[#082765] focus:ring-2 focus:ring-[#B2E7FC] focus:border-[#007FBE] outline-none transition">
+                 <p class="text-[11px] text-[#72839E] mt-1">Tanggal mulai presensi (tanggal lampau dinonaktifkan).</p>
         </div>
         <div>
             <div class="flex items-center justify-between mb-1">
-                <label for="berlaku_sampai" class="block text-sm font-medium text-slate-700">Berlaku sampai</label>
+                <label for="berlaku_sampai" class="block text-sm font-bold text-[#465673]">Berlaku sampai</label>
                 <span id="label-min-sampai" class="text-[11px] text-blue-600 font-semibold">Min: {{ $minSampai }}</span>
             </div>
             <input id="berlaku_sampai" name="berlaku_sampai" type="date" value="{{ $sampai }}" min="{{ $minSampai }}"
-                   class="w-full h-12 rounded-xl border border-slate-300 px-4 text-base focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none transition">
-            <p class="text-[11px] text-slate-400 mt-1">Tanggal akhir presensi (harus sama atau setelah tanggal mulai).</p>
+                     class="w-full h-12 rounded-xl border border-[#B2E7FC] px-4 text-base text-[#082765] focus:ring-2 focus:ring-[#B2E7FC] focus:border-[#007FBE] outline-none transition">
+                 <p class="text-[11px] text-[#72839E] mt-1">Tanggal akhir presensi (harus sama atau setelah tanggal mulai).</p>
         </div>
     </div>
     <div id="jadwal-date-alert" class="hidden mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-2">
@@ -49,11 +49,11 @@
         <span id="jadwal-date-alert-text"></span>
     </div>
     <div class="mt-4 sm:max-w-xs">
-        <label for="jam_batas" class="block text-sm font-medium text-slate-700 mb-1">Batas tepat waktu (opsional)</label>
-        <input id="jam_batas" name="jam_batas" type="time" value="{{ old('jam_batas', $jamBatas) }}" class="w-full h-12 rounded-xl border border-slate-300 px-4 text-base focus:ring-2 focus:ring-blue-200 focus:border-blue-500 outline-none">
-        <p class="text-xs text-slate-500 mt-1">Siswa yang dipindai setelah jam ini dicatat "terlambat".</p>
+        <label for="jam_batas" class="block text-sm font-bold text-[#465673] mb-1">Batas tepat waktu (opsional)</label>
+        <input id="jam_batas" name="jam_batas" type="time" value="{{ old('jam_batas', $jamBatas) }}" class="w-full h-12 rounded-xl border border-[#B2E7FC] px-4 text-base text-[#082765] focus:ring-2 focus:ring-[#B2E7FC] focus:border-[#007FBE] outline-none transition">
+        <p class="text-xs font-medium text-[#72839E] mt-1">Siswa yang dipindai setelah jam ini dicatat "terlambat".</p>
     </div>
-    <p class="mt-4 text-xs text-slate-600 bg-slate-50 rounded-lg px-3 py-2">Sesi presensi dibuat <b>otomatis</b> pada setiap hari aktif kelas, mengikuti jadwal dan masa berlaku di atas. Guru tidak perlu membuatnya.</p>
+    <p class="mt-4 text-xs font-medium text-[#465673] bg-white border border-[#DCEFFF] rounded-xl px-3 py-2">Sesi presensi dibuat <b class="font-black text-[#007FBE]">otomatis</b> pada setiap hari aktif kelas, mengikuti jadwal dan masa berlaku di atas. Guru tidak perlu membuatnya.</p>
 </fieldset>
 
 <script>
