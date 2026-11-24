@@ -170,11 +170,6 @@
                 $initialStatusMode = 'Klasik';
             }
 
-            $initialJenjangLabel = 'Semua Jenjang';
-            if (request()->filled('jenjang')) {
-                $initialJenjangLabel = request('jenjang');
-            }
-
             $initialTingkatLabel = 'Semua Tingkat';
             if (request()->filled('tingkat')) {
                 $matchedTingkat = ($tingkatQuizList ?? collect())->firstWhere('id_tingkatquiz', request('tingkat'));
@@ -194,7 +189,6 @@
             $initialSort = request('sort', 'terbaru') === 'terlama' ? 'terlama' : 'terbaru';
             $hasServerQuizFilter = request()->filled('status')
                 || request()->filled('mode')
-                || request()->filled('jenjang')
                 || request()->filled('tingkat')
                 || request()->filled('mapel');
         @endphp
@@ -238,20 +232,6 @@
                         ['value' => 'Belum Lulus', 'label' => 'Belum Lulus', 'active' => $initialStatusMode === 'Belum Lulus'],
                         ['value' => 'Wayground', 'label' => 'Wayground', 'active' => $initialStatusMode === 'Wayground'],
                         ['value' => 'Klasik', 'label' => 'Klasik', 'active' => $initialStatusMode === 'Klasik'],
-                    ]" />
-
-                {{-- Chip Jenjang --}}
-                <x-student-style-filter-chip-bar
-                    id="quiz-jenjang-chips"
-                    label="Jenjang"
-                    chipClass="quiz-jenjang-chip"
-                    dataAttr="data-jenjang"
-                    :chips="[
-                        ['value' => 'Semua Jenjang', 'label' => 'Semua Jenjang', 'active' => $initialJenjangLabel === 'Semua Jenjang'],
-                        ['value' => 'SD', 'label' => 'SD', 'active' => strcasecmp($initialJenjangLabel, 'SD') === 0],
-                        ['value' => 'SMP', 'label' => 'SMP', 'active' => strcasecmp($initialJenjangLabel, 'SMP') === 0],
-                        ['value' => 'SMA', 'label' => 'SMA', 'active' => strcasecmp($initialJenjangLabel, 'SMA') === 0],
-                        ['value' => 'Umum', 'label' => 'Umum', 'active' => strcasecmp($initialJenjangLabel, 'Umum') === 0],
                     ]" />
 
                 {{-- Chip Kesulitan --}}
@@ -738,7 +718,6 @@
             let currentQuizPage = 1;
 
             let activeStatusMode = @json($initialStatusMode);
-            let activeQuizJenjang = @json($initialJenjangLabel);
             let activeQuizTingkat = @json($initialTingkatLabel);
             let activeQuizMapel = @json($initialMapelLabel);
             let activeQuizSort = @json($initialSort);
@@ -759,7 +738,6 @@
             const totalCountEl = document.getElementById('total-count');
 
             const statusContainer = document.getElementById('quiz-status-mode-chips');
-            const jenjangContainer = document.getElementById('quiz-jenjang-chips');
             const tingkatContainer = document.getElementById('quiz-tingkat-chips');
             const mapelContainer = document.getElementById('quiz-mapel-chips');
             const sortBtn = document.getElementById('quizSortToggleBtn');
@@ -846,13 +824,6 @@
                         if (mode !== 'biasa' && mode !== 'klasik') return false;
                     }
 
-                    // Match Jenjang
-                    if (activeQuizJenjang && activeQuizJenjang.toLowerCase() !== 'semua jenjang') {
-                        const aj = activeQuizJenjang.toLowerCase();
-                        if (jenjang !== aj && jenjang !== 'umum' && aj !== 'umum') return false;
-                        if (aj === 'umum' && jenjang !== 'umum') return false;
-                    }
-
                     // Match Tingkat
                     if (activeQuizTingkat && activeQuizTingkat.toLowerCase() !== 'semua tingkat') {
                         if (tingkat !== activeQuizTingkat.toLowerCase()) return false;
@@ -874,7 +845,6 @@
                 }
 
                 activeStatusMode = 'Semua';
-                activeQuizJenjang = 'Semua Jenjang';
                 activeQuizTingkat = 'Semua Tingkat';
                 activeQuizMapel = 'Semua Mapel';
                 activeQuizSort = 'terbaru';
@@ -887,7 +857,6 @@
                 }
 
                 setActiveChip(statusContainer, activeStatusMode, 'data-status-mode');
-                setActiveChip(jenjangContainer, activeQuizJenjang, 'data-jenjang');
                 setActiveChip(tingkatContainer, activeQuizTingkat, 'data-tingkat');
                 setActiveChip(mapelContainer, activeQuizMapel, 'data-mapel');
 
@@ -937,7 +906,6 @@
                 const isDirty = (searchInput?.value || '').trim() !== ''
                     || (navSearchInput?.value || '').trim() !== ''
                     || activeStatusMode !== 'Semua'
-                    || activeQuizJenjang !== 'Semua Jenjang'
                     || activeQuizTingkat !== 'Semua Tingkat'
                     || activeQuizMapel !== 'Semua Mapel'
                     || activeQuizSort !== 'terbaru'
@@ -1000,17 +968,6 @@
                     if (!btn) return;
                     activeStatusMode = btn.getAttribute('data-status-mode') || 'Semua';
                     setActiveChip(statusContainer, activeStatusMode, 'data-status-mode');
-                    currentQuizPage = 1;
-                    renderQuizPagination(true);
-                });
-            }
-
-            if (jenjangContainer) {
-                jenjangContainer.addEventListener('click', (e) => {
-                    const btn = e.target.closest('[data-jenjang]');
-                    if (!btn) return;
-                    activeQuizJenjang = btn.getAttribute('data-jenjang') || 'Semua Jenjang';
-                    setActiveChip(jenjangContainer, activeQuizJenjang, 'data-jenjang');
                     currentQuizPage = 1;
                     renderQuizPagination(true);
                 });
