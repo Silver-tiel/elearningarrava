@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /storage/
+
+    # Lindungi folder internal Laravel dari akses publik
+    RewriteRule ^(framework|logs) - [F,L]
+
+    # Jika file fisik ada di app/public, layani langsung
+    RewriteCond %{DOCUMENT_ROOT}/storage/app/public/$1 -f
+    RewriteRule ^(.*)$ app/public/$1 [L]
+
+    # Jika tidak ada file fisik, fallback ke index.php Laravel
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ ../index.php [L]
+</IfModule>
