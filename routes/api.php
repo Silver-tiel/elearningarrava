@@ -34,7 +34,7 @@ Route::middleware(['auth:sanctum', 'active.student'])->group(function () {
     Route::get('/leaderboard', [DashboardController::class, 'leaderboard']);
     Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard']);
     Route::get('/teachers', [DashboardController::class, 'teachers']);
-    Route::get('/students', [DashboardController::class, 'students']);
+    Route::get('/students', [DashboardController::clasnb, s, 'students']);
 
     // Notifikasi Presensi
     Route::get('/notifikasi/check', [\App\Http\Controllers\NotifikasiController::class, 'check']);
