@@ -18,4 +18,9 @@ class Jenjang extends Model
     {
         return $this->nama_tipe;
     }
+
+    public function tingkatKelas()
+    {
+        return $this->hasMany(TingkatKelas::class, 'id_jenjang', 'id_jenjang')->orderBy('urutan');
+    }
 }

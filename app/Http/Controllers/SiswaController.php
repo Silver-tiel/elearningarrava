@@ -1082,7 +1082,7 @@ class SiswaController extends Controller
     public function dataSiswa(Request $request)
     {
         $query = $this->filteredStudentsQuery($request)
-            ->with(['jenjang', 'tipeUser']);
+            ->with(['jenjang', 'tipeUser', 'tingkatKelas']);
 
         $siswas = $query->latest()->paginate(10)->withQueryString();
         $filteredStudentCount = (clone $query)->count();
@@ -1366,6 +1366,7 @@ class SiswaController extends Controller
 
         // Semua jenjang
         $jenjangs = Jenjang::orderBy('nama_tipe')->get();
+        $tingkats = Schema::hasTable('tingkat_kelas') ? \App\Models\TingkatKelas::where('aktif', true)->orderBy('urutan')->get() : collect();
 
         $viewData = array_merge([
             'siswa' => $siswa,
@@ -1376,6 +1377,7 @@ class SiswaController extends Controller
             'allAchievements' => $allAchievements,
             'orangtuaList' => $orangtuaList,
             'jenjangs' => $jenjangs,
+            'tingkats' => $tingkats,
         ], $stats);
 
         return view('admin.daftar_siswa.profil_siswa', $viewData);
@@ -1482,6 +1484,7 @@ class SiswaController extends Controller
             $data = $request->validate([
                 'nama' => ['required', 'string', 'max:255'],
                 'id_jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
+                'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -1502,8 +1505,11 @@ class SiswaController extends Controller
         try {
             $siswa->nama = $data['nama'];
             $siswa->id_jenjang = $data['id_jenjang'] ?? null;
+            if (array_key_exists('id_tingkat_kelas', $data)) {
+                $siswa->id_tingkat_kelas = $data['id_tingkat_kelas'] ?: null;
+            }
             $siswa->save();
-            $siswa->load('jenjang');
+            $siswa->load(['jenjang', 'tingkatKelas']);
         } catch (Throwable $e) {
             report($e);
 
@@ -1529,8 +1535,12 @@ class SiswaController extends Controller
         try {
             $data = $request->validate([
                 'id_jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
+                'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
             ]);
         } catch (ValidationException $e) {
+            if (!$request->wantsJson() && !$request->ajax()) {
+                return back()->withErrors($e->validator);
+            }
             return response()->json([
                 'success' => false,
                 'message' => $e->validator->errors()->first(),
@@ -1540,6 +1550,9 @@ class SiswaController extends Controller
         $siswa = User::where('id_tipeuser', 3)->find($id);
 
         if (!$siswa) {
+            if (!$request->wantsJson() && !$request->ajax()) {
+                return back()->with('error', 'Siswa tidak ditemukan.');
+            }
             return response()->json([
                 'success' => false,
                 'message' => 'Siswa tidak ditemukan.',
@@ -1548,21 +1561,33 @@ class SiswaController extends Controller
 
         try {
             $siswa->id_jenjang = $data['id_jenjang'] ?? null;
+            if (array_key_exists('id_tingkat_kelas', $data)) {
+                $siswa->id_tingkat_kelas = $data['id_tingkat_kelas'] ?: null;
+            }
             $siswa->save();
-            $siswa->load('jenjang');
+            $siswa->load(['jenjang', 'tingkatKelas']);
         } catch (Throwable $e) {
             report($e);
 
+            if (!$request->wantsJson() && !$request->ajax()) {
+                return back()->with('error', 'Terjadi kesalahan saat mengubah jenjang siswa. Silakan coba lagi.');
+            }
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengubah jenjang siswa. Silakan coba lagi.',
             ], 500);
         }
 
+        if (!$request->wantsJson() && !$request->ajax()) {
+            return back()->with('success', 'Jenjang dan tingkat kelas siswa berhasil diperbarui.');
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Jenjang siswa berhasil diperbarui.',
             'jenjang' => $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? '-',
+            'id_tingkat_kelas' => $siswa->id_tingkat_kelas,
+            'nama_tingkat_kelas' => $siswa->tingkatKelas->nama ?? null,
         ]);
     }
 
@@ -1707,6 +1732,7 @@ class SiswaController extends Controller
         ],
         'nomor_hp'     => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
         'kelas'        => ['nullable', 'string', 'max:50'],
+        'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
         'asal_sekolah' => ['nullable', 'string', 'max:255'],
         'foto_profil'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         // 'nama', 'nisn', dan 'id_jenjang' sengaja dihapus dari validasi 

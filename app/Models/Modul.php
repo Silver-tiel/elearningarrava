@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $tipe_file
  * @property int|null $id_tipemodul
  * @property int|null $id_jenjang
+ * @property int|null $id_tingkat_kelas
  * @property int|null $id_mapel
  * @property int|null $id_quiz
  * @property int|null $id_pembuat
@@ -56,6 +57,7 @@ class Modul extends Model
         'tipe_file',
         'id_tipemodul',
         'id_jenjang',
+        'id_tingkat_kelas',
         'id_mapel',
         'id_quiz',
         'id_pembuat',
@@ -74,6 +76,11 @@ class Modul extends Model
     public function jenjang()
     {
         return $this->belongsTo(Jenjang::class, 'id_jenjang', 'id_jenjang');
+    }
+
+    public function tingkatKelas()
+    {
+        return $this->belongsTo(TingkatKelas::class, 'id_tingkat_kelas', 'id_tingkat');
     }
 
     // Relasi ke tabel mapel (Mata Pelajaran)

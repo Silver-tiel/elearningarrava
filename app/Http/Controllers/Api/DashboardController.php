@@ -299,7 +299,7 @@ class DashboardController extends Controller
         }
 
         Achievement::syncForUser($user);
-        $user->refresh()->load('jenjang');
+        $user->refresh()->load(['jenjang', 'tingkatKelas']);
 
         // Return only the parents linked to the authenticated student's account.
         $orangTua = $user->orangtuaList()
@@ -378,6 +378,8 @@ class DashboardController extends Controller
                     'nomor_hp' => $user->nomor_hp ?? '-',
                     'asal_sekolah' => $user->asal_sekolah ?? '-',
                     'kelas' => $user->kelas ?? '-',
+                    'id_tingkat_kelas' => $user->id_tingkat_kelas ? (int) $user->id_tingkat_kelas : null,
+                    'nama_tingkat_kelas' => $user->tingkatKelas->nama ?? null,
                     'id_jenjang' => $user->id_jenjang ? (int) $user->id_jenjang : null,
                     'nama_jenjang' => $user->jenjang->nama_tipe ?? $user->jenjang->nama_jenjang ?? '-',
                     'total_poin' => (int) ($user->total_poin ?? 0),
@@ -424,6 +426,7 @@ class DashboardController extends Controller
             'asal_sekolah' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'min:6'],
             'foto_profil' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
             'hero_theme' => ['nullable', 'string', Rule::in(array_keys(User::HERO_THEMES))],
         ]);
 
@@ -435,6 +438,9 @@ class DashboardController extends Controller
         }
         if (array_key_exists('asal_sekolah', $validated)) {
             $user->asal_sekolah = $validated['asal_sekolah'];
+        }
+        if (array_key_exists('id_tingkat_kelas', $validated)) {
+            $user->id_tingkat_kelas = $validated['id_tingkat_kelas'] ?: null;
         }
         if (!empty($validated['password'])) {
             $user->password = bcrypt($validated['password']);

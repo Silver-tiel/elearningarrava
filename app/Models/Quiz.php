@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
  * @property int|null $id_tipequiz
  * @property int|null $id_tingkatquiz
  * @property int|null $id_jenjang
+ * @property int|null $id_tingkat_kelas
  * @property int|null $id_mapel
  * @property int|null $id_pembuat
  * @property Carbon|null $waktu_kadaluarsa
@@ -67,6 +68,7 @@ class Quiz extends Model
         'id_tipequiz',
         'id_tingkatquiz',
         'id_jenjang',
+        'id_tingkat_kelas',
         'id_mapel',
         'id_pembuat',
         'waktu_kadaluarsa',
@@ -101,6 +103,11 @@ class Quiz extends Model
     public function jenjang()
     {
         return $this->belongsTo(Jenjang::class, 'id_jenjang', 'id_jenjang');
+    }
+
+    public function tingkatKelas()
+    {
+        return $this->belongsTo(TingkatKelas::class, 'id_tingkat_kelas', 'id_tingkat');
     }
 
     public function mapel()

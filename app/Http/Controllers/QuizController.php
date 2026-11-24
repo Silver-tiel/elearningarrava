@@ -148,9 +148,10 @@ class QuizController extends Controller
         $jenjangList = Jenjang::all();
         $tingkatQuizList = \App\Models\TingkatQuiz::all();
         $mapelList = Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $tingkatKelasList = Schema::hasTable('tingkat_kelas') ? \App\Models\TingkatKelas::where('aktif', true)->orderBy('urutan')->get() : collect();
         $guruUsers = $this->guruUsersForAssignment(auth()->user());
         $questions = $this->questionEditorState(old('soal', []));
-        return view('admin.quiz.create', compact('jenjangList', 'tingkatQuizList', 'mapelList', 'guruUsers', 'questions'));
+        return view('admin.quiz.create', compact('jenjangList', 'tingkatQuizList', 'mapelList', 'tingkatKelasList', 'guruUsers', 'questions'));
     }
 
     public function edit($id)
@@ -162,6 +163,7 @@ class QuizController extends Controller
         $jenjangList = Jenjang::all();
         $tingkatQuizList = \App\Models\TingkatQuiz::all();
         $mapelList = Schema::hasTable('mapel') ? \App\Models\Mapel::orderBy('nama_mapel')->get() : collect();
+        $tingkatKelasList = Schema::hasTable('tingkat_kelas') ? \App\Models\TingkatKelas::where('aktif', true)->orderBy('urutan')->get() : collect();
         $guruUsers = $this->guruUsersForAssignment(auth()->user());
         $savedQuestions = $quiz->soal->map(function (Soal $soal) {
             $type = match ((int) $soal->id_jenis_soal) {
@@ -196,7 +198,7 @@ class QuizController extends Controller
         $oldQuestions = old('soal');
         $questions = is_array($oldQuestions) ? $this->questionEditorState($oldQuestions) : $savedQuestions;
 
-        return view('admin.quiz.create', compact('quiz', 'jenjangList', 'tingkatQuizList', 'mapelList', 'guruUsers', 'questions'));
+        return view('admin.quiz.create', compact('quiz', 'jenjangList', 'tingkatQuizList', 'mapelList', 'tingkatKelasList', 'guruUsers', 'questions'));
     }
 
     /**
@@ -438,6 +440,7 @@ class QuizController extends Controller
                 'judul' => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
                 'deskripsi' => 'nullable|string|max:3000',
                 'id_jenjang' => 'required|integer',
+                'id_tingkat_kelas' => 'nullable|integer',
                 'id_mapel' => 'nullable|integer',
                 'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
                 'id_tipequiz' => 'nullable|integer',
@@ -471,6 +474,7 @@ class QuizController extends Controller
                 'judul' => 'required|string|max:255|unique:quiz,judul|regex:/^[a-zA-Z0-9\s]+$/',
                 'deskripsi' => 'nullable|string|max:3000',
                 'id_jenjang' => 'required|integer',
+                'id_tingkat_kelas' => 'nullable|integer',
                 'id_mapel' => 'nullable|integer',
                 'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
                 'id_tipequiz' => 'nullable|integer',
@@ -557,6 +561,9 @@ class QuizController extends Controller
             if (Schema::hasColumn('quiz', 'id_mapel')) {
                 $quizData['id_mapel'] = $request->id_mapel ?: null;
             }
+            if (Schema::hasColumn('quiz', 'id_tingkat_kelas')) {
+                $quizData['id_tingkat_kelas'] = $request->id_tingkat_kelas ?: null;
+            }
             if (Schema::hasColumn('quiz', 'id_pembuat')) {
                 $pembuatId = $this->resolvePembuatIdForStore($request);
                 if ($pembuatId !== null) {
@@ -641,6 +648,7 @@ class QuizController extends Controller
                 'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
                 'deskripsi' => 'nullable|string|max:3000',
                 'id_jenjang' => 'required|integer',
+                'id_tingkat_kelas' => 'nullable|integer',
                 'id_mapel' => 'nullable|integer',
                 'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
                 'id_tipequiz' => 'nullable|integer',
@@ -675,6 +683,7 @@ class QuizController extends Controller
                 'judul' => 'required|string|max:255|unique:quiz,judul,' . $quiz->id_quiz . ',id_quiz|regex:/^[a-zA-Z0-9\s]+$/',
                 'deskripsi' => 'nullable|string|max:3000',
                 'id_jenjang' => 'required|integer',
+                'id_tingkat_kelas' => 'nullable|integer',
                 'id_mapel' => 'nullable|integer',
                 'id_pembuat' => Schema::hasTable('user') ? 'nullable|integer|exists:user,id_user' : 'nullable|integer',
                 'id_tipequiz' => 'nullable|integer',
@@ -791,6 +800,9 @@ class QuizController extends Controller
             ];
             if (Schema::hasColumn('quiz', 'id_mapel')) {
                 $updateData['id_mapel'] = $request->id_mapel ?: null;
+            }
+            if (Schema::hasColumn('quiz', 'id_tingkat_kelas')) {
+                $updateData['id_tingkat_kelas'] = $request->id_tingkat_kelas ?: null;
             }
             if (Schema::hasColumn('quiz', 'id_pembuat') && auth()->user()?->isAdmin() && $request->has('id_pembuat')) {
                 $updateData['id_pembuat'] = $request->filled('id_pembuat') ? (int) $request->input('id_pembuat') : null;
@@ -1201,6 +1213,9 @@ class QuizController extends Controller
         $supportsPembuat = Schema::hasColumn('quiz', 'id_pembuat')
             && Schema::hasTable('user');
         $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
+        if (Schema::hasTable('tingkat_kelas')) {
+            $relations[] = 'tingkatKelas';
+        }
         if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
@@ -1222,6 +1237,16 @@ class QuizController extends Controller
             $query->where('id_jenjang', $request->jenjang);
         } elseif ($user && $user->isSiswa() && $user->id_jenjang && !$request->has('jenjang')) {
             $query->where('id_jenjang', $user->id_jenjang);
+        }
+
+        // Filter tingkat kelas: utamakan request jika ada, jika siswa default ke kelasnya atau konten umum sejenjang
+        if ($request->filled('tingkat_kelas') && $request->tingkat_kelas !== 'all' && $request->tingkat_kelas !== '0') {
+            $query->where('id_tingkat_kelas', $request->tingkat_kelas);
+        } elseif ($user && $user->isSiswa() && $user->id_tingkat_kelas && !$request->has('tingkat_kelas')) {
+            $query->where(function ($sub) use ($user) {
+                $sub->whereNull('id_tingkat_kelas')
+                    ->orWhere('id_tingkat_kelas', $user->id_tingkat_kelas);
+            });
         }
 
         if (Schema::hasColumn('quiz', 'id_mapel') && $request->filled('mapel')) {
@@ -1270,6 +1295,9 @@ class QuizController extends Controller
     public function apiShow($id)
     {
         $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
+        if (Schema::hasTable('tingkat_kelas')) {
+            $relations[] = 'tingkatKelas';
+        }
         if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
@@ -1303,6 +1331,12 @@ class QuizController extends Controller
                 'message' => 'Kuis ini tidak tersedia untuk jenjang pendidikan Anda.',
             ], 403);
         }
+        if ($user && $user->isSiswa() && $user->id_tingkat_kelas && $quiz->id_tingkat_kelas && (int) $quiz->id_tingkat_kelas !== (int) $user->id_tingkat_kelas) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Kuis ini tidak tersedia untuk tingkat kelas Anda.',
+            ], 403);
+        }
 
         return response()->json([
             'status' => 'success',
@@ -1318,6 +1352,7 @@ class QuizController extends Controller
             'judul' => 'required|string|max:255',
             'deskripsi' => 'nullable|string|max:3000',
             'id_jenjang' => 'required|integer',
+            'id_tingkat_kelas' => 'nullable|integer',
             'id_mapel' => 'nullable|integer',
             'id_tipequiz' => 'nullable|integer',
             'id_tingkatquiz' => 'nullable|integer',
@@ -1384,6 +1419,9 @@ class QuizController extends Controller
             ];
             if (Schema::hasColumn('quiz', 'id_mapel')) {
                 $quizData['id_mapel'] = $validated['id_mapel'] ?? null;
+            }
+            if (Schema::hasColumn('quiz', 'id_tingkat_kelas')) {
+                $quizData['id_tingkat_kelas'] = $validated['id_tingkat_kelas'] ?? null;
             }
             if (Schema::hasColumn('quiz', 'id_pembuat')) {
                 $pembuatId = $this->resolvePembuatIdForStore($request);
@@ -1483,6 +1521,9 @@ class QuizController extends Controller
         });
 
         $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
+        if (Schema::hasTable('tingkat_kelas')) {
+            $relations[] = 'tingkatKelas';
+        }
         if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
@@ -1511,6 +1552,7 @@ class QuizController extends Controller
             'judul' => 'sometimes|required|string|max:255',
             'deskripsi' => 'nullable|string|max:3000',
             'id_jenjang' => 'sometimes|required|integer',
+            'id_tingkat_kelas' => 'nullable|integer',
             'id_mapel' => 'nullable|integer',
             'id_tipequiz' => 'nullable|integer',
             'id_tingkatquiz' => 'nullable|integer',
@@ -1559,6 +1601,8 @@ class QuizController extends Controller
                 $updateData['deskripsi'] = $validated['deskripsi'];
             if ($request->has('id_jenjang'))
                 $updateData['id_jenjang'] = $validated['id_jenjang'];
+            if ($request->has('id_tingkat_kelas'))
+                $updateData['id_tingkat_kelas'] = $validated['id_tingkat_kelas'] ?? null;
             if ($request->has('id_mapel'))
                 $updateData['id_mapel'] = $validated['id_mapel'] ?? null;
             if ($request->has('id_tipequiz'))
@@ -1717,6 +1761,9 @@ class QuizController extends Controller
         });
 
         $relations = ['tipeQuiz', 'tingkatQuiz', 'jenjang', 'soal.pilihanSoal'];
+        if (Schema::hasTable('tingkat_kelas')) {
+            $relations[] = 'tingkatKelas';
+        }
         if (Schema::hasTable('mapel')) {
             $relations[] = 'mapel';
         }
@@ -1972,6 +2019,8 @@ class QuizController extends Controller
             'deskripsi' => $quiz->deskripsi,
             'id_jenjang' => $quiz->id_jenjang ? (int) $quiz->id_jenjang : null,
             'nama_jenjang' => $quiz->jenjang->nama_tipe ?? $quiz->jenjang->nama_jenjang ?? null,
+            'id_tingkat_kelas' => $quiz->id_tingkat_kelas ? (int) $quiz->id_tingkat_kelas : null,
+            'nama_tingkat_kelas' => ($quiz->relationLoaded('tingkatKelas') && $quiz->tingkatKelas) ? $quiz->tingkatKelas->nama : null,
             'id_mapel' => (!empty($quiz->id_mapel)) ? (int) $quiz->id_mapel : null,
             'nama_mapel' => ($quiz->relationLoaded('mapel') && $quiz->mapel) ? $quiz->mapel->nama_mapel : null,
             'id_pembuat' => !empty($quiz->id_pembuat) ? (int) $quiz->id_pembuat : null,
