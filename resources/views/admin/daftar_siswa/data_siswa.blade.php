@@ -36,30 +36,42 @@
   max-height: 18px !important;
 }
 .siswa-card .badges svg {
-  width: 14px !important;
-  height: 14px !important;
-  max-width: 14px !important;
-  max-height: 14px !important;
+  width: 13px !important;
+  height: 13px !important;
+  max-width: 13px !important;
+  max-height: 13px !important;
+}
+.siswa-card .pill.status svg {
+  width: 9px !important;
+  height: 9px !important;
+  max-width: 9px !important;
+  max-height: 9px !important;
 }
 .siswa-card .photo-btn svg {
-  width: 17px !important;
-  height: 17px !important;
-  max-width: 17px !important;
-  max-height: 17px !important;
-}
-.siswa-card .mini svg {
   width: 15px !important;
   height: 15px !important;
   max-width: 15px !important;
   max-height: 15px !important;
 }
+.siswa-card .mini svg {
+  width: 14px !important;
+  height: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+}
 .siswa-card .toggle svg,
 .siswa-card .sheet-head svg,
 .siswa-card .btn svg {
-  width: 18px !important;
-  height: 18px !important;
-  max-width: 18px !important;
-  max-height: 18px !important;
+  width: 16px !important;
+  height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+}
+.siswa-card .mail svg {
+  width: 13px !important;
+  height: 13px !important;
+  max-width: 13px !important;
+  max-height: 13px !important;
 }
 .siswa-card .hero-qr-box svg {
   width: 100% !important;
@@ -100,15 +112,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 56px;
   color: #fff;
-  padding-bottom: 74px;
   z-index: 1;
 }
 .siswa-card .hero-fallback-avatar {
-  width: 92px;
-  height: 92px;
-  border-radius: 28px;
+  width: 86px;
+  height: 86px;
+  border-radius: 26px;
   background: linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 100%);
   border: 2px solid rgba(255,255,255,0.35);
   box-shadow: 0 16px 36px -10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4);
@@ -117,10 +129,10 @@
   justify-content: center;
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
   font-weight: 800;
-  font-size: 40px;
+  font-size: 38px;
   color: #ffffff;
   text-shadow: 0 2px 6px rgba(0,0,0,0.35);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   transition: transform 0.3s ease;
 }
 .siswa-card:hover .hero-fallback-avatar {
@@ -130,13 +142,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.78);
   background: rgba(0,0,0,0.28);
-  padding: 3px 11px;
+  padding: 3px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.18);
   backdrop-filter: blur(4px);
@@ -152,50 +164,51 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding-bottom: 74px;
+  justify-content: flex-start;
+  padding-top: 54px;
   z-index: 1;
   cursor: pointer;
 }
 .siswa-card .hero-qr-box {
   background: #ffffff;
-  border-radius: 22px;
-  padding: 10px;
+  border-radius: 18px;
+  padding: 8px;
   box-shadow: 0 16px 36px -10px rgba(0,0,0,0.45);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 165px;
-  height: 165px;
+  width: 126px;
+  height: 126px;
   transition: transform 0.25s ease;
-  border: 2.5px solid rgba(255,255,255,0.9);
+  border: 2px solid rgba(255,255,255,0.9);
 }
 .siswa-card:hover .hero-qr-box {
   transform: scale(1.04);
 }
-.siswa-card .hero-qr-box svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
 .siswa-card .hero-qr-badge {
-  margin-top: 10px;
+  margin-top: 7px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 10px;
   font-weight: 700;
-  color: rgba(255,255,255,0.88);
-  background: rgba(0,0,0,0.35);
-  padding: 4px 12px;
+  color: rgba(255,255,255,0.9);
+  background: rgba(0,0,0,0.38);
+  padding: 2.5px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.2);
   backdrop-filter: blur(4px);
   transition: background 0.15s;
 }
 .siswa-card:hover .hero-qr-badge {
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.58);
+}
+.siswa-card .hero-qr-badge svg {
+  width: 10px !important;
+  height: 10px !important;
+  max-width: 10px !important;
+  max-height: 10px !important;
 }
 
 .siswa-card .hero::after {
@@ -213,9 +226,9 @@
 
 .siswa-card .badges {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
+  top: 14px;
+  left: 14px;
+  right: 14px;
   z-index: 3;
   display: flex;
   justify-content: space-between;
@@ -225,11 +238,11 @@
 .siswa-card .pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 5px 11px;
   border-radius: 999px;
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.18);
   pointer-events: auto;
 }
@@ -242,7 +255,7 @@
 }
 .siswa-card .pill.status {
   color: #fff;
-  padding: 4px 10px;
+  padding: 4px 9px;
 }
 .siswa-card .pill.status select {
   cursor: pointer;
@@ -250,19 +263,19 @@
   border: 0;
   color: inherit;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 11.5px;
   outline: none;
   appearance: none;
   -webkit-appearance: none;
-  padding-right: 16px;
+  padding-right: 14px;
 }
 .siswa-card .check-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
   background: rgba(20,18,64,.65);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -280,14 +293,14 @@
 /* Tombol bulat toggle Foto <-> QR */
 .siswa-card .photo-btn {
   position: absolute;
-  right: 16px;
-  top: 56px;
-  z-index: 3;
-  width: 40px;
-  height: 40px;
+  right: 14px;
+  top: 50px;
+  z-index: 4;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1.5px solid rgba(255,255,255,.85);
-  background: rgba(20,18,64,.62);
+  background: rgba(20,18,64,.65);
   color: #fff;
   display: grid;
   place-items: center;
@@ -301,11 +314,6 @@
   background: var(--brand);
   transform: scale(1.08);
 }
-.siswa-card .photo-btn svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
 
 /* Identitas dasar di hero */
 .siswa-card .ident {
@@ -314,33 +322,35 @@
   right: 0;
   bottom: 0;
   z-index: 3;
-  padding: 0 18px 18px;
+  padding: 0 16px 14px;
   text-align: left;
 }
 .siswa-card .ident h3 {
   margin: 0;
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
   font-weight: 800;
-  font-size: 22px;
+  font-size: 20px;
   letter-spacing: -.02em;
-  line-height: 1.15;
+  line-height: 1.2;
   color: #fff;
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
 }
 .siswa-card .mail {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 4px;
   color: rgba(255,255,255,.9);
-  font-size: 14px;
+  font-size: 13.5px;
   text-decoration: none;
   font-weight: 600;
+  height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: color 0.15s;
 }
 .siswa-card .mail:hover {
@@ -351,19 +361,19 @@
 /* Tombol buka info */
 .siswa-card .toggle {
   width: 100%;
-  margin-top: 14px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 44px;
+  gap: 7px;
+  height: 42px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 14px;
   background: rgba(255,255,255,.96);
   color: #1e3a8a;
   font-weight: 700;
-  font-size: 13.5px;
-  box-shadow: 0 10px 24px -10px rgba(0,0,0,.5);
+  font-size: 13px;
+  box-shadow: 0 8px 20px -8px rgba(0,0,0,.45);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -831,13 +841,11 @@
         <div id="siswaGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @forelse($siswas as $index => $siswa)
                 @php
-                    $status = $siswa->status_akun ?? 'Aktif';
+                    $rawStatus = trim((string)($siswa->status_akun ?? 'Aktif'));
+                    $isNonaktif = strcasecmp($rawStatus, 'Nonaktif') === 0;
+                    $status = $isNonaktif ? 'Nonaktif' : 'Aktif';
+                    $statusBg = $isNonaktif ? 'var(--danger)' : 'var(--ok)';
                     $monitor = $monitoringSiswa->get($siswa->id_user, []);
-                    $statusBg = match($status) {
-                        'Aktif' => 'var(--ok)',
-                        'Nonaktif' => 'var(--danger)',
-                        default => '#f59e0b',
-                    };
                     $siswaFoto = $siswa->foto_profil_url ?: (!empty($siswa->foto_profil) ? asset('storage/' . ltrim($siswa->foto_profil, '/')) : null);
                     $cleanWa = !empty($siswa->nomor_hp) ? preg_replace('/^0/', '62', preg_replace('/[^\d]/', '', $siswa->nomor_hp)) : '';
                 @endphp
@@ -883,11 +891,11 @@
                              onclick="openQrPreviewModal('{{ $siswa->id_user }}')"
                              title="Klik untuk memperbesar / cetak QR Presensi">
                             <div class="hero-qr-box" id="avatar-qr-{{ $siswa->id_user }}">
-                                {!! $siswa->qrSvg(180) !!}
+                                {!! $siswa->qrSvg(140) !!}
                             </div>
                             <span class="hero-qr-badge">
-                                <svg width="12" height="12" class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                <svg width="10" height="10" class="w-2.5 h-2.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                                 </svg>
                                 <span>Pindai / Cetak QR</span>
                             </span>
@@ -895,30 +903,30 @@
 
                         <!-- BADGES ATAS: CHECKBOX + JENJANG (KIRI) & STATUS INTERAKTIF (KANAN) -->
                         <div class="badges">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-1.5">
                                 <label class="check-btn" title="Pilih Siswa (Ubah Massal)">
                                     <input type="checkbox" name="student_ids[]" value="{{ $siswa->id_user }}"
                                            aria-label="Pilih {{ $siswa->nama }}" data-student-checkbox
-                                           class="rounded border-white/50 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer">
+                                           class="rounded border-white/50 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer">
                                 </label>
 
                                 <span class="pill role">
-                                    <svg width="13" height="13" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg width="12" height="12" class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
                                     </svg>
                                     <span>{{ $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? 'Siswa' }}</span>
                                 </span>
                             </div>
 
-                            <div class="pill status" style="background: {{ $statusBg }};">
+                            <div class="pill status" id="pill-status-{{ $siswa->id_user }}" style="background: {{ $statusBg }};">
                                 <select id="select-status-{{ $siswa->id_user }}"
                                         data-current-status="{{ $status }}"
                                         onchange="confirmStatusChange('{{ $siswa->id_user }}', '{{ addslashes($siswa->nama) }}', this)"
                                         title="Ubah status siswa">
-                                    <option value="Aktif" {{ $status == 'Aktif' ? 'selected' : '' }} class="bg-white text-slate-800">● Aktif</option>
-                                    <option value="Nonaktif" {{ $status == 'Nonaktif' ? 'selected' : '' }} class="bg-white text-slate-800">● Nonaktif</option>
+                                    <option value="Aktif" {{ $status === 'Aktif' ? 'selected' : '' }} class="bg-white text-slate-800">● Aktif</option>
+                                    <option value="Nonaktif" {{ $status === 'Nonaktif' ? 'selected' : '' }} class="bg-white text-slate-800">● Nonaktif</option>
                                 </select>
-                                <svg width="10" height="10" class="w-2.5 h-2.5 shrink-0 -ml-1 pointer-events-none text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg width="9" height="9" class="w-2 h-2 shrink-0 -ml-1 pointer-events-none text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m6 9 6 6 6-6"/>
                                 </svg>
                             </div>
@@ -932,7 +940,7 @@
                                 aria-label="Beralih ke QR Presensi / Foto Profil"
                                 title="Beralih ke QR Presensi">
                             <!-- Ikon QR Code (saat mode Foto) -->
-                            <svg id="icon-show-qr-{{ $siswa->id_user }}" width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;flex-shrink:0;" class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg id="icon-show-qr-{{ $siswa->id_user }}" width="15" height="15" style="width:15px;height:15px;max-width:15px;max-height:15px;flex-shrink:0;" class="w-[15px] h-[15px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="7" height="7" rx="1"/>
                                 <rect x="14" y="3" width="7" height="7" rx="1"/>
                                 <rect x="3" y="14" width="7" height="7" rx="1"/>
@@ -941,7 +949,7 @@
                                 <path d="M14 20h6"/>
                             </svg>
                             <!-- Ikon Foto Profil (saat mode QR) -->
-                            <svg id="icon-show-photo-{{ $siswa->id_user }}" width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;flex-shrink:0;" class="w-[18px] h-[18px] shrink-0 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg id="icon-show-photo-{{ $siswa->id_user }}" width="15" height="15" style="width:15px;height:15px;max-width:15px;max-height:15px;flex-shrink:0;" class="w-[15px] h-[15px] shrink-0 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
@@ -1764,6 +1772,10 @@
         if (pendingData) {
             // Revert select back to previous status if cancelled
             pendingData.selectElement.value = pendingData.oldStatus;
+            const pillEl = document.getElementById('pill-status-' + pendingData.id);
+            if (pillEl) {
+                pillEl.style.background = (pendingData.oldStatus === 'Nonaktif') ? 'var(--danger)' : 'var(--ok)';
+            }
             pendingData = null;
         }
         document.getElementById('statusModal').classList.add('hidden');
@@ -1790,33 +1802,37 @@
                 status: pendingData.newStatus
             })
         })
-    .then(response => response.json())
+        .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Update dropdown state & styles
+                // Update dropdown state & pill background
                 const selectEl = pendingData.selectElement;
                 selectEl.setAttribute('data-current-status', pendingData.newStatus);
+                selectEl.value = pendingData.newStatus;
 
-                // Update badge color class
-                selectEl.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-white/20 focus:outline-none focus:ring-2 cursor-pointer transition shadow-2xs ';
-                if (pendingData.newStatus === 'Aktif') {
-                    selectEl.classList.add('bg-emerald-500/90', 'text-white', 'border-emerald-400');
-                } else if (pendingData.newStatus === 'Nonaktif') {
-                    selectEl.classList.add('bg-rose-500/90', 'text-white', 'border-rose-400');
-                } else {
-                    selectEl.classList.add('bg-amber-500/90', 'text-white', 'border-amber-400');
+                const pillEl = document.getElementById('pill-status-' + pendingData.id);
+                if (pillEl) {
+                    pillEl.style.background = (pendingData.newStatus === 'Nonaktif') ? 'var(--danger)' : 'var(--ok)';
                 }
 
                 showToast('success', data.message || `Status ${pendingData.name} berhasil diperbarui.`);
             } else {
                 showToast('error', data.message || 'Gagal memperbarui status.');
                 pendingData.selectElement.value = pendingData.oldStatus;
+                const pillEl = document.getElementById('pill-status-' + pendingData.id);
+                if (pillEl) {
+                    pillEl.style.background = (pendingData.oldStatus === 'Nonaktif') ? 'var(--danger)' : 'var(--ok)';
+                }
             }
         })
         .catch(err => {
             console.error(err);
             showToast('error', 'Terjadi kesalahan sistem.');
             pendingData.selectElement.value = pendingData.oldStatus;
+            const pillEl = document.getElementById('pill-status-' + pendingData.id);
+            if (pillEl) {
+                pillEl.style.background = (pendingData.oldStatus === 'Nonaktif') ? 'var(--danger)' : 'var(--ok)';
+            }
         })
         .finally(() => {
             btn.disabled = false;

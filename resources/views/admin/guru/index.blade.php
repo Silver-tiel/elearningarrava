@@ -56,15 +56,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 56px;
   color: #fff;
-  padding-bottom: 74px;
   z-index: 1;
 }
 .guru-card .hero-fallback-avatar {
-  width: 96px;
-  height: 96px;
-  border-radius: 28px;
+  width: 86px;
+  height: 86px;
+  border-radius: 26px;
   background: linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 100%);
   border: 2px solid rgba(255,255,255,0.35);
   box-shadow: 0 16px 36px -10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.4);
@@ -73,10 +73,10 @@
   justify-content: center;
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
   font-weight: 800;
-  font-size: 42px;
+  font-size: 38px;
   color: #ffffff;
   text-shadow: 0 2px 6px rgba(0,0,0,0.35);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   transition: transform 0.3s ease;
 }
 .guru-card:hover .hero-fallback-avatar {
@@ -86,13 +86,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.78);
   background: rgba(0,0,0,0.28);
-  padding: 3px 11px;
+  padding: 3px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.18);
   backdrop-filter: blur(4px);
@@ -108,9 +108,9 @@
 }
 .guru-card .badges {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
+  top: 14px;
+  left: 14px;
+  right: 14px;
   z-index: 3;
   display: flex;
   justify-content: space-between;
@@ -120,11 +120,11 @@
 .guru-card .pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 5px 11px;
   border-radius: 999px;
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.18);
   pointer-events: auto;
 }
@@ -151,33 +151,35 @@
   right: 0;
   bottom: 0;
   z-index: 3;
-  padding: 0 18px 18px;
+  padding: 0 16px 14px;
   text-align: left;
 }
 .guru-card .ident h3 {
   margin: 0;
   font-family: "Bricolage Grotesque", Figtree, sans-serif;
   font-weight: 800;
-  font-size: 22px;
+  font-size: 20px;
   letter-spacing: -.02em;
-  line-height: 1.15;
+  line-height: 1.2;
   color: #fff;
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
 }
 .guru-card .mail {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 4px;
   color: rgba(255,255,255,.9);
-  font-size: 14px;
+  font-size: 13.5px;
   text-decoration: none;
   font-weight: 600;
+  height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: color 0.15s;
 }
 .guru-card .mail:hover {
@@ -186,14 +188,14 @@
 }
 .guru-card .photo-btn {
   position: absolute;
-  right: 16px;
-  top: 60px;
-  z-index: 3;
-  width: 40px;
-  height: 40px;
+  right: 14px;
+  top: 50px;
+  z-index: 4;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1.5px solid rgba(255,255,255,.85);
-  background: rgba(20,18,64,.62);
+  background: rgba(20,18,64,.65);
   color: #fff;
   display: grid;
   place-items: center;
@@ -218,49 +220,55 @@
   max-height: 18px !important;
 }
 .guru-card .badges svg {
-  width: 14px !important;
-  height: 14px !important;
-  max-width: 14px !important;
-  max-height: 14px !important;
+  width: 13px !important;
+  height: 13px !important;
+  max-width: 13px !important;
+  max-height: 13px !important;
 }
 .guru-card .photo-btn svg {
-  width: 16px !important;
-  height: 16px !important;
-  max-width: 16px !important;
-  max-height: 16px !important;
-}
-.guru-card .mini svg {
   width: 15px !important;
   height: 15px !important;
   max-width: 15px !important;
   max-height: 15px !important;
 }
+.guru-card .mini svg {
+  width: 14px !important;
+  height: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+}
 .guru-card .toggle svg,
 .guru-card .sheet-head svg,
 .guru-card .btn svg,
 .guru-card .btn.del svg {
-  width: 18px !important;
-  height: 18px !important;
-  max-width: 18px !important;
-  max-height: 18px !important;
+  width: 16px !important;
+  height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+}
+.guru-card .mail svg {
+  width: 13px !important;
+  height: 13px !important;
+  max-width: 13px !important;
+  max-height: 13px !important;
 }
 
 /* tombol buka info */
 .guru-card .toggle {
   width: 100%;
-  margin-top: 14px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 44px;
+  gap: 7px;
+  height: 42px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 14px;
   background: rgba(255,255,255,.96);
   color: #2a2f9e;
   font-weight: 700;
-  font-size: 13.5px;
-  box-shadow: 0 10px 24px -10px rgba(0,0,0,.5);
+  font-size: 13px;
+  box-shadow: 0 8px 20px -8px rgba(0,0,0,.45);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -269,8 +277,10 @@
   transform: translateY(-1px);
 }
 .guru-card .toggle svg {
-  width: 18px;
-  height: 18px;
+  width: 16px !important;
+  height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
   flex-shrink: 0;
   transition: transform 0.2s;
 }
