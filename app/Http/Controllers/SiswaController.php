@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
+use App\Exports\SiswaExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
 
 /**
@@ -1930,5 +1932,20 @@ class SiswaController extends Controller
             : collect();
 
         return view('siswa.leaderboard', compact('leaderboard', 'myRank', 'activeJenjangId', 'jenjangList', 'user'));
+    }
+
+    // Export Data Siswa ke Excel
+    public function exportDataSiswa(Request $request)
+    {
+        $filters = $request->only([
+            'search',
+            'kelas',
+            'status',
+        ]);
+
+        return Excel::download(
+            new SiswaExport($filters),
+            'data_siswa_arrava_' . now()->format('Y-m-d') . '.xlsx'
+        );
     }
 }
