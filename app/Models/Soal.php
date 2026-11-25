@@ -13,9 +13,15 @@ class Soal extends Model
 
     protected $fillable = [
         'id_quiz',
+        'id_mapel',
+        'parent_soal_id',
         'kode_soal',
         'id_jenjang',
         'id_jenis_soal',
+        'tingkat_soal',
+        'id_penulis',
+        'aktif',
+        'nonaktif_alasan',
         'pertanyaan',
         'jawaban_benar',
         'foto_soal',
@@ -25,11 +31,32 @@ class Soal extends Model
 
     protected $casts = [
         'durasi_detik' => 'integer',
+        'aktif' => 'boolean',
     ];
 
     public function quiz()
     {
         return $this->belongsTo(Quiz::class, 'id_quiz', 'id_quiz');
+    }
+
+    public function mapel()
+    {
+        return $this->belongsTo(Mapel::class, 'id_mapel', 'id_mapel');
+    }
+
+    public function parentSoal()
+    {
+        return $this->belongsTo(Soal::class, 'parent_soal_id', 'id_soal');
+    }
+
+    public function clonedSoal()
+    {
+        return $this->hasMany(Soal::class, 'parent_soal_id', 'id_soal');
+    }
+
+    public function getIsBankSoalAttribute(): bool
+    {
+        return is_null($this->id_quiz);
     }
 
     public function jenjang()
@@ -40,6 +67,11 @@ class Soal extends Model
     public function jenisSoal()
     {
         return $this->belongsTo(JenisSoal::class, 'id_jenis_soal', 'id_jenis_soal');
+    }
+
+    public function penulis()
+    {
+        return $this->belongsTo(User::class, 'id_penulis', 'id_user');
     }
 
     // Relasi ke pilihan soal (untuk pilihan ganda)
@@ -66,7 +98,7 @@ class Soal extends Model
                     $quizKode = $quiz && !empty($quiz->kode_quiz) ? $quiz->kode_quiz : null;
                 }
 
-                $prefix = 'SL-' . ($quizKode ?: ('QZ-' . strtoupper(Str::random(4)))) . '-';
+                $prefix = 'SL-' . ($quizKode ?: ('BNK-' . strtoupper(Str::random(4)))) . '-';
                 
                 $seq = 1;
                 do {

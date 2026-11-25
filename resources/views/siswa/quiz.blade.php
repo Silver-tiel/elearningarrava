@@ -54,14 +54,18 @@
 @endpush
 
 @section('header')
-    <div class="relative w-full max-w-[420px]">
-        <svg class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#72839E]" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-4-4" />
-        </svg>
-        <input type="text" id="quiz-search-input" placeholder="Cari quiz atau materi..."
-            class="h-10 w-full rounded-2xl bg-[#F0F6FF] border-2 border-[#DCEFFF] pl-11 pr-4 text-sm font-semibold text-[#12233F] outline-none placeholder:text-[#72839E] focus:bg-white focus:border-[#007FBE] focus:ring-4 focus:ring-[#DDF3FF] transition shadow-[0_2px_0_#DCEFFF]">
+    <div class="flex items-center justify-between gap-4 w-full">
+        <div class="relative w-full max-w-[340px] hidden sm:block">
+            <svg class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#72839E]" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
+            </svg>
+            <input type="text" id="quiz-search-input" placeholder="Cari kuis atau materi..."
+                class="h-10 w-full rounded-2xl bg-[#F0F6FF] border-2 border-[#DCEFFF] pl-11 pr-4 text-sm font-semibold text-[#12233F] outline-none placeholder:text-[#72839E] focus:bg-white focus:border-[#007FBE] focus:ring-4 focus:ring-[#DDF3FF] transition shadow-[0_2px_0_#DCEFFF]">
+        </div>
+
+        <x-quiz-header-tabs />
     </div>
 @endsection
 
@@ -152,94 +156,135 @@
             </button>
         </div>
 
-        {{-- Oceanic Header & Filter Bar (Diadaptasi dari Arrava Mobile StudentQuizListPage) --}}
-        <div class="rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-gradient-to-b from-[#AEE3F9]/60 via-[#E6F3FF]/70 to-white/95 p-4 sm:p-5 shadow-[0_4px_0_#DCEFFF] space-y-4">
-            {{-- Top Header Row --}}
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#DCEFFF] shadow-xs">
-                    <span class="text-sm">🚀</span>
-                    <span class="text-xs font-black text-[#007FBE]">Kuis Pembelajaran</span>
-                </div>
-                <div class="flex items-center gap-2.5">
-                    <span id="quiz-count-badge" class="inline-flex items-center px-3 py-1 rounded-full bg-white border border-[#DCEFFF] text-xs font-black text-[#465673] shadow-xs">
-                        {{ count($quizzes) }} Kuis
+        @php
+            $initialStatusMode = 'Semua';
+            if (request('status') === 'belum_dikerjakan' || strcasecmp(request('status'), 'Belum Dikerjakan') === 0) {
+                $initialStatusMode = 'Belum Dikerjakan';
+            } elseif (request('status') === 'lulus' || strcasecmp(request('status'), 'Lulus') === 0) {
+                $initialStatusMode = 'Lulus';
+            } elseif (request('status') === 'belum_lulus' || strcasecmp(request('status'), 'Belum Lulus') === 0) {
+                $initialStatusMode = 'Belum Lulus';
+            } elseif (strtolower((string) request('mode')) === 'wayground') {
+                $initialStatusMode = 'Wayground';
+            } elseif (in_array(strtolower((string) request('mode')), ['biasa', 'klasik'], true)) {
+                $initialStatusMode = 'Klasik';
+            }
+
+            $initialTingkatLabel = 'Semua Tingkat';
+            if (request()->filled('tingkat')) {
+                $matchedTingkat = ($tingkatQuizList ?? collect())->firstWhere('id_tingkatquiz', request('tingkat'));
+                if ($matchedTingkat) {
+                    $initialTingkatLabel = $matchedTingkat->nama_tingkat;
+                }
+            }
+
+            $initialMapelLabel = 'Semua Mapel';
+            if (request()->filled('mapel')) {
+                $matchedMapel = ($mapelList ?? collect())->firstWhere('id_mapel', request('mapel'));
+                if ($matchedMapel) {
+                    $initialMapelLabel = $matchedMapel->nama_mapel;
+                }
+            }
+
+            $initialSort = request('sort', 'terbaru') === 'terlama' ? 'terlama' : 'terbaru';
+            $hasServerQuizFilter = request()->filled('status')
+                || request()->filled('mode')
+                || request()->filled('tingkat')
+                || request()->filled('mapel');
+        @endphp
+
+        {{-- Filter & Search Card (Sama Persis dengan Filter Quiz Guru) --}}
+        <div class="mb-6">
+            <x-student-style-filter-bar
+                title="Semua Kuis"
+                icon="🚀"
+                searchId="searchInput"
+                searchName="q"
+                searchValue="{{ request('q') }}"
+                searchPlaceholder="Cari judul, token, mapel, atau topik..."
+                resetId="quizResetBtn"
+                resetUrl="{{ route('siswa.quiz') }}"
+                :showReset="$hasServerQuizFilter || $initialSort !== 'terbaru'">
+
+                <x-slot:headerActions>
+                    <button type="button" id="quizSortToggleBtn"
+                        data-sort="{{ $initialSort }}"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-[#DCEFFF] hover:border-[#007FBE] hover:bg-[#F0F6FF] text-[11px] font-extrabold text-[#007FBE] transition shadow-xs cursor-pointer">
+                        <span id="quizSortIcon">{{ $initialSort === 'terlama' ? '↑' : '↓' }}</span>
+                        <span id="quizSortLabel">{{ $initialSort === 'terlama' ? 'Terlama' : 'Terbaru' }}</span>
+                    </button>
+
+                    <span class="inline-flex items-center px-3 py-1 rounded-full bg-white border border-[#DCEFFF] text-[11px] font-extrabold text-[#465673] shadow-xs">
+                        Total:&nbsp;<span id="total-count">{{ count($quizzes) }}</span>&nbsp;Kuis
                     </span>
-                </div>
-            </div>
+                </x-slot:headerActions>
 
-            {{-- Search Bar --}}
-            <div class="relative">
-                <svg class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#007FBE]" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2.5">
-                    <circle cx="11" cy="11" r="7" />
-                    <path d="m20 20-4-4" />
-                </svg>
-                <input type="text" id="quiz-filter-search" name="q" value="{{ request('q') }}" placeholder="Cari kuis, mapel, topik..."
-                    class="h-11 w-full rounded-2xl bg-white border-2 border-[#DCEFFF] pl-11 pr-4 text-xs sm:text-sm font-semibold text-[#12233F] outline-none placeholder:text-[#94A3B8] focus:border-[#007FBE] focus:ring-4 focus:ring-[#DDF3FF] transition shadow-[0_2px_0_#DCEFFF]">
-            </div>
+                {{-- Chip Status & Mode --}}
+                <x-student-style-filter-chip-bar
+                    id="quiz-status-mode-chips"
+                    label="Status & Mode"
+                    chipClass="quiz-status-mode-chip"
+                    dataAttr="data-status-mode"
+                    :chips="[
+                        ['value' => 'Semua', 'label' => 'Semua', 'active' => $initialStatusMode === 'Semua'],
+                        ['value' => 'Belum Dikerjakan', 'label' => 'Belum Dikerjakan', 'active' => $initialStatusMode === 'Belum Dikerjakan'],
+                        ['value' => 'Lulus', 'label' => 'Lulus', 'active' => $initialStatusMode === 'Lulus'],
+                        ['value' => 'Belum Lulus', 'label' => 'Belum Lulus', 'active' => $initialStatusMode === 'Belum Lulus'],
+                        ['value' => 'Wayground', 'label' => 'Wayground', 'active' => $initialStatusMode === 'Wayground'],
+                        ['value' => 'Klasik', 'label' => 'Klasik', 'active' => $initialStatusMode === 'Klasik'],
+                    ]" />
 
-            {{-- Filter Status Kuis (Choice Chips dari Mobile) --}}
-            <div class="space-y-1.5">
-                <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="quiz-status-chips">
-                    <span class="text-[11px] font-black uppercase tracking-wider text-[#465673] shrink-0 mr-1">Status:</span>
+                {{-- Chip Kesulitan --}}
+                @php
+                    $quizTingkatChips = [
+                        ['value' => 'Semua Tingkat', 'label' => 'Semua Tingkat', 'active' => $initialTingkatLabel === 'Semua Tingkat'],
+                    ];
+                    foreach (($tingkatQuizList ?? collect()) as $tItem) {
+                        $quizTingkatChips[] = [
+                            'value' => $tItem->nama_tingkat,
+                            'label' => $tItem->nama_tingkat,
+                            'active' => strcasecmp($initialTingkatLabel, $tItem->nama_tingkat) === 0,
+                        ];
+                    }
+                    if (count($quizTingkatChips) === 1) {
+                        foreach (['Mudah', 'Sedang', 'Sulit'] as $fallbackLevel) {
+                            $quizTingkatChips[] = [
+                                'value' => $fallbackLevel,
+                                'label' => $fallbackLevel,
+                                'active' => strcasecmp($initialTingkatLabel, $fallbackLevel) === 0,
+                            ];
+                        }
+                    }
+                @endphp
+                <x-student-style-filter-chip-bar
+                    id="quiz-tingkat-chips"
+                    label="Kesulitan"
+                    chipClass="quiz-tingkat-chip"
+                    dataAttr="data-tingkat"
+                    :chips="$quizTingkatChips" />
+
+                {{-- Chip Mata Pelajaran (Mapel) --}}
+                @if(isset($mapelList) && $mapelList->isNotEmpty())
                     @php
-                        $activeStatus = $selectedStatus ?? request('status', 'Semua');
+                        $quizMapelChips = [
+                            ['value' => 'Semua Mapel', 'label' => 'Semua Mapel', 'active' => $initialMapelLabel === 'Semua Mapel'],
+                        ];
+                        foreach ($mapelList as $mItem) {
+                            $quizMapelChips[] = [
+                                'value' => $mItem->nama_mapel,
+                                'label' => $mItem->nama_mapel,
+                                'active' => strcasecmp($initialMapelLabel, $mItem->nama_mapel) === 0,
+                            ];
+                        }
                     @endphp
-                    @foreach(['Semua', 'Belum Dikerjakan', 'Lulus', 'Belum Lulus'] as $st)
-                        @php
-                            $isStSelected = strcasecmp($activeStatus, $st) === 0;
-                        @endphp
-                        <button type="button"
-                            data-status="{{ $st }}"
-                            class="quiz-status-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border {{ $isStSelected ? 'bg-[#007FBE] text-white border-[#007FBE] shadow-xs' : 'bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]' }}">
-                            {{ $st }}
-                        </button>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Secondary Filter Bar (Mapel, Tingkat, Urutkan) --}}
-            <form id="quizFilterBar" method="GET" action="{{ route('siswa.quiz') }}"
-                class="pt-3 border-t border-[#DCEFFF]/70 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end">
-                <input type="hidden" name="status" id="quiz-input-status" value="{{ $activeStatus }}">
-                <input type="hidden" name="q" id="quiz-input-q" value="{{ request('q') }}">
-                <div>
-                    <label for="filter-mapel" class="mb-1 block text-[11px] font-bold text-[#465673]">Mata Pelajaran</label>
-                    <select id="filter-mapel" name="mapel"
-                        class="h-9 w-full rounded-xl border-2 border-[#DCEFFF] bg-white px-2.5 text-xs font-semibold text-[#12233F] focus:border-[#007FBE] focus:outline-none transition">
-                        <option value="">Semua mapel</option>
-                        @if(isset($mapelList))
-                            @foreach($mapelList as $m)
-                                <option value="{{ $m->id_mapel }}" @selected(request('mapel') == $m->id_mapel)>
-                                    {{ $m->nama_mapel }}</option>
-                            @endforeach
-                        @endif
-                    </select>
-                </div>
-                <div>
-                    <label for="filter-tingkat" class="mb-1 block text-[11px] font-bold text-[#465673]">Tingkat Kesulitan</label>
-                    <select id="filter-tingkat" name="tingkat"
-                        class="h-9 w-full rounded-xl border-2 border-[#DCEFFF] bg-white px-2.5 text-xs font-semibold text-[#12233F] focus:border-[#007FBE] focus:outline-none transition">
-                        <option value="">Semua tingkat</option>
-                        @foreach($tingkatQuizList as $tingkat)
-                            <option value="{{ $tingkat->id_tingkatquiz }}" @selected(request('tingkat') == $tingkat->id_tingkatquiz)>
-                                {{ $tingkat->nama_tingkat }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label for="filter-sort" class="mb-1 block text-[11px] font-bold text-[#465673]">Urutkan</label>
-                    <select id="filter-sort" name="sort"
-                        class="h-9 w-full rounded-xl border-2 border-[#DCEFFF] bg-white px-2.5 text-xs font-semibold text-[#12233F] focus:border-[#007FBE] focus:outline-none transition">
-                        <option value="terbaru" @selected(request('sort') == 'terbaru')>Terbaru</option>
-                        <option value="terlama" @selected(request('sort') == 'terlama')>Terlama</option>
-                    </select>
-                </div>
-                <button type="submit"
-                    class="h-9 rounded-xl bg-[#007FBE] hover:bg-[#00679A] px-4 text-xs font-black text-white shadow-[0_2.5px_0_#005580] active:translate-y-0.5 active:shadow-none transition">Terapkan</button>
-                <a href="{{ route('siswa.quiz') }}"
-                    class="inline-flex h-9 items-center justify-center rounded-xl border-2 border-[#B2E7FC] bg-white px-3.5 text-xs font-bold text-[#007FBE] shadow-[0_2px_0_#B2E7FC] hover:bg-[#F0F6FF] transition">Reset</a>
-            </form>
+                    <x-student-style-filter-chip-bar
+                        id="quiz-mapel-chips"
+                        label="Mapel"
+                        chipClass="quiz-mapel-chip"
+                        dataAttr="data-mapel"
+                        :chips="$quizMapelChips" />
+                @endif
+            </x-student-style-filter-bar>
         </div>
 
         {{-- Grid Quiz Cards --}}
@@ -303,125 +348,146 @@
                         'poin_didapat_tertinggi' => $poinDidapatTertinggi,
                     ];
                 @endphp
-                <div {{ $loop->first ? 'id="tourQuizCard"' : '' }} class="quiz-card-item hover-frame group relative flex flex-col justify-between rounded-2xl sm:rounded-3xl border-2 border-[#DCEFFF] bg-white transition-all duration-200 {{ ($expired && !$quiz->perluToken()) ? 'cursor-not-allowed opacity-75 grayscale' : 'hover:-translate-y-1 hover:border-[#007FBE] hover:shadow-[0_6px_0_#007FBE] shadow-[0_4px_0_#B2E7FC]' }}"
+                <div {{ $loop->first ? 'id="tourQuizCard"' : '' }} class="quiz-card-item group relative flex flex-col justify-between rounded-[28px] border-4 border-ink bg-paper font-sans font-bold text-ink shadow-card overflow-hidden transition-all duration-200 hover:-translate-y-1.5 hover:shadow-[0_14px_0_#0f3a5f] {{ ($expired && !$quiz->perluToken()) ? 'opacity-75 grayscale' : '' }}"
+                    data-judul="{{ strtolower($quiz->judul) }}"
                     data-title="{{ strtolower($quiz->judul) }}"
+                    data-token="{{ strtolower($quiz->token ?? '') }}"
                     data-mapel="{{ strtolower($quiz->mapel->nama_mapel ?? '') }}"
+                    data-jenjang="{{ strtolower($quiz->jenjang->nama_tipe ?? $quiz->jenjang->nama_jenjang ?? 'umum') }}"
+                    data-tingkat="{{ strtolower($quiz->tingkatQuiz->nama_tingkat ?? '') }}"
+                    data-mode="{{ strtolower($quiz->mode_pengerjaan ?? 'klasik') }}"
                     data-desc="{{ strtolower(strip_tags($quiz->deskripsi ?? '')) }}"
                     data-status-taken="{{ $quiz->hasil->isNotEmpty() ? '1' : '0' }}"
-                    data-status-passed="{{ $quiz->hasil->where('is_lulus', true)->isNotEmpty() ? '1' : '0' }}">
+                    data-status-passed="{{ $quiz->hasil->where('is_lulus', true)->isNotEmpty() ? '1' : '0' }}"
+                    data-created="{{ $quiz->created_at ? $quiz->created_at->timestamp : 0 }}"
+                    data-id="{{ $quiz->id_quiz }}">
 
-                    <div>
-                        {{-- Cover / Thumbnail Area --}}
-                        <div class="relative h-44 sm:h-48 w-full overflow-hidden rounded-t-2xl sm:rounded-t-3xl bg-slate-900">
-                            <img src="{{ $quiz->cover_url }}" alt="{{ $quiz->judul }}"
-                                class="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105">
-                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-black/30"></div>
+                    {{-- Cover / Thumbnail Banner khas Dungeon --}}
+                    <div class="relative block h-[210px] sm:h-[225px] overflow-hidden border-b-4 border-ink bg-sky-200">
+                        <img src="{{ $quiz->cover_url }}" alt="{{ $quiz->judul }}" loading="lazy"
+                            class="h-full w-full object-cover object-center transition duration-500 ease-out group-hover:scale-105">
+                        <span class="pointer-events-none absolute inset-x-0 bottom-0 h-[72%] bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent"></span>
 
-                            {{-- Overlay Rantai Expired Quiz (Hanya untuk kuis yang expired dan bukan kuis bertoken) --}}
-                            @if($expired && !$quiz->perluToken())
-                                <div class="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40 backdrop-blur-[0.5px]">
-                                    <img src="{{ asset('assets/widget/expiredQuiz.webp') }}"
-                                         alt="Kuis Kedaluwarsa"
-                                         class="w-full h-full object-cover [image-rendering:pixelated] opacity-90 drop-shadow-md">
-                                </div>
-                            @endif
+                        {{-- Overlay Rantai Expired Quiz --}}
+                        @if($expired && !$quiz->perluToken())
+                            <div class="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40 backdrop-blur-[0.5px]">
+                                <img src="{{ asset('assets/widget/expiredQuiz.webp') }}"
+                                     alt="Kuis Kedaluwarsa"
+                                     class="w-full h-full object-cover [image-rendering:pixelated] opacity-90 drop-shadow-md">
+                            </div>
+                        @endif
 
-                            {{-- Badges on Cover --}}
-
-                            {{-- Top Left: Token Badge --}}
-                            @if($quiz->perluToken())
-                                <div class="absolute top-3 left-3 z-10">
-                                    <span
-                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-purple-950/85 backdrop-blur-md text-purple-200 border border-purple-400/40 shadow-md">
-                                        🔒 Token
-                                    </span>
-                                </div>
-                            @endif
-
-                            {{-- Top Right: Stempel Quiz Berhasil Diselesaikan --}}
-                            @if($sudahSelesaiDanDapatPoin)
-                                <div class="absolute top-2 right-2 z-10 pointer-events-none select-none">
-                                    <img src="{{ asset('assets/widget/quizBerhasilStempel.webp') }}" alt="Stempel Selesai"
-                                        class="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg transform -rotate-12 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-6">
-                                </div>
-                            @endif
-
-                            {{-- Bottom Left on Cover: Mata Pelajaran --}}
-                            @if($quiz->mapel)
-                                <div class="absolute bottom-3 left-3 z-10">
-                                    <span
-                                        class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-[#082765]/80 text-[#DDF3FF] border border-[#B2E7FC]/40 backdrop-blur-md shadow-sm">
-                                        {{ $quiz->mapel->nama_mapel }}
-                                    </span>
-                                </div>
-                            @endif
-
-                            {{-- Bottom Right on Cover: Tingkat Kesulitan --}}
-                            <div class="absolute bottom-3 right-3 z-10">
-                                <span
-                                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md shadow-sm {{ $tingkatColor }}">
-                                    ● {{ $tingkatNama }}
+                        {{-- Badges on Cover --}}
+                        {{-- Top Left: Token Badge --}}
+                        @if($quiz->perluToken())
+                            <div class="absolute top-3 left-3 z-10">
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black border-[2.5px] border-ink bg-purple-200 text-purple-950 shadow-[0_2.5px_0_#0f3a5f]">
+                                    🔒 Token
                                 </span>
                             </div>
-                        </div>
+                        @endif
 
-                        {{-- Card Body --}}
-                        <div class="p-5">
-                            <h2 class="text-base sm:text-[17px] font-heading font-black text-[#082765] group-hover:text-[#007FBE] transition-colors line-clamp-2 leading-snug"
+                        {{-- Top Right: Stempel Quiz Berhasil Diselesaikan atau Badge Status --}}
+                        @if($sudahSelesaiDanDapatPoin)
+                            <div class="absolute top-2 right-2 z-20 pointer-events-none select-none">
+                                <img src="{{ asset('assets/widget/quizBerhasilStempel.webp') }}" alt="Stempel Selesai"
+                                    class="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-lg transform -rotate-12 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-6">
+                            </div>
+                        @else
+                            <div class="absolute top-3 right-3 z-10">
+                                @if($expired)
+                                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black border-[2.5px] border-ink bg-rose-200 text-rose-950 shadow-[0_2.5px_0_#0f3a5f]">
+                                        Kedaluwarsa
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-[2.5px] border-ink bg-emerald-400 text-emerald-950 shadow-[0_2.5px_0_#0f3a5f]">
+                                        <span class="h-2 w-2 rounded-full bg-emerald-900"></span>
+                                        Tersedia
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
+
+                        {{-- Bottom Overlay: Title & Subject & Difficulty --}}
+                        <div class="pointer-events-none absolute inset-x-5 bottom-3.5 z-10">
+                            <div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                                @if($quiz->mapel)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full border border-white/50 bg-sky-950/80 text-sky-200 text-[10px] font-extrabold backdrop-blur-xs shadow-xs">
+                                        {{ $quiz->mapel->nama_mapel }}
+                                    </span>
+                                @endif
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full border border-white/50 bg-slate-900/80 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-xs shadow-xs">
+                                    {{ $tingkatNama }}
+                                </span>
+                            </div>
+                            <h2 class="font-display text-xl sm:text-2xl font-bold leading-tight text-white line-clamp-2 [text-shadow:0_2px_0_#0f3a5f,0_0_10px_rgba(8,30,50,.55)]"
                                 title="{{ $quiz->judul }}">
                                 {{ $quiz->judul }}
                             </h2>
+                        </div>
+                    </div>
 
-                            <p class="mt-2 text-xs font-semibold text-[#465673] line-clamp-2 leading-relaxed">
-                                {{ $quiz->deskripsi ?: 'Kuis interaktif untuk menguji pemahaman materi. Uji kemampuanmu dan dapatkan skor terbaik!' }}
-                            </p>
+                    {{-- Body Card khas Dungeon --}}
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            {{-- 3 Grid Statistik (Total Soal, Total Poin, Durasi) --}}
+                            <div class="grid grid-cols-3 gap-2.5">
+                                <div class="rounded-[18px] border-[3px] border-ink bg-sky-50 px-1.5 py-2.5 text-center">
+                                    <div class="text-xs text-sky-800/70">Total Soal</div>
+                                    <div class="font-display text-lg sm:text-xl font-semibold leading-tight text-ink">{{ $soalCount }} <small class="text-xs font-bold text-sky-800/60">soal</small></div>
+                                </div>
+                                <div class="rounded-[18px] border-[3px] border-ink bg-sky-50 px-1.5 py-2.5 text-center">
+                                    <div class="text-xs text-sky-800/70">Poin</div>
+                                    <div class="font-display text-lg sm:text-xl font-semibold leading-tight text-amber-700">{{ $totalPoin }} <small class="text-xs font-bold text-amber-700/60">poin</small></div>
+                                </div>
+                                <div class="rounded-[18px] border-[3px] border-ink bg-sky-50 px-1.5 py-2.5 text-center">
+                                    <div class="text-xs text-sky-800/70">Durasi</div>
+                                    <div class="font-display text-lg sm:text-xl font-semibold leading-tight text-ink">{{ $quiz->durasi_total_menit ? $quiz->durasi_total_menit . ' mnt' : 'Bebas' }}</div>
+                                </div>
+                            </div>
 
-                            {{-- Ringkasan Soal di dalam Quiz --}}
+                            {{-- Ringkasan Tipe Soal --}}
                             @if($quiz->soal->isNotEmpty())
                                 <div class="mt-3 flex flex-wrap items-center gap-1.5">
                                     @foreach($quiz->soal->pluck('jenisSoal.nama_jenis')->filter()->unique() as $namaJenis)
-                                        <span
-                                            class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg border-2 border-ink bg-sky-100 text-ink text-[11px] font-extrabold shadow-[0_1.5px_0_#0f3a5f]">
                                             {{ $namaJenis }}
                                         </span>
                                     @endforeach
                                 </div>
                             @endif
 
-                        
+                            {{-- Balon Dialog Pesan / Status Pengerjaan (Speech Bubble khas Dungeon) --}}
+                            <div class="relative mt-3.5 rounded-2xl border-[3px] border-ink {{ $sudahSelesaiDanDapatPoin ? 'bg-emerald-100 text-emerald-950' : ($expired ? 'bg-rose-100 text-rose-950' : 'bg-amber-100 text-amber-950') }} px-3.5 py-2.5 text-xs leading-snug" role="status">
+                                <span class="absolute -top-[9px] left-6 h-[14px] w-[14px] rotate-45 border-l-[3px] border-t-[3px] border-ink {{ $sudahSelesaiDanDapatPoin ? 'bg-emerald-100' : ($expired ? 'bg-rose-100' : 'bg-amber-100') }}"></span>
+                                @if($sudahSelesaiDanDapatPoin)
+                                    <b>Selesai & Lulus!</b> Skor terbaikmu: <b>{{ $poinDidapatTertinggi }} poin</b>. Kerja bagus!
+                                @elseif($expired)
+                                    <b>Kuis kedaluwarsa.</b> Waktu pengerjaan kuis ini sudah berakhir.
+                                @elseif($quiz->perluToken())
+                                    <b>Kuis Terkunci Token.</b> Siapkan token dari gurumu sebelum mulai mengerjakan.
+                                @else
+                                    <b>Kuis Siap!</b> {{ Str::limit($quiz->deskripsi ?: 'Uji kemampuanmu dan raih skor terbaik sekarang!', 80) }}
+                                @endif
+                            </div>
                         </div>
-                    </div>
 
-                    {{-- Card Bottom Action --}}
-                    <div class="px-5 pb-5 pt-0">
-                        <div class="flex items-center justify-between border-t border-[#DCEFFF] pt-3.5">
+                        {{-- Tombol Aksi Bawah 3D Arcade --}}
+                        <div class="mt-4 pt-1">
                             @if($expired)
-                                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600">
-                                    <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-                                    Kedaluwarsa
-                                </span>
                                 <button type="button" disabled
-                                    class="cursor-not-allowed rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-bold text-slate-400">
-                                    Waktu Berakhir
+                                    class="w-full flex min-h-[50px] items-center justify-center rounded-2xl border-[3px] border-ink bg-slate-200 text-slate-500 font-display text-sm font-semibold cursor-not-allowed shadow-[0_3px_0_#0f3a5f]">
+                                    🔒 Waktu Berakhir
                                 </button>
                             @else
-                                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600">
-                                    <span class="relative flex h-2 w-2">
-                                        <span
-                                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                    </span>
-                                    Tersedia
-                                </span>
-
-                                <div class="flex items-center gap-1.5">
+                                <div class="grid grid-cols-3 gap-2.5">
                                     <a href="{{ route('siswa.quiz.detail', $quiz->id_quiz) }}"
-                                        class="rounded-xl border-2 border-[#B2E7FC] bg-white hover:bg-[#F0F6FF] px-3 py-1.5 text-xs font-bold text-[#007FBE] shadow-[0_2px_0_#B2E7FC] transition"
+                                        class="col-span-1 flex min-h-[50px] items-center justify-center gap-1 rounded-2xl border-[3px] border-ink bg-white font-display text-sm font-semibold text-ink shadow-btn transition hover:brightness-105 active:translate-y-1 active:shadow-btn-down"
                                         title="Lihat halaman preview kuis">
                                         Detail
                                     </a>
                                     <button type="button" data-quiz-start onclick='openQuizPreviewModal(@json($modalData))'
-                                        class="inline-flex items-center gap-1.5 rounded-xl bg-[#007FBE] hover:bg-[#00679A] text-white font-black text-xs px-4 py-2 shadow-[0_3px_0_#005580] active:translate-y-0.5 active:shadow-none transition">
+                                        class="col-span-2 flex min-h-[50px] items-center justify-center gap-2 rounded-2xl border-[3px] border-ink bg-sky-400 font-display text-base font-semibold text-ink shadow-btn transition hover:brightness-105 active:translate-y-1 active:shadow-btn-down motion-safe:animate-pulse">
                                         <span>Kerjakan</span>
                                         <span>→</span>
                                     </button>
@@ -646,16 +712,22 @@
     @push('scripts')
         <script>
             // =========================================================================
-            // Client-side Pagination (Batasan 8 card per halaman) & Filter Adaptasi Mobile
+            // Client-side Pagination & Filter (Gaya Quiz Guru)
             // =========================================================================
             const CARDS_PER_PAGE = 8;
             let currentQuizPage = 1;
 
-            let selectedStatus = @json($selectedStatus ?? request('status', 'Semua'));
+            let activeStatusMode = @json($initialStatusMode);
+            let activeQuizTingkat = @json($initialTingkatLabel);
+            let activeQuizMapel = @json($initialMapelLabel);
+            let activeQuizSort = @json($initialSort);
+            const hasServerQuizFilter = @json($hasServerQuizFilter);
+            const quizResetUrl = @json(route('siswa.quiz'));
 
             const quizCards = Array.from(document.querySelectorAll('.quiz-card-item'));
-            const searchInput = document.getElementById('quiz-search-input');
-            const filterSearchInput = document.getElementById('quiz-filter-search');
+            const searchInput = document.getElementById('searchInput');
+            const navSearchInput = document.getElementById('quiz-search-input');
+            const searchClear = document.getElementById('searchInputClear');
             const emptySearchEl = document.getElementById('quiz-empty-search');
             const paginationContainer = document.getElementById('quiz-pagination-container');
             const pageCurrentEl = document.getElementById('quiz-page-current');
@@ -663,58 +735,136 @@
             const btnPrev = document.getElementById('quiz-btn-prev');
             const btnNext = document.getElementById('quiz-btn-next');
             const countBadge = document.getElementById('quiz-count-badge');
+            const totalCountEl = document.getElementById('total-count');
 
-            const statusChips = Array.from(document.querySelectorAll('.quiz-status-chip'));
-            const inputStatus = document.getElementById('quiz-input-status');
-            const inputQ = document.getElementById('quiz-input-q');
+            const statusContainer = document.getElementById('quiz-status-mode-chips');
+            const tingkatContainer = document.getElementById('quiz-tingkat-chips');
+            const mapelContainer = document.getElementById('quiz-mapel-chips');
+            const sortBtn = document.getElementById('quizSortToggleBtn');
+            const resetBtn = document.getElementById('quizResetBtn');
+
+            function setActiveChip(container, activeVal, dataAttr) {
+                if (!container) return;
+                const chips = container.querySelectorAll('[' + dataAttr + ']');
+                chips.forEach(chip => {
+                    const val = chip.getAttribute(dataAttr) || '';
+                    const isActive = val.toLowerCase() === activeVal.toLowerCase();
+                    chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                    chip.classList.toggle('is-active', isActive);
+                    chip.classList.toggle('bg-[#007FBE]', isActive);
+                    chip.classList.toggle('text-white', isActive);
+                    chip.classList.toggle('border-[#007FBE]', isActive);
+                    chip.classList.toggle('shadow-[0_2px_0_#005580]', isActive);
+
+                    chip.classList.toggle('bg-white', !isActive);
+                    chip.classList.toggle('text-[#465673]', !isActive);
+                    chip.classList.toggle('border-[#DCEFFF]', !isActive);
+                });
+            }
+
+            function sortQuizCards() {
+                const grid = document.getElementById('quiz-cards-grid');
+                if (!grid || quizCards.length < 2) return;
+
+                quizCards.sort((a, b) => {
+                    const createdA = parseInt(a.dataset.created || '0', 10);
+                    const createdB = parseInt(b.dataset.created || '0', 10);
+                    const idA = parseInt(a.dataset.id || '0', 10);
+                    const idB = parseInt(b.dataset.id || '0', 10);
+                    const diff = createdA !== createdB ? createdA - createdB : idA - idB;
+                    return activeQuizSort === 'terlama' ? diff : -diff;
+                });
+
+                quizCards.forEach(card => grid.appendChild(card));
+            }
+
+            function updateSortButtonUi() {
+                const sortIcon = document.getElementById('quizSortIcon');
+                const sortLabel = document.getElementById('quizSortLabel');
+                if (sortBtn) sortBtn.setAttribute('data-sort', activeQuizSort);
+                if (sortIcon) sortIcon.textContent = activeQuizSort === 'terlama' ? '↑' : '↓';
+                if (sortLabel) sortLabel.textContent = activeQuizSort === 'terlama' ? 'Terlama' : 'Terbaru';
+            }
 
             function getFilteredQuizCards() {
                 const q1 = searchInput ? searchInput.value.toLowerCase().trim() : '';
-                const q2 = filterSearchInput ? filterSearchInput.value.toLowerCase().trim() : '';
-                const query = q2 || q1;
+                const q2 = navSearchInput ? navSearchInput.value.toLowerCase().trim() : '';
+                const query = q1 || q2;
 
                 return quizCards.filter(card => {
-                    // Match Search (judul, mapel, deskripsi)
+                    const judul = (card.getAttribute('data-judul') || card.getAttribute('data-title') || '').toLowerCase();
+                    const token = (card.getAttribute('data-token') || '').toLowerCase();
+                    const mapel = (card.getAttribute('data-mapel') || '').toLowerCase();
+                    const desc = (card.getAttribute('data-desc') || '').toLowerCase();
+                    const jenjang = (card.getAttribute('data-jenjang') || '').toLowerCase();
+                    const tingkat = (card.getAttribute('data-tingkat') || '').toLowerCase();
+                    const mode = (card.getAttribute('data-mode') || '').toLowerCase();
+
+                    // Match Search Query
                     if (query) {
-                        const title = (card.getAttribute('data-title') || '').toLowerCase();
-                        const mapel = (card.getAttribute('data-mapel') || '').toLowerCase();
-                        const desc = (card.getAttribute('data-desc') || '').toLowerCase();
-                        if (!title.includes(query) && !mapel.includes(query) && !desc.includes(query)) {
+                        if (!judul.includes(query) && !token.includes(query) && !mapel.includes(query) && !desc.includes(query) && !jenjang.includes(query)) {
                             return false;
                         }
                     }
 
-                    // Match Status
+                    // Match Status & Mode
                     const taken = card.getAttribute('data-status-taken') === '1';
                     const passed = card.getAttribute('data-status-passed') === '1';
+                    const sm = activeStatusMode.toLowerCase();
 
-                    if (selectedStatus === 'Belum Dikerjakan') {
+                    if (sm === 'belum dikerjakan') {
                         if (taken) return false;
-                    } else if (selectedStatus === 'Lulus') {
+                    } else if (sm === 'lulus') {
                         if (!passed) return false;
-                    } else if (selectedStatus === 'Belum Lulus') {
+                    } else if (sm === 'belum lulus') {
                         if (!taken || passed) return false;
+                    } else if (sm === 'wayground') {
+                        if (mode !== 'wayground') return false;
+                    } else if (sm === 'klasik') {
+                        if (mode !== 'biasa' && mode !== 'klasik') return false;
+                    }
+
+                    // Match Tingkat
+                    if (activeQuizTingkat && activeQuizTingkat.toLowerCase() !== 'semua tingkat') {
+                        if (tingkat !== activeQuizTingkat.toLowerCase()) return false;
+                    }
+
+                    // Match Mapel
+                    if (activeQuizMapel && activeQuizMapel.toLowerCase() !== 'semua mapel') {
+                        if (mapel !== activeQuizMapel.toLowerCase()) return false;
                     }
 
                     return true;
                 });
             }
 
-            // Event handler untuk Chip Status
-            statusChips.forEach(chip => {
-                chip.addEventListener('click', function () {
-                    selectedStatus = this.getAttribute('data-status');
-                    if (inputStatus) inputStatus.value = selectedStatus;
+            function resetQuizFilters() {
+                if (hasServerQuizFilter) {
+                    window.location.href = quizResetUrl;
+                    return;
+                }
 
-                    statusChips.forEach(c => {
-                        c.className = 'quiz-status-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-white text-[#465673] border-[#DCEFFF] hover:bg-[#F0F6FF]';
-                    });
-                    this.className = 'quiz-status-chip px-3.5 py-1.5 rounded-full text-xs font-black transition-all select-none shrink-0 border bg-[#007FBE] text-white border-[#007FBE] shadow-xs';
+                activeStatusMode = 'Semua';
+                activeQuizTingkat = 'Semua Tingkat';
+                activeQuizMapel = 'Semua Mapel';
+                activeQuizSort = 'terbaru';
 
-                    currentQuizPage = 1;
-                    renderQuizPagination(true);
-                });
-            });
+                if (searchInput) searchInput.value = '';
+                if (navSearchInput) navSearchInput.value = '';
+                if (searchClear) {
+                    searchClear.classList.add('hidden');
+                    searchClear.classList.remove('inline-flex');
+                }
+
+                setActiveChip(statusContainer, activeStatusMode, 'data-status-mode');
+                setActiveChip(tingkatContainer, activeQuizTingkat, 'data-tingkat');
+                setActiveChip(mapelContainer, activeQuizMapel, 'data-mapel');
+
+                updateSortButtonUi();
+                sortQuizCards();
+                currentQuizPage = 1;
+                renderQuizPagination(true);
+            }
 
             function renderQuizDots(totalPages, currentPage) {
                 if (!dotsContainerEl) return;
@@ -746,8 +896,24 @@
                 const totalItems = filtered.length;
                 const totalPages = Math.max(1, Math.ceil(totalItems / CARDS_PER_PAGE));
 
+                if (totalCountEl) {
+                    totalCountEl.textContent = totalItems;
+                }
                 if (countBadge) {
                     countBadge.textContent = `${totalItems} Kuis`;
+                }
+
+                const isDirty = (searchInput?.value || '').trim() !== ''
+                    || (navSearchInput?.value || '').trim() !== ''
+                    || activeStatusMode !== 'Semua'
+                    || activeQuizTingkat !== 'Semua Tingkat'
+                    || activeQuizMapel !== 'Semua Mapel'
+                    || activeQuizSort !== 'terbaru'
+                    || hasServerQuizFilter;
+
+                if (resetBtn) {
+                    resetBtn.classList.toggle('hidden', !isDirty);
+                    resetBtn.classList.toggle('inline-flex', isDirty);
                 }
 
                 if (currentQuizPage > totalPages) {
@@ -760,7 +926,6 @@
                 const startIndex = (currentQuizPage - 1) * CARDS_PER_PAGE;
                 const endIndex = Math.min(startIndex + CARDS_PER_PAGE, totalItems);
 
-                // Sembunyikan semua kartu terlebih dahulu
                 quizCards.forEach(card => {
                     card.style.display = 'none';
                 });
@@ -772,12 +937,11 @@
                     if (emptySearchEl) emptySearchEl.classList.add('hidden');
                     if (paginationContainer) paginationContainer.classList.remove('hidden');
 
-                    // Tampilkan hanya kartu di halaman saat ini
                     for (let i = startIndex; i < endIndex; i++) {
                         filtered[i].style.display = '';
                         if (animate) {
                             filtered[i].style.animation = 'none';
-                            void filtered[i].offsetWidth; // trigger reflow
+                            void filtered[i].offsetWidth;
                             filtered[i].style.animation = 'quizCardFadeIn 0.28s ease-out forwards';
                         }
                     }
@@ -785,7 +949,6 @@
                     if (pageCurrentEl) pageCurrentEl.textContent = currentQuizPage;
                     renderQuizDots(totalPages, currentQuizPage);
 
-                    // Update status tombol navigasi
                     if (btnPrev) {
                         const disabled = currentQuizPage <= 1;
                         btnPrev.disabled = disabled;
@@ -797,6 +960,53 @@
                         btnNext.setAttribute('aria-disabled', disabled ? 'true' : 'false');
                     }
                 }
+            }
+
+            if (statusContainer) {
+                statusContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-status-mode]');
+                    if (!btn) return;
+                    activeStatusMode = btn.getAttribute('data-status-mode') || 'Semua';
+                    setActiveChip(statusContainer, activeStatusMode, 'data-status-mode');
+                    currentQuizPage = 1;
+                    renderQuizPagination(true);
+                });
+            }
+
+            if (tingkatContainer) {
+                tingkatContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-tingkat]');
+                    if (!btn) return;
+                    activeQuizTingkat = btn.getAttribute('data-tingkat') || 'Semua Tingkat';
+                    setActiveChip(tingkatContainer, activeQuizTingkat, 'data-tingkat');
+                    currentQuizPage = 1;
+                    renderQuizPagination(true);
+                });
+            }
+
+            if (mapelContainer) {
+                mapelContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-mapel]');
+                    if (!btn) return;
+                    activeQuizMapel = btn.getAttribute('data-mapel') || 'Semua Mapel';
+                    setActiveChip(mapelContainer, activeQuizMapel, 'data-mapel');
+                    currentQuizPage = 1;
+                    renderQuizPagination(true);
+                });
+            }
+
+            if (sortBtn) {
+                sortBtn.addEventListener('click', () => {
+                    activeQuizSort = activeQuizSort === 'terbaru' ? 'terlama' : 'terbaru';
+                    updateSortButtonUi();
+                    sortQuizCards();
+                    currentQuizPage = 1;
+                    renderQuizPagination(true);
+                });
+            }
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', resetQuizFilters);
             }
 
             if (btnPrev) {
@@ -826,23 +1036,34 @@
                 });
             }
 
-            function syncSearch(query) {
-                if (searchInput && searchInput.value !== query) searchInput.value = query;
-                if (filterSearchInput && filterSearchInput.value !== query) filterSearchInput.value = query;
-                if (inputQ) inputQ.value = query;
-                currentQuizPage = 1;
-                renderQuizPagination(false);
-            }
-
             if (searchInput) {
                 searchInput.addEventListener('input', function () {
-                    syncSearch(this.value);
+                    if (navSearchInput && navSearchInput.value !== this.value) navSearchInput.value = this.value;
+                    if (searchClear) {
+                        searchClear.classList.toggle('hidden', !this.value);
+                        searchClear.classList.toggle('inline-flex', !!this.value);
+                    }
+                    currentQuizPage = 1;
+                    renderQuizPagination(false);
                 });
             }
 
-            if (filterSearchInput) {
-                filterSearchInput.addEventListener('input', function () {
-                    syncSearch(this.value);
+            if (navSearchInput) {
+                navSearchInput.addEventListener('input', function () {
+                    if (searchInput && searchInput.value !== this.value) searchInput.value = this.value;
+                    currentQuizPage = 1;
+                    renderQuizPagination(false);
+                });
+            }
+
+            if (searchClear) {
+                searchClear.addEventListener('click', function () {
+                    if (searchInput) searchInput.value = '';
+                    if (navSearchInput) navSearchInput.value = '';
+                    this.classList.add('hidden');
+                    this.classList.remove('inline-flex');
+                    currentQuizPage = 1;
+                    renderQuizPagination(false);
                 });
             }
 

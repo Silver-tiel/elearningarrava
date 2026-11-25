@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Absensi;
 use App\Models\Achievement;
 use App\Models\HasilQuizModul;
 use App\Models\Modul;
 use App\Models\OrangtuaSiswa;
 use App\Models\PencapaianUser;
+use App\Models\Presensi;
 use App\Models\Quiz;
+use App\Models\SesiPresensi;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -89,7 +93,7 @@ class OrangtuaController extends Controller
             ->get();
 
         $totalQuizDikerjakan = $hasilList->count();
-        $totalQuizTersedia   = Quiz::count();
+        $totalQuizTersedia   = Quiz::bukanDungeon()->count();
 
         // Nilai rata-rata (persentase benar)
         $avgNilai = 0;
@@ -270,16 +274,39 @@ class OrangtuaController extends Controller
         return view('orangtua.pengaturan', compact('user'));
     }
 
+    public function profilApi(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $request->user()->only(['nama', 'email', 'nomor_hp', 'foto_profil']),
+        ]);
+    }
+
+    public function ubahPasswordApi(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+        $user->password = $validated['password'];
+        $user->save();
+
+        return response()->json(['success' => true]);
+    }
+
     public function updatePengaturan(Request $request)
     {
-        $user = Auth::user();
+        $user = $request->user();
+        $isApi = $request->routeIs('api.parent.profile.update');
 
         $request->validate([
             'nama'       => ['required', 'string', 'max:100'],
             'email'      => ['required', 'email', Rule::unique('user', 'email')->ignore($user->id_user, 'id_user')],
             'nomor_hp'   => ['nullable', 'string', 'max:20'],
             'foto_profil'=> ['nullable', 'image', 'max:2048'],
-            'password'   => ['nullable', 'string', 'min:8', 'confirmed'],
+            'password'   => $isApi ? ['prohibited'] : ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
         $data = [
@@ -298,6 +325,11 @@ class OrangtuaController extends Controller
         }
 
         DB::table('user')->where('id_user', $user->id_user)->update($data);
+
+        if ($isApi) {
+            $user->refresh();
+            return $this->profilApi($request);
+        }
 
         return redirect()->route('orangtua.pengaturan')
             ->with('success', 'Perubahan berhasil disimpan.');
@@ -377,7 +409,7 @@ class OrangtuaController extends Controller
 
             return [
                 'tanggal' => $hasil->waktu_dapat
-                    ? \Carbon\Carbon::parse($hasil->waktu_dapat)->format('d/m/y')
+                    ? Carbon::parse($hasil->waktu_dapat)->format('d/m/y')
                     : '-',
                 'judul' => $hasil->quiz?->judul ?? 'Kuis',
                 'nilai' => $totalPoin > 0
@@ -419,6 +451,135 @@ class OrangtuaController extends Controller
             'kuisPerluPerhatian'
         ));
     }
+    /* -----------------------------------------------------------------
+     |  Halaman Absensi – memantau riwayat kehadiran anak.
+     |  Data diambil dari tabel presensi (scan QR) & absensi (login harian).
+     * --------------------------------------------------------------- */
+    public function absensi(Request $request)
+    {
+        $siswaIds = $this->getSiswaIds();
+
+        if (empty($siswaIds)) {
+            return view('orangtua.absensi', [
+                'siswa'     => null,
+                'siswaList' => collect(),
+                'presensi'  => collect(),
+                'absensi'   => collect(),
+                'stats'     => null,
+                'bulanList' => collect(),
+                'filterBulan' => null,
+            ]);
+        }
+
+        // Pilih siswa aktif
+        $activeSiswaId = (int) $request->input('siswa_id', $siswaIds[0]);
+        if (!in_array($activeSiswaId, $siswaIds)) {
+            $activeSiswaId = $siswaIds[0];
+        }
+
+        $siswa = $this->getSiswaOrFail($activeSiswaId);
+
+        $siswaList = User::whereIn('id_user', $siswaIds)
+            ->select('id_user', 'nama', 'id_jenjang')
+            ->with('jenjang')
+            ->get();
+
+        // ---- Filter bulan (format: 2026-11) ----
+        $filterBulan = $request->input('bulan');
+
+        // ---- Data Presensi (dari scan QR kelas) ----
+        $presensiQuery = Presensi::where('id_siswa', $activeSiswaId)
+            ->with(['sesi.kelas']);
+
+        if ($filterBulan && preg_match('/^\d{4}-\d{2}$/', $filterBulan)) {
+            $presensiQuery->whereHas('sesi', function ($q) use ($filterBulan) {
+                $q->whereRaw("DATE_FORMAT(tanggal, '%Y-%m') = ?", [$filterBulan]);
+            });
+        }
+
+        $presensiAll = (clone $presensiQuery)->get();
+
+        $presensiPaginated = $presensiQuery
+            ->join('sesi_presensi', 'presensi.id_sesi', '=', 'sesi_presensi.id_sesi')
+            ->orderByDesc('sesi_presensi.tanggal')
+            ->select('presensi.*')
+            ->paginate(15)
+            ->withQueryString();
+
+        // ---- Data Absensi (login harian) ----
+        $absensiQuery = Absensi::where('id_user', $activeSiswaId);
+
+        if ($filterBulan && preg_match('/^\d{4}-\d{2}$/', $filterBulan)) {
+            $absensiQuery->whereRaw("DATE_FORMAT(waktu_absensi, '%Y-%m') = ?", [$filterBulan]);
+        }
+
+        $absensiAll = (clone $absensiQuery)->get();
+
+        $absensi = $absensiQuery
+            ->orderByDesc('waktu_absensi')
+            ->get();
+
+        // ---- Statistik Kehadiran ----
+        $totalHadir     = $presensiAll->where('status', 'hadir')->count();
+        $totalTerlambat = $presensiAll->where('status', 'terlambat')->count();
+        $totalPresensi  = $presensiAll->count();
+        $totalAbsensi   = $absensiAll->count();
+
+        // Persentase kehadiran tepat waktu
+        $persenHadir = $totalPresensi > 0
+            ? round(($totalHadir / $totalPresensi) * 100, 1)
+            : 0;
+
+        // Streak kehadiran berturut-turut (dari presensi)
+        $streak = 0;
+        $presensiSorted = $presensiAll->sortByDesc(function ($p) {
+            return $p->sesi?->tanggal;
+        })->values();
+
+        foreach ($presensiSorted as $p) {
+            if (in_array($p->status, ['hadir', 'terlambat'])) {
+                $streak++;
+            } else {
+                break;
+            }
+        }
+
+        // Daftar bulan yang ada data presensi (untuk filter dropdown)
+        $bulanPresensi = DB::table('presensi')
+            ->join('sesi_presensi', 'presensi.id_sesi', '=', 'sesi_presensi.id_sesi')
+            ->where('presensi.id_siswa', $activeSiswaId)
+            ->selectRaw("DISTINCT DATE_FORMAT(sesi_presensi.tanggal, '%Y-%m') as bulan")
+            ->orderByDesc('bulan')
+            ->pluck('bulan');
+
+        $bulanAbsensi = DB::table('absensi')
+            ->where('id_user', $activeSiswaId)
+            ->selectRaw("DISTINCT DATE_FORMAT(waktu_absensi, '%Y-%m') as bulan")
+            ->orderByDesc('bulan')
+            ->pluck('bulan');
+
+        $bulanList = $bulanPresensi->merge($bulanAbsensi)->unique()->sortDesc()->values();
+
+        $stats = [
+            'total_presensi'  => $totalPresensi,
+            'total_hadir'     => $totalHadir,
+            'total_terlambat' => $totalTerlambat,
+            'total_absensi'   => $totalAbsensi,
+            'persen_hadir'    => $persenHadir,
+            'streak'          => $streak,
+        ];
+
+        return view('orangtua.absensi', compact(
+            'siswa',
+            'siswaList',
+            'presensiPaginated',
+            'absensi',
+            'stats',
+            'bulanList',
+            'filterBulan'
+        ));
+    }
+
     public function aktivitasBelajar(Request $request)
     {
         $siswaIds = $this->getSiswaIds();

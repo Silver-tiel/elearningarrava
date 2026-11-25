@@ -27,6 +27,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string|null $asal_sekolah
  * @property int $id_tipeuser
  * @property int|null $id_jenjang
+ * @property int|null $id_tingkat_kelas
  * @property int|null $total_poin
  * @property string $status_akun
  * @property int|null $id_modul
@@ -72,6 +73,7 @@ class User extends Authenticatable
         'asal_sekolah',
         'id_tipeuser',
         'id_jenjang',
+        'id_tingkat_kelas',
         'total_poin',
         'status_akun',
         'id_modul',
@@ -167,9 +169,13 @@ class User extends Authenticatable
             return $this->foto_profil;
         }
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->exists($this->foto_profil)
-            ? \Illuminate\Support\Facades\Storage::url($this->foto_profil)
-            : null;
+        $cleanPath = preg_replace('#^storage/#', '', ltrim($this->foto_profil, '/'));
+
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($cleanPath) || file_exists(storage_path('app/public/' . $cleanPath))) {
+            return asset('storage/' . $cleanPath);
+        }
+
+        return null;
     }
 
     public function pastikanQrToken(): string
@@ -205,6 +211,11 @@ class User extends Authenticatable
     {
         // Hubungkan ke Model Jenjang, bukan User
         return $this->belongsTo(Jenjang::class, 'id_jenjang');
+    }
+
+    public function tingkatKelas(): BelongsTo
+    {
+        return $this->belongsTo(TingkatKelas::class, 'id_tingkat_kelas', 'id_tingkat');
     }
 
     public function tipeUser(): BelongsTo

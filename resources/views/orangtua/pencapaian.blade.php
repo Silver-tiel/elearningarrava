@@ -76,7 +76,7 @@
     <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
 
         {{-- Total Akumulasi Poin --}}
-        <div class="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
+        <div class="bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-3">
                 <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Total Akumulasi Poin</p>
                 <div class="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
@@ -102,7 +102,7 @@
         </div>
 
         {{-- Lencana Diperoleh --}}
-        <div class="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
+        <div class="bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-3">
                 <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Lencana Diperoleh</p>
                 <div class="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
@@ -125,7 +125,7 @@
         </div>
 
         {{-- Target Aktif Berjalan --}}
-        <div class="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
+        <div class="bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-3">
                 <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Target Aktif Berjalan</p>
                 <div class="w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center shrink-0">
@@ -149,7 +149,7 @@
         </div>
 
         {{-- Tingkat Penguasaan / Level --}}
-        <div class="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150">
+        <div class="bg-white rounded-2xl border-2 border-[#DCEFFF] p-4 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200">
             <div class="flex items-start justify-between mb-3">
                 <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Tingkat Penguasaan</p>
                 <div class="w-7 h-7 rounded-lg {{ $stats['level']['bg'] }} flex items-center justify-center shrink-0">
@@ -268,7 +268,7 @@
             }
         @endphp
 
-        <div class="relative bg-white border {{ $p['border'] }} rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 flex flex-col gap-3 {{ $isTerkunci ? 'opacity-70' : '' }}">
+        <div class="relative bg-white border-2 border-[#DCEFFF] rounded-2xl p-5 shadow-[0_4px_0_#B2E7FC] hover:shadow-[0_6px_0_#007FBE] hover:border-[#007FBE] hover:-translate-y-1 transition-all duration-200 flex flex-col gap-3 {{ $isTerkunci ? 'opacity-70' : '' }}">
 
             {{-- Status badge (pojok kanan atas) --}}
             <div class="absolute top-4 right-4 flex flex-col items-end gap-1">

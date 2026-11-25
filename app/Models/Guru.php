@@ -72,9 +72,20 @@ class Guru extends Model
     public function getFotoUrlAttribute(): ?string
     {
         $path = $this->foto ?: $this->user?->foto_profil;
-        if ($path && Storage::disk('public')->exists($path)) {
-            return asset('storage/' . $path);
+        if (empty($path)) {
+            return null;
         }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        $cleanPath = preg_replace('#^storage/#', '', ltrim($path, '/'));
+
+        if (Storage::disk('public')->exists($cleanPath) || file_exists(storage_path('app/public/' . $cleanPath))) {
+            return asset('storage/' . $cleanPath);
+        }
+
         return null;
     }
 }

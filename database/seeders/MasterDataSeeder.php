@@ -31,6 +31,7 @@ class MasterDataSeeder extends Seeder
         DB::table('tipequiz')->insertOrIgnore([
             ['id_tipequiz' => 1, 'nama_tipe' => 'Harian', 'created_at' => $now, 'updated_at' => $now],
             ['id_tipequiz' => 2, 'nama_tipe' => 'Ulangan', 'created_at' => $now, 'updated_at' => $now],
+            ['id_tipequiz' => 3, 'nama_tipe' => 'Dungeon', 'created_at' => $now, 'updated_at' => $now],
         ]);
 
         DB::table('tingkatquiz')->insertOrIgnore([

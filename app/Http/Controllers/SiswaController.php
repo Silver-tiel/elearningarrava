@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\HasilQuizModul;
 use App\Models\Jenjang;
+use App\Models\LogAktivitas;
 use App\Models\Mapel;
 use App\Models\Modul;
 use App\Models\ModulSoal;
 use App\Models\ProgresModulSiswa;
+use App\Models\Presensi;
 use App\Models\OrangtuaSiswa;
 use App\Models\PencapaianUser;
 use App\Models\Achievement;
@@ -75,7 +77,7 @@ class SiswaController extends Controller
 
         $modulCount = $modulQuery->count();
         $quizCount = $quizQuery->count();
-        $moduls = $modulQuery->with(['tipeModul', 'jenjang'])->latest()->take(6)->get();
+        $moduls = $modulQuery->with(['tipeModul', 'jenjang', 'mapel'])->latest()->take(6)->get();
 
         $hasHasilQuizTable = Schema::hasTable('hasilquizmodul');
 
@@ -287,6 +289,10 @@ class SiswaController extends Controller
 
         $progres->save();
 
+        if (!$wasTuntas && $progres->is_tuntas) {
+            LogAktivitas::catat($user, "Menyelesaikan modul {$modul->judul_modul}.");
+        }
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -361,6 +367,11 @@ class SiswaController extends Controller
         }
 
         $progres->save();
+
+        LogAktivitas::catat(
+            $user,
+            "Mengerjakan kuis modul {$modul->judul_modul} dengan nilai {$skorPersen} ({$benarCount}/{$totalSoal} benar)."
+        );
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -475,7 +486,7 @@ class SiswaController extends Controller
             $relations[] = 'mapel';
         }
 
-        $query = Quiz::published()->belumKadaluarsa()->with($relations);
+        $query = Quiz::published()->belumKadaluarsa()->bukanDungeon()->with($relations);
 
         // Batasi kuis sesuai jenjang siswa yang sedang login
         if ($user && $user->id_jenjang) {
@@ -530,7 +541,9 @@ class SiswaController extends Controller
 
         $quizzes = $query->get();
         $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
-        $mapelList = Schema::hasTable('mapel') ? Mapel::orderBy('nama_mapel')->get() : collect();
+        $mapelList = Schema::hasTable('mapel')
+            ? Mapel::forJenjang($user->id_jenjang ?? null)->orderBy('nama_mapel')->get()
+            : collect();
 
         return view('siswa.quiz', compact('quizzes', 'tingkatQuizList', 'mapelList', 'user', 'selectedStatus'));
     }
@@ -872,6 +885,13 @@ class SiswaController extends Controller
                 'is_lulus' => $isLulus,
                 'waktu_dapat' => now(),
             ]);
+            $nilaiPersen = $totalPoinQuiz > 0
+                ? (int) round(($poinDidapat / $totalPoinQuiz) * 100)
+                : 0;
+            LogAktivitas::catat(
+                $user,
+                "Menyelesaikan kuis {$quiz->judul} dengan nilai {$nilaiPersen} (" . ($isLulus ? 'lulus' : 'belum lulus') . ').'
+            );
 
             if ($poinDiberikan > 0) {
                 User::whereKey($user->id_user)->increment('total_poin', $poinDiberikan);
@@ -943,7 +963,7 @@ class SiswaController extends Controller
     // Wayground bergantung pada indeks soal, jadi urutannya tidak boleh berubah.
     private function muatQuiz($identifier): Quiz
     {
-        return Quiz::with([
+        return Quiz::bukanDungeon()->with([
             'soal' => fn($q) => $q->orderBy('id_soal'),
             'soal.jenisSoal',
             'soal.pilihanSoal' => fn($q) => $q->orderBy('label'),
@@ -1062,10 +1082,97 @@ class SiswaController extends Controller
     public function dataSiswa(Request $request)
     {
         $query = $this->filteredStudentsQuery($request)
-            ->with(['jenjang', 'tipeUser']);
+            ->with(['jenjang', 'tipeUser', 'tingkatKelas']);
 
         $siswas = $query->latest()->paginate(10)->withQueryString();
         $filteredStudentCount = (clone $query)->count();
+        $monitoringSiswa = collect();
+
+        if ($siswas->isNotEmpty()) {
+            $siswaIds = $siswas->getCollection()->pluck('id_user');
+            $progres = Schema::hasTable('progres_modul_siswa')
+                ? ProgresModulSiswa::query()
+                    ->whereIn('id_user', $siswaIds)
+                    ->select('id_user')
+                    ->selectRaw('COUNT(*) as progres_count')
+                    ->selectRaw('SUM(CASE WHEN is_tuntas = 1 THEN 1 ELSE 0 END) as modul_tuntas')
+                    ->selectRaw('MAX(updated_at) as aktivitas_progres_terakhir')
+                    ->groupBy('id_user')
+                    ->get()
+                    ->keyBy('id_user')
+                : collect();
+            $hasilKuis = Schema::hasTable('hasilquizmodul')
+                ? HasilQuizModul::query()
+                    ->whereIn('id_user', $siswaIds)
+                    ->select('id_user')
+                    ->selectRaw('COUNT(*) as jumlah_kuis')
+                    ->selectRaw('AVG(CASE WHEN total_poin > 0 THEN poin_didapat * 100.0 / total_poin END) as rata_nilai')
+                    ->selectRaw('MAX(waktu_dapat) as aktivitas_kuis_terakhir')
+                    ->groupBy('id_user')
+                    ->get()
+                    ->keyBy('id_user')
+                : collect();
+            $presensiSiswa = Schema::hasTable('presensi')
+                ? Presensi::query()
+                    ->whereIn('id_siswa', $siswaIds)
+                    ->select('id_siswa')
+                    ->selectRaw('COUNT(*) as jumlah_hadir')
+                    ->selectRaw('MAX(waktu_scan) as presensi_terakhir')
+                    ->groupBy('id_siswa')
+                    ->get()
+                    ->keyBy('id_siswa')
+                : collect();
+            $modulPerJenjang = Schema::hasTable('modul')
+                ? Modul::published()
+                    ->select('id_jenjang')
+                    ->selectRaw('COUNT(*) as jumlah')
+                    ->groupBy('id_jenjang')
+                    ->pluck('jumlah', 'id_jenjang')
+                : collect();
+            $jumlahSemuaModul = Schema::hasTable('modul') ? (int) Modul::published()->count() : 0;
+
+            foreach ($siswas as $siswa) {
+                $progresSiswa = $progres->get($siswa->id_user);
+                $hasilSiswa = $hasilKuis->get($siswa->id_user);
+                $presensi = $presensiSiswa->get($siswa->id_user);
+                $jumlahModul = $siswa->id_jenjang
+                    ? (int) ($modulPerJenjang->get($siswa->id_jenjang) ?? 0)
+                    : $jumlahSemuaModul;
+                $modulTuntas = (int) ($progresSiswa->modul_tuntas ?? 0);
+                $persenProgres = $jumlahModul > 0
+                    ? min(100, (int) round(($modulTuntas / $jumlahModul) * 100))
+                    : 0;
+                $aktivitasTerakhir = collect([
+                    $progresSiswa->aktivitas_progres_terakhir ?? null,
+                    $hasilSiswa->aktivitas_kuis_terakhir ?? null,
+                    $presensi->presensi_terakhir ?? null,
+                ])->filter()->map(fn ($waktu) => Carbon::parse($waktu))->sort()->last();
+
+                $perluPerhatian = null;
+                if (($siswa->status_akun ?? 'Aktif') === 'Nonaktif') {
+                    $perluPerhatian = 'Akun nonaktif';
+                } elseif (!$aktivitasTerakhir) {
+                    $perluPerhatian = 'Belum ada aktivitas belajar';
+                } elseif ($aktivitasTerakhir->lt(now()->subDays(14))) {
+                    $perluPerhatian = 'Tidak aktif lebih dari 14 hari';
+                } elseif ($jumlahModul > 0 && $persenProgres < 25) {
+                    $perluPerhatian = 'Progres modul masih rendah';
+                }
+
+                $monitoringSiswa->put($siswa->id_user, [
+                    'jumlah_modul' => $jumlahModul,
+                    'modul_tuntas' => $modulTuntas,
+                    'persen_progres' => $persenProgres,
+                    'jumlah_kuis' => (int) ($hasilSiswa->jumlah_kuis ?? 0),
+                    'rata_nilai' => $hasilSiswa?->rata_nilai !== null
+                        ? round((float) $hasilSiswa->rata_nilai, 1)
+                        : null,
+                    'jumlah_hadir' => (int) ($presensi->jumlah_hadir ?? 0),
+                    'aktivitas_terakhir' => $aktivitasTerakhir,
+                    'perlu_perhatian' => $perluPerhatian,
+                ]);
+            }
+        }
 
         // Statistik memakai data asli (tidak lagi ditimpa angka default).
         $totalSiswa = User::where('id_tipeuser', 3)->count();
@@ -1098,7 +1205,8 @@ class SiswaController extends Controller
             'totalPerluDitinjau',
             'listKelas',
             'jenjangs',
-            'filteredStudentCount'
+            'filteredStudentCount',
+            'monitoringSiswa'
         ));
     }
 
@@ -1189,6 +1297,12 @@ class SiswaController extends Controller
         });
 
         $jenjang = Jenjang::findOrFail($data['id_jenjang']);
+        if ($updatedCount > 0) {
+            LogAktivitas::catat(
+                Auth::user(),
+                "Mengubah jenjang {$updatedCount} siswa menjadi {$jenjang->nama_tipe}."
+            );
+        }
 
         return redirect()
             ->route('admin.daftar_siswa', $request->only(['search', 'kelas', 'status', 'page']))
@@ -1252,6 +1366,7 @@ class SiswaController extends Controller
 
         // Semua jenjang
         $jenjangs = Jenjang::orderBy('nama_tipe')->get();
+        $tingkats = Schema::hasTable('tingkat_kelas') ? \App\Models\TingkatKelas::where('aktif', true)->orderBy('urutan')->get() : collect();
 
         $viewData = array_merge([
             'siswa' => $siswa,
@@ -1262,6 +1377,7 @@ class SiswaController extends Controller
             'allAchievements' => $allAchievements,
             'orangtuaList' => $orangtuaList,
             'jenjangs' => $jenjangs,
+            'tingkats' => $tingkats,
         ], $stats);
 
         return view('admin.daftar_siswa.profil_siswa', $viewData);
@@ -1368,6 +1484,7 @@ class SiswaController extends Controller
             $data = $request->validate([
                 'nama' => ['required', 'string', 'max:255'],
                 'id_jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
+                'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -1388,8 +1505,11 @@ class SiswaController extends Controller
         try {
             $siswa->nama = $data['nama'];
             $siswa->id_jenjang = $data['id_jenjang'] ?? null;
+            if (array_key_exists('id_tingkat_kelas', $data)) {
+                $siswa->id_tingkat_kelas = $data['id_tingkat_kelas'] ?: null;
+            }
             $siswa->save();
-            $siswa->load('jenjang');
+            $siswa->load(['jenjang', 'tingkatKelas']);
         } catch (Throwable $e) {
             report($e);
 
@@ -1415,8 +1535,12 @@ class SiswaController extends Controller
         try {
             $data = $request->validate([
                 'id_jenjang' => ['nullable', 'integer', 'exists:jenjang,id_jenjang'],
+                'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
             ]);
         } catch (ValidationException $e) {
+            if (!$request->wantsJson() && !$request->ajax()) {
+                return back()->withErrors($e->validator);
+            }
             return response()->json([
                 'success' => false,
                 'message' => $e->validator->errors()->first(),
@@ -1426,6 +1550,9 @@ class SiswaController extends Controller
         $siswa = User::where('id_tipeuser', 3)->find($id);
 
         if (!$siswa) {
+            if (!$request->wantsJson() && !$request->ajax()) {
+                return back()->with('error', 'Siswa tidak ditemukan.');
+            }
             return response()->json([
                 'success' => false,
                 'message' => 'Siswa tidak ditemukan.',
@@ -1434,21 +1561,33 @@ class SiswaController extends Controller
 
         try {
             $siswa->id_jenjang = $data['id_jenjang'] ?? null;
+            if (array_key_exists('id_tingkat_kelas', $data)) {
+                $siswa->id_tingkat_kelas = $data['id_tingkat_kelas'] ?: null;
+            }
             $siswa->save();
-            $siswa->load('jenjang');
+            $siswa->load(['jenjang', 'tingkatKelas']);
         } catch (Throwable $e) {
             report($e);
 
+            if (!$request->wantsJson() && !$request->ajax()) {
+                return back()->with('error', 'Terjadi kesalahan saat mengubah jenjang siswa. Silakan coba lagi.');
+            }
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat mengubah jenjang siswa. Silakan coba lagi.',
             ], 500);
         }
 
+        if (!$request->wantsJson() && !$request->ajax()) {
+            return back()->with('success', 'Jenjang dan tingkat kelas siswa berhasil diperbarui.');
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Jenjang siswa berhasil diperbarui.',
             'jenjang' => $siswa->jenjang->nama_tipe ?? $siswa->kelas ?? '-',
+            'id_tingkat_kelas' => $siswa->id_tingkat_kelas,
+            'nama_tingkat_kelas' => $siswa->tingkatKelas->nama ?? null,
         ]);
     }
 
@@ -1475,9 +1614,19 @@ class SiswaController extends Controller
             ], 404);
         }
 
+        $statusSebelumnya = $siswa->status_akun ?? 'Aktif';
         try {
-            $siswa->status_akun = $data['status'];
-            $siswa->save();
+            DB::transaction(function () use ($siswa, $data, $statusSebelumnya) {
+                $siswa->status_akun = $data['status'];
+                $siswa->save();
+
+                if ($statusSebelumnya !== $data['status']) {
+                    LogAktivitas::catat(
+                        Auth::user(),
+                        "Mengubah status akun siswa {$siswa->nama} menjadi {$data['status']}."
+                    );
+                }
+            });
         } catch (Throwable $e) {
             // Detail error dicatat di log, tidak dikirim ke browser.
             report($e);
@@ -1583,6 +1732,7 @@ class SiswaController extends Controller
         ],
         'nomor_hp'     => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
         'kelas'        => ['nullable', 'string', 'max:50'],
+        'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
         'asal_sekolah' => ['nullable', 'string', 'max:255'],
         'foto_profil'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         // 'nama', 'nisn', dan 'id_jenjang' sengaja dihapus dari validasi 

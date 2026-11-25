@@ -1,14 +1,11 @@
 @php
-  $currentUser = Auth::user();
-
-  // Niere widget hanya untuk Siswa (id_tipeuser = 3) dan Orang Tua (id_tipeuser = 4), serta halaman login
-  // TIDAK PERNAH muncul untuk Admin (1) atau Guru (2)
-  if ($currentUser && in_array((int) $currentUser->id_tipeuser, [1, 2])) {
-      return;
-  }
+  // Niere widget dinonaktifkan sesuai permintaan pengguna (digantikan oleh komponen tur mandiri).
+  return;
+@endphp
 
   $isLoginPage = request()->routeIs('login') || request()->is('login');
-  $initialPosClass = 'pos-bottom';
+  $isPendaftaranPage = request()->routeIs('pendaftaran') || request()->is('pendaftaran*');
+  $initialPosClass = $isPendaftaranPage ? 'pos-top' : 'pos-bottom';
 
   $shouldHideNiere = ($hideNiere ?? false)
     || View::hasSection('hideNiere')
@@ -39,7 +36,7 @@
     }
 
     #niere-widget-container {
-      position: absolute !important;
+      position: fixed !important;
       z-index: 99999 !important;
       width: var(--s) !important;
       height: var(--s) !important;
@@ -74,19 +71,19 @@
     }
 
     /* Posisi Awal Default:
-     - Halaman Login: Pojok Bawah-Kanan (pos-bottom)
-     - Selain Halaman Login: Pojok Atas-Kanan (pos-top) dengan margin kiri cukup agar menu radial tidak terpotong tepi layar */
+     - Di pojok kanan-bawah (pos-bottom) atau pojok kanan-atas (pos-top, e.g. pendaftaran)
+     - Selalu fixed di viewport agar tidak bertubrukan dengan konten dokumen dan tidak terpotong tepi layar */
     #niere-widget-container.pos-top {
-      top: 135px !important;
+      top: 96px !important;
       bottom: auto !important;
-      right: 70px !important;
+      right: 28px !important;
       left: auto !important;
     }
 
     #niere-widget-container.pos-bottom {
-      bottom: 20px !important;
+      bottom: 24px !important;
       top: auto !important;
-      right: 48px !important;
+      right: 28px !important;
       left: auto !important;
     }
 
@@ -98,16 +95,16 @@
       }
 
       #niere-widget-container.pos-top {
-        top: 110px !important;
+        top: 80px !important;
         bottom: auto !important;
-        right: 44px !important;
+        right: 20px !important;
         left: auto !important;
       }
 
       #niere-widget-container.pos-bottom {
-        bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
         top: auto !important;
-        right: 44px !important;
+        right: 20px !important;
         left: auto !important;
       }
     }
@@ -425,7 +422,9 @@
       bottom: 0;
       left: auto;
       top: auto;
-      width: min(320px, calc(100vw - 110px));
+      width: min(320px, calc(100vw - 32px));
+      max-width: calc(100vw - 32px);
+      box-sizing: border-box;
       min-height: 80px;
       padding: 22px 14px 14px;
       background: var(--bubble);
@@ -613,7 +612,8 @@
 
   @php
     $isLoginPage = request()->routeIs('login') || request()->is('login');
-    $initialPosClass = 'pos-bottom';
+    $isPendaftaranPage = request()->routeIs('pendaftaran') || request()->is('pendaftaran*');
+    $initialPosClass = $isPendaftaranPage ? 'pos-top' : 'pos-bottom';
 
     $currentUser = Auth::user();
     $hasNiereNotif = false;
@@ -1047,9 +1047,13 @@
       /* ====== ORIENTASI OTOMATIS BERDASARKAN POSISI ====== */
       function updateOrientation(left, top) {
         const w = window.innerWidth;
+        const rect = root.getBoundingClientRect();
+        const curL = (typeof left === 'number' && !isNaN(left)) ? left : rect.left;
+        const curT = (typeof top === 'number' && !isNaN(top)) ? top : rect.top;
 
-        // Jika di sisi kiri layar: balon pindah ke kanan agar tidak keluar layar
-        if (left < w / 2) {
+        // Cek titik tengah maskot terhadap lebar layar
+        const mascotCenter = curL + ((root.offsetWidth || 76) / 2);
+        if (mascotCenter < w / 2) {
           root.classList.add("on-left");
         } else {
           root.classList.remove("on-left");
@@ -1057,7 +1061,7 @@
 
         // Jika digeser terlalu dekat ke atas (top < 120px): menu radial fanning ke bawah
         const wasNearTop = root.classList.contains("near-top");
-        const isNearTop = top < 120;
+        const isNearTop = curT < 120;
         if (isNearTop) {
           root.classList.add("near-top");
         } else {
@@ -1069,12 +1073,44 @@
         }
       }
 
-      // Set orientasi dan bangun opsi radial berdasarkan posisi awal (pos-top / pos-bottom)
-      const initialRect = root.getBoundingClientRect();
-      updateOrientation(initialRect.left, initialRect.top);
-      if (optBtns.length === 0) {
-        createRadialOptions();
+      /* ====== CLAMPING BALON BICARA AGAR TIDAK TERPOTONG TEPI LAYAR ====== */
+      function clampBubbleInViewport() {
+        if (!bubble.classList.contains("show")) return;
+        requestAnimationFrame(() => {
+          const w = window.innerWidth;
+          const rect = root.getBoundingClientRect();
+          const mascotCenter = rect.left + ((rect.width || 76) / 2);
+
+          if (mascotCenter < w / 2) {
+            root.classList.add("on-left");
+          } else {
+            root.classList.remove("on-left");
+          }
+
+          requestAnimationFrame(() => {
+            const bRect = bubble.getBoundingClientRect();
+            // Jaga agar bubble tidak keluar dari batas horizontal viewport
+            if (bRect.right > w - 16) {
+              const overflow = bRect.right - (w - 16);
+              bubble.style.transform = `translateX(-${overflow}px)`;
+            } else if (bRect.left < 16) {
+              const overflow = 16 - bRect.left;
+              bubble.style.transform = `translateX(${overflow}px)`;
+            } else {
+              bubble.style.transform = "";
+            }
+          });
+        });
       }
+
+      // Set orientasi dan bangun opsi radial setelah layout awal selesai dihitung
+      setTimeout(() => {
+        const initialRect = root.getBoundingClientRect();
+        updateOrientation(initialRect.left, initialRect.top);
+        if (optBtns.length === 0) {
+          createRadialOptions();
+        }
+      }, 60);
 
       /* ====== DRAG & MOVE SYSTEM ====== */
       let isDragging = false;
@@ -1132,6 +1168,7 @@
           root.style.setProperty("transform", "none", "important");
 
           updateOrientation(newL, newT);
+          clampBubbleInViewport();
         }
       }
 
@@ -1141,20 +1178,16 @@
         mascot.classList.remove("dragging");
 
         if (hasDragged) {
-          // Hitung koordinat halaman dokumen (Page Coordinates)
-          // agar ketika halaman di-scroll, Niere tetap berhenti di tempat terakhir dia di-drop
-          const scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
-          const scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+          // Tetap gunakan koordinat fixed di viewport agar Niere melayang nyaman saat di-scroll
           const rect = root.getBoundingClientRect();
-          const pageLeft = Math.round(rect.left + scrollX);
-          const pageTop = Math.round(rect.top + scrollY);
-
-          root.style.setProperty("position", "absolute", "important");
-          root.style.setProperty("left", pageLeft + "px", "important");
-          root.style.setProperty("top", pageTop + "px", "important");
+          root.style.setProperty("position", "fixed", "important");
+          root.style.setProperty("left", Math.round(rect.left) + "px", "important");
+          root.style.setProperty("top", Math.round(rect.top) + "px", "important");
           root.style.setProperty("right", "auto", "important");
           root.style.setProperty("bottom", "auto", "important");
           root.style.setProperty("transform", "none", "important");
+          updateOrientation(rect.left, rect.top);
+          clampBubbleInViewport();
         }
 
         document.removeEventListener("mousemove", onDragMove);
@@ -1217,6 +1250,7 @@
         curLines = Array.isArray(lines) ? lines : [lines];
         curLine = 0;
         bubble.classList.add("show");
+        clampBubbleInViewport();
         typeLine(curLines[0], poseName);
       }
 
@@ -1450,6 +1484,8 @@
       });
 
       window.addEventListener("resize", () => {
+        updateOrientation();
+        clampBubbleInViewport();
         createRadialOptions();
         if (isTourActive) {
           renderTourStep();
@@ -1701,7 +1737,7 @@
       function dockNiereForTour(isTargetNearBottomRight) {
         root.style.setProperty("position", "fixed", "important");
         root.style.setProperty("z-index", "99999", "important");
-        root.style.setProperty("bottom", "20px", "important");
+        root.style.setProperty("bottom", "24px", "important");
         root.style.setProperty("top", "auto", "important");
 
         if (isTargetNearBottomRight) {
@@ -1713,6 +1749,7 @@
           root.style.setProperty("left", "auto", "important");
           root.classList.remove("on-left");
         }
+        clampBubbleInViewport();
       }
 
       function startDashboardTour() {
@@ -1857,6 +1894,7 @@
           root.style.removeProperty("bottom");
           root.className = "{{ $initialPosClass }}";
           updateOrientation(root.getBoundingClientRect().left, root.getBoundingClientRect().top);
+          clampBubbleInViewport();
         }, 400);
       }
 
@@ -1871,11 +1909,20 @@
           setTimeout(() => {
             if (open || isTourActive || bubble.classList.contains("show")) return;
 
+            // Pastikan Niere tertambat fixed di kanan-bawah layar dan balon tidak overflow
+            root.style.setProperty("position", "fixed", "important");
+            root.style.setProperty("bottom", "24px", "important");
+            root.style.setProperty("right", "28px", "important");
+            root.style.setProperty("top", "auto", "important");
+            root.style.setProperty("left", "auto", "important");
+            root.classList.remove("on-left");
+
             const promptText = (DASHBOARD_ROLE === 'orangtua')
               ? `Halo Ayah/Bunda (${USER_NAME})! Selamat datang di Portal Orang Tua Arrava. 🎓\n\nMau Niere pandu mengenal fitur-fitur di dashboard ini?`
               : `Halo ${USER_NAME}! Selamat datang di Dashboard Arrava. 🎓\n\nMau Niere pandu mengenal fitur-fitur di halaman ini?`;
 
             sayLines([promptText], "talk");
+            clampBubbleInViewport();
 
             if (tourPrompt) tourPrompt.style.display = "flex";
             if (tourControls) tourControls.style.display = "none";

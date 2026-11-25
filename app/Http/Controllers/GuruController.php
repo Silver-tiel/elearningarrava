@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Guru;
+use App\Models\LogAktivitas;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,6 +40,62 @@ class GuruController extends Controller
         }
 
         $gurus = $guruQuery->get();
+        $userIds = $gurus->pluck('user.id_user')->filter()->values();
+        $kelasMonitoring = collect();
+        $aktivitasKonten = collect();
+
+        if ($userIds->isNotEmpty() && Schema::hasTable('kelas_guru') && Schema::hasTable('kelas')) {
+            $kelasMonitoring = DB::table('kelas_guru')
+                ->join('kelas', 'kelas_guru.id_kelas', '=', 'kelas.id_kelas')
+                ->leftJoin('user as siswa', 'siswa.id_jenjang', '=', 'kelas.id_jenjang')
+                ->whereIn('kelas_guru.id_guru', $userIds)
+                ->where('kelas.aktif', true)
+                ->groupBy('kelas_guru.id_guru')
+                ->select('kelas_guru.id_guru')
+                ->selectRaw('COUNT(DISTINCT kelas.id_kelas) as kelas_count')
+                ->selectRaw(
+                    "COUNT(DISTINCT CASE WHEN siswa.id_tipeuser = 3 AND (siswa.status_akun IS NULL OR siswa.status_akun != ?) THEN siswa.id_user END) as siswa_diajar_count",
+                    ['Nonaktif']
+                )
+                ->get()
+                ->keyBy('id_guru');
+        }
+
+        if ($userIds->isNotEmpty()) {
+            foreach ([
+                ['table' => 'modul', 'label' => 'modul'],
+                ['table' => 'quiz', 'label' => 'kuis'],
+            ] as $content) {
+                if (!Schema::hasTable($content['table']) || !Schema::hasColumn($content['table'], 'id_pembuat')) {
+                    continue;
+                }
+
+                $latest = DB::table($content['table'])
+                    ->whereIn('id_pembuat', $userIds)
+                    ->select('id_pembuat')
+                    ->selectRaw('MAX(updated_at) as waktu_aktivitas')
+                    ->groupBy('id_pembuat')
+                    ->get();
+
+                foreach ($latest as $activity) {
+                    $current = $aktivitasKonten->get($activity->id_pembuat);
+                    if (!$current || $activity->waktu_aktivitas > $current['waktu']) {
+                        $aktivitasKonten->put($activity->id_pembuat, [
+                            'waktu' => $activity->waktu_aktivitas,
+                            'jenis' => $content['label'],
+                        ]);
+                    }
+                }
+            }
+        }
+
+        foreach ($gurus as $guru) {
+            $userId = $guru->user?->id_user;
+            $monitoring = $userId ? $kelasMonitoring->get($userId) : null;
+            $guru->setAttribute('kelas_aktif_count', (int) ($monitoring->kelas_count ?? 0));
+            $guru->setAttribute('siswa_diajar_count', (int) ($monitoring->siswa_diajar_count ?? 0));
+            $guru->setAttribute('aktivitas_konten_terakhir', $userId ? $aktivitasKonten->get($userId) : null);
+        }
 
         return view('admin.guru.index', compact('gurus'));
     }
@@ -140,6 +197,8 @@ class GuruController extends Controller
                 'total_poin' => 0,
             ]);
         });
+
+        LogAktivitas::catat(Auth::user(), "Menambahkan guru {$validated['nama']}.");
 
         return redirect()
             ->route('admin.guru')
@@ -267,6 +326,8 @@ class GuruController extends Controller
             }
         });
 
+        LogAktivitas::catat(Auth::user(), "Memperbarui data guru {$validated['nama']}.");
+
         return redirect()
             ->route('admin.guru')
             ->with('success', 'Data guru, foto, dan akun login berhasil diperbarui.');
@@ -275,6 +336,7 @@ class GuruController extends Controller
     public function destroy($id)
     {
         $guru = Guru::with('user')->findOrFail($id);
+        $namaGuru = $guru->nama;
 
         DB::transaction(function () use ($guru) {
             // Hapus file foto dari storage
@@ -292,6 +354,8 @@ class GuruController extends Controller
 
             $guru->delete();
         });
+
+        LogAktivitas::catat(Auth::user(), "Menghapus data guru {$namaGuru}.");
 
         return redirect()
             ->route('admin.guru')

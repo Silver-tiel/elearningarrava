@@ -33,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Pengelolaan user, role, kelas, penugasan, QR: hanya admin.
         Gate::define('kelola-sistem', fn (User $user) => $user->isAdmin());
+        Gate::define('kelola-dungeon-bank', fn (User $user) => $user->isAdmin() || $user->isGuru());
 
         // QR hanya boleh dilihat/diunduh oleh siswa pemiliknya sendiri.
         Gate::define('lihat-qr', fn (User $user, User $siswa) =>

@@ -21,15 +21,8 @@
         <div class="flex items-center justify-between px-2">
             <a href="{{ route($isAdmin ? 'admin' : 'siswa.dashboard') }}"
                 class="flex items-center gap-2.5 no-underline group">
-                <svg viewBox="0 0 40 40"
-                    class="h-9 w-9 shrink-0 transition-transform duration-200 group-hover:scale-105" fill="none"
-                    aria-hidden="true">
-                    <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9" stroke-width="6"
-                        stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5" stroke-linecap="round"
-                        stroke-linejoin="round" />
-                    <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
-                </svg>
+                <img src="{{ asset('assets/icon/appIconARRAVA.png') }}" alt="Logo Arrava"
+                    class="h-9 w-9 shrink-0 object-contain transition-transform duration-200 group-hover:scale-105">
                 <span class="text-[22px] font-extrabold tracking-[-0.7px] text-[#082765]">Arrava</span>
             </a>
 
@@ -51,18 +44,18 @@
                     $actAdminDash = request()->is('admin/dashboard*') || request()->is('admin');
                     $actAdminSiswa = request()->is('admin/siswa*') || request()->is('admin/data*');
                     $actAdminModul = request()->is('admin/modul*');
-                    $actAdminQuiz = request()->is('admin/quiz*') || request()->is('admin/soal*');
+                    $actAdminQuiz = request()->is('quiz*') || request()->is('admin/quiz*') || request()->is('soal*') || request()->is('admin/soal*') || request()->is('dungeon*');
                     $actAdminAchieve = request()->is('admin/achievement*');
                     $actAdminGuru = request()->is('admin/guru*');
                     $actAdminProfil = request()->is('admin/profil*');
                 @endphp
 
                 @if($idTipe == 1)
-                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#082765]">
                         Manajemen
                     </div>
                 @else
-                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+                    <div class="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#082765]">
                         Guru
                     </div>
                 @endif
@@ -134,7 +127,7 @@
                     </a>
 
                     @php $actKelas = request()->is('admin/kelas*'); @endphp
-                
+
                     <div class="px-3 pt-4 pb-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
                         Pembelajaran
                     </div>
@@ -278,7 +271,7 @@
                 @php
                     $actSiswaDash = request()->is('siswa/dashboard*');
                     $actSiswaBelajar = request()->is('siswa/belajar*');
-                    $actSiswaQuiz = request()->is('siswa/quiz*');
+                    $actSiswaQuiz = request()->is('siswa/quiz*') || request()->is('dungeon*');
                     $actSiswaLeaderboard = request()->is('siswa/leaderboard*');
                     $actSiswaProfil = request()->is('siswa/profil*');
                 @endphp

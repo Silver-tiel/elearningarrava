@@ -20,11 +20,8 @@ $navItems = [
     {{-- Brand --}}
     <div class="flex items-center justify-between px-4 py-4 shrink-0 border-b border-[#DCEFFF]">
         <a href="{{ route('orangtua.dashboard') }}" class="flex items-center gap-2.5 no-underline group">
-            <svg viewBox="0 0 40 40" class="h-9 w-9 shrink-0 transition-transform duration-200 group-hover:scale-105" fill="none" aria-hidden="true">
-                <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-                <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
-            </svg>
+            <img src="{{ asset('assets/icon/appIconARRAVA.png') }}" alt="Logo Arrava"
+                class="h-9 w-9 shrink-0 object-contain transition-transform duration-200 group-hover:scale-105">
             <div class="leading-tight">
                 <p class="text-[17px] font-black tracking-[-0.5px] text-[#082765]">Arrava</p>
                 <p class="text-[11px] font-bold text-[#72839E]">Portal Orang Tua</p>
@@ -157,6 +154,24 @@ $navItems = [
             <div class="sidebar-pop-wrap" aria-hidden="true">
                 <div class="sidebar-pop-box">
                     <img src="{{ asset('assets/sidebar/sidebarModulIcon.webp') }}" alt="" class="sidebar-pop-img" draggable="false">
+                </div>
+            </div>
+        </a>
+
+        {{-- Absensi --}}
+        <a href="{{ route('orangtua.absensi') }}"
+            class="sidebar-menu-item group relative flex items-center gap-3 pl-3 pr-14 py-2.5 rounded-xl text-sm transition
+                {{ request()->routeIs('orangtua.absensi') ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}">
+            <svg class="w-5 h-5 shrink-0 transition-transform duration-200 group-hover:scale-110" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span>Absensi</span>
+            <div class="sidebar-pop-wrap" aria-hidden="true">
+                <div class="sidebar-pop-box">
+                    <img src="{{ asset('assets/sidebar/sidebarBerandaIcon.webp') }}" alt="" class="sidebar-pop-img" draggable="false">
                 </div>
             </div>
         </a>

@@ -152,11 +152,26 @@ class DashboardController extends Controller
         $totalGuru = Guru::count();
         $totalModul = (clone $modulQuery)->count();
         $totalQuiz = (clone $quizQuery)->count();
+        $totalAchievement = Achievement::count();
+
+        $siswaTerbaru = User::where('id_tipeuser', 3)
+            ->latest('id_user')
+            ->take(5)
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id_user' => $s->id_user,
+                    'nama' => $s->nama,
+                    'email' => $s->email,
+                    'foto_profil' => $this->resolvePhotoUrl($s->foto_profil),
+                    'created_at' => $s->created_at ? $s->created_at->diffForHumans() : '-',
+                ];
+            });
 
         $recentModules = (clone $modulQuery)
             ->with(['tipeModul', 'jenjang'])
-            ->latest()
-            ->take(4)
+            ->latest('id_modul')
+            ->take(5)
             ->get()
             ->map(function ($m) {
                 return [
@@ -165,19 +180,32 @@ class DashboardController extends Controller
                     'deskripsi' => $m->deskripsi,
                     'status' => $m->progressModul ?? 'Tersedia',
                     'tipe' => $m->tipeModul->nama_tipe ?? 'Umum',
-                    'jenjang' => $m->jenjang->nama_jenjang ?? 'Semua',
+                    'jenjang' => $m->jenjang->nama_jenjang ?? $m->jenjang->nama_tipe ?? 'Semua Jenjang',
+                    'foto_modul' => $this->resolvePhotoUrl($m->foto_modul),
+                    'youtube_id' => $m->youtube_id,
+                    'created_at' => $m->created_at ? $m->created_at->diffForHumans() : '-',
                 ];
             });
 
         return response()->json([
             'success' => true,
             'data' => [
+                'user' => [
+                    'id_user' => $user->id_user,
+                    'nama' => $user->nama,
+                    'email' => $user->email,
+                    'id_tipeuser' => $user->id_tipeuser,
+                    'role_label' => $isGuru ? 'Guru' : 'Administrator',
+                    'foto_profil' => $this->resolvePhotoUrl($user->foto_profil),
+                ],
                 'stats' => [
                     'total_siswa' => $totalSiswa,
                     'total_guru' => $totalGuru,
                     'total_modul' => $totalModul,
                     'total_quiz' => $totalQuiz,
+                    'total_achievement' => $totalAchievement,
                 ],
+                'siswa_terbaru' => $siswaTerbaru,
                 'recent_modules' => $recentModules,
             ],
         ]);
@@ -246,6 +274,7 @@ class DashboardController extends Controller
                 'nama' => $s->nama,
                 'nisn' => $s->nisn,
                 'email' => $s->email,
+                'foto_profil' => $this->resolvePhotoUrl($s->foto_profil),
                 'kelas' => $s->kelas,
                 'jenjang' => $s->jenjang->nama_jenjang ?? 'Umum',
                 'status' => $s->status_akun ?? 'Aktif',
@@ -270,7 +299,7 @@ class DashboardController extends Controller
         }
 
         Achievement::syncForUser($user);
-        $user->refresh()->load('jenjang');
+        $user->refresh()->load(['jenjang', 'tingkatKelas']);
 
         // Return only the parents linked to the authenticated student's account.
         $orangTua = $user->orangtuaList()
@@ -349,6 +378,8 @@ class DashboardController extends Controller
                     'nomor_hp' => $user->nomor_hp ?? '-',
                     'asal_sekolah' => $user->asal_sekolah ?? '-',
                     'kelas' => $user->kelas ?? '-',
+                    'id_tingkat_kelas' => $user->id_tingkat_kelas ? (int) $user->id_tingkat_kelas : null,
+                    'nama_tingkat_kelas' => $user->tingkatKelas->nama ?? null,
                     'id_jenjang' => $user->id_jenjang ? (int) $user->id_jenjang : null,
                     'nama_jenjang' => $user->jenjang->nama_tipe ?? $user->jenjang->nama_jenjang ?? '-',
                     'total_poin' => (int) ($user->total_poin ?? 0),
@@ -395,6 +426,7 @@ class DashboardController extends Controller
             'asal_sekolah' => ['nullable', 'string', 'max:255'],
             'password' => ['nullable', 'string', 'min:6'],
             'foto_profil' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
             'hero_theme' => ['nullable', 'string', Rule::in(array_keys(User::HERO_THEMES))],
         ]);
 
@@ -406,6 +438,9 @@ class DashboardController extends Controller
         }
         if (array_key_exists('asal_sekolah', $validated)) {
             $user->asal_sekolah = $validated['asal_sekolah'];
+        }
+        if (array_key_exists('id_tingkat_kelas', $validated)) {
+            $user->id_tingkat_kelas = $validated['id_tingkat_kelas'] ?: null;
         }
         if (!empty($validated['password'])) {
             $user->password = bcrypt($validated['password']);

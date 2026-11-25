@@ -1,4 +1,4 @@
-        <div class="relative overflow-hidden h-52 sm:h-56 cursor-pointer select-none group bg-transparent transition-transform duration-150 active:scale-[0.98]"
+        <div class="relative overflow-hidden h-44 sm:h-48 cursor-pointer select-none group bg-transparent transition-transform duration-150 active:scale-[0.98]"
              id="sidebarSnowWidget"
              role="button"
              tabindex="0"
