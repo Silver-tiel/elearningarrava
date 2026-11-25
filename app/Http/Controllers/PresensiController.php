@@ -6,6 +6,7 @@ use App\Models\Kelas;
 use App\Models\LogPemindaian;
 use App\Models\Presensi;
 use App\Models\SesiPresensi;
+use App\Models\Jenjang;
 use App\Models\User;
 use App\Support\QrToken;
 use Illuminate\Database\QueryException;
@@ -75,7 +76,11 @@ class PresensiController extends Controller
         }
 
         $riwayatPerTanggal = $riwayat->groupBy(fn (SesiPresensi $s) => $s->tanggal->toDateString());
+        // Ambil data jenjang untuk dropdown
+        $jenjangs = \App\Models\Jenjang::orderBy('nama_tipe')->get();
 
+        // Ambil data guru (Asumsi id_tipeUser = 2 adalah guru)
+        $gurus = \App\Models\User::where('id_tipeUser', 2)->orderBy('nama')->get();
         return view('guru.presensi.index', [
             'totalKelas' => $totalKelas,
             'sesiHariIni' => $sesiHariIni,
@@ -83,6 +88,9 @@ class PresensiController extends Controller
             'rentang' => $rentang,
             'hari' => $hari,
             'namaHari' => Kelas::HARI,
+            'semuaKelas' => $semuaKelas,
+            'jenjangs' => $jenjangs,
+            'gurus' => $gurus,
         ]);
     }
 

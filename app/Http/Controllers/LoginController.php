@@ -54,6 +54,15 @@ class LoginController extends Controller
             }
 
             if ($request->expectsJson() || $request->ajax()) {
+                $intended = $request->session()->get('url.intended');
+                if (is_string($intended)) {
+                    $intendedPath = parse_url($intended, PHP_URL_PATH);
+                    if ($intendedPath === '/attendance/check-in') {
+                        $request->session()->forget('url.intended');
+                        $redirectUrl = $intended;
+                    }
+                }
+
                 return response()->json([
                     'success' => true,
                     'name' => $user->nama ?? 'Siswa',
