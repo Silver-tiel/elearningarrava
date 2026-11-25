@@ -4,7 +4,9 @@
 <h1 class="text-lg font-bold text-slate-800">Presensi</h1>
 @endsection
 
+
 @section('content')
+
 @php
     /**
      * @var int $totalKelas
@@ -35,10 +37,31 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {{-- ============ KOLOM KIRI: DAFTAR KELAS & RIWAYAT PRESENSI ============ --}}
         <div class="lg:col-span-7 xl:col-span-8 min-w-0">
-            <div class="mb-6">
-                <h2 class="text-2xl font-heading font-black text-[#082765]">Presensi Kelas</h2>
-                <p class="text-xs sm:text-sm font-medium text-[#72839E] mt-1 leading-relaxed">Sesi presensi dibuat <b>otomatis</b> pada hari aktif kelas dan hanya bisa dipindai <b>hari itu saja</b>, sesuai jadwal dan masa berlaku kelas. Setelah lewat hari, data presensi tetap tersimpan rapi di Riwayat.</p>
+
+            {{-- HEADER PRESENSI & TOMBOL ADMIN --}}
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-heading font-black text-[#082765]">Presensi Kelas</h2>
+                    <p class="text-xs sm:text-sm font-medium text-[#72839E] mt-1 leading-relaxed">
+                        Sesi presensi dibuat <b>otomatis</b> pada hari aktif kelas dan hanya bisa dipindai <b>hari itu saja</b>, sesuai jadwal dan masa berlaku kelas. Setelah lewat hari, data presensi tetap tersimpan rapi di Riwayat.
+                    </p>
+                </div>
+
+                {{-- TOMBOL KHUSUS ADMIN --}}
+                @if(auth()->user()->isAdmin())
+    <button type="button"
+            onclick="openSlideOver()"
+            class="shrink-0 bg-[#0f2e5a] hover:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-xl shadow-sm transition duration-200 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+        </svg>
+        Kelola Kelas
+    </button>
+@endif
             </div>
+
+
+
 
             @if($totalKelas === 0)
                 <div class="rounded-2xl border-2 border-amber-200 bg-amber-50 p-5 text-amber-900 font-bold shadow-[0_3px_0_#fde68a]">
@@ -146,7 +169,7 @@
 
         {{-- ============ KOLOM KANAN: WIDGET KALENDER TEMA ARRAVA ============ --}}
         <div class="lg:col-span-5 xl:col-span-4 space-y-6 lg:sticky lg:top-24">
-            
+
             <!-- CARD KALENDER ARRAVA -->
             <div class="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col">
                 <!-- Header Kalender dengan Gradien Arrava & Live Clock -->
@@ -291,6 +314,129 @@
         </div>
     </div>
 </div>
+
+{{-- ========================================== --}}
+{{-- SLIDE-OVER KELOLA KELAS --}}
+{{-- ========================================== --}}
+@if(auth()->user()->isAdmin())
+<div id="slideOverContainer" class="relative z-50 hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+    <!-- Background Gelap -->
+    <div id="slideOverBackdrop" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity duration-300 ease-in-out opacity-0" onclick="closeSlideOver()"></div>
+
+    <div class="fixed inset-0 overflow-hidden">
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+
+                <!-- Panel Slide-Over -->
+                <div id="slideOverPanel" class="pointer-events-auto w-screen max-w-md transform transition-transform duration-300 ease-in-out translate-x-full">
+                    <div class="flex h-full flex-col overflow-y-scroll bg-white shadow-2xl">
+
+                        <!-- Header -->
+                        <div class="bg-gray-50 px-4 py-6 sm:px-6 border-b border-gray-200">
+                            <div class="flex items-start justify-between">
+                                <h2 class="text-lg font-bold text-gray-900">Manajemen Kelas</h2>
+                                <button type="button" onclick="closeSlideOver()" class="text-gray-400 hover:text-gray-500">
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Body -->
+                        <div class="relative flex-1 px-4 py-6 sm:px-6">
+
+    {{-- TAMPILKAN PESAN ERROR JIKA ADA --}}
+@if ($errors->any())
+    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded text-sm">
+        <ul class="list-disc pl-5">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+{{-- FORM TAMBAH KELAS --}}
+<form action="{{ route('admin.kelas.store') }}" method="POST" class="mb-8 space-y-4">
+    @csrf
+
+    {{-- Nama Kelas  --}}
+    <div>
+        <label class="block text-sm font-medium text-gray-700">Nama Kelas <span class="text-red-500">*</span></label>
+        <input type="text" name="nama" value="{{ old('nama') }}" required placeholder="Contoh: Matematika Dasar"
+               class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2">
+    </div>
+
+
+    {{-- Pilih Jenjang  --}}
+    <div>
+        <label class="block text-sm font-medium text-gray-700">Jenjang <span class="text-red-500">*</span></label>
+        <select name="id_jenjang" required class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 bg-white">
+            <option value="">-- Pilih Jenjang --</option>
+            @foreach($jenjangs as $jenjang)
+                <option value="{{ $jenjang->id_jenjang }}" {{ old('id_jenjang') == $jenjang->id_jenjang ? 'selected' : '' }}>
+                    {{ $jenjang->nama_tipe }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+    {{-- Pilih Guru Pengampu (Opsional, hapus jika tidak wajib) --}}
+    <div>
+        <label class="block text-sm font-medium text-gray-700">Guru Pengampu</label>
+        <select name="id_guru" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2 bg-white">
+            <option value="">-- Pilih Guru (Opsional) --</option>
+            @foreach($gurus as $guru)
+                <option value="{{ $guru->id_user }}" {{ old('id_guru') == $guru->id_user ? 'selected' : '' }}>
+                    {{ $guru->nama }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition mt-2">
+        Simpan Kelas
+    </button>
+</form>
+
+    {{-- DAFTAR KELAS SAAT INI --}}
+    <div>
+        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Daftar Kelas</h3>
+        <ul role="list" class="divide-y divide-gray-200 border-t border-b border-gray-200">
+
+            {{-- LOOPING DATA KELAS --}}
+            @forelse($semuaKelas as $kelas)
+            <li class="flex items-center justify-between py-3">
+                <div class="flex flex-col">
+                    <p class="text-sm font-medium text-gray-900">{{ $kelas->nama }}</p>
+                </div>
+
+                {{-- FORM HAPUS KELAS --}}
+                <form action="{{ route('admin.kelas.destroy', $kelas->id_kelas) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus kelas ini?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-bold px-2 py-1 bg-red-50 hover:bg-red-100 rounded transition">
+                        Hapus
+                    </button>
+                </form>
+            </li>
+            @empty
+            <li class="py-4 text-center text-sm text-gray-500">Belum ada kelas.</li>
+            @endforelse
+
+        </ul>
+    </div>
+</div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- SCRIPT KALENDER INTERAKTIF ARRAVA --}}
 <script>
@@ -465,5 +611,46 @@
         // Inisialisasi awal
         renderCalendar();
     })();
+
+    // ==========================================
+    // FUNGSI SLIDE OVER KELOLA KELAS
+    // ==========================================
+    function openSlideOver() {
+        const container = document.getElementById('slideOverContainer');
+        const backdrop = document.getElementById('slideOverBackdrop');
+        const panel = document.getElementById('slideOverPanel');
+
+        if(!container) return; // Mencegah error jika bukan admin
+
+        container.classList.remove('hidden');
+
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            backdrop.classList.add('opacity-100');
+
+            panel.classList.remove('translate-x-full');
+            panel.classList.add('translate-x-0');
+        }, 10);
+    }
+
+    function closeSlideOver() {
+        const container = document.getElementById('slideOverContainer');
+        const backdrop = document.getElementById('slideOverBackdrop');
+        const panel = document.getElementById('slideOverPanel');
+
+        if(!container) return;
+
+        backdrop.classList.remove('opacity-100');
+        backdrop.classList.add('opacity-0');
+
+        panel.classList.remove('translate-x-0');
+        panel.classList.add('translate-x-full');
+
+        setTimeout(() => {
+            container.classList.add('hidden');
+        }, 300);
+    }
 </script>
+
 @endsection
+

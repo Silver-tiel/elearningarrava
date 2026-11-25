@@ -5,7 +5,12 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/presensi-scan.js'],
+            input: [
+                'resources/css/app.css',
+                'resources/js/app.js',
+                'resources/js/presensi-scan.js',
+                'resources/js/attendance-scan.js',
+            ],
             refresh: true,
         }),
         tailwindcss(),

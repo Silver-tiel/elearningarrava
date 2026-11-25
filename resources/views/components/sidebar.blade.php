@@ -239,6 +239,32 @@
                 @endif
 
                 @if($idTipe == 1)
+                    @php $actAbsensiMentor = request()->is('admin/attendance*'); @endphp
+                    <!-- Absensi Mentor (admin) -->
+                    <a href="{{ route('admin.attendance.index') }}"
+                        class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition {{ $actAbsensiMentor ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
+                        data-active="{{ $actAbsensiMentor ? 'true' : 'false' }}">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z" />
+                        </svg>
+                        <span class="truncate">Absensi Mentor</span>
+                    </a>
+                @elseif($idTipe == 2)
+                    @php $actAbsenMentor = request()->is('attendance*'); @endphp
+                    <!-- Absen Mentor (guru) -->
+                    <a href="{{ route('attendance.scan') }}"
+                        class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition {{ $actAbsenMentor ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
+                        data-active="{{ $actAbsenMentor ? 'true' : 'false' }}">
+                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z" />
+                        </svg>
+                        <span class="truncate">Absen Mentor</span>
+                    </a>
+                @endif
+
+                @if($idTipe == 1)
                     <!-- Penghargaan / Achievement -->
                     <a href="{{ route('admin.achievement') }}"
                         class="sidebar-menu-item group relative flex items-center justify-between px-3 py-2.5 rounded-xl text-sm transition {{ $actAdminAchieve ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"

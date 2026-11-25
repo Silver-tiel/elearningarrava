@@ -54,7 +54,7 @@ class KelasController extends Controller
                 ? 'Sesi presensi hari ini sudah siap dipindai.'
                 : 'Sesi presensi dibuat otomatis pada hari aktif kelas (' . $kelas->ringkasJadwal() . ').');
 
-        return redirect()->route('admin.kelas.show', $kelas->id_kelas)->with('success', $pesan);
+        return redirect()->route('guru.presensi.index')->with('success', $pesan);
     }
 
     public function show($id)
