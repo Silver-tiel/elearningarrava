@@ -85,6 +85,8 @@
                 $initialStatusMode = 'Wayground';
             } elseif (in_array(strtolower((string) request('mode')), ['biasa', 'klasik'], true)) {
                 $initialStatusMode = 'Klasik';
+            } elseif (strtolower((string) request('mode')) === 'ujian') {
+                $initialStatusMode = 'Mode Ujian';
             }
 
             $initialJenjangLabel = 'Semua Jenjang';
@@ -161,6 +163,7 @@
                         ['value' => 'Kedaluwarsa', 'label' => 'Kedaluwarsa', 'active' => $initialStatusMode === 'Kedaluwarsa'],
                         ['value' => 'Wayground', 'label' => 'Wayground', 'active' => $initialStatusMode === 'Wayground'],
                         ['value' => 'Klasik', 'label' => 'Klasik', 'active' => $initialStatusMode === 'Klasik'],
+                        ['value' => 'Mode Ujian', 'label' => 'Mode Ujian', 'active' => $initialStatusMode === 'Mode Ujian'],
                     ]" />
 
                 {{-- Chip Jenjang --}}
@@ -262,6 +265,7 @@
                         $status = $isDraft ? 'Draft' : ($expired ? 'Kadaluarsa' : ($quiz->proggressQuiz ?: 'Tersedia'));
                         $quizStatusKey = $isDraft ? 'draft' : ($expired ? 'kedaluwarsa' : 'terbit');
                         $quizModeKey = strtolower((string) ($quiz->mode_pengerjaan ?? 'wayground')) === 'biasa' ? 'klasik' : 'wayground';
+                        $isExamMode = $quiz->isModeUjian();
                         $quizJenjangLabel = $quiz->jenjang->nama_tipe ?? 'Umum';
                         $quizTingkatLabel = ($quiz->tingkatQuiz ?? $quiz->tingkat)?->nama_tingkat ?? '';
                         $quizPembuatNama = $quiz->pembuat?->nama ?? 'Admin';
@@ -273,6 +277,7 @@
                         data-pembuat="{{ strtolower($quizPembuatNama) }}"
                         data-status="{{ $quizStatusKey }}"
                         data-mode="{{ $quizModeKey }}"
+                        data-ujian="{{ $isExamMode ? '1' : '0' }}"
                         data-tingkat="{{ strtolower($quizTingkatLabel) }}"
                         data-id="{{ (int) $quiz->id_quiz }}"
                         data-created="{{ $quiz->created_at?->timestamp ?? (int) $quiz->id_quiz }}">
@@ -362,15 +367,18 @@
 
                                 <div
                                     class="bg-slate-50 rounded-xl px-3 py-2 text-xs flex items-center justify-between border border-slate-100">
-                                    <span class="text-slate-400 font-medium">Token Masuk</span>
+                                    <span class="text-slate-400 font-medium">Mode / Token</span>
                                     @if($quiz->token)
                                         <span
                                             class="inline-flex items-center gap-1 font-mono font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200 text-[11px]"
-                                            title="Token Masuk Kuis">
-                                            🔑 {{ $quiz->token }}
+                                            title="Mode Ujian - Token Masuk">
+                                            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                            <span>Ujian: {{ $quiz->token }}</span>
                                         </span>
+                                    @elseif($isExamMode)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 font-bold text-[11px]">Mode Ujian</span>
                                     @else
-                                        <span class="text-slate-400 italic">Tanpa token</span>
+                                        <span class="text-slate-400 italic">Latihan Terbuka</span>
                                     @endif
                                 </div>
 
@@ -495,6 +503,7 @@
                 const pembuat = card.getAttribute('data-pembuat') || '';
                 const status = card.getAttribute('data-status') || '';
                 const mode = card.getAttribute('data-mode') || '';
+                const isUjian = card.getAttribute('data-ujian') === '1';
                 const tingkat = card.getAttribute('data-tingkat') || '';
 
                 const matchQuery = query === ''
@@ -511,6 +520,7 @@
                 else if (sm === 'kedaluwarsa') matchStatusMode = status === 'kedaluwarsa';
                 else if (sm === 'wayground') matchStatusMode = mode === 'wayground';
                 else if (sm === 'klasik') matchStatusMode = mode === 'klasik';
+                else if (sm === 'mode ujian' || sm === 'ujian') matchStatusMode = isUjian;
 
                 const matchJenjang = filterHelper
                     ? filterHelper.matchesJenjangFilter(jenjang, activeQuizJenjang)

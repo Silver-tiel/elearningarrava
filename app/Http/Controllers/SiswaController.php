@@ -24,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -577,14 +578,27 @@ class SiswaController extends Controller
     public function mulaiQuiz(Request $request, $id_quiz)
     {
         $quiz = $this->muatQuiz($id_quiz);
+        $user = Auth::user();
 
         if ($tolak = $this->tolakJikaBukanJenjangnya($quiz, 'siswa.quiz')) {
             return $tolak;
         }
 
+        if ($quiz->belumDimulai()) {
+            return redirect()->route('siswa.quiz')->withErrors([
+                'quiz' => 'Ujian ini belum dimulai. Jadwal buka: ' . $quiz->waktu_mulai->translatedFormat('d M Y, H:i') . '.',
+            ]);
+        }
+
         if ($quiz->sudahKadaluarsa() && !$this->punyaAttemptAktif($quiz)) {
             return redirect()->route('siswa.quiz')->withErrors([
                 'quiz' => 'Waktu kuis sudah berakhir.',
+            ]);
+        }
+
+        if (!$quiz->bolehDikerjakanLagiOleh($user) && !$this->punyaAttemptAktif($quiz)) {
+            return redirect()->route('siswa.quiz.detail', $quiz->id_quiz)->withErrors([
+                'quiz' => 'Mode Ujian hanya dapat dikerjakan 1 kali. Anda sudah menyelesaikan ujian ini.',
             ]);
         }
 
@@ -594,8 +608,17 @@ class SiswaController extends Controller
             ]);
         }
 
-        // Jika kuis memerlukan token
+        // Jika kuis memerlukan token (Mode Ujian)
         if ($quiz->perluToken()) {
+            $rateKey = 'quiz-token:' . ($user?->id_user ?? $request->ip()) . ':' . $quiz->id_quiz;
+            if (RateLimiter::tooManyAttempts($rateKey, 5)) {
+                $seconds = RateLimiter::availableIn($rateKey);
+                return redirect()->back()->withInput()->withErrors([
+                    'token' => "Terlalu banyak percobaan token salah. Coba lagi dalam {$seconds} detik.",
+                    'id_quiz' => $quiz->id_quiz,
+                ]);
+            }
+
             $tokenInput = trim((string) $request->input('token', ''));
 
             if ($tokenInput === '') {
@@ -606,12 +629,14 @@ class SiswaController extends Controller
             }
 
             if (strcasecmp($tokenInput, $quiz->token) !== 0) {
+                RateLimiter::hit($rateKey, 300);
                 return redirect()->back()->withInput()->withErrors([
                     'token' => 'Token kuis salah. Silakan tanyakan token kepada guru Anda.',
                     'id_quiz' => $quiz->id_quiz,
                 ]);
             }
 
+            RateLimiter::clear($rateKey);
             session(["quiz_token_verified_{$quiz->id_quiz}" => true]);
         }
 
@@ -642,8 +667,16 @@ class SiswaController extends Controller
 
     private function tampilkanQuiz(Quiz $quiz, string $routeDaftar)
     {
+        $user = Auth::user();
+
         if ($tolak = $this->tolakJikaBukanJenjangnya($quiz, $routeDaftar)) {
             return $tolak;
+        }
+
+        if ($quiz->belumDimulai() && !$this->punyaAttemptAktif($quiz)) {
+            return redirect()->route($routeDaftar)->withErrors([
+                'quiz' => 'Ujian ini belum dimulai. Jadwal buka: ' . $quiz->waktu_mulai->translatedFormat('d M Y, H:i') . '.',
+            ]);
         }
 
         // Jika kuis memerlukan token dan siswa belum verifikasi token serta belum ada attempt berjalan
@@ -663,11 +696,19 @@ class SiswaController extends Controller
             ]);
         }
 
+        if (!$quiz->bolehDikerjakanLagiOleh($user) && !$this->punyaAttemptAktif($quiz)) {
+            return redirect()->route('siswa.quiz.detail', $quiz->id_quiz)->withErrors([
+                'quiz' => 'Mode Ujian hanya dapat dikerjakan 1 kali. Anda sudah menyelesaikan ujian ini.',
+            ]);
+        }
+
         if ($quiz->soal->isEmpty()) {
             return redirect()->route($routeDaftar)->withErrors([
                 'quiz' => 'Kuis ini belum memiliki soal.',
             ]);
         }
+
+        $quiz->setRelation('soal', $quiz->getOrderedSoalForUser($user?->id_user));
 
         $remainingSeconds = null;
         $activeQuestionIndex = 0;
@@ -756,11 +797,19 @@ class SiswaController extends Controller
             ]);
         }
 
+        if (!$quiz->bolehDikerjakanLagiOleh($user) && !$this->punyaAttemptAktif($quiz)) {
+            return redirect()->route('siswa.quiz')->withErrors([
+                'quiz' => 'Mode Ujian hanya dapat dikerjakan 1 kali. Anda sudah mengumpulkan jawaban.',
+            ]);
+        }
+
         if ($quiz->soal->isEmpty()) {
             return redirect()->route('siswa.quiz')->withErrors([
                 'quiz' => 'Kuis ini belum memiliki soal.',
             ]);
         }
+
+        $quiz->setRelation('soal', $quiz->getOrderedSoalForUser($user?->id_user));
 
         // Kunci session yang harus dibersihkan setelah kuis selesai.
         $kunciAttempt = $this->attemptSessionKey($quiz);

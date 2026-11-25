@@ -19,6 +19,7 @@ class Soal extends Model
         'id_jenjang',
         'id_jenis_soal',
         'tingkat_soal',
+        'kategori_bank',
         'id_penulis',
         'aktif',
         'nonaktif_alasan',
@@ -57,6 +58,67 @@ class Soal extends Model
     public function getIsBankSoalAttribute(): bool
     {
         return is_null($this->id_quiz);
+    }
+
+    public function isKhususUjian(): bool
+    {
+        return strtolower((string) ($this->kategori_bank ?? 'umum')) === 'ujian';
+    }
+
+    public static function normalizeQuestionText(?string $text): string
+    {
+        $clean = trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $text)));
+        return mb_strtolower($clean);
+    }
+
+    /**
+     * Memeriksa kelengkapan kualitas soal (Quality Gate) sebelum dipakai ke Kuis/Ujian/Dungeon.
+     *
+     * @return array{layak: bool, masalah: array<int, string>}
+     */
+    public function cekKelayakan(): array
+    {
+        $masalah = [];
+
+        if (empty($this->id_mapel) && empty($this->quiz?->id_mapel)) {
+            $masalah[] = 'Mata pelajaran belum diatur';
+        }
+
+        $hasText = trim((string) $this->pertanyaan) !== '';
+        $hasPhoto = !empty($this->foto_soal);
+        if (!$hasText && !$hasPhoto) {
+            $masalah[] = 'Pertanyaan dan gambar kosong';
+        }
+
+        $jenis = (int) ($this->id_jenis_soal ?? 1);
+        $pilihan = $this->relationLoaded('pilihanSoal') ? $this->pilihanSoal : $this->pilihanSoal()->get();
+
+        if ($jenis === 1) {
+            $nonEmptyChoices = $pilihan->filter(fn($p) => trim((string) $p->teks_pilihan) !== '');
+            if ($nonEmptyChoices->count() < 2) {
+                $masalah[] = 'Pilihan ganda minimal memiliki 2 opsi jawaban';
+            }
+            $correctCount = $pilihan->where('is_correct', true)->count();
+            if ($correctCount !== 1) {
+                $masalah[] = $correctCount === 0 ? 'Belum ada kunci jawaban benar' : 'Terdapat lebih dari 1 kunci jawaban';
+            }
+        } elseif ($jenis === 3) {
+            if ($pilihan->count() < 2) {
+                $masalah[] = 'Opsi Benar/Salah tidak lengkap';
+            }
+            if ($pilihan->where('is_correct', true)->count() !== 1) {
+                $masalah[] = 'Kunci Benar/Salah belum ditentukan';
+            }
+        } elseif ($jenis === 2) {
+            if (trim((string) $this->jawaban_benar) === '') {
+                $masalah[] = 'Kunci jawaban isian singkat masih kosong';
+            }
+        }
+
+        return [
+            'layak' => count($masalah) === 0,
+            'masalah' => $masalah,
+        ];
     }
 
     public function jenjang()

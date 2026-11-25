@@ -17,22 +17,23 @@ use Illuminate\Validation\ValidationException;
 // Controller khusus untuk mengelola soal quiz per jenjang.
 class SoalController extends Controller
 {
-    // Menampilkan daftar soal yang ada di sistem (Bank Soal & Kuis).
-    public function index(Request $request)
+    // Membangun query soal terfilter untuk index dan ekspor CSV.
+    private function buildFilteredQuery(Request $request)
     {
-        if (auth()->check()) {
-            Gate::authorize('viewAny', Soal::class);
-        }
-
         $sumber = $request->query('sumber', 'all');
         $mapelId = $request->query('mapel_id');
         $jenjangId = $request->query('jenjang_id');
         $jenisSoal = $request->query('jenis_soal', 'all');
         $tingkat = $request->query('tingkat_soal', 'all');
+        $kategoriBank = $request->query('kategori_bank', 'all');
+        $statusPakai = $request->query('status_pakai', 'all');
         $search = trim((string) $request->query('q', ''));
+        $hasKategoriCol = Schema::hasColumn('soal', 'kategori_bank');
+        $hasParentCol = Schema::hasColumn('soal', 'parent_soal_id');
 
-        $query = Soal::query()
-            ->with(['quiz.tipeQuiz', 'jenjang', 'jenisSoal', 'mapel', 'penulis'])
+        return Soal::query()
+            ->with(['quiz.tipeQuiz', 'jenjang', 'jenisSoal', 'mapel', 'penulis', 'pilihanSoal'])
+            ->when($hasParentCol, fn($q) => $q->withCount('clonedSoal'))
             ->when(auth()->user() && auth()->user()->isGuru(), function ($q) {
                 $q->where(function ($sub) {
                     $sub->whereNull('id_quiz')
@@ -42,6 +43,17 @@ class SoalController extends Controller
             })
             ->when($sumber === 'bank', fn($q) => $q->whereNull('id_quiz'))
             ->when($sumber === 'quiz', fn($q) => $q->whereNotNull('id_quiz'))
+            ->when($hasKategoriCol && in_array($kategoriBank, ['umum', 'ujian'], true), function ($q) use ($kategoriBank) {
+                if ($kategoriBank === 'ujian') {
+                    $q->where('kategori_bank', 'ujian');
+                } else {
+                    $q->where(function ($sub) {
+                        $sub->whereNull('kategori_bank')->orWhere('kategori_bank', 'umum');
+                    });
+                }
+            })
+            ->when($hasParentCol && $statusPakai === 'unused', fn($q) => $q->whereNull('id_quiz')->doesntHave('clonedSoal'))
+            ->when($hasParentCol && $statusPakai === 'used', fn($q) => $q->whereNull('id_quiz')->has('clonedSoal'))
             ->when(!empty($mapelId) && $mapelId !== 'all', fn($q) => $q->where('id_mapel', $mapelId))
             ->when(!empty($jenjangId) && $jenjangId !== 'all', fn($q) => $q->where('id_jenjang', $jenjangId))
             ->when(!empty($tingkat) && $tingkat !== 'all', fn($q) => $q->where('tingkat_soal', $tingkat))
@@ -57,16 +69,41 @@ class SoalController extends Controller
                 }
             })
             ->when($search !== '', function ($q) use ($search) {
-                $q->where(function ($sub) use ($search) {
-                    $sub->whereRaw('LOWER(pertanyaan) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(kode_soal) LIKE ?', ["%{$search}%"])
-                        ->orWhereRaw('LOWER(jawaban_benar) LIKE ?', ["%{$search}%"]);
+                $lowerSearch = mb_strtolower($search);
+                $q->where(function ($sub) use ($lowerSearch) {
+                    $sub->whereRaw('LOWER(pertanyaan) LIKE ?', ["%{$lowerSearch}%"])
+                        ->orWhereRaw('LOWER(kode_soal) LIKE ?', ["%{$lowerSearch}%"])
+                        ->orWhereRaw('LOWER(jawaban_benar) LIKE ?', ["%{$lowerSearch}%"]);
                 });
             })
             ->latest('id_soal');
+    }
+
+    // Menampilkan daftar soal yang ada di sistem (Bank Soal & Kuis).
+    public function index(Request $request)
+    {
+        if (auth()->check()) {
+            Gate::authorize('viewAny', Soal::class);
+        }
+
+        $query = $this->buildFilteredQuery($request);
 
         $totalFiltered = (clone $query)->count();
         $soals = $query->paginate(24)->withQueryString();
+
+        // Statistik ringkas Bank Soal (KPI Strip)
+        $hasKategoriCol = Schema::hasColumn('soal', 'kategori_bank');
+        $hasParentCol = Schema::hasColumn('soal', 'parent_soal_id');
+        $bankStats = [
+            'total_bank' => Soal::whereNull('id_quiz')->count(),
+            'khusus_ujian' => $hasKategoriCol ? Soal::whereNull('id_quiz')->where('kategori_bank', 'ujian')->count() : 0,
+            'belum_dipakai' => $hasParentCol ? Soal::whereNull('id_quiz')->doesntHave('clonedSoal')->count() : 0,
+            'mudah' => Soal::whereNull('id_quiz')->where('tingkat_soal', 'mudah')->count(),
+            'sedang' => Soal::whereNull('id_quiz')->where(function ($q) {
+                $q->where('tingkat_soal', 'sedang')->orWhereNull('tingkat_soal')->orWhere('tingkat_soal', '');
+            })->count(),
+            'sulit' => Soal::whereNull('id_quiz')->where('tingkat_soal', 'sulit')->count(),
+        ];
 
         $mapelList = Schema::hasTable('mapel') ? Mapel::orderBy('nama_mapel')->get() : collect();
         $jenjangList = Jenjang::orderBy('id_jenjang')->get();
@@ -82,7 +119,7 @@ class SoalController extends Controller
             ->orderBy('judul')
             ->get();
 
-        return view('admin.soal.index', compact('soals', 'mapelList', 'jenjangList', 'quizList', 'totalFiltered'));
+        return view('admin.soal.index', compact('soals', 'mapelList', 'jenjangList', 'quizList', 'totalFiltered', 'bankStats'));
     }
 
     // Menampilkan form untuk menambah soal baru (Bank Soal atau ke Kuis).
@@ -180,6 +217,9 @@ class SoalController extends Controller
             if (!Schema::hasColumn('soal', 'tingkat_soal')) {
                 unset($payload['tingkat_soal']);
             }
+            if (!Schema::hasColumn('soal', 'kategori_bank')) {
+                unset($payload['kategori_bank']);
+            }
 
             $soal = Soal::create($payload);
             $this->syncChoices($soal, $questionData['pilihan']);
@@ -263,13 +303,31 @@ class SoalController extends Controller
             $fotoBaruDiunggah = true;
         }
 
-        DB::transaction(function () use ($soal, $questionData, $pathFoto) {
+        DB::transaction(function () use ($soal, $questionData, $pathFoto, $request) {
             $updatePayload = $questionData['soal'] + ['foto_soal' => $pathFoto];
             if (!Schema::hasColumn('soal', 'tingkat_soal')) {
                 unset($updatePayload['tingkat_soal']);
             }
+            if (!Schema::hasColumn('soal', 'kategori_bank')) {
+                unset($updatePayload['kategori_bank']);
+            }
             $soal->update($updatePayload);
             $this->syncChoices($soal, $questionData['pilihan']);
+
+            // Opsional: sinkronkan perbaikan ke salinan soal di kuis jika diminta
+            if ($request->boolean('sync_clones') && Schema::hasColumn('soal', 'parent_soal_id')) {
+                $clones = Soal::where('parent_soal_id', $soal->id_soal)->get();
+                foreach ($clones as $clone) {
+                    $clone->update([
+                        'pertanyaan' => $updatePayload['pertanyaan'],
+                        'jawaban_benar' => $updatePayload['jawaban_benar'],
+                        'poin' => $updatePayload['poin'],
+                        'durasi_detik' => $updatePayload['durasi_detik'],
+                        'foto_soal' => $pathFoto,
+                    ]);
+                    $this->syncChoices($clone, $questionData['pilihan']);
+                }
+            }
         });
 
         if (
@@ -344,9 +402,59 @@ class SoalController extends Controller
                 }
 
                 $jawabanBenar = null;
+                $choices = [];
                 if ($idJenis === 2) {
                     $jawabanBenar = trim((string) ($sData['jawaban_singkat'] ?? ''));
+                    if ($jawabanBenar === '') {
+                        throw ValidationException::withMessages([
+                            'soal' => "Soal no. " . ($idx + 1) . ": Kunci jawaban isian singkat wajib diisi.",
+                        ]);
+                    }
+                } elseif ($idJenis === 1) {
+                    $pilData = $sData['pilihan'] ?? [];
+                    foreach (['A', 'B', 'C', 'D'] as $pIdx => $lbl) {
+                        $pItem = $pilData[$pIdx] ?? null;
+                        $teks = trim((string) ($pItem['teks_pilihan'] ?? ($pItem['teks'] ?? '')));
+                        $isCorrect = !empty($pItem['is_correct']) ? 1 : 0;
+                        $tetapDiBawah = !empty($pItem['tetap_di_bawah']) ? 1 : 0;
+                        if ($teks !== '') {
+                            $choices[] = [
+                                'label' => $lbl,
+                                'teks_pilihan' => $teks,
+                                'is_correct' => $isCorrect,
+                                'tetap_di_bawah' => $tetapDiBawah,
+                            ];
+                            if ($isCorrect) {
+                                $jawabanBenar = $lbl;
+                            }
+                        }
+                    }
+                    if (count($choices) < 2) {
+                        throw ValidationException::withMessages([
+                            'soal' => "Soal no. " . ($idx + 1) . ": Pilihan ganda wajib memiliki minimal 2 opsi terisi.",
+                        ]);
+                    }
+                    if (empty($jawabanBenar)) {
+                        $choices[0]['is_correct'] = 1;
+                        $jawabanBenar = $choices[0]['label'];
+                    }
+                } elseif ($idJenis === 3) {
+                    $pilData = $sData['pilihan'] ?? [];
+                    $correctA = !empty($pilData[0]['is_correct']) ? 1 : 0;
+                    $correctB = !empty($pilData[1]['is_correct']) ? 1 : 0;
+                    if (!$correctA && !$correctB) {
+                        $correctA = 1;
+                    }
+                    $jawabanBenar = $correctA ? 'A' : 'B';
+                    $choices = [
+                        ['label' => 'A', 'teks_pilihan' => 'Benar', 'is_correct' => $correctA, 'tetap_di_bawah' => 0],
+                        ['label' => 'B', 'teks_pilihan' => 'Salah', 'is_correct' => $correctB, 'tetap_di_bawah' => 0],
+                    ];
                 }
+
+                $kategoriBank = in_array($sData['kategori_bank'] ?? $request->input('kategori_bank'), ['umum', 'ujian'], true)
+                    ? ($sData['kategori_bank'] ?? $request->input('kategori_bank'))
+                    : 'umum';
 
                 $payload = [
                     'id_quiz' => null,
@@ -362,40 +470,11 @@ class SoalController extends Controller
                     'id_penulis' => auth()->id(),
                     'aktif' => true,
                 ];
-
-                $soal = Soal::create($payload);
-
-                // Sinkronisasi pilihan
-                $choices = [];
-                if ($idJenis === 1) {
-                    $pilData = $sData['pilihan'] ?? [];
-                    foreach (['A', 'B', 'C', 'D'] as $pIdx => $lbl) {
-                        $pItem = $pilData[$pIdx] ?? null;
-                        $teks = trim((string) ($pItem['teks_pilihan'] ?? ($pItem['teks'] ?? '')));
-                        $isCorrect = !empty($pItem['is_correct']) ? 1 : 0;
-                        $tetapDiBawah = !empty($pItem['tetap_di_bawah']) ? 1 : 0;
-                        if ($teks !== '' || $pIdx < 2) {
-                            $choices[] = [
-                                'label' => $lbl,
-                                'teks_pilihan' => $teks,
-                                'is_correct' => $isCorrect,
-                                'tetap_di_bawah' => $tetapDiBawah,
-                            ];
-                        }
-                    }
-                } elseif ($idJenis === 3) {
-                    $pilData = $sData['pilihan'] ?? [];
-                    $correctA = !empty($pilData[0]['is_correct']) ? 1 : 0;
-                    $correctB = !empty($pilData[1]['is_correct']) ? 1 : 0;
-                    if (!$correctA && !$correctB) {
-                        $correctA = 1;
-                    }
-                    $choices = [
-                        ['label' => 'A', 'teks_pilihan' => 'Benar', 'is_correct' => $correctA, 'tetap_di_bawah' => 0],
-                        ['label' => 'B', 'teks_pilihan' => 'Salah', 'is_correct' => $correctB, 'tetap_di_bawah' => 0],
-                    ];
+                if (Schema::hasColumn('soal', 'kategori_bank')) {
+                    $payload['kategori_bank'] = $kategoriBank;
                 }
 
+                $soal = Soal::create($payload);
                 $this->syncChoices($soal, $choices);
                 $createdCount++;
             }
@@ -415,6 +494,7 @@ class SoalController extends Controller
             'id_mapel' => 'nullable|integer|exists:mapel,id_mapel',
             'id_jenjang' => 'nullable|integer|exists:jenjang,id_jenjang',
             'id_jenis_soal' => 'required|integer|exists:jenis_soal,id_jenis_soal',
+            'kategori_bank' => 'nullable|in:umum,ujian',
             'pertanyaan' => 'required|string|max:10000',
             'jawaban_benar' => 'nullable|string|max:2000',
             'poin' => 'nullable|integer|min:0',
@@ -456,33 +536,37 @@ class SoalController extends Controller
             ]);
         }
 
+        $normalizedInput = Soal::normalizeQuestionText($validated['pertanyaan']);
         $pertanyaanLower = mb_strtolower(trim($validated['pertanyaan']));
-        if ($idQuiz) {
-            $duplikatQuery = Soal::where('id_quiz', $idQuiz)
-                ->where(function ($q) use ($pertanyaanLower) {
-                    $q->whereRaw('LOWER(TRIM(pertanyaan)) = ?', [$pertanyaanLower]);
-                });
-        } else {
-            $duplikatQuery = Soal::whereNull('id_quiz')
-                ->where('id_mapel', $idMapel)
-                ->where(function ($q) use ($pertanyaanLower) {
-                    $q->whereRaw('LOWER(TRIM(pertanyaan)) = ?', [$pertanyaanLower]);
-                });
-        }
+
+        $scopeQuery = $idQuiz
+            ? Soal::where('id_quiz', $idQuiz)
+            : Soal::whereNull('id_quiz')->where('id_mapel', $idMapel);
 
         if ($ignoreSoalId) {
-            $duplikatQuery->where('id_soal', '!=', $ignoreSoalId);
+            $scopeQuery->where('id_soal', '!=', $ignoreSoalId);
         }
 
-        if ($duplikatQuery->exists()) {
+        $isDuplicate = (clone $scopeQuery)
+            ->whereRaw('LOWER(TRIM(pertanyaan)) = ?', [$pertanyaanLower])
+            ->exists();
+
+        if (!$isDuplicate && $normalizedInput !== '') {
+            $candidates = (clone $scopeQuery)->select(['id_soal', 'pertanyaan'])->get();
+            $isDuplicate = $candidates->contains(
+                fn($row) => Soal::normalizeQuestionText($row->pertanyaan) === $normalizedInput
+            );
+        }
+
+        if ($isDuplicate) {
             throw ValidationException::withMessages([
                 'pertanyaan' => $idQuiz
-                    ? 'Pertanyaan dengan teks yang sama sudah ada di quiz ini.'
-                    : 'Pertanyaan dengan teks yang sama sudah ada di Bank Soal untuk mata pelajaran ini.',
+                    ? 'Pertanyaan dengan teks yang sama atau mirip sudah ada di quiz ini.'
+                    : 'Pertanyaan dengan teks yang sama atau mirip sudah ada di Bank Soal untuk mata pelajaran ini.',
             ]);
         }
 
-        // Peringatan (bukan penolakan) jika soal kuis Dungeon cocok dengan soal di kuis bertipe Ujian/Evaluasi/Ulangan
+        // Peringatan (bukan penolakan) jika soal kuis Dungeon cocok dengan soal di kuis bertipe Ujian/Evaluasi/Ulangan atau Bank Soal Ujian
         if ($isDungeon && Schema::hasTable('quiz') && Schema::hasTable('tipequiz')) {
             $crossMatch = DB::table('soal')
                 ->join('quiz', 'soal.id_quiz', '=', 'quiz.id_quiz')
@@ -495,6 +579,14 @@ class SoalController extends Controller
 
             if ($crossMatch) {
                 session()->flash('warning_dungeon', "Peringatan: Teks pertanyaan serupa dengan soal pada kuis bertipe {$crossMatch->nama_tipe} ('{$crossMatch->judul}').");
+            } elseif (Schema::hasColumn('soal', 'kategori_bank')) {
+                $bankExamMatch = Soal::whereNull('id_quiz')
+                    ->where('kategori_bank', 'ujian')
+                    ->whereRaw('LOWER(TRIM(pertanyaan)) = ?', [$pertanyaanLower])
+                    ->exists();
+                if ($bankExamMatch) {
+                    session()->flash('warning_dungeon', 'Peringatan: Teks pertanyaan ini tercatat sebagai soal khusus Ujian di Bank Soal.');
+                }
             }
         }
 
@@ -574,18 +666,24 @@ class SoalController extends Controller
             $answer = $correctLabel;
         }
 
+        $soalData = [
+            'id_quiz' => $idQuiz,
+            'id_mapel' => $idMapel,
+            'id_jenjang' => $validated['id_jenjang'] ?? ($quiz ? $quiz->id_jenjang : null),
+            'id_jenis_soal' => $type,
+            'tingkat_soal' => $tingkatSoal,
+            'pertanyaan' => $validated['pertanyaan'],
+            'jawaban_benar' => $answer,
+            'poin' => $validated['poin'] ?? 10,
+            'durasi_detik' => $validated['durasi_detik'] ?? 20,
+        ];
+
+        if (Schema::hasColumn('soal', 'kategori_bank')) {
+            $soalData['kategori_bank'] = $validated['kategori_bank'] ?? ($quiz && $quiz->isModeUjian() ? 'ujian' : 'umum');
+        }
+
         return [
-            'soal' => [
-                'id_quiz' => $idQuiz,
-                'id_mapel' => $idMapel,
-                'id_jenjang' => $validated['id_jenjang'] ?? ($quiz ? $quiz->id_jenjang : null),
-                'id_jenis_soal' => $type,
-                'tingkat_soal' => $tingkatSoal,
-                'pertanyaan' => $validated['pertanyaan'],
-                'jawaban_benar' => $answer,
-                'poin' => $validated['poin'] ?? 10,
-                'durasi_detik' => $validated['durasi_detik'] ?? 20,
-            ],
+            'soal' => $soalData,
             'pilihan' => $choices,
         ];
     }
@@ -634,6 +732,11 @@ class SoalController extends Controller
         }
 
         $sumber = $request->query('sumber', 'all'); // 'bank', 'all', 'quiz'
+        $kategoriBank = $request->query('kategori_bank', 'all'); // 'all', 'umum', 'ujian'
+        $unusedOnly = $request->boolean('unused_only');
+        $forDungeon = $request->boolean('for_dungeon');
+        $hasKategoriCol = Schema::hasColumn('soal', 'kategori_bank');
+        $hasParentCol = Schema::hasColumn('soal', 'parent_soal_id');
 
         // Jika sumber 'bank' tapi bank soal masih kosong di sistem, otomatis fallback ke 'all'
         $bankCount = Soal::whereNull('id_quiz')->count();
@@ -651,7 +754,27 @@ class SoalController extends Controller
             })
             ->when($sumber === 'bank', fn($q) => $q->whereNull('id_quiz'))
             ->when($sumber === 'quiz', fn($q) => $q->whereNotNull('id_quiz'))
+            ->when($hasKategoriCol && $kategoriBank === 'umum', function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereNull('kategori_bank')->orWhere('kategori_bank', 'umum');
+                });
+            })
+            ->when($hasKategoriCol && $kategoriBank === 'ujian', fn($q) => $q->where('kategori_bank', 'ujian'))
+            ->when($forDungeon, function ($q) use ($hasKategoriCol) {
+                if ($hasKategoriCol) {
+                    $q->where(function ($sub) {
+                        $sub->whereNull('kategori_bank')->orWhere('kategori_bank', '!=', 'ujian');
+                    });
+                }
+                if (Schema::hasTable('quiz') && Schema::hasTable('tipequiz')) {
+                    $q->whereDoesntHave('quiz.tipeQuiz', function ($t) {
+                        $t->whereIn(DB::raw("LOWER(COALESCE(nama_tipe, ''))"), ['ulangan', 'ujian', 'evaluasi']);
+                    });
+                }
+            })
+            ->when($unusedOnly && $hasParentCol, fn($q) => $q->whereDoesntHave('clonedSoal'))
             ->with(['jenisSoal', 'jenjang', 'mapel', 'pilihanSoal', 'penulis', 'quiz'])
+            ->when($hasParentCol, fn($q) => $q->withCount('clonedSoal'))
             ->when($request->filled('mapel_id') && $request->mapel_id !== 'all', fn($q) => $q->where('id_mapel', $request->mapel_id))
             ->when($request->filled('jenjang_id') && $request->jenjang_id !== 'all', function ($q) use ($request) {
                 $q->where(function ($sub) use ($request) {
@@ -694,7 +817,7 @@ class SoalController extends Controller
             ->latest('id_soal');
 
         $limit = (int) $request->input('per_page', $request->input('limit', 150));
-        $soals = $query->take(min($limit, 300))->get()->map(function (Soal $s) {
+        $soals = $query->take(min($limit, 300))->get()->map(function (Soal $s) use ($hasKategoriCol) {
             $rawJenis = strtolower(trim((string) ($s->jenisSoal?->nama_jenis ?? '')));
             $idJenis = (int) ($s->id_jenis_soal ?? 1);
             $jenisSlug = ($idJenis === 3 || str_contains($rawJenis, 'benar')) ? 'true_false' : (($idJenis === 2 || str_contains($rawJenis, 'isian')) ? 'isian_singkat' : 'kuis');
@@ -710,12 +833,17 @@ class SoalController extends Controller
 
             $isBank = is_null($s->id_quiz);
             $quizTitle = $s->quiz?->judul ?? 'Bank Soal';
+            $kelayakan = $s->cekKelayakan();
 
             return [
                 'id_soal' => $s->id_soal,
                 'kode_soal' => $s->kode_soal,
                 'is_bank' => $isBank,
-                'sumber_label' => $isBank ? '📚 Bank Soal' : '🎯 Kuis: ' . \Illuminate\Support\Str::limit($quizTitle, 20),
+                'sumber_label' => $isBank ? 'Bank Soal' : 'Kuis: ' . \Illuminate\Support\Str::limit($quizTitle, 20),
+                'kategori_bank' => $hasKategoriCol ? ($s->kategori_bank ?: 'umum') : 'umum',
+                'cloned_count' => (int) ($s->cloned_soal_count ?? 0),
+                'is_layak' => $kelayakan['layak'],
+                'masalah_kelayakan' => $kelayakan['masalah'],
                 'id_mapel' => $s->id_mapel,
                 'mapel_nama' => $s->mapel?->nama_mapel ?? 'Semua Mapel',
                 'id_jenjang' => $s->id_jenjang,
@@ -752,11 +880,15 @@ class SoalController extends Controller
             'soal_ids.*' => 'integer|exists:soal,id_soal',
         ]);
 
-        $soals = Soal::with('pilihanSoal')->whereIn('id_soal', $request->soal_ids)->get();
+        $soals = Soal::with(['pilihanSoal', 'quiz.tipeQuiz'])->whereIn('id_soal', $request->soal_ids)->get();
         $insertedCount = 0;
         $skippedCount = 0;
+        $hasParentCol = Schema::hasColumn('soal', 'parent_soal_id');
+        $hasKategoriCol = Schema::hasColumn('soal', 'kategori_bank');
 
-        DB::transaction(function () use ($soals, &$insertedCount, &$skippedCount) {
+        DB::transaction(function () use ($soals, $hasParentCol, $hasKategoriCol, &$insertedCount, &$skippedCount) {
+            $normalizedCache = [];
+
             foreach ($soals as $soal) {
                 $idMapel = $soal->id_mapel ?? $soal->quiz?->id_mapel;
                 if (!$idMapel) {
@@ -765,27 +897,42 @@ class SoalController extends Controller
                 }
 
                 $pertanyaanLower = mb_strtolower(trim((string) $soal->pertanyaan));
+                $normalizedTarget = Soal::normalizeQuestionText($soal->pertanyaan);
 
-                // Cek duplikasi di Bank Soal untuk mapel yang sama
+                // Cek duplikasi di Bank Soal untuk mapel yang sama (eksak, parent_soal_id, atau normalisasi spasi/tanda baca)
                 $exists = Soal::whereNull('id_quiz')
                     ->where('id_mapel', $idMapel)
-                    ->where(function ($q) use ($soal, $pertanyaanLower) {
-                        $q->where('parent_soal_id', $soal->id_soal);
+                    ->where(function ($q) use ($soal, $pertanyaanLower, $hasParentCol) {
+                        if ($hasParentCol) {
+                            $q->where('parent_soal_id', $soal->id_soal);
+                        }
                         if ($pertanyaanLower !== '') {
                             $q->orWhereRaw('LOWER(TRIM(pertanyaan)) = ?', [$pertanyaanLower]);
                         }
                     })
                     ->exists();
 
+                if (!$exists && $normalizedTarget !== '') {
+                    if (!isset($normalizedCache[$idMapel])) {
+                        $normalizedCache[$idMapel] = Soal::whereNull('id_quiz')
+                            ->where('id_mapel', $idMapel)
+                            ->pluck('pertanyaan')
+                            ->map(fn($p) => Soal::normalizeQuestionText($p))
+                            ->filter()
+                            ->flip()
+                            ->all();
+                    }
+                    $exists = isset($normalizedCache[$idMapel][$normalizedTarget]);
+                }
+
                 if ($exists) {
                     $skippedCount++;
                     continue;
                 }
 
-                $newBankSoal = Soal::create([
+                $payload = [
                     'id_quiz' => null,
                     'id_mapel' => $idMapel,
-                    'parent_soal_id' => $soal->id_soal,
                     'id_jenjang' => $soal->id_jenjang ?? $soal->quiz?->id_jenjang,
                     'id_jenis_soal' => $soal->id_jenis_soal,
                     'tingkat_soal' => $soal->tingkat_soal ?: 'sedang',
@@ -796,7 +943,20 @@ class SoalController extends Controller
                     'foto_soal' => $soal->foto_soal,
                     'poin' => $soal->poin ?? 10,
                     'durasi_detik' => $soal->durasi_detik ?? 20,
-                ]);
+                ];
+                if ($hasParentCol) {
+                    $payload['parent_soal_id'] = $soal->id_soal;
+                }
+                if ($hasKategoriCol) {
+                    $payload['kategori_bank'] = ($soal->quiz && $soal->quiz->isModeUjian())
+                        ? 'ujian'
+                        : ($soal->kategori_bank ?: 'umum');
+                }
+
+                $newBankSoal = Soal::create($payload);
+                if ($normalizedTarget !== '') {
+                    $normalizedCache[$idMapel][$normalizedTarget] = true;
+                }
 
                 foreach ($soal->pilihanSoal as $pilihan) {
                     $pilihanData = [
@@ -856,30 +1016,51 @@ class SoalController extends Controller
 
         $insertedCount = 0;
         $skippedCount = 0;
+        $hasParentCol = Schema::hasColumn('soal', 'parent_soal_id');
+        $hasKategoriCol = Schema::hasColumn('soal', 'kategori_bank');
 
-        DB::transaction(function () use ($quiz, $bankSoals, &$insertedCount, &$skippedCount) {
+        DB::transaction(function () use ($quiz, $bankSoals, $hasParentCol, $hasKategoriCol, &$insertedCount, &$skippedCount) {
+            $existingNormalized = Soal::where('id_quiz', $quiz->id_quiz)
+                ->pluck('pertanyaan')
+                ->map(fn($p) => Soal::normalizeQuestionText($p))
+                ->filter()
+                ->flip()
+                ->all();
+
             foreach ($bankSoals as $bankSoal) {
+                // Cegah soal khusus Ujian masuk ke kuis bertipe Dungeon
+                if ($quiz->isDungeon() && $hasKategoriCol && $bankSoal->isKhususUjian()) {
+                    $skippedCount++;
+                    continue;
+                }
+
                 $pertanyaanLower = mb_strtolower(trim((string) $bankSoal->pertanyaan));
+                $normalizedTarget = Soal::normalizeQuestionText($bankSoal->pertanyaan);
 
                 // Cek apakah soal ini sudah ada di kuis tujuan (baik lewat parent_soal_id atau teks pertanyaan sama)
                 $exists = Soal::where('id_quiz', $quiz->id_quiz)
-                    ->where(function ($q) use ($bankSoal, $pertanyaanLower) {
-                        $q->where('parent_soal_id', $bankSoal->id_soal);
+                    ->where(function ($q) use ($bankSoal, $pertanyaanLower, $hasParentCol) {
+                        if ($hasParentCol) {
+                            $q->where('parent_soal_id', $bankSoal->id_soal);
+                        }
                         if ($pertanyaanLower !== '') {
                             $q->orWhereRaw('LOWER(TRIM(pertanyaan)) = ?', [$pertanyaanLower]);
                         }
                     })
                     ->exists();
 
+                if (!$exists && $normalizedTarget !== '') {
+                    $exists = isset($existingNormalized[$normalizedTarget]);
+                }
+
                 if ($exists) {
                     $skippedCount++;
                     continue;
                 }
 
-                $newSoal = Soal::create([
+                $payload = [
                     'id_quiz' => $quiz->id_quiz,
                     'id_mapel' => $quiz->id_mapel,
-                    'parent_soal_id' => $bankSoal->id_soal,
                     'id_jenjang' => $bankSoal->id_jenjang ?? $quiz->id_jenjang,
                     'id_jenis_soal' => $bankSoal->id_jenis_soal,
                     'tingkat_soal' => $bankSoal->tingkat_soal ?? ($quiz->isDungeon() ? 'sedang' : null),
@@ -890,7 +1071,18 @@ class SoalController extends Controller
                     'foto_soal' => $bankSoal->foto_soal,
                     'poin' => $bankSoal->poin ?? 10,
                     'durasi_detik' => $bankSoal->durasi_detik ?? 20,
-                ]);
+                ];
+                if ($hasParentCol) {
+                    $payload['parent_soal_id'] = $bankSoal->id_soal;
+                }
+                if ($hasKategoriCol) {
+                    $payload['kategori_bank'] = $quiz->isModeUjian() ? 'ujian' : ($bankSoal->kategori_bank ?: 'umum');
+                }
+
+                $newSoal = Soal::create($payload);
+                if ($normalizedTarget !== '') {
+                    $existingNormalized[$normalizedTarget] = true;
+                }
 
                 foreach ($bankSoal->pilihanSoal as $pilihan) {
                     $pilihanData = [
@@ -924,5 +1116,433 @@ class SoalController extends Controller
         }
 
         return redirect()->back()->with('success', $message);
+    }
+
+    // Duplikat cepat satu soal (beserta pilihan jawabannya) lalu arahkan ke halaman edit.
+    public function duplicate($id)
+    {
+        if (auth()->check()) {
+            Gate::authorize('create', Soal::class);
+        }
+
+        $source = Soal::with('pilihanSoal')
+            ->where('id_soal', $id)
+            ->orWhere('kode_soal', $id)
+            ->firstOrFail();
+
+        $newSoal = DB::transaction(function () use ($source) {
+            $payload = [
+                'id_quiz' => $source->id_quiz,
+                'id_mapel' => $source->id_mapel ?? $source->quiz?->id_mapel,
+                'id_jenjang' => $source->id_jenjang ?? $source->quiz?->id_jenjang,
+                'id_jenis_soal' => $source->id_jenis_soal,
+                'tingkat_soal' => $source->tingkat_soal ?: 'sedang',
+                'id_penulis' => auth()->id() ?? $source->id_penulis,
+                'aktif' => true,
+                'pertanyaan' => '[Salinan] ' . $source->pertanyaan,
+                'jawaban_benar' => $source->jawaban_benar,
+                'foto_soal' => $source->foto_soal,
+                'poin' => $source->poin ?? 10,
+                'durasi_detik' => $source->durasi_detik ?? 20,
+            ];
+            if (Schema::hasColumn('soal', 'kategori_bank')) {
+                $payload['kategori_bank'] = $source->kategori_bank ?: 'umum';
+            }
+
+            $cloned = Soal::create($payload);
+
+            foreach ($source->pilihanSoal as $pilihan) {
+                $pilihanData = [
+                    'id_soal' => $cloned->id_soal,
+                    'label' => $pilihan->label,
+                    'teks_pilihan' => $pilihan->teks_pilihan,
+                    'is_correct' => $pilihan->is_correct,
+                ];
+                if (Schema::hasColumn('pilihan_soal', 'tetap_di_bawah')) {
+                    $pilihanData['tetap_di_bawah'] = !empty($pilihan->tetap_di_bawah);
+                }
+                $cloned->pilihanSoal()->create($pilihanData);
+            }
+
+            return $cloned;
+        });
+
+        return redirect()
+            ->route('soal.edit', $newSoal->id_soal)
+            ->with('success', 'Soal berhasil diduplikasi! Silakan ubah teks atau opsi sesuai kebutuhan.');
+    }
+
+    // Hapus massal soal terpilih dengan pengecekan otorisasi per soal.
+    public function batchDelete(Request $request)
+    {
+        $request->validate([
+            'soal_ids' => 'required|array|min:1',
+            'soal_ids.*' => 'integer|exists:soal,id_soal',
+        ]);
+
+        $soals = Soal::whereIn('id_soal', $request->soal_ids)->get();
+        $deleted = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($soals, &$deleted, &$skipped) {
+            foreach ($soals as $soal) {
+                if (auth()->check() && Gate::denies('delete', $soal)) {
+                    $skipped++;
+                    continue;
+                }
+
+                $fotoPath = $soal->foto_soal;
+                $soal->pilihanSoal()->delete();
+                $soal->delete();
+
+                // Hapus file gambar hanya jika tidak lagi dipakai oleh soal lain
+                if ($fotoPath && !Soal::where('foto_soal', $fotoPath)->exists() && Storage::disk('public')->exists($fotoPath)) {
+                    Storage::disk('public')->delete($fotoPath);
+                }
+
+                $deleted++;
+            }
+        });
+
+        $msg = "Berhasil menghapus {$deleted} soal terpilih.";
+        if ($skipped > 0) {
+            $msg .= " ({$skipped} soal dilewati karena tidak memiliki izin hapus).";
+        }
+
+        return redirect()->back()->with($deleted > 0 ? 'success' : 'error', $msg);
+    }
+
+    // Ubah massal Mapel, Jenjang, Peruntukan Bank, dan/atau Tingkat Kesulitan soal terpilih.
+    public function batchUpdate(Request $request)
+    {
+        $validated = $request->validate([
+            'soal_ids' => 'required|array|min:1',
+            'soal_ids.*' => 'integer|exists:soal,id_soal',
+            'id_mapel' => 'nullable|integer|exists:mapel,id_mapel',
+            'id_jenjang' => 'nullable|integer|exists:jenjang,id_jenjang',
+            'tingkat_soal' => 'nullable|in:mudah,sedang,sulit',
+            'kategori_bank' => 'nullable|in:umum,ujian',
+        ]);
+
+        if (
+            empty($validated['id_mapel'])
+            && empty($validated['id_jenjang'])
+            && empty($validated['tingkat_soal'])
+            && empty($validated['kategori_bank'])
+        ) {
+            return redirect()->back()->with('error', 'Pilih minimal satu atribut (Mapel, Jenjang, Peruntukan, atau Tingkat) yang ingin diubah.');
+        }
+
+        $soals = Soal::whereIn('id_soal', $validated['soal_ids'])->get();
+        $updated = 0;
+        $skipped = 0;
+        $hasKategoriCol = Schema::hasColumn('soal', 'kategori_bank');
+
+        $tingkatMap = [
+            'mudah' => ['poin' => 10, 'durasi' => 20],
+            'sedang' => ['poin' => 20, 'durasi' => 30],
+            'sulit' => ['poin' => 30, 'durasi' => 60],
+        ];
+
+        DB::transaction(function () use ($soals, $validated, $tingkatMap, $hasKategoriCol, &$updated, &$skipped) {
+            foreach ($soals as $soal) {
+                if (auth()->check() && Gate::denies('update', $soal)) {
+                    $skipped++;
+                    continue;
+                }
+
+                $data = [];
+                if (!empty($validated['id_mapel'])) {
+                    $data['id_mapel'] = (int) $validated['id_mapel'];
+                }
+                if (!empty($validated['id_jenjang'])) {
+                    $data['id_jenjang'] = (int) $validated['id_jenjang'];
+                }
+                if (!empty($validated['tingkat_soal'])) {
+                    $t = $validated['tingkat_soal'];
+                    $data['tingkat_soal'] = $t;
+                    $data['poin'] = $tingkatMap[$t]['poin'];
+                    $data['durasi_detik'] = $tingkatMap[$t]['durasi'];
+                }
+                if ($hasKategoriCol && !empty($validated['kategori_bank'])) {
+                    $data['kategori_bank'] = $validated['kategori_bank'];
+                }
+
+                if (empty($data)) {
+                    $skipped++;
+                    continue;
+                }
+
+                $soal->update($data);
+                $updated++;
+            }
+        });
+
+        $msg = "Berhasil memperbarui {$updated} soal terpilih.";
+        if ($skipped > 0) {
+            $msg .= " ({$skipped} soal dilewati karena bukan milik Anda).";
+        }
+
+        return redirect()->back()->with($updated > 0 ? 'success' : 'error', $msg);
+    }
+
+    // Ekspor soal (mengikuti filter aktif) ke format CSV UTF-8 BOM yang siap dibuka di Excel.
+    public function exportCsv(Request $request)
+    {
+        if (auth()->check()) {
+            Gate::authorize('viewAny', Soal::class);
+        }
+
+        $soals = $this->buildFilteredQuery($request)->get();
+        $filename = 'bank-soal-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($soals) {
+            $out = fopen('php://output', 'w');
+            // UTF-8 BOM agar Excel otomatis mengenali karakter dan kolom dengan benar
+            fwrite($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, [
+                'Kode Soal',
+                'Sumber',
+                'Peruntukan',
+                'Mapel',
+                'Jenjang',
+                'Jenis',
+                'Tingkat',
+                'Pertanyaan',
+                'Opsi A',
+                'Opsi B',
+                'Opsi C',
+                'Opsi D',
+                'Kunci Jawaban',
+                'Poin',
+                'Durasi (Detik)',
+            ]);
+
+            foreach ($soals as $soal) {
+                $opts = $soal->pilihanSoal->keyBy(fn($p) => strtoupper((string) $p->label));
+                $jenisLabel = match ((int) $soal->id_jenis_soal) {
+                    2 => 'isian',
+                    3 => 'benar_salah',
+                    default => 'pilihan_ganda',
+                };
+
+                fputcsv($out, [
+                    $soal->kode_soal ?? '',
+                    $soal->id_quiz ? ($soal->quiz?->judul ?? 'Kuis') : 'Bank Soal',
+                    $soal->isKhususUjian() ? 'Khusus Ujian' : 'Umum',
+                    $soal->mapel?->nama_mapel ?? $soal->quiz?->mapel?->nama_mapel ?? '',
+                    $soal->jenjang?->nama_tipe ?? $soal->quiz?->jenjang?->nama_tipe ?? 'Umum',
+                    $jenisLabel,
+                    $soal->tingkat_soal ?? 'sedang',
+                    $soal->pertanyaan ?? '',
+                    $opts->get('A')?->teks_pilihan ?? '',
+                    $opts->get('B')?->teks_pilihan ?? '',
+                    $opts->get('C')?->teks_pilihan ?? '',
+                    $opts->get('D')?->teks_pilihan ?? '',
+                    $soal->jawaban_benar ?? '',
+                    $soal->poin ?? 10,
+                    $soal->durasi_detik ?? 20,
+                ]);
+            }
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    // Unduh template CSV siap isi untuk impor massal soal ke Bank Soal.
+    public function templateCsv()
+    {
+        if (auth()->check()) {
+            Gate::authorize('create', Soal::class);
+        }
+
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");
+
+            fputcsv($out, ['pertanyaan', 'jenis', 'tingkat', 'opsi_a', 'opsi_b', 'opsi_c', 'opsi_d', 'kunci', 'poin', 'durasi', 'peruntukan']);
+            fputcsv($out, ['Berapakah hasil dari 12 x 8?', 'pilihan_ganda', 'mudah', '84', '96', '104', '112', 'B', '10', '20', 'umum']);
+            fputcsv($out, ['Air mendidih pada suhu 100 derajat Celcius pada tekanan 1 atm.', 'benar_salah', 'mudah', 'Benar', 'Salah', '', '', 'A', '10', '20', 'umum']);
+            fputcsv($out, ['Ibu kota negara Indonesia adalah ...', 'isian', 'sedang', '', '', '', '', 'Jakarta', '20', '30', 'ujian']);
+
+            fclose($out);
+        }, 'template-impor-bank-soal.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    // Impor soal massal dari file CSV ke Bank Soal (id_quiz = null).
+    public function importCsv(Request $request)
+    {
+        if (auth()->check()) {
+            Gate::authorize('create', Soal::class);
+        }
+
+        $validated = $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+            'id_mapel' => 'required|integer|exists:mapel,id_mapel',
+            'id_jenjang' => 'nullable|integer|exists:jenjang,id_jenjang',
+            'kategori_bank' => 'nullable|in:umum,ujian',
+        ]);
+
+        $rawContent = file_get_contents($request->file('csv_file')->getRealPath());
+        $rawContent = preg_replace('/^\xEF\xBB\xBF/', '', $rawContent);
+        $lines = preg_split('/\r\n|\r|\n/', trim($rawContent));
+
+        if (count($lines) < 2) {
+            return redirect()->back()->with('error', 'File CSV kosong atau tidak memiliki baris data.');
+        }
+
+        // Auto-detect pemisah koma vs titik koma (Excel Indonesia sering memakai ;)
+        $delimiter = substr_count($lines[0], ';') > substr_count($lines[0], ',') ? ';' : ',';
+        $headers = array_map(fn($h) => strtolower(trim((string) $h)), str_getcsv($lines[0], $delimiter));
+
+        $inserted = 0;
+        $skipped = 0;
+        $defaultKategori = $validated['kategori_bank'] ?? 'umum';
+        $hasKategoriCol = Schema::hasColumn('soal', 'kategori_bank');
+
+        $tingkatDefaults = [
+            'mudah' => ['poin' => 10, 'durasi' => 20],
+            'sedang' => ['poin' => 20, 'durasi' => 30],
+            'sulit' => ['poin' => 30, 'durasi' => 60],
+        ];
+
+        $existingNormalized = Soal::whereNull('id_quiz')
+            ->where('id_mapel', (int) $validated['id_mapel'])
+            ->pluck('pertanyaan')
+            ->map(fn($p) => Soal::normalizeQuestionText($p))
+            ->filter()
+            ->flip()
+            ->all();
+
+        DB::transaction(function () use ($lines, $delimiter, $headers, $validated, $tingkatDefaults, $defaultKategori, $hasKategoriCol, &$existingNormalized, &$inserted, &$skipped) {
+            for ($i = 1; $i < count($lines); $i++) {
+                if (trim($lines[$i]) === '') {
+                    continue;
+                }
+
+                $cols = str_getcsv($lines[$i], $delimiter);
+                $row = [];
+                foreach ($headers as $idx => $key) {
+                    $row[$key] = trim((string) ($cols[$idx] ?? ''));
+                }
+
+                $pertanyaan = $row['pertanyaan'] ?? '';
+                $kunci = $row['kunci'] ?? ($row['kunci_jawaban'] ?? '');
+                if ($pertanyaan === '' || $kunci === '') {
+                    $skipped++;
+                    continue;
+                }
+
+                $normalized = Soal::normalizeQuestionText($pertanyaan);
+                if ($normalized !== '' && isset($existingNormalized[$normalized])) {
+                    $skipped++;
+                    continue;
+                }
+
+                $rawJenis = strtolower($row['jenis'] ?? 'pilihan_ganda');
+                $idJenisSoal = 1;
+                if (str_contains($rawJenis, 'isian') || str_contains($rawJenis, 'essay')) {
+                    $idJenisSoal = 2;
+                } elseif (str_contains($rawJenis, 'benar') || str_contains($rawJenis, 'salah') || $rawJenis === 'tf') {
+                    $idJenisSoal = 3;
+                }
+
+                $tingkat = strtolower($row['tingkat'] ?? 'sedang');
+                if (!isset($tingkatDefaults[$tingkat])) {
+                    $tingkat = 'sedang';
+                }
+
+                $poin = !empty($row['poin']) && is_numeric($row['poin']) ? (int) $row['poin'] : $tingkatDefaults[$tingkat]['poin'];
+                $durasi = !empty($row['durasi']) && is_numeric($row['durasi']) ? (int) $row['durasi'] : $tingkatDefaults[$tingkat]['durasi'];
+
+                // Tentukan jawaban_benar (A/B/C/D untuk PG & TF; teks untuk Isian) & pilihan_soal
+                $jawabanBenarVal = $kunci;
+                $choices = [];
+
+                if ($idJenisSoal === 1) {
+                    $optMap = [
+                        'A' => $row['opsi_a'] ?? '',
+                        'B' => $row['opsi_b'] ?? '',
+                        'C' => $row['opsi_c'] ?? '',
+                        'D' => $row['opsi_d'] ?? '',
+                    ];
+                    $kunciUpper = strtoupper($kunci);
+                    $hasCorrectChoice = false;
+
+                    foreach ($optMap as $label => $teks) {
+                        if ($teks === '') {
+                            continue;
+                        }
+                        $isCorrect = ($kunciUpper === $label) || (mb_strtolower($kunci) === mb_strtolower($teks));
+                        if ($isCorrect) {
+                            $jawabanBenarVal = $label;
+                            $hasCorrectChoice = true;
+                        }
+                        $choices[] = [
+                            'label' => $label,
+                            'teks_pilihan' => $teks,
+                            'is_correct' => $isCorrect,
+                        ];
+                    }
+                    if (count($choices) < 2 || !$hasCorrectChoice) {
+                        $skipped++;
+                        continue;
+                    }
+                } elseif ($idJenisSoal === 3) {
+                    $isBenar = in_array(strtolower($kunci), ['benar', 'a', 'true', '1'], true);
+                    $jawabanBenarVal = $isBenar ? 'A' : 'B';
+                    $choices = [
+                        ['label' => 'A', 'teks_pilihan' => 'Benar', 'is_correct' => $isBenar],
+                        ['label' => 'B', 'teks_pilihan' => 'Salah', 'is_correct' => !$isBenar],
+                    ];
+                }
+
+                $rowKategoriRaw = strtolower(trim($row['peruntukan'] ?? ($row['kategori'] ?? ($row['kategori_bank'] ?? ''))));
+                $rowKategori = in_array($rowKategoriRaw, ['ujian', 'khusus ujian', 'ulangan', 'exam'], true)
+                    ? 'ujian'
+                    : ($rowKategoriRaw === 'umum' ? 'umum' : $defaultKategori);
+
+                $payload = [
+                    'id_quiz' => null,
+                    'id_mapel' => (int) $validated['id_mapel'],
+                    'id_jenjang' => !empty($validated['id_jenjang']) ? (int) $validated['id_jenjang'] : null,
+                    'id_jenis_soal' => $idJenisSoal,
+                    'tingkat_soal' => $tingkat,
+                    'id_penulis' => auth()->id(),
+                    'aktif' => true,
+                    'pertanyaan' => $pertanyaan,
+                    'jawaban_benar' => $jawabanBenarVal,
+                    'poin' => $poin,
+                    'durasi_detik' => $durasi,
+                ];
+                if ($hasKategoriCol) {
+                    $payload['kategori_bank'] = $rowKategori;
+                }
+
+                $soal = Soal::create($payload);
+
+                foreach ($choices as $c) {
+                    $soal->pilihanSoal()->create($c);
+                }
+
+                if ($normalized !== '') {
+                    $existingNormalized[$normalized] = true;
+                }
+
+                $inserted++;
+            }
+        });
+
+        $msg = "Impor selesai: {$inserted} soal berhasil ditambahkan ke Bank Soal.";
+        if ($skipped > 0) {
+            $msg .= " ({$skipped} baris dilewati karena data tidak lengkap atau duplikat).";
+        }
+
+        return redirect()->route('admin.soal')->with($inserted > 0 ? 'success' : 'error', $msg);
     }
 }

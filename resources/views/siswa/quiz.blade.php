@@ -292,6 +292,9 @@
             @forelse($quizzes as $quiz)
                 @php
                     $expired = $quiz->sudahKadaluarsa();
+                    $notStarted = $quiz->belumDimulai();
+                    $isExamMode = $quiz->isModeUjian();
+                    $canAttempt = $quiz->bolehDikerjakanLagiOleh($user);
                     $soalCount = $quiz->soal_count ?? $quiz->soal->count();
                     $totalPoin = $quiz->soal->sum('poin');
                     $tingkatNama = $quiz->tingkatQuiz->nama_tingkat ?? 'Umum';
@@ -307,7 +310,8 @@
                     $sudahSelesaiDanDapatPoin = (bool) $hasilSiswaLulus;
                     $poinDidapatTertinggi = $hasilSiswaLulus ? (int) $hasilSiswaLulus->poin_didapat : 0;
 
-                    $soalList = $quiz->soal->map(function ($s, $idx) {
+                    $allowPreviewSoal = $quiz->isPreviewLengkap() && !$isExamMode;
+                    $soalList = $allowPreviewSoal ? $quiz->soal->map(function ($s, $idx) {
                         return [
                             'nomor' => $idx + 1,
                             'pertanyaan' => Str::limit(trim(strip_tags($s->pertanyaan)), 120),
@@ -315,7 +319,7 @@
                             'poin' => (int) ($s->poin ?? 10),
                             'durasi' => $s->durasi_detik ? ($s->durasi_detik . ' detik') : null,
                         ];
-                    })->values()->toArray();
+                    })->values()->toArray() : [];
 
                     $tipeSoalSummary = $quiz->soal->groupBy(function ($s) {
                         return $s->jenisSoal->nama_jenis ?? 'Pilihan Ganda';
@@ -335,23 +339,26 @@
                         'durasi' => $quiz->durasi_total_menit ? ($quiz->durasi_total_menit . ' Menit') : 'Fleksibel',
                         'soal_count' => $soalCount,
                         'total_poin' => $totalPoin,
+                        'waktu_mulai' => $quiz->waktu_mulai ? $quiz->waktu_mulai->translatedFormat('d M Y, H:i') : null,
                         'waktu_kadaluarsa' => $quiz->waktu_kadaluarsa ? $quiz->waktu_kadaluarsa->translatedFormat('d M Y, H:i') : null,
                         'is_expired' => $expired,
+                        'not_started' => $notStarted,
+                        'is_exam_mode' => $isExamMode,
+                        'can_attempt' => $canAttempt,
                         'perlu_token' => $quiz->perluToken(),
                         'foto_url' => $quiz->cover_url,
                         'mulai_url' => route('siswa.quiz.mulai', $quiz->id_quiz),
                         'detail_url' => route('siswa.quiz.detail', $quiz->id_quiz),
-                        'opsi_preview' => $quiz->opsi_preview ?? 'lengkap',
+                        'opsi_preview' => $allowPreviewSoal ? 'lengkap' : 'tipe_saja',
                         'soal_list' => $soalList,
                         'tipe_soal_summary' => $tipeSoalSummary,
                         'sudah_selesai' => $sudahSelesaiDanDapatPoin,
                         'poin_didapat_tertinggi' => $poinDidapatTertinggi,
                     ];
                 @endphp
-                <div {{ $loop->first ? 'id="tourQuizCard"' : '' }} class="quiz-card-item group relative flex flex-col justify-between rounded-[28px] border-4 border-ink bg-paper font-sans font-bold text-ink shadow-card overflow-hidden transition-all duration-200 hover:-translate-y-1.5 hover:shadow-[0_14px_0_#0f3a5f] {{ ($expired && !$quiz->perluToken()) ? 'opacity-75 grayscale' : '' }}"
+                <div {{ $loop->first ? 'id="tourQuizCard"' : '' }} class="quiz-card-item group relative flex flex-col justify-between rounded-[28px] border-4 border-ink bg-paper font-sans font-bold text-ink shadow-card overflow-hidden transition-all duration-200 hover:-translate-y-1.5 hover:shadow-[0_14px_0_#0f3a5f] {{ $expired ? 'opacity-75 grayscale' : '' }}"
                     data-judul="{{ strtolower($quiz->judul) }}"
                     data-title="{{ strtolower($quiz->judul) }}"
-                    data-token="{{ strtolower($quiz->token ?? '') }}"
                     data-mapel="{{ strtolower($quiz->mapel->nama_mapel ?? '') }}"
                     data-jenjang="{{ strtolower($quiz->jenjang->nama_tipe ?? $quiz->jenjang->nama_jenjang ?? 'umum') }}"
                     data-tingkat="{{ strtolower($quiz->tingkatQuiz->nama_tingkat ?? '') }}"
@@ -369,7 +376,7 @@
                         <span class="pointer-events-none absolute inset-x-0 bottom-0 h-[72%] bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent"></span>
 
                         {{-- Overlay Rantai Expired Quiz --}}
-                        @if($expired && !$quiz->perluToken())
+                        @if($expired)
                             <div class="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40 backdrop-blur-[0.5px]">
                                 <img src="{{ asset('assets/widget/expiredQuiz.webp') }}"
                                      alt="Kuis Kedaluwarsa"
@@ -378,11 +385,12 @@
                         @endif
 
                         {{-- Badges on Cover --}}
-                        {{-- Top Left: Token Badge --}}
-                        @if($quiz->perluToken())
+                        {{-- Top Left: Mode Ujian / Token Badge --}}
+                        @if($isExamMode)
                             <div class="absolute top-3 left-3 z-10">
-                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black border-[2.5px] border-ink bg-purple-200 text-purple-950 shadow-[0_2.5px_0_#0f3a5f]">
-                                    🔒 Token
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black border-[2.5px] border-ink bg-purple-200 text-purple-950 shadow-[0_2.5px_0_#0f3a5f]">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    <span>Mode Ujian</span>
                                 </span>
                             </div>
                         @endif
@@ -458,14 +466,18 @@
                             @endif
 
                             {{-- Balon Dialog Pesan / Status Pengerjaan (Speech Bubble khas Dungeon) --}}
-                            <div class="relative mt-3.5 rounded-2xl border-[3px] border-ink {{ $sudahSelesaiDanDapatPoin ? 'bg-emerald-100 text-emerald-950' : ($expired ? 'bg-rose-100 text-rose-950' : 'bg-amber-100 text-amber-950') }} px-3.5 py-2.5 text-xs leading-snug" role="status">
-                                <span class="absolute -top-[9px] left-6 h-[14px] w-[14px] rotate-45 border-l-[3px] border-t-[3px] border-ink {{ $sudahSelesaiDanDapatPoin ? 'bg-emerald-100' : ($expired ? 'bg-rose-100' : 'bg-amber-100') }}"></span>
-                                @if($sudahSelesaiDanDapatPoin)
+                            <div class="relative mt-3.5 rounded-2xl border-[3px] border-ink {{ $sudahSelesaiDanDapatPoin ? 'bg-emerald-100 text-emerald-950' : ($expired ? 'bg-rose-100 text-rose-950' : ($notStarted ? 'bg-slate-100 text-slate-900' : 'bg-amber-100 text-amber-950')) }} px-3.5 py-2.5 text-xs leading-snug" role="status">
+                                <span class="absolute -top-[9px] left-6 h-[14px] w-[14px] rotate-45 border-l-[3px] border-t-[3px] border-ink {{ $sudahSelesaiDanDapatPoin ? 'bg-emerald-100' : ($expired ? 'bg-rose-100' : ($notStarted ? 'bg-slate-100' : 'bg-amber-100')) }}"></span>
+                                @if(!$canAttempt)
+                                    <b>Ujian Selesai!</b> Kamu telah mengumpulkan jawaban untuk ujian ini (maksimal 1x pengerjaan).
+                                @elseif($sudahSelesaiDanDapatPoin)
                                     <b>Selesai & Lulus!</b> Skor terbaikmu: <b>{{ $poinDidapatTertinggi }} poin</b>. Kerja bagus!
                                 @elseif($expired)
-                                    <b>Kuis kedaluwarsa.</b> Waktu pengerjaan kuis ini sudah berakhir.
-                                @elseif($quiz->perluToken())
-                                    <b>Kuis Terkunci Token.</b> Siapkan token dari gurumu sebelum mulai mengerjakan.
+                                    <b>Waktu berakhir.</b> Batas waktu pengerjaan kuis/ujian ini telah habis.
+                                @elseif($notStarted)
+                                    <b>Belum dibuka.</b> Jadwal mulai: <b>{{ $quiz->waktu_mulai?->translatedFormat('d M Y, H:i') }}</b>.
+                                @elseif($isExamMode)
+                                    <b>Mode Ujian (Butuh Token).</b> 1x kesempatan, soal diacak. Siapkan token dari guru!
                                 @else
                                     <b>Kuis Siap!</b> {{ Str::limit($quiz->deskripsi ?: 'Uji kemampuanmu dan raih skor terbaik sekarang!', 80) }}
                                 @endif
@@ -477,8 +489,18 @@
                             @if($expired)
                                 <button type="button" disabled
                                     class="w-full flex min-h-[50px] items-center justify-center rounded-2xl border-[3px] border-ink bg-slate-200 text-slate-500 font-display text-sm font-semibold cursor-not-allowed shadow-[0_3px_0_#0f3a5f]">
-                                    🔒 Waktu Berakhir
+                                    Waktu Berakhir
                                 </button>
+                            @elseif($notStarted)
+                                <button type="button" disabled
+                                    class="w-full flex min-h-[50px] items-center justify-center rounded-2xl border-[3px] border-ink bg-slate-200 text-slate-600 font-display text-sm font-semibold cursor-not-allowed shadow-[0_3px_0_#0f3a5f]">
+                                    Belum Dibuka
+                                </button>
+                            @elseif(!$canAttempt)
+                                <a href="{{ route('siswa.quiz.detail', $quiz->id_quiz) }}"
+                                    class="w-full flex min-h-[50px] items-center justify-center rounded-2xl border-[3px] border-ink bg-emerald-100 text-emerald-900 font-display text-sm font-bold shadow-[0_3px_0_#0f3a5f] hover:brightness-95 transition">
+                                    Ujian Sudah Dikerjakan
+                                </a>
                             @else
                                 <div class="grid grid-cols-3 gap-2.5">
                                     <a href="{{ route('siswa.quiz.detail', $quiz->id_quiz) }}"
@@ -793,16 +815,15 @@
 
                 return quizCards.filter(card => {
                     const judul = (card.getAttribute('data-judul') || card.getAttribute('data-title') || '').toLowerCase();
-                    const token = (card.getAttribute('data-token') || '').toLowerCase();
                     const mapel = (card.getAttribute('data-mapel') || '').toLowerCase();
                     const desc = (card.getAttribute('data-desc') || '').toLowerCase();
                     const jenjang = (card.getAttribute('data-jenjang') || '').toLowerCase();
                     const tingkat = (card.getAttribute('data-tingkat') || '').toLowerCase();
                     const mode = (card.getAttribute('data-mode') || '').toLowerCase();
 
-                    // Match Search Query
+                    // Match Search Query (token sengaja tidak ikut dicari demi keamanan ujian)
                     if (query) {
-                        if (!judul.includes(query) && !token.includes(query) && !mapel.includes(query) && !desc.includes(query) && !jenjang.includes(query)) {
+                        if (!judul.includes(query) && !mapel.includes(query) && !desc.includes(query) && !jenjang.includes(query)) {
                             return false;
                         }
                     }
@@ -1198,23 +1219,36 @@
                     }
                 }
 
-                if (data.perlu_token) {
+                const modalSubmitBtn = modalForm?.querySelector('button[type="submit"]');
+                const isBlocked = data.is_expired || data.not_started || data.can_attempt === false;
+
+                if (data.perlu_token && !isBlocked) {
                     modalTokenBadge.classList.remove('hidden');
                     modalTokenWrapper.classList.remove('hidden');
                     modalInputToken.required = true;
                     modalInputToken.value = '';
                     setTimeout(() => modalInputToken.focus(), 150);
                 } else {
-                    modalTokenBadge.classList.add('hidden');
+                    if (data.perlu_token) {
+                        modalTokenBadge.classList.remove('hidden');
+                    } else {
+                        modalTokenBadge.classList.add('hidden');
+                    }
                     modalTokenWrapper.classList.add('hidden');
                     modalInputToken.required = false;
                     modalInputToken.value = '';
                 }
 
-                // Tampilkan overlay rantai expired jika kuis kadaluarsa dan bukan bertoken
+                if (modalSubmitBtn) {
+                    modalSubmitBtn.disabled = isBlocked;
+                    modalSubmitBtn.classList.toggle('opacity-50', isBlocked);
+                    modalSubmitBtn.classList.toggle('cursor-not-allowed', isBlocked);
+                }
+
+                // Tampilkan overlay rantai expired jika kuis/ujian kedaluwarsa
                 const modalExpiredChains = document.getElementById('modal-expired-chains');
                 if (modalExpiredChains) {
-                    if (data.is_expired && !data.perlu_token) {
+                    if (data.is_expired) {
                         modalExpiredChains.classList.remove('hidden');
                     } else {
                         modalExpiredChains.classList.add('hidden');

@@ -520,8 +520,14 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru']
     Route::get('/soal/create', [SoalController::class, 'create'])->name('soal.create');
     Route::post('/soal/store', [SoalController::class, 'store'])->name('soal.store');
     Route::get('/soal/bank-data', [SoalController::class, 'apiBankSoal'])->name('soal.bank.data');
+    Route::get('/soal/export-csv', [SoalController::class, 'exportCsv'])->name('soal.export.csv');
+    Route::get('/soal/template-csv', [SoalController::class, 'templateCsv'])->name('soal.template.csv');
+    Route::post('/soal/import-csv', [SoalController::class, 'importCsv'])->name('soal.import.csv');
     Route::post('/soal/assign-to-quiz', [SoalController::class, 'assignToQuiz'])->name('soal.assign');
     Route::post('/soal/copy-to-bank', [SoalController::class, 'copyToBank'])->name('soal.copy.to.bank');
+    Route::post('/soal/batch-delete', [SoalController::class, 'batchDelete'])->name('soal.batch.delete');
+    Route::post('/soal/batch-update', [SoalController::class, 'batchUpdate'])->name('soal.batch.update');
+    Route::post('/soal/{id}/duplicate', [SoalController::class, 'duplicate'])->name('soal.duplicate');
     Route::get('/soal/{id}/edit', [SoalController::class, 'edit'])->name('soal.edit');
     Route::put('/soal/{id}', [SoalController::class, 'update'])->name('soal.update');
     Route::delete('/soal/{id}', [SoalController::class, 'destroy'])->name('soal.destroy');
@@ -634,4 +640,4 @@ Route::get('/storage/{path}', function (string $path) {
     ]);
 })->where('path', '.*');
 
-require __DIR__.'/attendance.php';
+require __DIR__ . '/attendance.php';

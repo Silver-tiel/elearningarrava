@@ -615,22 +615,36 @@ Tingkat Quiz
                             </div>
                         </div>
 
-                        {{-- 2. WAKTU KADALUARSA (BISA TIDAK PERNAH) --}}
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                             Batas Waktu Pengerjaan Kuis
+                        {{-- 2. JADWAL MULAI & BATAS WAKTU KADALUARSA --}}
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
+                            <label class="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                Jadwal &amp; Batas Waktu Kuis / Ujian
                             </label>
-                            
-                            <div class="flex items-center gap-2 mb-2">
-                                <input type="checkbox" id="check-no-expiry" @checked(!isset($quiz) || !$quiz->waktu_kadaluarsa) class="w-4 h-4 text-blue-600 rounded">
-                                <label for="check-no-expiry" class="text-xs font-semibold text-slate-700 cursor-pointer">
-                                    Tidak Pernah Kedaluwarsa
+
+                            <div>
+                                <label for="input-waktu-mulai" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                    Jadwal Mulai (Opsional)
                                 </label>
+                                <input type="datetime-local" id="input-waktu-mulai" name="waktu_mulai"
+                                    value="{{ old('waktu_mulai', isset($quiz) && $quiz->waktu_mulai ? $quiz->waktu_mulai->format('Y-m-d\\TH:i') : '') }}"
+                                    class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800">
                             </div>
 
-                            <div id="expiry-input-wrapper" class="{{ isset($quiz) && $quiz->waktu_kadaluarsa ? '' : 'hidden' }}">
-                                <input type="datetime-local" id="input-expiry" name="waktu_kadaluarsa" value="{{ old('waktu_kadaluarsa', isset($quiz) && $quiz->waktu_kadaluarsa ? $quiz->waktu_kadaluarsa->format('Y-m-d\\TH:i') : '') }}"
-                                    class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800">
+                            <div class="pt-1 border-t border-slate-200/80">
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <input type="checkbox" id="check-no-expiry" @checked(!isset($quiz) || !$quiz->waktu_kadaluarsa) class="w-4 h-4 text-blue-600 rounded">
+                                    <label for="check-no-expiry" class="text-xs font-semibold text-slate-700 cursor-pointer">
+                                        Tidak Pernah Kedaluwarsa
+                                    </label>
+                                </div>
+
+                                <div id="expiry-input-wrapper" class="{{ isset($quiz) && $quiz->waktu_kadaluarsa ? '' : 'hidden' }}">
+                                    <label for="input-expiry" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                                        Batas Akhir Pengerjaan
+                                    </label>
+                                    <input type="datetime-local" id="input-expiry" name="waktu_kadaluarsa" value="{{ old('waktu_kadaluarsa', isset($quiz) && $quiz->waktu_kadaluarsa ? $quiz->waktu_kadaluarsa->format('Y-m-d\\TH:i') : '') }}"
+                                        class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800">
+                                </div>
                             </div>
                         </div>
 
@@ -684,38 +698,67 @@ Tingkat Quiz
                             </label>
                         </div>
 
-                        {{-- OPSI TOKEN MASUK --}}
-                        <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100">
-                            <label class="block text-xs font-bold text-blue-950 mb-1.5 flex items-center justify-between">
+                        {{-- MODE UJIAN (TOKEN & PENGAMANAN UJIAN) --}}
+                        @php
+                            $examChecked = old('use_token', isset($quiz) && ($quiz->token || $quiz->isModeUjian()));
+                        @endphp
+                        <div class="bg-purple-50/70 p-3 rounded-xl border border-purple-200">
+                            <label class="block text-xs font-bold text-purple-950 mb-1.5 flex items-center justify-between">
                                 <span class="flex items-center gap-1.5">
-                                Token Masuk Quiz
+                                    Mode Ujian (Token)
                                 </span>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800">Ketat</span>
                             </label>
                             
                             <div class="flex items-center gap-2 mb-2">
-                                <input type="checkbox" name="use_token" value="1" id="check-use-token" @checked(old('use_token', isset($quiz) && $quiz->token))
-                                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
-                                <label for="check-use-token" class="text-xs font-semibold text-blue-900 cursor-pointer select-none">
-                                    Pakaikan Token Kuis
+                                <input type="checkbox" name="use_token" value="1" id="check-use-token" @checked($examChecked)
+                                    class="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 cursor-pointer">
+                                <label for="check-use-token" class="text-xs font-semibold text-purple-900 cursor-pointer select-none">
+                                    Aktifkan Mode Ujian (Wajib Token)
                                 </label>
                             </div>
 
-                            <div id="token-input-wrapper" class="{{ (old('use_token') || (isset($quiz) && $quiz->token)) ? '' : 'hidden' }} space-y-2 pt-2 border-t border-blue-100">
+                            <div id="token-input-wrapper" class="{{ $examChecked ? '' : 'hidden' }} space-y-2.5 pt-2 border-t border-purple-200/80">
                                 <div class="flex items-center gap-2">
                                     <div class="relative flex-1">
                                         <input type="text" name="token" id="input-token"
                                             value="{{ old('token', $quiz->token ?? '') }}"
-                                            placeholder="Contoh: KUIS123"
+                                            placeholder="Contoh: UJIAN26"
                                             maxlength="50"
-                                            class="w-full uppercase font-mono tracking-wider bg-white border border-blue-300 rounded-lg px-3 py-1.5 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500">
+                                            class="w-full uppercase font-mono tracking-wider bg-white border border-purple-300 rounded-lg px-3 py-1.5 text-xs font-bold text-purple-950 focus:ring-2 focus:ring-purple-500">
                                     </div>
                                     <button type="button" id="btn-generate-token"
-                                        class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 shadow-sm"
+                                        class="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 shrink-0 shadow-sm cursor-pointer"
                                         title="Buat token acak otomatis">
                                         Acak
                                     </button>
                                 </div>
-                                <p class="text-[10px] text-blue-700 leading-tight">Siswa wajib mengisi token ini saat preview sebelum tombol mulai mengerjakan kuis dapat ditekan.</p>
+
+                                <div class="p-2 rounded-lg bg-white/80 border border-purple-100 text-[10px] text-purple-900 space-y-1">
+                                    <p class="font-bold">Aturan otomatis Mode Ujian:</p>
+                                    <ul class="list-disc list-inside space-y-0.5 text-purple-800">
+                                        <li>Preview soal dirahasiakan sebelum mulai</li>
+                                        <li>Dibatasi maksimal 1x pengerjaan per siswa</li>
+                                        <li>Soal terlindungi dari kebocoran ke Dungeon</li>
+                                    </ul>
+                                </div>
+
+                                <div class="space-y-1.5 pt-1">
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-purple-900 cursor-pointer select-none">
+                                        <input type="hidden" name="acak_soal" value="0">
+                                        <input type="checkbox" name="acak_soal" value="1"
+                                            @checked(old('acak_soal', isset($quiz) ? ($quiz->acak_soal ?? $quiz->isModeUjian()) : true))
+                                            class="w-3.5 h-3.5 text-purple-600 rounded">
+                                        <span>Acak urutan soal per siswa</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 text-xs font-semibold text-purple-900 cursor-pointer select-none">
+                                        <input type="hidden" name="tampilkan_hasil_ujian" value="0">
+                                        <input type="checkbox" name="tampilkan_hasil_ujian" value="1"
+                                            @checked(old('tampilkan_hasil_ujian', isset($quiz) ? ($quiz->tampilkan_hasil_ujian ?? true) : true))
+                                            class="w-3.5 h-3.5 text-purple-600 rounded">
+                                        <span>Tampilkan evaluasi jawaban setelah selesai</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -803,14 +846,28 @@ Tingkat Quiz
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-2.5 pt-1 border-t border-slate-200/60">
-                    <div class="flex items-center gap-1.5">
-                        <span class="text-[11px] font-black uppercase tracking-wider text-slate-500">Sumber:</span>
-                        <select id="bankModalSumber"
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] font-black uppercase tracking-wider text-slate-500">Sumber:</span>
+                            <select id="bankModalSumber"
+                                class="px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-[#007FBE] cursor-pointer">
+                                <option value="bank">Bank Soal Saja</option>
+                                <option value="all">Semua Soal (Bank &amp; Kuis)</option>
+                                <option value="quiz">Kuis Lain Saja</option>
+                            </select>
+                        </div>
+
+                        <select id="bankModalKategori"
                             class="px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-700 focus:outline-none focus:border-[#007FBE] cursor-pointer">
-                            <option value="bank">📚 Bank Soal Saja</option>
-                            <option value="all">🌐 Semua Soal (Bank & Kuis)</option>
-                            <option value="quiz">🎯 Kuis Lain Saja</option>
+                            <option value="all">Semua Peruntukan</option>
+                            <option value="umum">Bank Umum / Latihan</option>
+                            <option value="ujian">Khusus Ujian (Rahasia)</option>
                         </select>
+
+                        <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-slate-200 bg-white text-[11px] font-bold text-slate-700 cursor-pointer select-none">
+                            <input type="checkbox" id="bankModalUnusedOnly" class="rounded text-[#007FBE] focus:ring-0 w-3.5 h-3.5">
+                            <span>Belum Pernah Dipakai</span>
+                        </label>
                     </div>
 
                     <div class="flex items-center gap-1.5">
@@ -1065,16 +1122,22 @@ Tingkat Quiz
         }
 
         if (checkUseToken) {
-            checkUseToken.addEventListener('change', () => {
+            const previewTipeSajaRadio = document.querySelector('input[name="opsi_preview"][value="tipe_saja"]');
+            const syncExamPreviewState = () => {
                 if (checkUseToken.checked) {
                     tokenInputWrapper.classList.remove('hidden');
                     if (inputToken && !inputToken.value.trim()) {
                         generateRandomToken();
                     }
+                    if (previewTipeSajaRadio) {
+                        previewTipeSajaRadio.checked = true;
+                    }
                 } else {
                     tokenInputWrapper.classList.add('hidden');
                 }
-            });
+            };
+            checkUseToken.addEventListener('change', syncExamPreviewState);
+            syncExamPreviewState();
         }
 
         if (btnGenerateToken) {
@@ -1624,8 +1687,14 @@ Tingkat Quiz
             `;
 
             const bankModalSumber = document.getElementById('bankModalSumber');
+            const bankModalKategori = document.getElementById('bankModalKategori');
+            const bankModalUnusedOnly = document.getElementById('bankModalUnusedOnly');
+            const isCurrentDungeon = {{ (isset($quiz) && $quiz->isDungeon()) ? 'true' : 'false' }};
             const params = new URLSearchParams();
             if (bankModalSumber && bankModalSumber.value) params.append('sumber', bankModalSumber.value);
+            if (bankModalKategori && bankModalKategori.value && bankModalKategori.value !== 'all') params.append('kategori_bank', bankModalKategori.value);
+            if (bankModalUnusedOnly && bankModalUnusedOnly.checked) params.append('unused_only', '1');
+            if (isCurrentDungeon) params.append('for_dungeon', '1');
             if (bankModalMapel.value) params.append('mapel_id', bankModalMapel.value);
             if (bankModalJenjang.value) params.append('jenjang_id', bankModalJenjang.value);
             if (activeBankTingkat) params.append('tingkat_soal', activeBankTingkat);
@@ -1770,7 +1839,11 @@ Tingkat Quiz
             });
         }
         const bankModalSumber = document.getElementById('bankModalSumber');
+        const bankModalKategori = document.getElementById('bankModalKategori');
+        const bankModalUnusedOnly = document.getElementById('bankModalUnusedOnly');
         if (bankModalSumber) bankModalSumber.addEventListener('change', fetchBankSoal);
+        if (bankModalKategori) bankModalKategori.addEventListener('change', fetchBankSoal);
+        if (bankModalUnusedOnly) bankModalUnusedOnly.addEventListener('change', fetchBankSoal);
         if (bankModalMapel) bankModalMapel.addEventListener('change', fetchBankSoal);
         if (bankModalJenjang) bankModalJenjang.addEventListener('change', fetchBankSoal);
 

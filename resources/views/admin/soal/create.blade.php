@@ -104,7 +104,7 @@
                 <div class="hidden sm:flex items-center gap-2">
                     <span class="text-sm font-extrabold text-slate-800">Buat Soal Mandiri</span>
                     <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-[#007FBE] border border-[#B2E7FC]">
-                        📚 Siap Digunakan ke Kuis/Dungeon
+                        Siap Digunakan ke Kuis &amp; Ujian
                     </span>
                 </div>
             </div>
@@ -112,15 +112,18 @@
             {{-- Kanan: Aksi Simpan & Keluar --}}
             <div class="flex items-center gap-2">
                 <a href="{{ route('admin.soal') }}"
-                    class="px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
-                    ← Keluar ke Bank Soal
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-bold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span>Keluar ke Bank Soal</span>
                 </a>
                 <button type="submit" id="btn-submit-form"
                     class="px-5 py-2 text-sm font-bold text-white bg-[#007FBE] hover:bg-[#00689E] rounded-lg shadow-md transition flex items-center gap-2 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>💾 Simpan ke Bank Soal</span>
+                    <span>Simpan ke Bank Soal</span>
                 </button>
             </div>
         </header>
@@ -385,7 +388,10 @@
                     <div class="bg-blue-50/70 p-3.5 rounded-xl border border-blue-200 shadow-xs space-y-3">
                         <div class="flex items-center justify-between pb-1.5 border-b border-blue-200/60">
                             <span class="text-xs font-black text-blue-950 flex items-center gap-1.5">
-                                <span>📚</span> Kategori Bank Soal
+                                <svg class="w-4 h-4 text-blue-700 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                                <span>Kategori Bank Soal</span>
                             </span>
                         </div>
 
@@ -418,6 +424,18 @@
                                         {{ $jenjang->nama_tipe ?? $jenjang->nama_jenjang }}
                                     </option>
                                 @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Peruntukan Bank Soal --}}
+                        <div>
+                            <label for="select-kategori-bank" class="block text-xs font-bold text-blue-950 mb-1.5">
+                                Peruntukan Bank Soal
+                            </label>
+                            <select id="select-kategori-bank" name="kategori_bank"
+                                class="w-full bg-white border border-blue-300 rounded-lg px-3 py-2 text-xs font-bold text-blue-950 focus:ring-2 focus:ring-blue-500 transition">
+                                <option value="umum" @selected(old('kategori_bank', 'umum') === 'umum')>Umum / Latihan &amp; Dungeon</option>
+                                <option value="ujian" @selected(old('kategori_bank') === 'ujian')>Khusus Ujian (Terpisah dari Dungeon)</option>
                             </select>
                         </div>
                     </div>

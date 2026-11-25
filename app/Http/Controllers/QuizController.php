@@ -45,6 +45,60 @@ class QuizController extends Controller
         return (int) $user->id_user;
     }
 
+    // Mengubah pengaturan Mode Ujian (token) secara konsisten di web & API.
+    private function resolveExamModePayload(Request $request, ?Quiz $existingQuiz = null, bool $isDungeon = false): array
+    {
+        if ($isDungeon) {
+            return [
+                'token' => null,
+                'id_tipequiz' => $request->input('id_tipequiz', $existingQuiz?->id_tipequiz ?? 3),
+                'opsi_preview' => 'tipe_saja',
+                'acak_soal' => false,
+                'batas_percobaan' => null,
+                'tampilkan_hasil_ujian' => true,
+            ];
+        }
+
+        $isExamMode = $request->boolean('use_token') || $request->input('quiz_mode_type') === 'ujian';
+
+        $tipeUjianId = null;
+        if ($isExamMode && Schema::hasTable('tipequiz')) {
+            $tipeUjianId = DB::table('tipequiz')
+                ->whereIn(DB::raw("LOWER(COALESCE(nama_tipe, ''))"), ['ujian', 'ulangan', 'evaluasi'])
+                ->orderByRaw("CASE LOWER(COALESCE(nama_tipe, '')) WHEN 'ujian' THEN 0 WHEN 'ulangan' THEN 1 ELSE 2 END")
+                ->value('id_tipequiz');
+        }
+
+        $token = null;
+        if ($isExamMode) {
+            $rawToken = trim((string) $request->input('token', ''));
+            $token = $rawToken !== '' ? $rawToken : ($existingQuiz?->token ?: strtoupper(Str::random(6)));
+        }
+
+        $tipeDefault = $request->input('id_tipequiz') ?: ($existingQuiz?->id_tipequiz ?? 1);
+        if (!$isExamMode && Schema::hasTable('tipequiz') && $existingQuiz && $existingQuiz->isModeUjian()) {
+            $harianId = DB::table('tipequiz')->whereRaw("LOWER(COALESCE(nama_tipe, '')) = 'harian'")->value('id_tipequiz');
+            if ($harianId) {
+                $tipeDefault = $harianId;
+            }
+        }
+
+        return [
+            'token' => $token,
+            'id_tipequiz' => $isExamMode && $tipeUjianId ? (int) $tipeUjianId : (int) $tipeDefault,
+            'opsi_preview' => $isExamMode ? 'tipe_saja' : $request->input('opsi_preview', $existingQuiz?->opsi_preview ?? 'lengkap'),
+            'acak_soal' => $isExamMode
+                ? ($request->has('acak_soal') ? $request->boolean('acak_soal') : true)
+                : $request->boolean('acak_soal', $existingQuiz?->acak_soal ?? false),
+            'batas_percobaan' => $isExamMode
+                ? ($request->filled('batas_percobaan') ? (int) $request->input('batas_percobaan') : 1)
+                : ($request->filled('batas_percobaan') ? (int) $request->input('batas_percobaan') : null),
+            'tampilkan_hasil_ujian' => $isExamMode
+                ? ($request->has('tampilkan_hasil_ujian') ? $request->boolean('tampilkan_hasil_ujian') : true)
+                : true,
+        ];
+    }
+
     // Menampilkan daftar kuis untuk halaman admin atau guru.
     public function index(Request $request)
     {
@@ -52,7 +106,7 @@ class QuizController extends Controller
             'jenjang' => ['nullable', 'string', 'max:32'],
             'tingkat' => ['nullable', 'integer', 'exists:tingkatquiz,id_tingkatquiz'],
             'status' => ['nullable', 'in:all,published,draft,kadaluarsa'],
-            'mode' => ['nullable', 'in:all,wayground,biasa,klasik'],
+            'mode' => ['nullable', 'in:all,wayground,biasa,klasik,ujian'],
             'sort' => ['nullable', 'in:terbaru,terlama'],
         ]);
 
@@ -104,6 +158,8 @@ class QuizController extends Controller
                 });
             } elseif (in_array($mode, ['biasa', 'klasik'], true)) {
                 $query->where('mode_pengerjaan', 'biasa');
+            } elseif ($mode === 'ujian') {
+                $query->whereNotNull('token')->where('token', '!=', '');
             }
         }
 
@@ -117,10 +173,7 @@ class QuizController extends Controller
                 });
             } elseif ($filters['status'] === 'kadaluarsa') {
                 $query->whereNotNull('waktu_kadaluarsa')
-                    ->where('waktu_kadaluarsa', '<=', now())
-                    ->where(function ($sub) {
-                        $sub->whereNull('token')->orWhere('token', '');
-                    });
+                    ->where('waktu_kadaluarsa', '<=', now());
             }
         }
 
@@ -446,10 +499,15 @@ class QuizController extends Controller
                 'id_tipequiz' => 'nullable|integer',
                 'id_tingkatquiz' => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date'],
+                'waktu_mulai' => ['nullable', 'date'],
                 'mode_pengerjaan' => 'nullable|in:wayground,biasa',
                 'durasi_total_menit' => 'nullable|integer|min:1|max:360',
                 'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
                 'use_token' => 'nullable|boolean',
+                'quiz_mode_type' => 'nullable|in:harian,ujian',
+                'acak_soal' => 'nullable|boolean',
+                'batas_percobaan' => 'nullable|integer|min:0|max:99',
+                'tampilkan_hasil_ujian' => 'nullable|boolean',
                 'token' => 'nullable|string|max:50',
                 'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'soal' => 'nullable|array',
@@ -480,10 +538,15 @@ class QuizController extends Controller
                 'id_tipequiz' => 'nullable|integer',
                 'id_tingkatquiz' => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date', 'after_or_equal:now'],
+                'waktu_mulai' => ['nullable', 'date'],
                 'mode_pengerjaan' => 'required|in:wayground,biasa',
                 'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
                 'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
                 'use_token' => 'nullable|boolean',
+                'quiz_mode_type' => 'nullable|in:harian,ujian',
+                'acak_soal' => 'nullable|boolean',
+                'batas_percobaan' => 'nullable|integer|min:0|max:99',
+                'tampilkan_hasil_ujian' => 'nullable|boolean',
                 'token' => 'nullable|required_if:use_token,1|string|max:50',
                 'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'soal' => $isDungeon ? 'nullable|array' : 'required|array|min:1',
@@ -533,31 +596,41 @@ class QuizController extends Controller
             }
         }
 
-        $token = $request->boolean('use_token')
-            ? ($request->filled('token') ? trim($request->input('token')) : strtoupper(Str::random(6)))
-            : null;
+        $examPayload = $this->resolveExamModePayload($request, null, $isDungeon);
 
         $fotoQuizPath = null;
         if ($request->hasFile('foto_quiz') && $request->file('foto_quiz')->isValid()) {
             $fotoQuizPath = $request->file('foto_quiz')->store('quiz/cover', 'public');
         }
 
-        DB::transaction(function () use ($request, $questions, $token, $fotoQuizPath, $isDraft) {
+        DB::transaction(function () use ($request, $questions, $examPayload, $fotoQuizPath, $isDraft) {
             // 1. Simpan quiz
             $quizData = [
                 'judul' => $request->judul,
                 'deskripsi' => $request->deskripsi ?: null,
                 'id_jenjang' => $request->id_jenjang,
-                'id_tipequiz' => $request->id_tipequiz ?? 1,
+                'id_tipequiz' => $examPayload['id_tipequiz'],
                 'id_tingkatquiz' => $request->id_tingkatquiz ?? 1,
                 'waktu_kadaluarsa' => $request->waktu_kadaluarsa ?: null,
                 'mode_pengerjaan' => $request->mode_pengerjaan ?: 'wayground',
                 'durasi_total_menit' => $request->mode_pengerjaan === 'biasa' ? $request->durasi_total_menit : null,
-                'opsi_preview' => $request->input('opsi_preview', 'lengkap'),
-                'token' => $token,
+                'opsi_preview' => $examPayload['opsi_preview'],
+                'token' => $examPayload['token'],
                 'foto_quiz' => $fotoQuizPath,
                 'proggressQuiz' => $isDraft ? 'Draft' : 'Tersedia',
             ];
+            if (Schema::hasColumn('quiz', 'waktu_mulai')) {
+                $quizData['waktu_mulai'] = $request->waktu_mulai ?: null;
+            }
+            if (Schema::hasColumn('quiz', 'acak_soal')) {
+                $quizData['acak_soal'] = $examPayload['acak_soal'];
+            }
+            if (Schema::hasColumn('quiz', 'batas_percobaan')) {
+                $quizData['batas_percobaan'] = $examPayload['batas_percobaan'];
+            }
+            if (Schema::hasColumn('quiz', 'tampilkan_hasil_ujian')) {
+                $quizData['tampilkan_hasil_ujian'] = $examPayload['tampilkan_hasil_ujian'];
+            }
             if (Schema::hasColumn('quiz', 'id_mapel')) {
                 $quizData['id_mapel'] = $request->id_mapel ?: null;
             }
@@ -654,10 +727,15 @@ class QuizController extends Controller
                 'id_tipequiz' => 'nullable|integer',
                 'id_tingkatquiz' => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date'],
+                'waktu_mulai' => ['nullable', 'date'],
                 'mode_pengerjaan' => 'nullable|in:wayground,biasa',
                 'durasi_total_menit' => 'nullable|integer|min:1|max:360',
                 'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
                 'use_token' => 'nullable|boolean',
+                'quiz_mode_type' => 'nullable|in:harian,ujian',
+                'acak_soal' => 'nullable|boolean',
+                'batas_percobaan' => 'nullable|integer|min:0|max:99',
+                'tampilkan_hasil_ujian' => 'nullable|boolean',
                 'token' => 'nullable|string|max:50',
                 'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'hapus_foto_quiz' => 'nullable|boolean',
@@ -689,10 +767,15 @@ class QuizController extends Controller
                 'id_tipequiz' => 'nullable|integer',
                 'id_tingkatquiz' => 'nullable|integer',
                 'waktu_kadaluarsa' => ['nullable', 'date'],
+                'waktu_mulai' => ['nullable', 'date'],
                 'mode_pengerjaan' => 'required|in:wayground,biasa',
                 'durasi_total_menit' => 'nullable|required_if:mode_pengerjaan,biasa|integer|min:1|max:360',
                 'opsi_preview' => 'nullable|in:lengkap,tipe_saja',
                 'use_token' => 'nullable|boolean',
+                'quiz_mode_type' => 'nullable|in:harian,ujian',
+                'acak_soal' => 'nullable|boolean',
+                'batas_percobaan' => 'nullable|integer|min:0|max:99',
+                'tampilkan_hasil_ujian' => 'nullable|boolean',
                 'token' => 'nullable|required_if:use_token,1|string|max:50',
                 'foto_quiz' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
                 'hapus_foto_quiz' => 'nullable|boolean',
@@ -764,9 +847,7 @@ class QuizController extends Controller
             throw ValidationException::withMessages($fotoErrors);
         }
 
-        $token = $request->boolean('use_token')
-            ? ($request->filled('token') ? trim($request->input('token')) : ($quiz->token ?: strtoupper(Str::random(6))))
-            : null;
+        $examPayload = $this->resolveExamModePayload($request, $quiz, $quiz->isDungeon());
 
         $fotoQuizPath = $quiz->foto_quiz;
         if ($request->boolean('hapus_foto_quiz')) {
@@ -783,21 +864,33 @@ class QuizController extends Controller
             $fotoQuizPath = $request->file('foto_quiz')->store('quiz/cover', 'public');
         }
 
-        DB::transaction(function () use ($quiz, $validated, $questions, $request, $token, $fotoQuizPath, $isDraft) {
+        DB::transaction(function () use ($quiz, $validated, $questions, $request, $examPayload, $fotoQuizPath, $isDraft) {
             $updateData = [
                 'judul' => $validated['judul'],
                 'deskripsi' => $request->deskripsi ?: null,
                 'id_jenjang' => $validated['id_jenjang'],
-                'id_tipequiz' => $validated['id_tipequiz'] ?? $quiz->id_tipequiz,
+                'id_tipequiz' => $examPayload['id_tipequiz'],
                 'id_tingkatquiz' => $validated['id_tingkatquiz'] ?? $quiz->id_tingkatquiz,
                 'waktu_kadaluarsa' => $validated['waktu_kadaluarsa'] ?? null,
                 'mode_pengerjaan' => $validated['mode_pengerjaan'] ?? $quiz->mode_pengerjaan,
                 'durasi_total_menit' => ($validated['mode_pengerjaan'] ?? $quiz->mode_pengerjaan) === 'biasa' ? ($validated['durasi_total_menit'] ?? $quiz->durasi_total_menit) : null,
-                'opsi_preview' => $validated['opsi_preview'] ?? 'lengkap',
-                'token' => $token,
+                'opsi_preview' => $examPayload['opsi_preview'],
+                'token' => $examPayload['token'],
                 'foto_quiz' => $fotoQuizPath,
                 'proggressQuiz' => $isDraft ? 'Draft' : 'Tersedia',
             ];
+            if (Schema::hasColumn('quiz', 'waktu_mulai')) {
+                $updateData['waktu_mulai'] = $request->waktu_mulai ?: null;
+            }
+            if (Schema::hasColumn('quiz', 'acak_soal')) {
+                $updateData['acak_soal'] = $examPayload['acak_soal'];
+            }
+            if (Schema::hasColumn('quiz', 'batas_percobaan')) {
+                $updateData['batas_percobaan'] = $examPayload['batas_percobaan'];
+            }
+            if (Schema::hasColumn('quiz', 'tampilkan_hasil_ujian')) {
+                $updateData['tampilkan_hasil_ujian'] = $examPayload['tampilkan_hasil_ujian'];
+            }
             if (Schema::hasColumn('quiz', 'id_mapel')) {
                 $updateData['id_mapel'] = $request->id_mapel ?: null;
             }
@@ -1386,9 +1479,7 @@ class QuizController extends Controller
             !empty($validated['id_mapel']) ? (int) $validated['id_mapel'] : null
         );
 
-        $token = $request->boolean('use_token')
-            ? ($request->filled('token') ? trim($request->input('token')) : strtoupper(Str::random(6)))
-            : null;
+        $examPayload = $this->resolveExamModePayload($request, null, false);
 
         $fotoQuizPath = null;
         if ($request->hasFile('foto_quiz') && $request->file('foto_quiz')->isValid()) {
@@ -1402,21 +1493,33 @@ class QuizController extends Controller
             }
         }
 
-        $quiz = DB::transaction(function () use ($request, $validated, $token, $fotoQuizPath, $isDraft) {
+        $quiz = DB::transaction(function () use ($request, $validated, $examPayload, $fotoQuizPath, $isDraft) {
             $quizData = [
                 'judul' => $validated['judul'],
                 'deskripsi' => $validated['deskripsi'] ?? null,
                 'id_jenjang' => $validated['id_jenjang'],
-                'id_tipequiz' => $validated['id_tipequiz'] ?? 1,
+                'id_tipequiz' => $examPayload['id_tipequiz'],
                 'id_tingkatquiz' => $validated['id_tingkatquiz'] ?? 1,
                 'waktu_kadaluarsa' => $validated['waktu_kadaluarsa'] ?? null,
                 'mode_pengerjaan' => $validated['mode_pengerjaan'] ?? 'wayground',
                 'durasi_total_menit' => ($validated['mode_pengerjaan'] ?? 'wayground') === 'biasa' ? ($validated['durasi_total_menit'] ?? 30) : null,
-                'opsi_preview' => $validated['opsi_preview'] ?? 'lengkap',
-                'token' => $token,
+                'opsi_preview' => $examPayload['opsi_preview'],
+                'token' => $examPayload['token'],
                 'foto_quiz' => $fotoQuizPath,
                 'proggressQuiz' => $isDraft ? 'Draft' : 'Tersedia',
             ];
+            if (Schema::hasColumn('quiz', 'waktu_mulai')) {
+                $quizData['waktu_mulai'] = $request->waktu_mulai ?: null;
+            }
+            if (Schema::hasColumn('quiz', 'acak_soal')) {
+                $quizData['acak_soal'] = $examPayload['acak_soal'];
+            }
+            if (Schema::hasColumn('quiz', 'batas_percobaan')) {
+                $quizData['batas_percobaan'] = $examPayload['batas_percobaan'];
+            }
+            if (Schema::hasColumn('quiz', 'tampilkan_hasil_ujian')) {
+                $quizData['tampilkan_hasil_ujian'] = $examPayload['tampilkan_hasil_ujian'];
+            }
             if (Schema::hasColumn('quiz', 'id_mapel')) {
                 $quizData['id_mapel'] = $validated['id_mapel'] ?? null;
             }
@@ -1620,10 +1723,23 @@ class QuizController extends Controller
             if ($request->has('action_type')) {
                 $updateData['proggressQuiz'] = $isDraft ? 'Draft' : 'Tersedia';
             }
-            if ($request->has('use_token')) {
-                $updateData['token'] = $request->boolean('use_token')
-                    ? ($request->filled('token') ? trim($request->input('token')) : strtoupper(Str::random(6)))
-                    : null;
+            if ($request->has('use_token') || $request->has('quiz_mode_type')) {
+                $examPayload = $this->resolveExamModePayload($request, $quiz, $quiz->isDungeon());
+                $updateData['token'] = $examPayload['token'];
+                $updateData['id_tipequiz'] = $examPayload['id_tipequiz'];
+                $updateData['opsi_preview'] = $examPayload['opsi_preview'];
+                if (Schema::hasColumn('quiz', 'acak_soal')) {
+                    $updateData['acak_soal'] = $examPayload['acak_soal'];
+                }
+                if (Schema::hasColumn('quiz', 'batas_percobaan')) {
+                    $updateData['batas_percobaan'] = $examPayload['batas_percobaan'];
+                }
+                if (Schema::hasColumn('quiz', 'tampilkan_hasil_ujian')) {
+                    $updateData['tampilkan_hasil_ujian'] = $examPayload['tampilkan_hasil_ujian'];
+                }
+            }
+            if ($request->has('waktu_mulai') && Schema::hasColumn('quiz', 'waktu_mulai')) {
+                $updateData['waktu_mulai'] = $request->waktu_mulai ?: null;
             }
 
             // Cover handling
@@ -1842,6 +1958,31 @@ class QuizController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Quiz tidak ditemukan.'], 404);
         }
 
+        $user = $request->user();
+        if ($quiz->belumDimulai()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ujian ini belum dibuka. Jadwal mulai: ' . $quiz->waktu_mulai->translatedFormat('d M Y, H:i'),
+                'data' => ['valid' => false],
+            ], 422);
+        }
+
+        if ($quiz->sudahKadaluarsa()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Waktu ujian / kuis sudah berakhir.',
+                'data' => ['valid' => false],
+            ], 422);
+        }
+
+        if ($user && !$quiz->bolehDikerjakanLagiOleh($user)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Ujian ini hanya dapat dikerjakan 1 kali. Anda sudah menyelesaikan ujian ini.',
+                'data' => ['valid' => false],
+            ], 422);
+        }
+
         if (!$quiz->perluToken()) {
             return response()->json([
                 'status' => 'success',
@@ -1854,7 +1995,7 @@ class QuizController extends Controller
         if ($tokenInput === '' || strcasecmp($tokenInput, (string) $quiz->token) !== 0) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Token kuis salah. Silakan tanyakan token kepada guru Anda.',
+                'message' => 'Token ujian salah. Silakan tanyakan token kepada guru Anda.',
                 'data' => ['valid' => false],
             ], 422);
         }
@@ -1876,6 +2017,13 @@ class QuizController extends Controller
         $user = $request->user();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (!$quiz->bolehDikerjakanLagiOleh($user)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Batas percobaan untuk ujian ini telah tercapai (maksimal 1 kali).',
+            ], 422);
         }
 
         $jawabanSiswa = $request->input('jawaban', []);
@@ -1954,6 +2102,11 @@ class QuizController extends Controller
             User::whereKey($user->id_user)->increment('total_poin', $poinDiberikan);
         }
 
+        $showEval = $quiz->tampilkanEvaluasiUntuk($user) && ($quiz->opsi_preview === 'lengkap' || $quiz->isModeUjian());
+        if ($quiz->isModeUjian() && !$quiz->tampilkanEvaluasiUntuk($user)) {
+            $showEval = false;
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Hasil kuis berhasil disimpan.',
@@ -1969,7 +2122,7 @@ class QuizController extends Controller
                 'total_soal' => $quiz->soal->count(),
                 'is_lulus' => $isLulus,
                 'poin_diberikan' => $poinDiberikan,
-                'evaluasi' => $quiz->opsi_preview === 'lengkap' ? $detailEvaluasi : [],
+                'evaluasi' => $showEval ? $detailEvaluasi : [],
             ],
         ]);
     }
@@ -1981,6 +2134,7 @@ class QuizController extends Controller
             : (int) $quiz->soal()->sum('poin');
 
         $user = request()->user();
+        $isStudent = $user && $user->isSiswa();
         $userResult = null;
         if ($user) {
             $latestHasil = HasilQuizModul::where('id_quiz', $quiz->id_quiz)
@@ -2012,6 +2166,17 @@ class QuizController extends Controller
             $waktuKadaluarsa = \Carbon\Carbon::parse($quiz->waktu_kadaluarsa)->toIso8601String();
         }
 
+        $waktuMulai = null;
+        if (!empty($quiz->waktu_mulai)) {
+            $waktuMulai = $quiz->waktu_mulai instanceof \DateTimeInterface
+                ? $quiz->waktu_mulai->format('c')
+                : \Carbon\Carbon::parse($quiz->waktu_mulai)->toIso8601String();
+        }
+
+        $orderedSoal = $quiz->relationLoaded('soal')
+            ? $quiz->getOrderedSoalForUser($isStudent ? $user->id_user : null)
+            : collect();
+
         return [
             'id_quiz' => (int) $quiz->id_quiz,
             'kode_quiz' => $quiz->kode_quiz,
@@ -2031,21 +2196,27 @@ class QuizController extends Controller
             'nama_tipe' => $quiz->tipeQuiz->nama_tipe ?? $quiz->tipeQuiz->nama_tipequiz ?? null,
             'mode_pengerjaan' => $quiz->mode_pengerjaan ?? 'wayground',
             'durasi_total_menit' => $quiz->durasi_total_menit ? (int) $quiz->durasi_total_menit : null,
+            'waktu_mulai' => $waktuMulai,
             'waktu_kadaluarsa' => $waktuKadaluarsa,
+            'not_started' => $quiz->belumDimulai(),
             'is_expired' => $quiz->sudahKadaluarsa(),
-            'token' => $quiz->token,
+            'is_exam_mode' => $quiz->isModeUjian(),
+            'acak_soal' => $quiz->shouldAcakSoal(),
+            'max_attempts' => $quiz->getBatasPercobaanEfektif(),
+            'attempts_used' => $quiz->jumlahPercobaanUser($user),
+            'can_attempt' => $quiz->bolehDikerjakanLagiOleh($user) && !$quiz->sudahKadaluarsa() && !$quiz->belumDimulai(),
+            'token' => $isStudent ? null : $quiz->token,
             'requires_token' => $quiz->perluToken(),
             'proggressQuiz' => $quiz->proggressQuiz ?? 'Draft',
             'is_draft' => $quiz->isDraft(),
             'foto_quiz' => $quiz->foto_quiz,
             'cover_url' => $quiz->cover_url,
-            'opsi_preview' => $quiz->opsi_preview ?? 'lengkap',
+            'opsi_preview' => $quiz->isModeUjian() ? 'tipe_saja' : ($quiz->opsi_preview ?? 'lengkap'),
             'questions_count' => (int) ($quiz->soal_count ?? ($quiz->relationLoaded('soal') ? $quiz->soal->count() : 0)),
             'participants_count' => (int) ($quiz->participants_count ?? 0),
             'total_points' => $totalPoints,
             'user_result' => $userResult,
-            'soal' => $quiz->relationLoaded('soal') ? $quiz->soal->map(function ($s) use ($user) {
-                $isStudent = $user && $user->isSiswa();
+            'soal' => $quiz->relationLoaded('soal') ? $orderedSoal->map(function ($s) use ($isStudent) {
                 return [
                     'id_soal' => (int) $s->id_soal,
                     'kode_soal' => $s->kode_soal,

@@ -19,6 +19,9 @@
 @php
     $hideNiere = true;
     $expired = $quiz->sudahKadaluarsa();
+    $notStarted = $quiz->belumDimulai();
+    $isExamMode = $quiz->isModeUjian();
+    $canAttempt = $quiz->bolehDikerjakanLagiOleh(Auth::user());
     $totalSoalCount = $totalSoal ?? $quiz->soal->count();
     $totalPoinCount = $totalPoin ?? $quiz->soal->sum('poin');
     $playCount = $quiz->hasil ? $quiz->hasil->count() : 0;
@@ -49,7 +52,7 @@
             <div class="relative shrink-0 w-full md:w-72 aspect-video rounded-2xl overflow-hidden shadow-sm bg-[#DDF3FF] border-2 border-[#B2E7FC]">
                 <img src="{{ $quiz->cover_url }}" alt="{{ $quiz->judul }}" class="w-full h-full object-cover">
 
-                @if($expired && !$quiz->perluToken())
+                @if($expired)
                     <div class="absolute inset-0 z-10 pointer-events-none select-none flex items-center justify-center bg-black/40 backdrop-blur-[0.5px]">
                         <img src="{{ asset('assets/widget/expiredQuiz.webp') }}"
                              alt="Kuis Kedaluwarsa"
@@ -81,13 +84,13 @@
                             <span>{{ $quiz->tingkatQuiz->nama_tingkat ?? 'Kuis Interaktif' }}</span>
                         </div>
 
-                        @if($quiz->perluToken())
+                        @if($isExamMode)
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                🔒 Token
+                                Mode Ujian (Token)
                             </span>
                         @else
                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-[#DDF3FF] text-[#007FBE] border border-[#B2E7FC]">
-                                🌐 Terbuka
+                                Terbuka
                             </span>
                         @endif
 
@@ -164,10 +167,14 @@
                 </svg>
             </div>
             <p class="text-xs sm:text-sm font-semibold text-white/95 leading-snug">
-                @if($expired)
-                    Batas waktu pengerjaan kuis ini telah berakhir. Hubungi pengajar jika membutuhkan sesi susulan.
+                @if(!$canAttempt)
+                    Anda telah menyelesaikan ujian ini. Mode Ujian hanya mengizinkan 1 kali pengerjaan.
+                @elseif($expired)
+                    Batas waktu pengerjaan kuis/ujian ini telah berakhir. Hubungi pengajar jika membutuhkan sesi susulan.
+                @elseif($notStarted)
+                    Ujian ini dijadwalkan mulai pada {{ $quiz->waktu_mulai?->translatedFormat('d M Y, H:i') }}. Harap kembali sesuai jadwal.
                 @elseif($quiz->perluToken())
-                    Kuis ini dilindungi token akses. Pastikan Anda sudah menerima token dari pengajar sebelum memulai.
+                    Kuis Mode Ujian ini dilindungi token akses. Pastikan Anda sudah menerima token dari pengajar sebelum memulai.
                 @else
                     Kuis ini siap dikerjakan dengan {{ $totalSoalCount }} pertanyaan. Uji pemahaman Anda dan raih poin tertinggi!
                 @endif
@@ -175,9 +182,17 @@
         </div>
 
         <div class="shrink-0 flex items-center justify-end">
-            @if($expired)
+            @if(!$canAttempt)
+                <button type="button" disabled class="px-5 py-2.5 rounded-xl bg-emerald-500/25 text-white font-bold text-sm cursor-not-allowed border border-white/30">
+                    Ujian Sudah Dikerjakan
+                </button>
+            @elseif($expired)
                 <button type="button" disabled class="px-5 py-2.5 rounded-xl bg-white/20 text-white/70 font-bold text-sm cursor-not-allowed">
                     Waktu Berakhir
+                </button>
+            @elseif($notStarted)
+                <button type="button" disabled class="px-5 py-2.5 rounded-xl bg-white/20 text-white/70 font-bold text-sm cursor-not-allowed">
+                    Belum Dibuka
                 </button>
             @elseif($quiz->soal->isEmpty())
                 <button type="button" disabled class="px-5 py-2.5 rounded-xl bg-white/20 text-white/70 font-bold text-sm cursor-not-allowed">
@@ -261,7 +276,7 @@
             </span>
         </div>
 
-        @if(($quiz->opsi_preview ?? 'lengkap') === 'tipe_saja')
+        @if(!$quiz->isPreviewLengkap())
             {{-- Mode Tipe Saja (Rincian pertanyaan disembunyikan pengajar) --}}
             <div class="bg-white rounded-xl border border-slate-200/90 p-5 shadow-sm space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">

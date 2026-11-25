@@ -18,7 +18,10 @@
     <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
         <div>
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 text-[#007FBE] border border-[#B2E7FC] text-xs font-extrabold mb-2">
-                <span>{{ $soal->id_quiz ? '🎯 Soal Kuis' : '📚 Bank Soal Standalone' }}</span>
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <span>{{ $soal->id_quiz ? 'Soal Kuis' : 'Bank Soal Mandiri' }}</span>
             </div>
             <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Perbarui Pertanyaan
@@ -34,7 +37,10 @@
             @method('DELETE')
             <button type="submit"
                 class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition cursor-pointer">
-                <span>🗑️ Hapus Soal</span>
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Hapus Soal</span>
             </button>
         </form>
     </div>
@@ -162,13 +168,30 @@
                     </select>
                 </div>
             </div>
+
+            {{-- Peruntukan Bank Soal --}}
+            <div class="mt-4">
+                <label for="kategori_bank" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Peruntukan Soal
+                </label>
+                <select id="kategori_bank" name="kategori_bank"
+                    class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-800 focus:outline-none focus:border-[#007FBE]">
+                    <option value="umum" @selected(old('kategori_bank', $soal->kategori_bank ?? 'umum') === 'umum')>Umum / Latihan &amp; Dungeon</option>
+                    <option value="ujian" @selected(old('kategori_bank', $soal->kategori_bank ?? 'umum') === 'ujian')>Khusus Ujian (Terlindungi dari Dungeon)</option>
+                </select>
+                <p class="text-[11px] text-slate-500 mt-1">
+                    Soal bertanda Khusus Ujian tidak akan muncul sebagai saran pada pembuatan kuis Dungeon.
+                </p>
+            </div>
         </section>
 
         {{-- CARD 2: Pertanyaan & Foto --}}
         <section class="bg-white rounded-3xl border-2 border-[#E6F1FC] p-6 sm:p-7 shadow-xs">
             <h3 class="text-base font-extrabold text-slate-900 mb-4 flex items-center gap-2">
-                <span>📝</span>
-                <span>Teks Pertanyaan & Gambar</span>
+                <svg class="w-4 h-4 text-[#007FBE]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span>Teks Pertanyaan &amp; Gambar</span>
             </h3>
 
             {{-- Textarea Pertanyaan --}}
@@ -189,7 +212,10 @@
                 </label>
                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                     <label class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border-2 border-dashed border-[#B2E7FC] bg-[#F0F6FF] hover:bg-[#E6F1FC] text-[#007FBE] text-xs font-bold cursor-pointer transition">
-                        <span>🖼️ Ganti Foto</span>
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Ganti Foto</span>
                         <input type="file" id="foto_soal" name="foto_soal" accept="image/*" class="hidden">
                     </label>
                     <span id="fotoFileName" class="text-xs text-slate-500 font-medium">
@@ -295,8 +321,10 @@
         {{-- CARD 4: Poin & Durasi --}}
         <section class="bg-white rounded-3xl border-2 border-[#E6F1FC] p-6 sm:p-7 shadow-xs">
             <h3 class="text-base font-extrabold text-slate-900 mb-4 flex items-center gap-2">
-                <span>⏱️</span>
-                <span>Poin & Durasi Pengerjaan</span>
+                <svg class="w-4 h-4 text-[#007FBE]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Poin &amp; Durasi Pengerjaan</span>
             </h3>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -318,6 +346,23 @@
                         class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-800 focus:outline-none focus:border-[#007FBE]">
                 </div>
             </div>
+
+            @php
+                $cloneCount = \Illuminate\Support\Facades\Schema::hasColumn('soal', 'parent_soal_id')
+                    ? $soal->clonedSoal()->count()
+                    : 0;
+            @endphp
+            @if($cloneCount > 0)
+                <div class="mt-4 p-3.5 rounded-2xl bg-sky-50 border border-[#B2E7FC]">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="sync_clones" value="1" class="mt-0.5 rounded text-[#007FBE] focus:ring-0 w-4 h-4">
+                        <span class="text-xs text-slate-700 leading-relaxed">
+                            <strong class="block text-slate-900">Sinkronkan ke {{ $cloneCount }} soal salinan di kuis terkait</strong>
+                            Perbarui juga teks pertanyaan, opsi jawaban, kunci, poin, dan durasi pada salinan soal yang sudah masuk ke kuis aktif.
+                        </span>
+                    </label>
+                </div>
+            @endif
         </section>
 
         {{-- Submit Bar --}}
@@ -328,7 +373,10 @@
             </a>
             <button type="submit"
                 class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#007FBE] hover:bg-[#00689E] text-white font-extrabold text-sm shadow-[0_4px_0_#005580] transition hover:-translate-y-0.5 active:translate-y-0 cursor-pointer">
-                <span>💾 Simpan Perubahan</span>
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Simpan Perubahan</span>
             </button>
         </div>
     </form>
