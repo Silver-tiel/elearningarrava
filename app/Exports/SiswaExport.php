@@ -4,22 +4,8 @@ namespace App\Exports;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class SiswaExport implements
-    FromQuery,
-    WithHeadings,
-    WithMapping,
-    ShouldAutoSize,
-    WithColumnFormatting,
-    WithStyles
+class SiswaExport
 {
     protected array $filters;
 
@@ -95,51 +81,18 @@ class SiswaExport implements
         ];
     }
 
-    public function map($siswa): array
+    public function map($siswa, int $no): array
     {
-        static $no = 0;
-        $no++;
-
         return [
             $no,
             $siswa->id_user,
             $siswa->nama,
             (string) ($siswa->nisn ?? '-'),
             $siswa->email,
-            $siswa->jenjang->nama_tipe
-                ?? $siswa->kelas
-                ?? 'Umum',
-            $siswa->tingkatKelas->nama ?? '-',
-            ($siswa->status_akun ?? 'Aktif'),
-            $siswa->created_at
-                ? $siswa->created_at->format('d-m-Y')
-                : '-',
-        ];
-    }
-
-    public function columnFormats(): array
-    {
-        return [
-            'D' => NumberFormat::FORMAT_TEXT,
-        ];
-    }
-
-    public function styles(Worksheet $sheet): array
-    {
-        return [
-            1 => [
-                'font' => [
-                    'bold' => true,
-                    'color' => ['rgb' => 'FFFFFF'],
-                ],
-                'fill' => [
-                    'fillType' => 'solid',
-                    'startColor' => ['rgb' => '2563EB'],
-                ],
-                'alignment' => [
-                    'horizontal' => 'center',
-                ],
-            ],
+            $siswa->jenjang->nama_tipe ?? ($siswa->kelas ?? 'Umum'),
+            $siswa->tingkatKelas->nama ?? ($siswa->tingkatKelas->nama_tingkat_kelas ?? '-'),
+            $siswa->status_akun ?? 'Aktif',
+            $siswa->created_at ? $siswa->created_at->format('d-m-Y') : '-',
         ];
     }
 }

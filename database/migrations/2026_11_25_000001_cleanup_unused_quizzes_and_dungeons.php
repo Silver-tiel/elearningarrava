@@ -39,6 +39,10 @@ return new class extends Migration {
                     ->where(function ($q) use ($activeMapelIds) {
                         $q->whereNull('id_mapel')
                             ->orWhereNotIn('id_mapel', $activeMapelIds)
+                            ->orWhere('judul', 'like', '%Pendidikan Agama%')
+                            ->orWhere('judul', 'like', '%Pendidikan Pancasila%')
+                            ->orWhere('judul', 'like', '%PJOK%')
+                            ->orWhere('judul', 'like', '%Sejarah Indonesia%')
                             ->orWhere(function ($sma) {
                                 $sma->where('id_jenjang', 3)
                                     ->whereIn('id_mapel', [4, 5]);

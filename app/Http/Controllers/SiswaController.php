@@ -30,7 +30,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use App\Exports\SiswaExport;
-use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
 
 /**
@@ -1934,7 +1933,7 @@ class SiswaController extends Controller
         return view('siswa.leaderboard', compact('leaderboard', 'myRank', 'activeJenjangId', 'jenjangList', 'user'));
     }
 
-    // Export Data Siswa ke Excel
+    // Export Data Siswa ke CSV / Excel (Native, Ringan & Tanpa Dependency)
     public function exportDataSiswa(Request $request)
     {
         $filters = $request->only([
@@ -1943,9 +1942,32 @@ class SiswaController extends Controller
             'status',
         ]);
 
-        return Excel::download(
-            new SiswaExport($filters),
-            'data_siswa_arrava_' . now()->format('Y-m-d') . '.xlsx'
-        );
+        $export = new SiswaExport($filters);
+        $fileName = 'data_siswa_arrava_' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($export) {
+            $handle = fopen('php://output', 'w');
+
+            // Tulis UTF-8 BOM agar Microsoft Excel langsung membaca aksen & teks dengan rapi
+            fputs($handle, "\xEF\xBB\xBF");
+
+            // Tulis Header Kolom
+            fputcsv($handle, $export->headings());
+
+            // Tulis Data Baris per Baris dengan Chunking agar hemat RAM
+            $no = 1;
+            $export->query()->chunk(250, function ($siswaList) use ($handle, $export, &$no) {
+                foreach ($siswaList as $siswa) {
+                    fputcsv($handle, $export->map($siswa, $no++));
+                }
+            });
+
+            fclose($handle);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 }
