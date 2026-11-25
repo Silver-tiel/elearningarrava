@@ -18,27 +18,33 @@ class QuizSeeder extends Seeder
             $this->call(MapelSeeder::class);
         }
 
-        $quizList = array_merge(
-            $this->existingCuratedQuizzes(),
-            $this->quizzesMatematika(),
-            $this->quizzesBahasaIndonesia(),
-            $this->quizzesBahasaInggris(),
-            $this->quizzesIpa(),
-            $this->quizzesIps(),
-            $this->quizzesPpkn(),
-            $this->quizzesAgama(),
-            $this->quizzesInformatika(),
-            $this->quizzesSeniBudaya(),
-            $this->quizzesPjok(),
-            $this->quizzesFisika(),
-            $this->quizzesKimia(),
-            $this->quizzesBiologi(),
-            $this->quizzesEkonomi(),
-            $this->quizzesGeografi(),
-            $this->quizzesSosiologi(),
-            $this->quizzesSejarahIndonesia(),
-            QuizExpandedDataset::getQuizzes()
-        );
+        $activeMapelIds = [1, 2, 3, 4, 5, 11, 12, 13];
+        $quizList = array_values(array_filter(
+            array_merge(
+                $this->existingCuratedQuizzes(),
+                $this->quizzesMatematika(),
+                $this->quizzesBahasaIndonesia(),
+                $this->quizzesBahasaInggris(),
+                $this->quizzesIpa(),
+                $this->quizzesIps(),
+                $this->quizzesFisika(),
+                $this->quizzesKimia(),
+                $this->quizzesBiologi(),
+                QuizExpandedDataset::getQuizzes()
+            ),
+            function (array $q) use ($activeMapelIds): bool {
+                $mapelId = (int) ($q['id_mapel'] ?? 0);
+                $jenjangId = (int) ($q['id_jenjang'] ?? 0);
+                if (!in_array($mapelId, $activeMapelIds, true)) {
+                    return false;
+                }
+                // SMA (3) memakai Fisika, Kimia, Biologi — bukan IPA/IPS umum
+                if ($jenjangId === 3 && in_array($mapelId, [4, 5], true)) {
+                    return false;
+                }
+                return true;
+            }
+        ));
 
         DB::transaction(function () use ($quizList) {
             $hasMapelTable = Schema::hasTable('mapel');

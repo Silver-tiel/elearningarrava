@@ -47,11 +47,8 @@ class DungeonController extends Controller
         $jenjangList = Jenjang::orderBy('id_jenjang')->get();
         $selectedJenjang = Jenjang::find($selectedJenjangId) ?? $jenjangList->first();
 
-        // Ambil mapel yang berlaku untuk jenjang ini (lintas jenjang / null, atau mapel jenjang spesifik)
-        $mapelList = Mapel::where(function ($q) use ($selectedJenjang) {
-                $q->whereNull('id_jenjang')
-                  ->orWhere('id_jenjang', $selectedJenjang->id_jenjang ?? 1);
-            })
+        // Ambil mapel yang berlaku untuk jenjang ini (mengecualikan IPA/IPS umum pada SMA)
+        $mapelList = Mapel::forJenjang($selectedJenjang->id_jenjang ?? 1)
             ->orderBy('nama_mapel')
             ->get();
 

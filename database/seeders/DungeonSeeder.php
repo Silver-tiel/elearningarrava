@@ -88,6 +88,11 @@ class DungeonSeeder extends Seeder
                 : $jenjangList->pluck('id_jenjang')->toArray();
 
             foreach ($targetJenjangIds as $jId) {
+                // IPA (4) & IPS (5) tidak digunakan di SMA (3) karena dipecah menjadi Fisika, Kimia, Biologi
+                if ((int) $jId === 3 && in_array((int) $mapel->id_mapel, [4, 5], true)) {
+                    continue;
+                }
+
                 $jenjangObj = $jenjangList->firstWhere('id_jenjang', $jId);
                 $namaJenjang = $jenjangObj ? ($jenjangObj->nama_tipe ?? $jenjangObj->nama_jenjang ?? "Jenjang {$jId}") : "Jenjang {$jId}";
 
