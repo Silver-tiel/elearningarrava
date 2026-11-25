@@ -50,6 +50,11 @@ class SesiPresensi extends Model
         return $this->hasMany(Presensi::class, 'id_sesi', 'id_sesi');
     }
 
+    public function laporanHarian(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(LaporanHarian::class, 'id_sesi', 'id_sesi');
+    }
+
     public function isBuka(): bool
     {
         return $this->status === 'buka';

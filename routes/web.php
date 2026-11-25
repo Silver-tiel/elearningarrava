@@ -31,6 +31,7 @@ use App\Http\Controllers\TingkatKelasController;
 use App\Http\Controllers\QrAdminController;
 use App\Http\Controllers\DungeonController;
 use App\Http\Controllers\PresensiController;
+use App\Http\Controllers\LaporanHarianController;
 use App\Http\Controllers\SiswaQrController;
 
 
@@ -586,6 +587,16 @@ Route::prefix('guru/presensi')->name('guru.presensi.')->middleware(['auth', 'act
     Route::post('/sesi/{id}/scan', [PresensiController::class, 'prosesScan'])
         ->whereNumber('id')->middleware('throttle:scan-qr')->name('proses');
 });
+
+Route::prefix('guru/laporan-harian')->name('guru.laporan-harian.')->middleware(['auth', 'active.student', 'role:guru'])->group(function () {
+    Route::get('/', [LaporanHarianController::class, 'index'])->name('index');
+    Route::get('/sesi/{id}', [LaporanHarianController::class, 'edit'])->whereNumber('id')->name('edit');
+    Route::put('/sesi/{id}', [LaporanHarianController::class, 'update'])->whereNumber('id')->name('update');
+});
+
+Route::get('/admin/laporan-harian', [LaporanHarianController::class, 'adminIndex'])
+    ->middleware(['auth', 'active.student', 'role:admin'])
+    ->name('admin.laporan-harian');
 
 // DUNGEON SOAL: Mode tantangan gamifikasi endless quiz (nyawa 3, multiplier lantai)
 Route::prefix('dungeon')->name('dungeon.')->middleware(['auth', 'active.student', 'role:siswa,guru,admin'])->group(function () {

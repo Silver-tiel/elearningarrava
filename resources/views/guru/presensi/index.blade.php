@@ -1,4 +1,4 @@
-@extends('layouts.app')
+    @extends('layouts.app')
 
 @section('header')
 <h1 class="text-lg font-bold text-slate-800">Presensi</h1>

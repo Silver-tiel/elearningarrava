@@ -35,6 +35,13 @@
         </span>
     </div>
 
+    @if(auth()->user()->isGuru())
+        <a href="{{ route('guru.laporan-harian.edit', $sesi->id_sesi) }}"
+            class="mb-5 inline-flex h-10 items-center rounded-lg border border-sky-200 bg-white px-4 text-sm font-semibold text-sky-700 transition hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">
+            {{ $sesi->laporanHarian()->exists() ? 'Lihat / ubah laporan harian' : 'Buat laporan harian' }}
+        </a>
+    @endif
+
     <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div class="rounded-xl border border-green-200 bg-white p-4">
             <p class="text-sm font-medium text-slate-500">Hadir</p>
