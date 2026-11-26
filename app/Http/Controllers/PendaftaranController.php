@@ -6,6 +6,8 @@ use App\Models\Jenjang;
 use App\Models\LogAktivitas;
 use App\Models\OrangtuaSiswa;
 use App\Models\User;
+use App\Services\RegistrationOtp;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -23,8 +25,7 @@ class PendaftaranController extends Controller
         return view('pendaftaran', ['jenjang' => $jenjang]);
     }
 
-    // Menyimpan data siswa & akun orang tua ke database setelah validasi berhasil.
-    public function UserBaru(Request $request)
+    public function UserBaru(Request $request, RegistrationOtp $otp)
     {
         // Kompatibilitas fallback: jika input dikirim dengan nama nomor_hp, sinkronkan ke nomor_handphone
         if (!$request->has('nomor_handphone') && $request->has('nomor_hp')) {
@@ -155,16 +156,135 @@ class PendaftaranController extends Controller
             ]
         );
 
+        $this->validateParentAccount($validated);
+        $validated['password'] = Hash::make($validated['password']);
+        $validated['password_orangtua'] = empty($validated['password_orangtua'])
+            ? $validated['password']
+            : Hash::make($validated['password_orangtua']);
+
+        $request->session()->put('registration', [
+            'data' => $validated,
+            'otp' => $otp->send($validated['email'], 'email'),
+            'expires_at' => now()->addMinutes(30)->timestamp,
+        ]);
+
+        return redirect()->route('pendaftaran.otp');
+    }
+
+    public function showOtp(Request $request)
+    {
+        $pending = $this->pendingRegistration($request);
+        if (!$pending) {
+            return $this->expiredRegistration();
+        }
+
+        return response()->view('pendaftaran-otp', [
+            'email' => $pending['data']['email'],
+            'resendIn' => max(0, $pending['otp']['resend_at'] - now()->timestamp),
+        ])->header('Cache-Control', 'no-store, private');
+    }
+
+    public function resendOtp(Request $request, RegistrationOtp $otp)
+    {
+        $pending = $this->pendingRegistration($request);
+        if (!$pending) {
+            return $this->expiredRegistration();
+        }
+
+        if ($pending['otp']['resend_at'] > now()->timestamp) {
+            return redirect()->route('pendaftaran.otp')->withErrors(['resend' => 'Tunggu hingga hitung mundur selesai.']);
+        }
+
+        // Pertahankan kode lama jika pengiriman gagal, tetapi tetap hormati jeda percobaan kirim.
+        $request->session()->put('registration.otp.resend_at', now()->timestamp + RegistrationOtp::COOLDOWN);
+        $pending['otp'] = $otp->send($pending['data']['email'], 'resend', $pending['otp']);
+        $request->session()->put('registration', $pending);
+
+        return redirect()->route('pendaftaran.otp')->with('status', 'Kode baru sudah dikirim.');
+    }
+
+    public function verifyOtp(Request $request, RegistrationOtp $otp)
+    {
+        $pending = $this->pendingRegistration($request);
+        if (!$pending) {
+            return $this->expiredRegistration();
+        }
+
+        $code = $request->validate(['code' => ['required', 'string', 'digits:6']], [
+            'code.required' => 'Masukkan kode OTP.',
+            'code.digits' => 'Kode OTP harus terdiri dari 6 digit.',
+        ])['code'];
+
+        $challenge = $pending['otp'];
+        if ($challenge['expires_at'] <= now()->timestamp || $challenge['attempts'] >= 5) {
+            return redirect()->route('pendaftaran.otp')->withErrors(['code' => 'Kode kedaluwarsa atau batas percobaan tercapai. Minta kode baru.']);
+        }
+
+        if (!$otp->matches($challenge, $code)) {
+            $attempts = $challenge['attempts'] + 1;
+            $request->session()->put('registration.otp.attempts', $attempts);
+            $message = $attempts === 5 ? 'Batas percobaan tercapai. Minta kode baru.' : 'Kode OTP salah. Periksa email lalu coba lagi.';
+
+            return redirect()->route('pendaftaran.otp')->withErrors(['code' => $message]);
+        }
+
+        try {
+            $response = $this->createAccounts($pending['data']);
+        } catch (ValidationException $exception) {
+            $response = redirect()->route('pendaftaran')->withErrors($exception->errors());
+        } catch (UniqueConstraintViolationException) {
+            $response = redirect()->route('pendaftaran')->withErrors(['email' => 'Data pendaftaran sudah digunakan. Periksa kembali data siswa.']);
+        }
+
+        $request->session()->forget('registration');
+
+        return $response;
+    }
+
+    private function pendingRegistration(Request $request): ?array
+    {
+        $pending = $request->session()->get('registration');
+        if ($pending && $pending['expires_at'] > now()->timestamp) {
+            return $pending;
+        }
+
+        return null;
+    }
+
+    private function expiredRegistration()
+    {
+        return redirect()->route('pendaftaran')->withErrors(['email' => 'Sesi verifikasi berakhir. Isi kembali formulir pendaftaran.']);
+    }
+
+    private function validateParentAccount(array $data): void
+    {
+        if (!empty($data['email_orangtua']) && User::where('email', $data['email_orangtua'])->where('id_tipeuser', '!=', 4)->exists()) {
+            throw ValidationException::withMessages([
+                'email_orangtua' => 'Email ini sudah terdaftar sebagai akun siswa/guru. Gunakan email lain untuk orang tua.',
+            ]);
+        }
+    }
+
+    private function createAccounts(array $validated)
+    {
         $adaOrangtua = false;
 
         DB::transaction(function () use ($validated, &$adaOrangtua) {
+            $this->validateParentAccount($validated);
+            validator($validated, [
+                'nama' => ['unique:user,nama'],
+                'email' => ['unique:user,email'],
+                'nisn' => ['unique:user,nisn'],
+                'id_jenjang' => ['exists:jenjang,id_jenjang'],
+            ])->validate();
+
             // 1. Simpan Akun Siswa (id_tipeuser = 3)
             $siswaData = [
                 'nisn' => $validated['nisn'],
                 'nama' => $validated['nama'],
                 'email' => $validated['email'],
                 'nomor_hp' => $validated['nomor_handphone'],
-                'password' => Hash::make($validated['password']),
+                'password' => $validated['password'],
                 'id_jenjang' => $validated['id_jenjang'],
                 'id_tipeuser' => 3, // Siswa
             ];
@@ -181,10 +301,6 @@ class PendaftaranController extends Controller
             // 2. Hubungkan atau Buat Akun Orang Tua jika data orang tua diisi
             if (!empty($validated['nama_orangtua']) && !empty($validated['email_orangtua'])) {
                 $adaOrangtua = true;
-                $parentPassword = !empty($validated['password_orangtua'])
-                    ? $validated['password_orangtua']
-                    : $validated['password'];
-
                 $orangtua = User::where('email', $validated['email_orangtua'])->first();
 
                 if ($orangtua) {
@@ -206,7 +322,7 @@ class PendaftaranController extends Controller
                         'email' => $validated['email_orangtua'],
                         'nisn' => $nisnOt,
                         'nomor_hp' => $validated['nomor_hp_orangtua'] ?? null,
-                        'password' => Hash::make($parentPassword),
+                        'password' => $validated['password_orangtua'],
                         'id_jenjang' => $validated['id_jenjang'],
                         'id_tipeuser' => 4, // Orang Tua
                     ];

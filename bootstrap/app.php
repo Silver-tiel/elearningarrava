@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->dontFlash(['code', 'password_orangtua']);
+
         // Tangani jika terjadi TokenMismatchException (419 Page Expired) di halaman manapun
         $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
             if ($request->is('logout') || $request->routeIs('logout')) {

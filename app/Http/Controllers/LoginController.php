@@ -2,97 +2,73 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-// Controller khusus untuk menangani proses autentikasi pengguna.
 class LoginController extends Controller
 {
-    // Menampilkan halaman form login kepada user.
     public function showLoginForm()
     {
-        return view('login');
+        return Auth::check() ? redirect('/dashboard') : view('login');
     }
 
-    // Memvalidasi kredensial user lalu login jika data benar.
     public function login(Request $request)
     {
-        $validated = $request->validate([
+        if (Auth::check()) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'redirect' => url('/dashboard')]);
+            }
+
+            return redirect('/dashboard');
+        }
+
+        $credentials = $request->validate([
             'email' => ['required', 'email'],
-            'password' => ['required'],
+            'password' => ['required', 'string'],
         ]);
 
-        // Coba autentikasi dengan email dan password yang dimasukkan.
-        if (Auth::attempt($validated)) {
-            $request->session()->regenerate();
-
-            $user = Auth::user();
-
-            if ($user && (int) $user->id_tipeuser === 3 && $user->status_akun === 'Nonaktif') {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                if ($request->expectsJson() || $request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'
-                    ], 403);
-                }
-
-                return back()->withErrors([
-                    'email' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.',
-                ])->onlyInput('email');
-            }
-
-            // Tentukan tujuan redirect berdasarkan tipe akun
-            $redirectUrl = '/siswa/dashboard';
-            if ($user && ($user->id_tipeuser == 1 || $user->id_tipeuser == 2)) {
-                $redirectUrl = '/admin';
-            } elseif ($user && $user->id_tipeuser == 4) {
-                $redirectUrl = '/orangtua/dashboard';
-            }
-
-            if ($request->expectsJson() || $request->ajax()) {
-                $intended = $request->session()->get('url.intended');
-                if (is_string($intended)) {
-                    $intendedPath = parse_url($intended, PHP_URL_PATH);
-                    if ($intendedPath === '/attendance/check-in') {
-                        $request->session()->forget('url.intended');
-                        $redirectUrl = $intended;
-                    }
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'name' => $user->nama ?? 'Siswa',
-                    'redirect' => url($redirectUrl),
-                ]);
-            }
-
-            return redirect()->intended($redirectUrl);
+        $guard = Auth::guard('web');
+        if (!$guard->validate($credentials)) {
+            return $this->loginError($request, 'Email atau password salah.', 422);
         }
 
+        $user = $guard->getLastAttempted();
+        if ((int) $user->id_tipeuser === 3 && $user->status_akun === 'Nonaktif') {
+            return $this->loginError($request, 'Akun Anda dinonaktifkan. Silakan hubungi administrator.', 403);
+        }
+
+        $guard->setRememberDuration(30 * 24 * 60)->login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+
+        $dashboard = $this->dashboard($user);
         if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Email atau password salah.'
-            ], 422);
+            $intended = $request->session()->pull('url.intended');
+            if (is_string($intended) && parse_url($intended, PHP_URL_PATH) === '/attendance/check-in') {
+                $dashboard = $intended;
+            }
+
+            return response()->json(['success' => true, 'name' => $user->nama, 'redirect' => url($dashboard)]);
         }
 
-        // Jika gagal, tampilkan pesan error dan tetap mempertahankan input email.
-        return back()->withErrors([
-            'email' => 'Email atau password salah.',
-        ])->onlyInput('email');
-}
+        return redirect()->intended($dashboard);
+    }
 
-public function logout(Request $request)
-{
-    Auth::logout();
+    private function dashboard(User $user): string
+    {
+        return match ((int) $user->id_tipeuser) {
+            1, 2 => '/admin',
+            4 => '/orangtua/dashboard',
+            default => '/siswa/dashboard',
+        };
+    }
 
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
+    private function loginError(Request $request, string $message, int $status)
+    {
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['success' => false, 'message' => $message], $status);
+        }
 
-    return redirect()->route('login');
-}
+        return back()->withErrors(['email' => $message])->onlyInput('email');
+    }
 }

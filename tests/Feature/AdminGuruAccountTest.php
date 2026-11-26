@@ -141,13 +141,23 @@ class AdminGuruAccountTest extends TestCase
         $this->post(route('logout'));
 
         // Coba login sebagai guru baru via endpoint login
-        $this->post(route('login.submit'), [
+        $verified = $this->post(route('login.submit'), [
             'email' => $email,
             'password' => 'guruhebat123',
-        ]);
+            'remember' => true,
+        ])->assertRedirect('/admin');
 
+        $recaller = auth()->guard('web')->getRecallerName();
+        $verified->assertCookie($recaller);
         $this->assertAuthenticated();
         $this->assertTrue(auth()->user()->isGuru());
+
+        session()->invalidate();
+        auth()->forgetGuards();
+        $this->withUnencryptedCookie($recaller, $verified->getCookie($recaller, false)->getValue())
+            ->get(route('login'))->assertRedirect('/dashboard');
+        $this->assertAuthenticated();
+        $this->assertTrue(auth()->guard('web')->viaRemember());
     }
 
     public function test_admin_dapat_mengupdate_guru_dan_akun_login(): void

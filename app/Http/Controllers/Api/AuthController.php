@@ -41,10 +41,7 @@ class AuthController extends Controller
 
         $user->load(['tipeUser', 'jenjang', 'tingkatKelas']);
 
-        // Hapus token lama jika ingin satu sesi per perangkat.
-        $user->tokens()->delete();
-
-        $token = $user->createToken('flutter-app')->plainTextToken;
+        $token = $user->createToken('flutter-app', ['*'], now()->addDays(30))->plainTextToken;
 
         return response()->json([
             'success' => true,

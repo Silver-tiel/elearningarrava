@@ -69,6 +69,27 @@ class InactiveStudentAccessTest extends TestCase
             'email' => $student->email,
             'password' => 'password123',
         ])->assertRedirect('/siswa/dashboard');
+
+        $this->assertAuthenticatedAs($student);
+    }
+
+    public function test_api_login_returns_token_without_otp(): void
+    {
+        Schema::create('tipeuser', function (Blueprint $table) {
+            $table->increments('id_tipeUser');
+        });
+        $migration = require database_path('migrations/2026_09_29_170812_create_personal_access_tokens_table.php');
+        $migration->up();
+
+        $student = $this->createStudent('Aktif');
+        $login = $this->postJson('/api/login', [
+            'email' => $student->email,
+            'password' => 'password123',
+        ])->assertOk()->assertJsonStructure(['token'])
+            ->assertJsonPath('user.id_user', $student->id_user);
+
+        $this->withToken($login->json('token'))->getJson('/api/me')
+            ->assertOk()->assertJsonPath('user.id_user', $student->id_user);
     }
 
     private function createStudent(string $status): User
