@@ -124,11 +124,11 @@
                 {{-- Jenjang --}}
                 <div>
                     <label for="id_jenjang" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                        Jenjang
+                        Jenjang <span class="text-rose-500">*</span>
                     </label>
-                    <select id="id_jenjang" name="id_jenjang"
+                    <select id="id_jenjang" name="id_jenjang" required
                         class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 bg-white text-sm font-bold text-slate-800 focus:outline-none focus:border-[#007FBE]">
-                        <option value="">-- Semua Jenjang / Umum --</option>
+                        <option value="">-- Pilih Jenjang (SD/SMP/SMA) --</option>
                         @foreach($jenjangList as $jenjang)
                             <option value="{{ $jenjang->id_jenjang }}" @selected(old('id_jenjang', $soal->id_jenjang ?? $soal->quiz?->id_jenjang) == $jenjang->id_jenjang)>
                                 {{ $jenjang->nama_tipe ?? $jenjang->nama_jenjang }}

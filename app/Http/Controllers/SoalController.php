@@ -344,7 +344,7 @@ class SoalController extends Controller
     {
         $request->validate([
             'id_mapel' => 'required|integer|exists:mapel,id_mapel',
-            'id_jenjang' => 'nullable|integer',
+            'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
             'soal' => 'required|array|min:1',
             'soal.*.pertanyaan' => 'required|string',
             'soal_foto' => 'nullable|array',
@@ -492,7 +492,7 @@ class SoalController extends Controller
         $rules = [
             'id_quiz' => 'nullable|integer|exists:quiz,id_quiz',
             'id_mapel' => 'nullable|integer|exists:mapel,id_mapel',
-            'id_jenjang' => 'nullable|integer|exists:jenjang,id_jenjang',
+            'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
             'id_jenis_soal' => 'required|integer|exists:jenis_soal,id_jenis_soal',
             'kategori_bank' => 'nullable|in:umum,ujian',
             'pertanyaan' => 'required|string|max:10000',
@@ -847,7 +847,7 @@ class SoalController extends Controller
                 'id_mapel' => $s->id_mapel,
                 'mapel_nama' => $s->mapel?->nama_mapel ?? 'Semua Mapel',
                 'id_jenjang' => $s->id_jenjang,
-                'jenjang_nama' => $s->jenjang?->nama_tipe ?? $s->jenjang?->nama_jenjang ?? 'Umum',
+                'jenjang_nama' => $s->jenjang?->nama_tipe ?? $s->jenjang?->nama_jenjang ?? '-',
                 'id_jenis_soal' => $idJenis,
                 'jenis_soal' => $jenisSlug,
                 'tingkat_soal' => $s->tingkat_soal ?: 'sedang',
@@ -1219,7 +1219,7 @@ class SoalController extends Controller
             'soal_ids' => 'required|array|min:1',
             'soal_ids.*' => 'integer|exists:soal,id_soal',
             'id_mapel' => 'nullable|integer|exists:mapel,id_mapel',
-            'id_jenjang' => 'nullable|integer|exists:jenjang,id_jenjang',
+            'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
             'tingkat_soal' => 'nullable|in:mudah,sedang,sulit',
             'kategori_bank' => 'nullable|in:umum,ujian',
         ]);
@@ -1286,6 +1286,66 @@ class SoalController extends Controller
         return redirect()->back()->with($updated > 0 ? 'success' : 'error', $msg);
     }
 
+    // Mengambil ringkasan pratinjau data ekspor (10 baris pertama + total) untuk ditampilkan dalam modal tabel sebelum diunduh
+    public function exportPreview(Request $request)
+    {
+        if (auth()->check()) {
+            Gate::authorize('viewAny', Soal::class);
+        }
+
+        $query = $this->buildFilteredQuery($request);
+        $total = (clone $query)->count();
+        $sampleSoals = (clone $query)->limit(10)->get();
+
+        $preview = $sampleSoals->map(function ($s, $idx) {
+            $opts = $s->pilihanSoal->keyBy(fn($p) => strtoupper((string) $p->label));
+            $jenisLabel = match ((int) $s->id_jenis_soal) {
+                2 => 'Isian Singkat',
+                3 => 'Benar / Salah',
+                default => 'Pilihan Ganda',
+            };
+
+            return [
+                'no' => $idx + 1,
+                'kode_soal' => $s->kode_soal ?: '-',
+                'mapel' => $s->mapel?->nama_mapel ?? $s->quiz?->mapel?->nama_mapel ?? '-',
+                'jenjang' => $s->jenjang?->nama_tipe ?? $s->quiz?->jenjang?->nama_tipe ?? '-',
+                'jenis' => $jenisLabel,
+                'tingkat' => ucfirst($s->tingkat_soal ?? 'sedang'),
+                'pertanyaan' => \Illuminate\Support\Str::limit(strip_tags($s->pertanyaan), 80),
+                'kunci' => $s->jawaban_benar ?? '-',
+                'poin' => (int) ($s->poin ?? 10),
+                'durasi' => (int) ($s->durasi_detik ?? 20),
+                'peruntukan' => $s->isKhususUjian() ? 'Khusus Ujian' : 'Umum / Latihan',
+            ];
+        });
+
+        // Ringkasan filter aktif
+        $filters = [];
+        if ($request->filled('mapel')) {
+            $m = \App\Models\Mapel::find($request->mapel);
+            if ($m) $filters[] = 'Mapel: ' . $m->nama_mapel;
+        }
+        if ($request->filled('jenjang') && $request->jenjang !== 'all') {
+            $j = \App\Models\Jenjang::find($request->jenjang);
+            if ($j) $filters[] = 'Jenjang: ' . ($j->nama_tipe ?? $j->nama_jenjang);
+        }
+        if ($request->filled('tingkat') && $request->tingkat !== 'all') {
+            $filters[] = 'Tingkat: ' . ucfirst($request->tingkat);
+        }
+        if ($request->filled('kategori_bank') && $request->kategori_bank !== 'all') {
+            $filters[] = 'Peruntukan: ' . ($request->kategori_bank === 'ujian' ? 'Khusus Ujian' : 'Umum');
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'total' => $total,
+            'preview' => $preview,
+            'filter_summary' => count($filters) > 0 ? implode(' • ', $filters) : 'Semua Data Soal (Tanpa Filter Spesifik)',
+            'download_url' => route('soal.export.csv', $request->query()),
+        ]);
+    }
+
     // Ekspor soal (mengikuti filter aktif) ke format CSV UTF-8 BOM yang siap dibuka di Excel.
     public function exportCsv(Request $request)
     {
@@ -1332,7 +1392,7 @@ class SoalController extends Controller
                     $soal->id_quiz ? ($soal->quiz?->judul ?? 'Kuis') : 'Bank Soal',
                     $soal->isKhususUjian() ? 'Khusus Ujian' : 'Umum',
                     $soal->mapel?->nama_mapel ?? $soal->quiz?->mapel?->nama_mapel ?? '',
-                    $soal->jenjang?->nama_tipe ?? $soal->quiz?->jenjang?->nama_tipe ?? 'Umum',
+                    $soal->jenjang?->nama_tipe ?? $soal->quiz?->jenjang?->nama_tipe ?? '-',
                     $jenisLabel,
                     $soal->tingkat_soal ?? 'sedang',
                     $soal->pertanyaan ?? '',
@@ -1363,10 +1423,85 @@ class SoalController extends Controller
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
 
-            fputcsv($out, ['pertanyaan', 'jenis', 'tingkat', 'opsi_a', 'opsi_b', 'opsi_c', 'opsi_d', 'kunci', 'poin', 'durasi', 'peruntukan']);
-            fputcsv($out, ['Berapakah hasil dari 12 x 8?', 'pilihan_ganda', 'mudah', '84', '96', '104', '112', 'B', '10', '20', 'umum']);
-            fputcsv($out, ['Air mendidih pada suhu 100 derajat Celcius pada tekanan 1 atm.', 'benar_salah', 'mudah', 'Benar', 'Salah', '', '', 'A', '10', '20', 'umum']);
-            fputcsv($out, ['Ibu kota negara Indonesia adalah ...', 'isian', 'sedang', '', '', '', '', 'Jakarta', '20', '30', 'ujian']);
+            // Header kolom utama
+            fputcsv($out, [
+                'kode_soal',
+                'pertanyaan',
+                'jenis',
+                'tingkat',
+                'opsi_a',
+                'opsi_b',
+                'opsi_c',
+                'opsi_d',
+                'kunci',
+                'poin',
+                'durasi',
+                'peruntukan',
+            ]);
+
+            // Baris panduan pengisian (diawali '#' agar otomatis dilewati oleh sistem impor)
+            fputcsv($out, [
+                '# OPSIONAL: Kode unik (kosongkan jika otomatis)',
+                '# WAJIB: Teks pertanyaan',
+                '# WAJIB: pilihan_ganda / benar_salah / isian',
+                '# WAJIB: mudah / sedang / sulit',
+                '# Teks Opsi A (Wajib untuk pilihan_ganda)',
+                '# Teks Opsi B (Wajib untuk pilihan_ganda)',
+                '# Teks Opsi C (Kosongkan jika 2 opsi)',
+                '# Teks Opsi D (Kosongkan jika 2-3 opsi)',
+                '# WAJIB: Kunci (A/B/C/D untuk PG, Benar/Salah untuk benar_salah, teks untuk isian)',
+                '# Poin angka (Opsional: 10/20/30)',
+                '# Durasi detik (Opsional: 20/30/60)',
+                '# umum / ujian (Opsional)',
+            ]);
+
+            // Contoh 1: Pilihan Ganda (4 Opsi)
+            fputcsv($out, [
+                'SOAL-PG-001',
+                'Berapakah hasil dari perkalian 12 x 8?',
+                'pilihan_ganda',
+                'mudah',
+                '84',
+                '96',
+                '104',
+                '112',
+                'B',
+                '10',
+                '20',
+                'umum',
+            ]);
+
+            // Contoh 2: Benar / Salah
+            fputcsv($out, [
+                'SOAL-BS-001',
+                'Air mendidih pada suhu 100 derajat Celcius pada tekanan udara 1 atm.',
+                'benar_salah',
+                'mudah',
+                'Benar',
+                'Salah',
+                '',
+                '',
+                'A',
+                '10',
+                '20',
+                'umum',
+            ]);
+
+            // Contoh 3: Isian Singkat
+            fputcsv($out, [
+                'SOAL-IS-001',
+                'Ibu kota negara Indonesia adalah ...',
+                'isian',
+                'sedang',
+                '',
+                '',
+                '',
+                '',
+                'Jakarta',
+                '20',
+                '30',
+                'ujian',
+            ]);
 
             fclose($out);
         }, 'template-impor-bank-soal.csv', [
@@ -1384,8 +1519,12 @@ class SoalController extends Controller
         $validated = $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt|max:5120',
             'id_mapel' => 'required|integer|exists:mapel,id_mapel',
-            'id_jenjang' => 'nullable|integer|exists:jenjang,id_jenjang',
+            'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
             'kategori_bank' => 'nullable|in:umum,ujian',
+        ], [
+            'csv_file.required' => 'File CSV wajib diunggah.',
+            'id_mapel.required' => 'Mata pelajaran wajib dipilih.',
+            'id_jenjang.required' => 'Jenjang pendidikan (SD/SMP/SMA) wajib dipilih.',
         ]);
 
         $rawContent = file_get_contents($request->file('csv_file')->getRealPath());
@@ -1402,6 +1541,7 @@ class SoalController extends Controller
 
         $inserted = 0;
         $skipped = 0;
+        $rowErrors = [];
         $defaultKategori = $validated['kategori_bank'] ?? 'umum';
         $hasKategoriCol = Schema::hasColumn('soal', 'kategori_bank');
 
@@ -1413,34 +1553,45 @@ class SoalController extends Controller
 
         $existingNormalized = Soal::whereNull('id_quiz')
             ->where('id_mapel', (int) $validated['id_mapel'])
+            ->where('id_jenjang', (int) $validated['id_jenjang'])
             ->pluck('pertanyaan')
             ->map(fn($p) => Soal::normalizeQuestionText($p))
             ->filter()
             ->flip()
             ->all();
 
-        DB::transaction(function () use ($lines, $delimiter, $headers, $validated, $tingkatDefaults, $defaultKategori, $hasKategoriCol, &$existingNormalized, &$inserted, &$skipped) {
+        DB::transaction(function () use ($lines, $delimiter, $headers, $validated, $tingkatDefaults, $defaultKategori, $hasKategoriCol, &$existingNormalized, &$inserted, &$skipped, &$rowErrors) {
             for ($i = 1; $i < count($lines); $i++) {
-                if (trim($lines[$i]) === '') {
+                $rawLine = trim($lines[$i]);
+                if ($rawLine === '') {
                     continue;
                 }
 
-                $cols = str_getcsv($lines[$i], $delimiter);
+                $cols = str_getcsv($rawLine, $delimiter);
                 $row = [];
                 foreach ($headers as $idx => $key) {
                     $row[$key] = trim((string) ($cols[$idx] ?? ''));
                 }
 
                 $pertanyaan = $row['pertanyaan'] ?? '';
+                // Lewati baris panduan/komentar yang diawali tanda '#'
+                if (str_starts_with($pertanyaan, '#') || str_starts_with($row['kode_soal'] ?? '', '#')) {
+                    continue;
+                }
+
                 $kunci = $row['kunci'] ?? ($row['kunci_jawaban'] ?? '');
+                $lineDisplay = $i + 1;
+
                 if ($pertanyaan === '' || $kunci === '') {
                     $skipped++;
+                    $rowErrors[] = "Baris {$lineDisplay}: Pertanyaan atau kunci jawaban kosong.";
                     continue;
                 }
 
                 $normalized = Soal::normalizeQuestionText($pertanyaan);
                 if ($normalized !== '' && isset($existingNormalized[$normalized])) {
                     $skipped++;
+                    $rowErrors[] = "Baris {$lineDisplay}: Pertanyaan sudah ada di bank soal (duplikat).";
                     continue;
                 }
 
@@ -1460,7 +1611,7 @@ class SoalController extends Controller
                 $poin = !empty($row['poin']) && is_numeric($row['poin']) ? (int) $row['poin'] : $tingkatDefaults[$tingkat]['poin'];
                 $durasi = !empty($row['durasi']) && is_numeric($row['durasi']) ? (int) $row['durasi'] : $tingkatDefaults[$tingkat]['durasi'];
 
-                // Tentukan jawaban_benar (A/B/C/D untuk PG & TF; teks untuk Isian) & pilihan_soal
+                // Tentukan jawaban_benar & pilihan_soal
                 $jawabanBenarVal = $kunci;
                 $choices = [];
 
@@ -1491,6 +1642,7 @@ class SoalController extends Controller
                     }
                     if (count($choices) < 2 || !$hasCorrectChoice) {
                         $skipped++;
+                        $rowErrors[] = "Baris {$lineDisplay}: Pilihan ganda butuh minimal 2 opsi dan kunci (A/B/C/D) yang valid.";
                         continue;
                     }
                 } elseif ($idJenisSoal === 3) {
@@ -1510,7 +1662,7 @@ class SoalController extends Controller
                 $payload = [
                     'id_quiz' => null,
                     'id_mapel' => (int) $validated['id_mapel'],
-                    'id_jenjang' => !empty($validated['id_jenjang']) ? (int) $validated['id_jenjang'] : null,
+                    'id_jenjang' => (int) $validated['id_jenjang'],
                     'id_jenis_soal' => $idJenisSoal,
                     'tingkat_soal' => $tingkat,
                     'id_penulis' => auth()->id(),
@@ -1520,6 +1672,14 @@ class SoalController extends Controller
                     'poin' => $poin,
                     'durasi_detik' => $durasi,
                 ];
+
+                if (!empty($row['kode_soal']) && !str_starts_with($row['kode_soal'], '#')) {
+                    $checkCode = trim($row['kode_soal']);
+                    if (!Soal::where('kode_soal', $checkCode)->exists()) {
+                        $payload['kode_soal'] = $checkCode;
+                    }
+                }
+
                 if ($hasKategoriCol) {
                     $payload['kategori_bank'] = $rowKategori;
                 }
@@ -1540,7 +1700,14 @@ class SoalController extends Controller
 
         $msg = "Impor selesai: {$inserted} soal berhasil ditambahkan ke Bank Soal.";
         if ($skipped > 0) {
-            $msg .= " ({$skipped} baris dilewati karena data tidak lengkap atau duplikat).";
+            $msg .= " ({$skipped} baris dilewati).";
+            if (!empty($rowErrors)) {
+                $detailSample = array_slice($rowErrors, 0, 3);
+                $msg .= " Rincian: " . implode(' | ', $detailSample);
+                if (count($rowErrors) > 3) {
+                    $msg .= " (+ " . (count($rowErrors) - 3) . " baris lainnya)";
+                }
+            }
         }
 
         return redirect()->route('admin.soal')->with($inserted > 0 ? 'success' : 'error', $msg);

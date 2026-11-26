@@ -1654,7 +1654,7 @@ class QuizController extends Controller
         $rules = [
             'judul' => 'sometimes|required|string|max:255',
             'deskripsi' => 'nullable|string|max:3000',
-            'id_jenjang' => 'sometimes|required|integer',
+            'id_jenjang' => 'sometimes|required|integer|exists:jenjang,id_jenjang',
             'id_tingkat_kelas' => 'nullable|integer',
             'id_mapel' => 'nullable|integer',
             'id_tipequiz' => 'nullable|integer',

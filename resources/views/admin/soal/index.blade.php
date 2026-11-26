@@ -45,14 +45,14 @@
                     </svg>
                     <span>Impor CSV</span>
                 </button>
-                <a href="{{ route('soal.export.csv', request()->query()) }}"
-                    class="inline-flex items-center justify-center gap-1.5 bg-white hover:bg-sky-50 text-[#007FBE] border-2 border-[#B2E7FC] font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-[0_2px_0_#B2E7FC] transition hover:-translate-y-0.5"
-                    title="Unduh soal sesuai filter aktif dalam format CSV (bisa dibuka di Excel)">
+                <button type="button" id="openExportPreviewModalBtn"
+                    class="inline-flex items-center justify-center gap-1.5 bg-white hover:bg-sky-50 text-[#007FBE] border-2 border-[#B2E7FC] font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-[0_2px_0_#B2E7FC] transition hover:-translate-y-0.5 cursor-pointer"
+                    title="Pratinjau data dan unduh soal ke Excel/CSV">
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5m0 0L7 8m5-5v12" />
                     </svg>
                     <span>Ekspor CSV</span>
-                </a>
+                </button>
                 <a href="{{ route('soal.create') }}"
                     class="inline-flex items-center justify-center gap-2 bg-[#007FBE] hover:bg-[#00689E] text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-[0_3px_0_#005580] transition hover:-translate-y-0.5">
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -825,17 +825,81 @@
         </div>
     </div>
 
+    {{-- MODAL PRATINJAU EKSPOR CSV / EXCEL --}}
+    <div id="exportPreviewModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+        <div class="bg-white rounded-3xl border-2 border-[#B2E7FC] max-w-4xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-sky-50 text-[#007FBE] border border-[#B2E7FC] flex items-center justify-center shadow-xs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5m0 0L7 8m5-5v12" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900">Pratinjau Data Ekspor Soal</h3>
+                        <p class="text-xs text-slate-500" id="exportPreviewFilterSummary">Memuat ringkasan data...</p>
+                    </div>
+                </div>
+                <button type="button" id="closeExportPreviewModalBtn" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer" aria-label="Tutup">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between bg-sky-50/70 border border-[#B2E7FC] rounded-2xl px-4 py-2.5">
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-[#007FBE] text-white" id="exportPreviewTotalBadge">0 Soal</span>
+                    <span class="text-xs text-slate-600">siap diekspor ke file CSV (dapat dibuka rapi di Microsoft Excel &amp; Google Spreadsheet).</span>
+                </div>
+                <span class="text-[11px] font-bold text-[#007FBE]">Menampilkan 10 baris pertama</span>
+            </div>
+
+            {{-- Table area with scroll --}}
+            <div class="flex-1 overflow-auto border border-slate-200 rounded-2xl min-h-[220px] max-h-[360px] relative bg-white">
+                <div id="exportPreviewLoading" class="absolute inset-0 bg-white/90 backdrop-blur-2xs flex flex-col items-center justify-center gap-2 z-10">
+                    <div class="w-8 h-8 border-3 border-sky-200 border-t-[#007FBE] rounded-full animate-spin"></div>
+                    <p class="text-xs font-bold text-slate-600">Menyiapkan pratinjau data...</p>
+                </div>
+
+                <table class="w-full text-left text-xs text-slate-700 border-collapse">
+                    <thead class="bg-slate-50 sticky top-0 border-b border-slate-200 text-slate-600 font-extrabold text-[11px] uppercase tracking-wider">
+                        <tr>
+                            <th class="py-2.5 px-3 w-10 text-center">No</th>
+                            <th class="py-2.5 px-3">Kode Soal</th>
+                            <th class="py-2.5 px-3">Mapel / Jenjang</th>
+                            <th class="py-2.5 px-3">Jenis &amp; Tingkat</th>
+                            <th class="py-2.5 px-3">Pertanyaan</th>
+                            <th class="py-2.5 px-3 text-center">Kunci</th>
+                            <th class="py-2.5 px-3 text-center">Poin</th>
+                        </tr>
+                    </thead>
+                    <tbody id="exportPreviewTableBody" class="divide-y divide-slate-100">
+                        {{-- Injected via JS --}}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <p class="text-[11px] text-slate-400">Format file hasil ekspor: <strong>UTF-8 BOM (.csv)</strong> terstruktur untuk backup atau pengolahan data.</p>
+                <div class="flex items-center gap-2.5">
+                    <button type="button" id="cancelExportPreviewModalBtn" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 cursor-pointer">Batal</button>
+                    <a id="exportPreviewDownloadBtn" href="#" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#007FBE] hover:bg-[#00689E] text-white font-extrabold text-xs shadow-[0_3px_0_#005580] transition hover:-translate-y-0.5 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M17 8l-5-5m0 0L7 8m5-5v12" /></svg>
+                        <span>Unduh CSV Sekarang</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- MODAL IMPOR CSV / EXCEL --}}
     <div id="importCsvModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-        <div class="bg-white rounded-3xl border-2 border-[#DCEFFF] max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between">
+        <div class="bg-white rounded-3xl border-2 border-[#DCEFFF] max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
                     </div>
                     <div>
-                        <h3 class="text-base font-extrabold text-slate-900">Impor Massal Soal (CSV / Excel)</h3>
-                        <p class="text-[11px] text-slate-400">Masukkan puluhan soal sekaligus langsung ke Bank Soal</p>
+                        <h3 class="text-base font-extrabold text-slate-900">Impor Massal Soal ke Bank Soal</h3>
+                        <p class="text-[11px] text-slate-400">Unggah file CSV dari Excel untuk menambahkan puluhan soal sekaligus</p>
                     </div>
                 </div>
                 <button type="button" id="closeImportCsvModalBtn" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer" aria-label="Tutup">
@@ -843,34 +907,95 @@
                 </button>
             </div>
 
+            {{-- Box Template Download --}}
             <div class="p-3.5 rounded-2xl bg-sky-50 border border-[#B2E7FC] flex items-center justify-between gap-3">
                 <div class="text-xs text-slate-700">
-                    <p class="font-extrabold text-[#007FBE]">Belum punya format filenya?</p>
-                    <p class="text-[11px] text-slate-500">Unduh template CSV, isi di Excel, lalu simpan sebagai CSV.</p>
+                    <p class="font-extrabold text-[#007FBE]">Gunakan Template Resmi Siap Isi</p>
+                    <p class="text-[11px] text-slate-500">Unduh template CSV yang sudah dilengkapi baris contoh untuk Pilihan Ganda, Benar/Salah, dan Isian.</p>
                 </div>
                 <a href="{{ route('soal.template.csv') }}"
-                    class="inline-flex items-center gap-1.5 shrink-0 px-3 py-2 rounded-xl bg-white hover:bg-sky-100 text-[#007FBE] border border-[#B2E7FC] font-extrabold text-xs transition shadow-2xs">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
-                    <span>Template CSV</span>
+                    class="inline-flex items-center gap-1.5 shrink-0 px-3.5 py-2.5 rounded-xl bg-white hover:bg-sky-100 text-[#007FBE] border border-[#B2E7FC] font-extrabold text-xs transition shadow-2xs">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
+                    <span>Download Template CSV</span>
                 </a>
             </div>
 
-            <form action="{{ route('soal.import.csv') }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+            {{-- Format Table Guide inside Modal --}}
+            <div class="space-y-1.5">
+                <p class="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-[#007FBE]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Struktur Kolom CSV yang Benar:</span>
+                </p>
+                <div class="border border-slate-200 rounded-xl overflow-hidden text-[11px]">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-2 border-r border-slate-200">Kolom</th>
+                                    <th class="p-2 border-r border-slate-200">Status</th>
+                                    <th class="p-2 border-r border-slate-200">Nilai yang Diterima</th>
+                                    <th class="p-2">Contoh</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white text-slate-600">
+                                <tr>
+                                    <td class="p-1.5 px-2 font-mono font-bold text-slate-800 border-r border-slate-100">pertanyaan</td>
+                                    <td class="p-1.5 px-2 text-rose-600 font-bold border-r border-slate-100">Wajib</td>
+                                    <td class="p-1.5 px-2 border-r border-slate-100">Teks soal yang diujikan</td>
+                                    <td class="p-1.5 px-2">Berapakah hasil 12 x 8?</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-1.5 px-2 font-mono font-bold text-slate-800 border-r border-slate-100">jenis</td>
+                                    <td class="p-1.5 px-2 text-rose-600 font-bold border-r border-slate-100">Wajib</td>
+                                    <td class="p-1.5 px-2 border-r border-slate-100"><code>pilihan_ganda</code>, <code>benar_salah</code>, <code>isian</code></td>
+                                    <td class="p-1.5 px-2 font-mono text-purple-700">pilihan_ganda</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-1.5 px-2 font-mono font-bold text-slate-800 border-r border-slate-100">tingkat</td>
+                                    <td class="p-1.5 px-2 text-rose-600 font-bold border-r border-slate-100">Wajib</td>
+                                    <td class="p-1.5 px-2 border-r border-slate-100"><code>mudah</code>, <code>sedang</code>, <code>sulit</code></td>
+                                    <td class="p-1.5 px-2">mudah</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-1.5 px-2 font-mono font-bold text-slate-800 border-r border-slate-100">opsi_a s/d d</td>
+                                    <td class="p-1.5 px-2 text-amber-600 font-bold border-r border-slate-100">Wajib PG</td>
+                                    <td class="p-1.5 px-2 border-r border-slate-100">Teks pilihan jawaban A, B, C, D</td>
+                                    <td class="p-1.5 px-2">opsi_a: 84, opsi_b: 96</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-1.5 px-2 font-mono font-bold text-slate-800 border-r border-slate-100">kunci</td>
+                                    <td class="p-1.5 px-2 text-rose-600 font-bold border-r border-slate-100">Wajib</td>
+                                    <td class="p-1.5 px-2 border-r border-slate-100">Huruf A/B/C/D, Benar/Salah, atau Teks Isian</td>
+                                    <td class="p-1.5 px-2 font-bold text-emerald-700">B</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-1.5 px-2 font-mono font-bold text-slate-800 border-r border-slate-100">poin, durasi, peruntukan</td>
+                                    <td class="p-1.5 px-2 text-slate-400 font-bold border-r border-slate-100">Opsional</td>
+                                    <td class="p-1.5 px-2 border-r border-slate-100">Poin angka (10-30), durasi detik, <code>umum</code>/<code>ujian</code></td>
+                                    <td class="p-1.5 px-2">poin: 10, durasi: 20</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <form action="{{ route('soal.import.csv') }}" method="POST" enctype="multipart/form-data" class="space-y-3.5 pt-1">
                 @csrf
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Mata Pelajaran Tujuan <span class="text-rose-500">*</span></label>
-                        <select name="id_mapel" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 text-xs font-bold text-slate-800">
-                            <option value="">-- Pilih Mapel --</option>
+                        <select name="id_mapel" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 text-xs font-bold text-slate-800 focus:border-[#007FBE] focus:outline-hidden">
+                            <option value="">-- Pilih Mata Pelajaran --</option>
                             @foreach($mapelList as $m)
                                 <option value="{{ $m->id_mapel }}">{{ $m->nama_mapel }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Jenjang</label>
-                        <select name="id_jenjang" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 text-xs font-bold text-slate-800">
-                            <option value="">-- Semua Jenjang / Umum --</option>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Jenjang Tujuan <span class="text-rose-500">*</span></label>
+                        <select name="id_jenjang" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 text-xs font-bold text-slate-800 focus:border-[#007FBE] focus:outline-hidden">
+                            <option value="">-- Pilih Jenjang (SD/SMP/SMA) --</option>
                             @foreach($jenjangList as $j)
                                 <option value="{{ $j->id_jenjang }}">{{ $j->nama_tipe ?? $j->nama_jenjang }}</option>
                             @endforeach
@@ -880,9 +1005,9 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Peruntukan Default</label>
-                    <select name="kategori_bank" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 text-xs font-bold text-slate-800">
-                        <option value="umum">Umum / Latihan &amp; Dungeon</option>
-                        <option value="ujian">Khusus Ujian (Terpisah dari Dungeon)</option>
+                    <select name="kategori_bank" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 text-xs font-bold text-slate-800 focus:border-[#007FBE] focus:outline-hidden">
+                        <option value="umum">Umum (Latihan Bebas &amp; Mode Dungeon)</option>
+                        <option value="ujian">Khusus Ujian (Mode Token &amp; Ulangan)</option>
                     </select>
                 </div>
 
@@ -892,7 +1017,7 @@
                         class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 border-2 border-dashed border-slate-200 rounded-2xl p-2 cursor-pointer">
                 </div>
 
-                <div class="flex items-center justify-end gap-2.5 pt-2">
+                <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
                     <button type="button" id="cancelImportCsvModalBtn" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 cursor-pointer">Batal</button>
                     <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-[0_3px_0_#047857] transition cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3"/></svg>
@@ -1121,6 +1246,98 @@
             closeImportCsvBtn?.addEventListener('click', () => importCsvModal?.classList.add('hidden'));
             cancelImportCsvBtn?.addEventListener('click', () => importCsvModal?.classList.add('hidden'));
             importCsvModal?.addEventListener('click', e => { if (e.target === importCsvModal) importCsvModal.classList.add('hidden'); });
+
+            // 5b. MODAL PRATINJAU EKSPOR CSV LOGIC
+            const exportPreviewModal = document.getElementById('exportPreviewModal');
+            const openExportPreviewBtn = document.getElementById('openExportPreviewModalBtn');
+            const closeExportPreviewBtn = document.getElementById('closeExportPreviewModalBtn');
+            const cancelExportPreviewBtn = document.getElementById('cancelExportPreviewModalBtn');
+            const exportLoading = document.getElementById('exportPreviewLoading');
+            const exportTableBody = document.getElementById('exportPreviewTableBody');
+            const exportFilterSummary = document.getElementById('exportPreviewFilterSummary');
+            const exportTotalBadge = document.getElementById('exportPreviewTotalBadge');
+            const exportDownloadBtn = document.getElementById('exportPreviewDownloadBtn');
+
+            function closeExportModal() {
+                exportPreviewModal?.classList.add('hidden');
+            }
+
+            openExportPreviewBtn?.addEventListener('click', async () => {
+                if (!exportPreviewModal) return;
+                exportPreviewModal.classList.remove('hidden');
+                if (exportLoading) exportLoading.classList.remove('hidden');
+                if (exportTableBody) exportTableBody.innerHTML = '';
+
+                const currentSearch = window.location.search;
+                const previewUrl = `{{ route('soal.export.preview') }}${currentSearch}`;
+
+                try {
+                    const res = await fetch(previewUrl, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    const data = await res.json();
+
+                    if (exportLoading) exportLoading.classList.add('hidden');
+                    if (exportFilterSummary) exportFilterSummary.textContent = data.filter_summary || 'Semua Data Soal';
+                    if (exportTotalBadge) exportTotalBadge.textContent = `${data.total || 0} Soal`;
+                    if (exportDownloadBtn) exportDownloadBtn.href = data.download_url || '#';
+
+                    if (!data.preview || data.preview.length === 0) {
+                        exportTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="7" class="py-8 text-center text-slate-400 font-semibold">
+                                    Tidak ada data soal yang sesuai dengan filter yang aktif.
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    exportTableBody.innerHTML = data.preview.map(row => `
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="py-2.5 px-3 text-center font-bold text-slate-400 text-[11px]">${row.no}</td>
+                            <td class="py-2.5 px-3 font-mono font-bold text-[#007FBE] text-[11px]">${row.kode_soal}</td>
+                            <td class="py-2.5 px-3">
+                                <span class="font-bold text-slate-800">${row.mapel}</span>
+                                <span class="inline-block ml-1 px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold text-[10px]">${row.jenjang}</span>
+                            </td>
+                            <td class="py-2.5 px-3">
+                                <span class="font-bold text-slate-700">${row.jenis}</span>
+                                <span class="block text-[10px] text-slate-400 font-semibold">${row.tingkat} • ${row.peruntukan}</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-slate-700 max-w-xs truncate" title="${row.pertanyaan}">${row.pertanyaan}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-emerald-700">
+                                <span class="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200">${row.kunci}</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-center font-bold text-slate-700">${row.poin}</td>
+                        </tr>
+                    `).join('');
+
+                } catch (err) {
+                    if (exportLoading) exportLoading.classList.add('hidden');
+                    if (exportTableBody) {
+                        exportTableBody.innerHTML = `
+                            <tr>
+                                <td colspan="7" class="py-8 text-center text-rose-500 font-bold">
+                                    Gagal memuat pratinjau data. Silakan coba kembali atau unduh langsung.
+                                </td>
+                            </tr>
+                        `;
+                    }
+                    if (exportDownloadBtn) {
+                        exportDownloadBtn.href = `{{ route('soal.export.csv') }}${currentSearch}`;
+                    }
+                }
+            });
+
+            closeExportPreviewBtn?.addEventListener('click', closeExportModal);
+            cancelExportPreviewBtn?.addEventListener('click', closeExportModal);
+            exportPreviewModal?.addEventListener('click', e => {
+                if (e.target === exportPreviewModal) closeExportModal();
+            });
 
             // 6. MODAL PRATINJAU TAMPILAN SISWA
             const previewModal = document.getElementById('previewSoalModal');

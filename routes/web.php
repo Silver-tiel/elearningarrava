@@ -520,6 +520,7 @@ Route::prefix('admin')->middleware(['auth', 'active.student', 'role:admin,guru']
     Route::post('/soal/store', [SoalController::class, 'store'])->name('soal.store');
     Route::get('/soal/bank-data', [SoalController::class, 'apiBankSoal'])->name('soal.bank.data');
     Route::get('/soal/export-csv', [SoalController::class, 'exportCsv'])->name('soal.export.csv');
+    Route::get('/soal/export-preview', [SoalController::class, 'exportPreview'])->name('soal.export.preview');
     Route::get('/soal/template-csv', [SoalController::class, 'templateCsv'])->name('soal.template.csv');
     Route::post('/soal/import-csv', [SoalController::class, 'importCsv'])->name('soal.import.csv');
     Route::post('/soal/assign-to-quiz', [SoalController::class, 'assignToQuiz'])->name('soal.assign');
