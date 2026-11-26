@@ -7,6 +7,7 @@ use App\Models\OrangtuaSiswa;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class PendaftaranSiswaDanOrangtuaTest extends TestCase
@@ -63,7 +64,12 @@ class PendaftaranSiswaDanOrangtuaTest extends TestCase
             'password_orangtua' => '', // Menggunakan password siswa
         ];
 
-        $response = $this->post('/pendaftaran', $payload);
+        $this->post('/pendaftaran', $payload)->assertRedirect(route('pendaftaran.otp'));
+        $this->assertDatabaseMissing('user', ['email' => $payload['email_orangtua']]);
+        $messages = Mail::mailer('array')->getSymfonyTransport()->messages();
+        $this->assertCount(1, $messages);
+        $this->assertSame($payload['email'], $messages->first()->getOriginalMessage()->getTo()[0]->getAddress());
+        $response = $this->post(route('pendaftaran.otp.verify'), ['code' => $this->latestRegistrationCode()]);
 
         $response->assertRedirect('/login');
         $response->assertSessionHas('success');
@@ -110,7 +116,8 @@ class PendaftaranSiswaDanOrangtuaTest extends TestCase
             'password_orangtua' => 'OrtuSecret88',
         ];
 
-        $response = $this->post('/pendaftaran', $payload);
+        $this->post('/pendaftaran', $payload)->assertRedirect(route('pendaftaran.otp'));
+        $response = $this->post(route('pendaftaran.otp.verify'), ['code' => $this->latestRegistrationCode()]);
 
         $response->assertRedirect('/login');
 

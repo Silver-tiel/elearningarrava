@@ -6,12 +6,16 @@ Dokumen ini menjelaskan arsitektur autentikasi, manajemen session, pembagian per
 
 ## 1. Mekanisme Autentikasi
 
-Autentikasi dikendalikan oleh [`AuthController.php`](file:///e:/Android/laragon/www/elearningarrava/app/Http/Controllers/AuthController.php):
+Login web menggunakan `LoginController`. Login Flutter menggunakan `Api\AuthController`. Keduanya menggunakan email dan kata sandi. OTP digunakan saat pendaftaran siswa.
 
-* **Multi-Identifier Login**: Pengguna dapat masuk menggunakan **Email** atau **NISN** (Nomor Induk Siswa Nasional) yang terdaftar.
+* **Login web**. Laravel membuat sesi dan membuka dashboard sesuai peran. Opsi **Ingat saya di perangkat ini** memungkinkan pemulihan sesi melalui cookie selama 30 hari.
+* **Login Flutter**. `POST /api/login` menerima `email` dan `password`. Respons sukses mengembalikan `token` dan `user`. Simpan token di penyimpanan aman perangkat dan gunakan sebagai bearer token saat memanggil `GET /api/me`. Token baru berlaku 30 hari. `POST /api/logout` mencabut token perangkat saat ini.
+* **Konfigurasi**. Jalankan `php artisan migrate` untuk menambahkan `remember_token`. Gunakan `MAIL_MAILER=smtp` dengan host, port, kredensial, dan alamat pengirim yang sesuai di produksi. Sediakan cache bersama dengan dukungan lock apabila aplikasi berjalan pada beberapa server. Konfigurasi lokal `MAIL_MAILER=log` menulis email OTP ke log Laravel untuk pengujian.
 * **Keamanan Kata Sandi**: Menggunakan algoritma hash standar industri `bcrypt` (`password_hash`).
 * **Pendaftaran Siswa Baru**:
   * Siswa mendaftar dengan menginput nama, email, NISN, kata sandi, dan memilih **Jenjang Sekolah** (SD, SMP, atau SMA).
+  * Halaman verifikasi menampilkan email siswa sebagai tujuan pengiriman. Kode berlaku selama 5 menit, sekali pakai, dan dibatalkan setelah lima percobaan salah. Tombol kirim ulang aktif setelah 60 detik. Kode baru menggantikan kode lama.
+  * Setelah email siswa terverifikasi, sistem membuat akun siswa dan memproses data akun orang tua jika diisi. Email orang tua tidak menerima OTP. Sesi pendaftaran berlaku 30 menit.
   * Data otomatis diberi `id_tipeuser = 3` (siswa) dan `total_poin = 0`.
 * **Pencegahan Akses Tak Sah**:
   * Pengguna yang belum terautentikasi otomatis dialihkan ke rute `/login`.

@@ -51,7 +51,7 @@ Route::get('/home', function () {
 
 // Login.
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:10,1,web-login')->name('login.submit');
 
 // Logout (mendukung POST dari modal logout dan GET jika diakses langsung/refresh)
 Route::match(['get', 'post'], '/logout', [LogoutController::class, 'logout'])->name('logout');
@@ -71,7 +71,13 @@ Route::match(['get', 'post'], '/logout', [LogoutController::class, 'logout'])->n
 // })->name('password.email');
 
 // Proses pendaftaran.
-Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])->name('pendaftaranBaru');
+Route::post('/pendaftaran', [PendaftaranController::class, 'UserBaru'])
+    ->middleware('throttle:10,1,registration')->block(60, 10)->name('pendaftaranBaru');
+Route::get('/pendaftaran/otp', [PendaftaranController::class, 'showOtp'])->block(60, 10)->name('pendaftaran.otp');
+Route::post('/pendaftaran/otp', [PendaftaranController::class, 'verifyOtp'])
+    ->middleware('throttle:15,1,registration-otp')->block(60, 10)->name('pendaftaran.otp.verify');
+Route::post('/pendaftaran/otp/kirim-ulang', [PendaftaranController::class, 'resendOtp'])
+    ->middleware('throttle:10,1,registration-resend')->block(60, 10)->name('pendaftaran.otp.resend');
 
 // Dashboard.
 Route::get('/dashboard', function () {

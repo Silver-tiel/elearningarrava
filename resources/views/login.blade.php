@@ -313,6 +313,11 @@
       </div>
     </label>
 
+    <label class="mb-2 flex items-center gap-2 text-sm text-[#082765]">
+      <input type="checkbox" name="remember" value="1" @checked(old('remember'))>
+      Ingat saya di perangkat ini
+    </label>
+
     <p class="err" id="err">
       @if ($errors->any())
         {{ $errors->first() }}
@@ -345,11 +350,11 @@
     </div>
 
     <h2 id="hello">Halo!</h2>
-    <p class="lead" id="homeLead">Login berhasil. Mengalihkan ke dashboard...</p>
+    <p class="lead">Login berhasil. Mengalihkan ke dashboard...</p>
 
     <div class="success-badge">
       <div class="spinner"></div>
-      <span>Memuat Dashboard...</span>
+      <span>Memuat dashboard...</span>
     </div>
   </section>
 
@@ -486,7 +491,7 @@
           'Accept': 'application/json',
           'X-CSRF-TOKEN': token
         },
-        body: JSON.stringify({ email: u, password: pw })
+        body: JSON.stringify({ email: u, password: pw, remember: login.elements.remember.checked })
       })
       .then(function (res) {
         return res.json().then(function (data) {
@@ -509,8 +514,7 @@
           return;
         }
 
-        // Sukses -> Jalankan transisi naik
-        mulaiTransisi(result.data.name || 'Siswa', result.data.redirect || '{{ url("/siswa/dashboard") }}');
+        mulaiTransisi(result.data.name, result.data.redirect);
       })
       .catch(function () {
         // Fallback ke form submit biasa bila fetch offline / gagal
@@ -519,10 +523,8 @@
     });
   }
 
-  // Jalankan transisi naik (panggil ini HANYA jika login berhasil)
   function mulaiTransisi(nama, redirectUrl) {
-    if ($('hello')) $('hello').textContent = 'Halo, ' + nama + '!';
-    if ($('homeLead')) $('homeLead').textContent = 'Login berhasil. Mengalihkan ke dashboard...';
+    if (nama && $('hello')) $('hello').textContent = 'Halo, ' + nama + '!';
     if (home) home.setAttribute('aria-hidden', 'false');
     if (login) login.style.pointerEvents = 'none';   // login tidak bisa diklik saat tersembunyi
 
