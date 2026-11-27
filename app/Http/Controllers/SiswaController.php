@@ -542,6 +542,12 @@ class SiswaController extends Controller
         }
 
         $quizzes = $query->get();
+        $quizzes->each(function ($quiz) {
+            $quiz->setAttribute(
+                'punya_attempt_aktif',
+                $this->punyaAttemptAktif($quiz)
+            );
+        });
         $tingkatQuizList = TingkatQuiz::orderBy('id_tingkatquiz')->get();
         $mapelList = Schema::hasTable('mapel')
             ? Mapel::forJenjang($user->id_jenjang ?? null)->orderBy('nama_mapel')->get()
