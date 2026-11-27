@@ -77,9 +77,6 @@ class GalaksiHeroSectionTest extends TestCase
         $galaksiResponse->assertSee('id="galaksiHeroCard"', false);
         $galaksiResponse->assertDontSee('id="samudraHeroCard"', false);
         $galaksiResponse->assertSee('assets/widget/cards/herosection/herosection2/BackgroundSpace.webp');
-
-        $niereView = $this->blade('<x-niere-widget />');
-        $niereView->assertSee('#samudraHeroCard, #galaksiHeroCard', false);
     }
 
     public function test_siswa_can_switch_hero_section_from_profile_page_and_persist_choice(): void

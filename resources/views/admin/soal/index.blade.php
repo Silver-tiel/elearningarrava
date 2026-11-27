@@ -437,6 +437,8 @@
                     @endphp
 
                     <article
+                        data-type="{{ $jenisSlug }}"
+                        data-has-image="{{ $hasImage ? '1' : '0' }}"
                         class="soal-card bg-white rounded-2xl border-2 border-[#E6F1FC] p-5 shadow-xs hover:border-[#B2E7FC] transition flex flex-col justify-between gap-4">
 
                         <div class="space-y-3">

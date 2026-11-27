@@ -147,6 +147,12 @@ class Soal extends Model
         parent::boot();
 
         static::creating(function ($soal) {
+            if (is_null($soal->id_jenjang) && \Illuminate\Support\Facades\Schema::hasColumn($soal->getTable(), 'id_jenjang')) {
+                $soal->id_jenjang = ($soal->id_quiz && \Illuminate\Support\Facades\Schema::hasColumn('quiz', 'id_jenjang')
+                    ? Quiz::where('id_quiz', $soal->id_quiz)->value('id_jenjang')
+                    : null) ?? 2;
+            }
+
             if (\Illuminate\Support\Facades\Schema::hasTable($soal->getTable()) && !\Illuminate\Support\Facades\Schema::hasColumn($soal->getTable(), 'kode_soal')) {
                 return;
             }

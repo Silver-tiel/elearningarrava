@@ -218,20 +218,23 @@ class ExamModeAndBankSoalTest extends TestCase
 
         // 2. API quizzes menyembunyikan token dari siswa, namun menampilkan ke admin
         $studentJson = $this->getJson('/api/quizzes')->assertOk();
-        $studentQuiz = collect($studentJson->json('data'))->firstWhere('id', $exam->id_quiz);
+        $studentQuiz = collect($studentJson->json('data'))->firstWhere('id_quiz', $exam->id_quiz);
+        $this->assertNotNull($studentQuiz);
         $this->assertNull($studentQuiz['token']);
-        $this->assertTrue($studentQuiz['is_mode_ujian']);
+        $this->assertTrue($studentQuiz['is_exam_mode']);
 
         $this->actingAs($admin);
         $adminJson = $this->getJson('/api/quizzes')->assertOk();
-        $adminQuiz = collect($adminJson->json('data'))->firstWhere('id', $exam->id_quiz);
+        $adminQuiz = collect($adminJson->json('data'))->firstWhere('id_quiz', $exam->id_quiz);
+        $this->assertNotNull($adminQuiz);
         $this->assertSame('UJIAN2026', $adminQuiz['token']);
 
         // 3. Siswa tidak bisa mulai atau verifikasi token sebelum waktu_mulai
         $this->actingAs($student);
         $this->postJson("/api/quizzes/{$exam->id_quiz}/verify-token", ['token' => 'UJIAN2026'])
-            ->assertStatus(403)
-            ->assertJsonPath('success', false);
+            ->assertStatus(422)
+            ->assertJsonPath('status', 'error')
+            ->assertJsonPath('data.valid', false);
 
         // 4. Buka jadwal ujian (sedang berlangsung) -> token salah berulang kali memicu rate limiter
         $exam->update(['waktu_mulai' => now()->subMinutes(10)]);
@@ -255,10 +258,10 @@ class ExamModeAndBankSoalTest extends TestCase
 
         // 6. Mode Ujian membatasi 1 kali percobaan -> percobaan kedua ditolak
         $this->postJson("/api/quizzes/{$exam->id_quiz}/verify-token", ['token' => 'UJIAN2026'])
-            ->assertStatus(403);
+            ->assertStatus(422);
         $this->postJson("/api/quizzes/{$exam->id_quiz}/submit", [
             'answers' => [$soal->id_soal => '42'],
-        ])->assertStatus(403);
+        ])->assertStatus(422);
 
         // 7. Token quiz tetap kadaluarsa saat melewati waktu_kadaluarsa
         $exam->update(['waktu_kadaluarsa' => now()->subMinute()]);

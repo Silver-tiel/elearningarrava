@@ -70,7 +70,9 @@ class QuizDraftTest extends TestCase
         Schema::create('soal', function (Blueprint $table) {
             $table->increments('id_soal');
             $table->string('kode_soal')->nullable();
-            $table->unsignedInteger('id_quiz');
+            $table->unsignedInteger('id_quiz')->nullable();
+            $table->unsignedInteger('id_mapel')->nullable();
+            $table->unsignedInteger('parent_soal_id')->nullable();
             $table->unsignedInteger('id_jenjang')->nullable();
             $table->unsignedInteger('id_jenis_soal')->nullable();
             $table->text('pertanyaan');

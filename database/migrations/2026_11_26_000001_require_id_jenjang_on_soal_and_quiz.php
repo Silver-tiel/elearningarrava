@@ -21,12 +21,23 @@ return new class extends Migration
         ');
 
         // 2. Isi soal yang id_jenjang NULL → ikuti id_jenjang kuisnya, atau default SMP (2) jika dari Bank Soal
-        DB::statement('
-            UPDATE soal s
-            LEFT JOIN quiz q ON s.id_quiz = q.id_quiz
-            SET s.id_jenjang = COALESCE(q.id_jenjang, 2)
-            WHERE s.id_jenjang IS NULL
-        ');
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('
+                UPDATE soal
+                SET id_jenjang = COALESCE(
+                    (SELECT q.id_jenjang FROM quiz q WHERE q.id_quiz = soal.id_quiz),
+                    2
+                )
+                WHERE id_jenjang IS NULL
+            ');
+        } else {
+            DB::statement('
+                UPDATE soal s
+                LEFT JOIN quiz q ON s.id_quiz = q.id_quiz
+                SET s.id_jenjang = COALESCE(q.id_jenjang, 2)
+                WHERE s.id_jenjang IS NULL
+            ');
+        }
 
         // 3. Ubah kolom soal.id_jenjang → NOT NULL
         Schema::table('soal', function (Blueprint $table) {

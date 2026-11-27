@@ -31,9 +31,9 @@ class DungeonSeederTest extends TestCase
         $this->assertEquals(30, (int) DungeonPengaturan::getNilai('syarat_total_soal_aktif'));
         $this->assertEquals(8, (int) DungeonPengaturan::getNilai('syarat_soal_per_tingkat'));
 
-        // 2. Verifikasi 39 Kuis Dungeon terbuat (11 mapel umum x 3 jenjang = 33, + 6 SMA peminatan = 39)
+        // 2. Verifikasi 16 Kuis Dungeon terbuat (5 SD + 5 SMP + 6 SMA = 16)
         $dungeonQuizzes = Quiz::whereHas('tipeQuiz', fn($q) => $q->whereRaw("LOWER(COALESCE(nama_tipe, '')) = 'dungeon'"))->get();
-        $this->assertCount(39, $dungeonQuizzes);
+        $this->assertCount(16, $dungeonQuizzes);
 
         // 3. Verifikasi Bank Soal Awal Matematika SD & IPA SD langsung terbuka (masing-masing 60 soal: 20 mudah, 20 sedang, 20 sulit)
         $service = app(DungeonService::class);
@@ -64,6 +64,6 @@ class DungeonSeederTest extends TestCase
         // 5. Seeder idempoten jika dijalankan ulang
         $this->seed(DungeonSeeder::class);
         $dungeonQuizzesUlang = Quiz::whereHas('tipeQuiz', fn($q) => $q->whereRaw("LOWER(COALESCE(nama_tipe, '')) = 'dungeon'"))->get();
-        $this->assertCount(39, $dungeonQuizzesUlang);
+        $this->assertCount(16, $dungeonQuizzesUlang);
     }
 }

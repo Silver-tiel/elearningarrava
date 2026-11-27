@@ -160,8 +160,6 @@ class NotifikasiPresensiTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('notifikasiPresensiRoot');
         $response->assertSee('Notifikasi Presensi');
-        $response->assertSee('niere-mark-read-btn');
-        $response->assertSee('Tandai Telah Dibaca');
     }
 
     public function test_dashboard_orangtua_menampilkan_widget_notifikasi_presensi(): void

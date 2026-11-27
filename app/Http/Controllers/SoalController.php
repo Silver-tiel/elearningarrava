@@ -1219,7 +1219,7 @@ class SoalController extends Controller
             'soal_ids' => 'required|array|min:1',
             'soal_ids.*' => 'integer|exists:soal,id_soal',
             'id_mapel' => 'nullable|integer|exists:mapel,id_mapel',
-            'id_jenjang' => 'required|integer|exists:jenjang,id_jenjang',
+            'id_jenjang' => 'nullable|integer|exists:jenjang,id_jenjang',
             'tingkat_soal' => 'nullable|in:mudah,sedang,sulit',
             'kategori_bank' => 'nullable|in:umum,ujian',
         ]);

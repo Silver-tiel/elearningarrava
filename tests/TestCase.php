@@ -11,8 +11,9 @@ abstract class TestCase extends BaseTestCase
     {
         $transport = Mail::mailer('array')->getSymfonyTransport();
         $email = $transport->messages()->last()->getOriginalMessage();
-        $this->assertMatchesRegularExpression('/\b[0-9]{6}\b/', $email->getTextBody());
-        preg_match('/\b[0-9]{6}\b/', $email->getTextBody(), $matches);
+        $body = (string) ($email->getTextBody() ?: $email->getHtmlBody());
+        $this->assertMatchesRegularExpression('/\b[0-9]{6}\b/', $body);
+        preg_match('/\b[0-9]{6}\b/', $body, $matches);
 
         return $matches[0];
     }

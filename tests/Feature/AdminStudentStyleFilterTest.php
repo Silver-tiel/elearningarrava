@@ -200,13 +200,13 @@ class AdminStudentStyleFilterTest extends TestCase
         $response->assertSee('Kuis Wayground SD');
         $response->assertSee('Kuis Klasik Umum');
 
-        $filteredModeAndUmum = $this->actingAs($admin)->get(route('admin.quiz', [
+        $filteredModeAndSmp = $this->actingAs($admin)->get(route('admin.quiz', [
             'mode' => 'biasa',
-            'jenjang' => 'umum',
+            'jenjang' => '2',
         ]));
-        $filteredModeAndUmum->assertOk();
-        $filteredModeAndUmum->assertSee('Kuis Klasik Umum');
-        $filteredModeAndUmum->assertDontSee('Kuis Wayground SD');
+        $filteredModeAndSmp->assertOk();
+        $filteredModeAndSmp->assertSee('Kuis Klasik Umum');
+        $filteredModeAndSmp->assertDontSee('Kuis Wayground SD');
     }
 
     public function test_halaman_bank_soal_menampilkan_filter_gaya_siswa_dan_semua_tipe_soal(): void

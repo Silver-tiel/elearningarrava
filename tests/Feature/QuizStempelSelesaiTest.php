@@ -28,6 +28,11 @@ class QuizStempelSelesaiTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('jenjang', function (Blueprint $table) {
+            $table->increments('id_jenjang');
+            $table->string('nama_tipe');
+        });
+
         Schema::create('quiz', function (Blueprint $table) {
             $table->increments('id_quiz');
             $table->string('kode_quiz')->nullable();

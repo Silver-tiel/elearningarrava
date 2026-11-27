@@ -383,7 +383,9 @@
                         <div class="mt-4 space-y-1.5">
                             <div class="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs">
                                 <span class="text-slate-400 font-medium">Siswa</span>
-                                <span class="font-semibold text-slate-700">{{ $module->jumlah_siswa ?? $module->siswa_count ?? 0 }}</span>
+                                <span class="font-semibold text-slate-700" title="{{ $module->jumlah_siswa_buka ?? 0 }} membuka, {{ $module->jumlah_siswa_selesai ?? 0 }} tuntas">
+                                    {{ $module->jumlah_siswa_buka ?? ($module->jumlah_siswa ?? 0) }} buka ({{ $module->jumlah_siswa_selesai ?? 0 }} selesai)
+                                </span>
                             </div>
                             <div class="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs">
                                 <span class="text-slate-400 font-medium">Pengajar</span>

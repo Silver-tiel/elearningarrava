@@ -13,6 +13,7 @@ use App\Models\ProgresModulSiswa;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -64,6 +65,20 @@ class ModulController extends Controller
             $relations[] = 'pembuat';
         }
         $query = Modul::with($relations);
+
+        if (Schema::hasTable('progres_modul_siswa')) {
+            $query->withCount([
+                'progresSiswa as jumlah_siswa' => function ($q) {
+                    $q->select(DB::raw('count(distinct id_user)'));
+                },
+                'progresSiswa as jumlah_siswa_buka' => function ($q) {
+                    $q->select(DB::raw('count(distinct id_user)'));
+                },
+                'progresSiswa as jumlah_siswa_selesai' => function ($q) {
+                    $q->where('is_tuntas', true);
+                },
+            ]);
+        }
 
         // Guru hanya melihat modul miliknya sendiri; admin melihat semua.
         if ($hasPembuat && $request->user() && $request->user()->isGuru()) {
@@ -667,6 +682,20 @@ class ModulController extends Controller
         }
         $query = Modul::with($relations);
 
+        if (Schema::hasTable('progres_modul_siswa')) {
+            $query->withCount([
+                'progresSiswa as jumlah_siswa' => function ($q) {
+                    $q->select(DB::raw('count(distinct id_user)'));
+                },
+                'progresSiswa as jumlah_siswa_buka' => function ($q) {
+                    $q->select(DB::raw('count(distinct id_user)'));
+                },
+                'progresSiswa as jumlah_siswa_selesai' => function ($q) {
+                    $q->where('is_tuntas', true);
+                },
+            ]);
+        }
+
         // Guru hanya mengelola modul miliknya sendiri
         if ($supportsPembuat && $user && $user->isGuru()) {
             $query->where('id_pembuat', $user->id_user);
@@ -761,6 +790,21 @@ class ModulController extends Controller
             ], 403);
         }
 
+        // Catat otomatis bahwa siswa telah membuka modul ini (sinkron dengan web SiswaController@materiVideo)
+        if ($user && $user->isSiswa() && Schema::hasTable('progres_modul_siswa')) {
+            ProgresModulSiswa::firstOrCreate(
+                ['id_user' => $user->id_user, 'id_modul' => $modul->id_modul],
+                [
+                    'materi_selesai' => false,
+                    'quiz_selesai' => false,
+                    'quiz_lulus' => false,
+                    'nilai_quiz' => 0,
+                    'is_tuntas' => false,
+                    'poin_didapat' => 0,
+                ]
+            );
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Detail modul berhasil diambil.',
@@ -773,6 +817,25 @@ class ModulController extends Controller
         $progres = ($user && $user->isSiswa())
             ? ProgresModulSiswa::where('id_user', $user->id_user)->where('id_modul', $modul->id_modul)->first()
             : null;
+
+        $jumlahSiswaBuka = isset($modul->jumlah_siswa_buka)
+            ? (int) $modul->jumlah_siswa_buka
+            : (Schema::hasTable('progres_modul_siswa')
+                ? ProgresModulSiswa::where('id_modul', $modul->id_modul)->distinct('id_user')->count('id_user')
+                : 0);
+
+        $jumlahSiswaSelesai = isset($modul->jumlah_siswa_selesai)
+            ? (int) $modul->jumlah_siswa_selesai
+            : (Schema::hasTable('progres_modul_siswa')
+                ? ProgresModulSiswa::where('id_modul', $modul->id_modul)->where('is_tuntas', true)->count()
+                : 0);
+
+        $totalSiswa = Schema::hasTable('user')
+            ? User::where('id_tipeuser', 3)
+                ->when($modul->id_jenjang, fn($q) => $q->where('id_jenjang', $modul->id_jenjang))
+                ->when($modul->id_tingkat_kelas, fn($q) => $q->where('id_tingkat_kelas', $modul->id_tingkat_kelas))
+                ->count()
+            : 0;
 
         $fileUrl = null;
         if ($modul->file_materi) {
@@ -853,6 +916,14 @@ class ModulController extends Controller
             'youtube_embed_url' => $modul->youtube_embed_url,
             'soal_modul' => $soalModulData,
             'catatan' => $catatanData,
+            'jumlah_siswa_buka' => $jumlahSiswaBuka,
+            'jumlah_siswa_selesai' => $jumlahSiswaSelesai,
+            'total_siswa' => $totalSiswa,
+            'statistik_siswa' => [
+                'jumlah_buka' => $jumlahSiswaBuka,
+                'jumlah_selesai' => $jumlahSiswaSelesai,
+                'total_siswa' => $totalSiswa,
+            ],
             'progres' => $progres ? [
                 'materi_selesai' => (bool) $progres->materi_selesai,
                 'quiz_selesai' => (bool) $progres->quiz_selesai,

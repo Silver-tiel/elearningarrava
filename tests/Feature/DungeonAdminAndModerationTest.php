@@ -133,10 +133,10 @@ class DungeonAdminAndModerationTest extends TestCase
         $resGuru = $this->get('/admin/dungeon/bank');
         $resGuru->assertStatus(200);
 
-        // Guru dan Admin juga langsung melihat panel manajemen & tombol Tambah Soal di halaman /dungeon
+        // Guru dan Admin juga langsung melihat panel manajemen & tombol Kelola Soal di halaman /dungeon
         $resDungeonGuru = $this->get('/dungeon?jenjang=1');
         $resDungeonGuru->assertStatus(200);
-        $resDungeonGuru->assertSee('Tambah Soal');
+        $resDungeonGuru->assertSee('Kelola Soal');
         $resDungeonGuru->assertSee('Mudah');
         $resDungeonGuru->assertSee('Sedang');
         $resDungeonGuru->assertSee('Sulit');

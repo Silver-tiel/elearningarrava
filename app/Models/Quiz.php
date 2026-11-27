@@ -331,6 +331,10 @@ class Quiz extends Model
         parent::boot();
 
         static::creating(function ($quiz) {
+            if (is_null($quiz->id_jenjang) && \Illuminate\Support\Facades\Schema::hasColumn($quiz->getTable(), 'id_jenjang')) {
+                $quiz->id_jenjang = 2;
+            }
+
             if (\Illuminate\Support\Facades\Schema::hasTable($quiz->getTable()) && !\Illuminate\Support\Facades\Schema::hasColumn($quiz->getTable(), 'kode_quiz')) {
                 return;
             }

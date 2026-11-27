@@ -12,6 +12,7 @@ use App\Models\HasilQuizModul;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -1991,14 +1992,27 @@ class QuizController extends Controller
             ]);
         }
 
+        $rateKey = "quiz-token-{$quiz->id_quiz}-" . ($user?->id_user ?? $request->ip());
+        if (RateLimiter::tooManyAttempts($rateKey, 5)) {
+            $seconds = RateLimiter::availableIn($rateKey);
+            return response()->json([
+                'status' => 'error',
+                'message' => "Terlalu banyak percobaan token salah. Coba lagi dalam {$seconds} detik.",
+                'data' => ['valid' => false],
+            ], 429);
+        }
+
         $tokenInput = trim((string) $request->input('token', ''));
         if ($tokenInput === '' || strcasecmp($tokenInput, (string) $quiz->token) !== 0) {
+            RateLimiter::hit($rateKey, 60);
             return response()->json([
                 'status' => 'error',
                 'message' => 'Token ujian salah. Silakan tanyakan token kepada guru Anda.',
                 'data' => ['valid' => false],
             ], 422);
         }
+
+        RateLimiter::clear($rateKey);
 
         return response()->json([
             'status' => 'success',
@@ -2122,7 +2136,9 @@ class QuizController extends Controller
                 'total_soal' => $quiz->soal->count(),
                 'is_lulus' => $isLulus,
                 'poin_diberikan' => $poinDiberikan,
+                'evaluasi_disembunyikan' => !$showEval,
                 'evaluasi' => $showEval ? $detailEvaluasi : [],
+                'evaluasi_jawaban' => $showEval ? $detailEvaluasi : [],
             ],
         ]);
     }
