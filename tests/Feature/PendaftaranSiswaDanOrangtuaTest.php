@@ -148,4 +148,65 @@ class PendaftaranSiswaDanOrangtuaTest extends TestCase
 
         $response->assertSessionHasErrors(['email_orangtua']);
     }
+
+    public function test_pendaftaran_api_memverifikasi_kode_dan_menolak_kode_lama(): void
+    {
+        $payload = [
+            'nama' => 'Siswa Mobile',
+            'email' => 'siswa.mobile@example.com',
+            'nisn' => '0001234567',
+            'id_jenjang' => 1,
+            'nomor_handphone' => '081234567890',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'nama_orangtua' => 'Wali Mobile',
+            'email_orangtua' => 'wali.mobile@example.com',
+            'nomor_hp_orangtua' => '081298765432',
+        ];
+        $path = '/api/pendaftaran';
+        $this->getJson($path.'/jenjang')->assertOk()
+            ->assertJsonFragment(['id_jenjang' => 1, 'nama_tipe' => 'SMA']);
+
+        $start = $this->postJson($path, $payload)->assertCreated()
+            ->assertJsonPath('email', $payload['email'])
+            ->assertJsonPath('retry_after', 60)
+            ->assertJsonMissingPath('code');
+        $challenge = ['registration_id' => $start->json('registration_id')];
+        $this->assertDatabaseMissing('user', ['email' => $payload['email']]);
+        $this->assertDatabaseMissing('user', ['email' => $payload['email_orangtua']]);
+
+        $messages = Mail::mailer('array')->getSymfonyTransport()->messages();
+        $this->assertCount(1, $messages);
+        $this->assertSame($payload['email'], $messages->first()->getOriginalMessage()->getTo()[0]->getAddress());
+        $firstCode = $this->latestRegistrationCode();
+        $wrong = $firstCode === '012345' ? '012346' : '012345';
+        $this->postJson($path.'/otp', $challenge + ['code' => $wrong])->assertUnprocessable()
+            ->assertJsonPath('message', 'Kode OTP salah. Periksa email lalu coba lagi.');
+
+        $this->travel(59)->seconds();
+        $this->postJson($path.'/otp/kirim-ulang', $challenge)->assertTooManyRequests()
+            ->assertJsonPath('retry_after', 1);
+        $this->travel(1)->seconds();
+        $this->postJson($path.'/otp/kirim-ulang', $challenge)->assertOk()->assertJsonPath('retry_after', 60);
+        $secondCode = $this->latestRegistrationCode();
+        $this->assertNotSame($firstCode, $secondCode);
+        $this->postJson($path.'/otp', $challenge + ['code' => $firstCode])->assertUnprocessable()
+            ->assertJsonPath('message', 'Kode OTP salah. Periksa email lalu coba lagi.');
+
+        $this->travel(5)->minutes();
+        $this->postJson($path.'/otp', $challenge + ['code' => $secondCode])->assertUnprocessable()
+            ->assertJsonPath('message', 'Kode OTP kedaluwarsa. Minta kode baru.');
+        $this->assertDatabaseMissing('user', ['email' => $payload['email']]);
+
+        $this->postJson($path.'/otp/kirim-ulang', $challenge)->assertOk();
+        $code = ['code' => $this->latestRegistrationCode()];
+        $this->postJson($path.'/otp', $challenge + $code)->assertOk()->assertJsonPath('success', true);
+        $this->postJson($path.'/otp', $challenge + $code)->assertGone();
+        $this->assertDatabaseHas('user', ['email' => $payload['email'], 'id_tipeuser' => 3]);
+        $this->assertDatabaseHas('user', ['email' => $payload['email_orangtua'], 'id_tipeuser' => 4]);
+        $login = $this->postJson('/api/login', ['email' => $payload['email'], 'password' => $payload['password']])
+            ->assertOk();
+        $this->getJson('/api/me', ['Authorization' => 'Bearer '.$login->json('token')])
+            ->assertOk()->assertJsonPath('user.email', $payload['email']);
+    }
 }

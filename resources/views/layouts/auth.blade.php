@@ -132,15 +132,7 @@
                             <a href="{{ url('/') }}"
                                 class="mb-1.5 inline-flex items-center justify-center gap-2 no-underline">
 
-                                <svg viewBox="0 0 40 40" class="h-9 w-9" fill="none" aria-hidden="true">
-                                    <path d="M5 31 17.5 7.5C18.5 5.5 21.5 5.5 22.5 7.5L35 31" stroke="#0875F9"
-                                        stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-
-                                    <path d="M13.5 23.5 20 11.5 26.5 23.5" stroke="#0C55C8" stroke-width="5"
-                                        stroke-linecap="round" stroke-linejoin="round" />
-
-                                    <circle cx="20" cy="26.5" r="4" fill="#FFBE35" />
-                                </svg>
+                                <img src="{{ asset('assets/icon/appIconARRAVA.png') }}" alt="" class="h-9 w-9 shrink-0 object-contain">
 
                                 <span class="text-[25px] font-extrabold tracking-[-0.7px] text-[#082765]">
                                     Arrava

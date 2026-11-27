@@ -4,11 +4,19 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\ModulController;
+use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\OrangtuaController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\PresensiController;
 use App\Http\Controllers\SoalController;
+
+Route::prefix('pendaftaran')->controller(PendaftaranController::class)->group(function () {
+    Route::get('/jenjang', 'apiJenjang')->middleware('throttle:60,1,api-registration-jenjang');
+    Route::post('/', 'apiStart')->middleware('throttle:10,1,api-registration');
+    Route::post('/otp', 'apiVerify')->middleware('throttle:15,1,api-registration-otp');
+    Route::post('/otp/kirim-ulang', 'apiResend')->middleware('throttle:10,1,api-registration-resend');
+});
 
 // AUTH
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1,api-login');

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\RegistrationOtp;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -26,6 +27,13 @@ class PendaftaranController extends Controller
     }
 
     public function UserBaru(Request $request, RegistrationOtp $otp)
+    {
+        $request->session()->put('registration', $this->startRegistration($request, $otp));
+
+        return redirect()->route('pendaftaran.otp');
+    }
+
+    private function startRegistration(Request $request, RegistrationOtp $otp): array
     {
         // Kompatibilitas fallback: jika input dikirim dengan nama nomor_hp, sinkronkan ke nomor_handphone
         if (!$request->has('nomor_handphone') && $request->has('nomor_hp')) {
@@ -162,13 +170,11 @@ class PendaftaranController extends Controller
             ? $validated['password']
             : Hash::make($validated['password_orangtua']);
 
-        $request->session()->put('registration', [
+        return [
             'data' => $validated,
             'otp' => $otp->send($validated['email'], 'email'),
             'expires_at' => now()->addMinutes(30)->timestamp,
-        ]);
-
-        return redirect()->route('pendaftaran.otp');
+        ];
     }
 
     public function showOtp(Request $request)
@@ -210,26 +216,15 @@ class PendaftaranController extends Controller
             return $this->expiredRegistration();
         }
 
-        $code = $request->validate(['code' => ['required', 'string', 'digits:6']], [
-            'code.required' => 'Masukkan kode OTP.',
-            'code.digits' => 'Kode OTP harus terdiri dari 6 digit.',
-        ])['code'];
+        $error = $this->checkCode($pending['otp'], $this->validatedCode($request), $otp);
+        if ($error) {
+            $request->session()->put('registration', $pending);
 
-        $challenge = $pending['otp'];
-        if ($challenge['expires_at'] <= now()->timestamp || $challenge['attempts'] >= 5) {
-            return redirect()->route('pendaftaran.otp')->withErrors(['code' => 'Kode kedaluwarsa atau batas percobaan tercapai. Minta kode baru.']);
-        }
-
-        if (!$otp->matches($challenge, $code)) {
-            $attempts = $challenge['attempts'] + 1;
-            $request->session()->put('registration.otp.attempts', $attempts);
-            $message = $attempts === 5 ? 'Batas percobaan tercapai. Minta kode baru.' : 'Kode OTP salah. Periksa email lalu coba lagi.';
-
-            return redirect()->route('pendaftaran.otp')->withErrors(['code' => $message]);
+            return redirect()->route('pendaftaran.otp')->withErrors(['code' => $error['message']]);
         }
 
         try {
-            $response = $this->createAccounts($pending['data']);
+            $response = redirect('/login')->with('success', $this->createAccounts($pending['data']));
         } catch (ValidationException $exception) {
             $response = redirect()->route('pendaftaran')->withErrors($exception->errors());
         } catch (UniqueConstraintViolationException) {
@@ -239,6 +234,129 @@ class PendaftaranController extends Controller
         $request->session()->forget('registration');
 
         return $response;
+    }
+
+    public function apiJenjang()
+    {
+        return response()->json(['data' => Jenjang::orderBy('id_jenjang')->get(['id_jenjang', 'nama_tipe'])]);
+    }
+
+    public function apiStart(Request $request, RegistrationOtp $otp)
+    {
+        $pending = $this->startRegistration($request, $otp);
+        $id = Str::random(64);
+        Cache::put('mobile-registration:'.$id, $pending, new \DateTimeImmutable('@'.$pending['expires_at']));
+
+        return response()->json([
+            'success' => true,
+            'registration_id' => $id,
+            'email' => $pending['data']['email'],
+            'retry_after' => $this->resendDelay($pending),
+        ], 201);
+    }
+
+    public function apiVerify(Request $request, RegistrationOtp $otp)
+    {
+        $code = $this->validatedCode($request);
+
+        return $this->withMobileRegistration($request, function (string $key, array $pending) use ($otp, $code) {
+            $error = $this->checkCode($pending['otp'], $code, $otp);
+            if ($error) {
+                Cache::put($key, $pending, new \DateTimeImmutable('@'.$pending['expires_at']));
+
+                return response()->json($error, 422);
+            }
+
+            try {
+                $message = $this->createAccounts($pending['data']);
+            } catch (UniqueConstraintViolationException) {
+                Cache::forget($key);
+
+                return response()->json(['message' => 'Data pendaftaran sudah digunakan. Periksa kembali data siswa.'], 409);
+            } catch (ValidationException $exception) {
+                Cache::forget($key);
+
+                throw $exception;
+            }
+
+            Cache::forget($key);
+
+            return response()->json(['success' => true, 'message' => $message]);
+        });
+    }
+
+    public function apiResend(Request $request, RegistrationOtp $otp)
+    {
+        return $this->withMobileRegistration($request, function (string $key, array $pending) use ($otp) {
+            $delay = $this->resendDelay($pending);
+            if ($delay > 0) {
+                return response()->json([
+                    'message' => 'Tunggu hingga hitung mundur selesai.',
+                    'retry_after' => $delay,
+                ], 429);
+            }
+
+            $expiry = new \DateTimeImmutable('@'.$pending['expires_at']);
+            $pending['otp']['resend_at'] = now()->timestamp + RegistrationOtp::COOLDOWN;
+            Cache::put($key, $pending, $expiry);
+            try {
+                $pending['otp'] = $otp->send($pending['data']['email'], 'resend', $pending['otp']);
+            } catch (ValidationException $exception) {
+                return response()->json([
+                    'message' => $exception->errors()['resend'][0],
+                    'retry_after' => $this->resendDelay($pending),
+                ], 422);
+            }
+            Cache::put($key, $pending, $expiry);
+
+            return response()->json(['success' => true, 'retry_after' => $this->resendDelay($pending)]);
+        });
+    }
+
+    private function withMobileRegistration(Request $request, callable $operation)
+    {
+        $id = $request->validate(['registration_id' => ['required', 'string', 'size:64', 'alpha_num:ascii']])['registration_id'];
+        $key = 'mobile-registration:'.$id;
+
+        return Cache::lock($key.':lock', 120)->block(5, function () use ($key, $operation) {
+            $pending = Cache::get($key);
+            if (!$pending || $pending['expires_at'] <= now()->timestamp) {
+                return response()->json(['message' => 'Sesi verifikasi berakhir. Isi kembali formulir pendaftaran.'], 410);
+            }
+
+            return $operation($key, $pending);
+        });
+    }
+
+    private function resendDelay(array $pending): int
+    {
+        return max(0, $pending['otp']['resend_at'] - now()->timestamp);
+    }
+
+    private function validatedCode(Request $request): string
+    {
+        return $request->validate(['code' => ['required', 'string', 'digits:6']], [
+            'code.required' => 'Masukkan kode OTP.',
+            'code.digits' => 'Kode OTP harus terdiri dari 6 digit.',
+        ])['code'];
+    }
+
+    private function checkCode(array &$challenge, string $code, RegistrationOtp $otp): ?array
+    {
+        if ($challenge['expires_at'] <= now()->timestamp) {
+            return ['message' => 'Kode OTP kedaluwarsa. Minta kode baru.'];
+        }
+        if ($challenge['attempts'] >= 5) {
+            return ['message' => 'Batas percobaan tercapai. Minta kode baru.'];
+        }
+        if ($otp->matches($challenge, $code)) {
+            return null;
+        }
+        $challenge['attempts']++;
+
+        return ['message' => $challenge['attempts'] === 5
+            ? 'Batas percobaan tercapai. Minta kode baru.'
+            : 'Kode OTP salah. Periksa email lalu coba lagi.'];
     }
 
     private function pendingRegistration(Request $request): ?array
@@ -265,7 +383,7 @@ class PendaftaranController extends Controller
         }
     }
 
-    private function createAccounts(array $validated)
+    private function createAccounts(array $validated): string
     {
         $adaOrangtua = false;
 
@@ -346,11 +464,8 @@ class PendaftaranController extends Controller
             }
         });
 
-        $pesanSukses = $adaOrangtua
+        return $adaOrangtua
             ? 'Pendaftaran berhasil! Akun Siswa dan Akun Orang Tua telah aktif. Silakan login.'
             : 'Pendaftaran berhasil! Akun Siswa Anda telah aktif. Silakan login.';
-
-        return redirect('/login')
-            ->with('success', $pesanSukses);
     }
 }
