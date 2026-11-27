@@ -92,7 +92,7 @@ class SiswaExport
             $siswa->jenjang->nama_tipe ?? ($siswa->kelas ?? 'Umum'),
             $siswa->tingkatKelas->nama ?? ($siswa->tingkatKelas->nama_tingkat_kelas ?? '-'),
             $siswa->status_akun ?? 'Aktif',
-            $siswa->created_at ? $siswa->created_at->format('d-m-Y') : '-',
+            $siswa->created_at ? $siswa->created_at->format('d/m/Y') : '-',
         ];
     }
 }

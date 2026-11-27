@@ -142,8 +142,8 @@ class SiswaController extends Controller
         if ($filterLower === 'video') {
             $query->where(function ($q) {
                 $q->where('id_tipemodul', 1)
-                  ->orWhereNotNull('youtube_embed_url')
-                  ->orWhere('youtube_embed_url', '!=', '');
+                    ->orWhereNotNull('youtube_embed_url')
+                    ->orWhere('youtube_embed_url', '!=', '');
             });
         } elseif ($filterLower === 'pdf') {
             $query->where('id_tipemodul', 2);
@@ -166,7 +166,7 @@ class SiswaController extends Controller
         if ($search = $request->query('q')) {
             $query->where(function ($q) use ($search) {
                 $q->where('judul_modul', 'like', "%{$search}%")
-                  ->orWhere('deskripsi', 'like', "%{$search}%");
+                    ->orWhere('deskripsi', 'like', "%{$search}%");
                 if (Schema::hasTable('mapel')) {
                     $q->orWhereHas('mapel', fn($m) => $m->where('nama_mapel', 'like', "%{$search}%"));
                 }
@@ -528,7 +528,7 @@ class SiswaController extends Controller
         if ($search = $request->query('q')) {
             $query->where(function ($q) use ($search) {
                 $q->where('judul', 'like', "%{$search}%")
-                  ->orWhere('deskripsi', 'like', "%{$search}%");
+                    ->orWhere('deskripsi', 'like', "%{$search}%");
                 if (Schema::hasTable('mapel')) {
                     $q->orWhereHas('mapel', fn($m) => $m->where('nama_mapel', 'like', "%{$search}%"));
                 }
@@ -742,7 +742,7 @@ class SiswaController extends Controller
             $questionRemainingSeconds = max(
                 0,
                 $this->durasiSoal($activeQuestion)
-                - (now()->timestamp - (int) $attempt['question_started_at'])
+                    - (now()->timestamp - (int) $attempt['question_started_at'])
             );
         }
 
@@ -1142,42 +1142,42 @@ class SiswaController extends Controller
             $siswaIds = $siswas->getCollection()->pluck('id_user');
             $progres = Schema::hasTable('progres_modul_siswa')
                 ? ProgresModulSiswa::query()
-                    ->whereIn('id_user', $siswaIds)
-                    ->select('id_user')
-                    ->selectRaw('COUNT(*) as progres_count')
-                    ->selectRaw('SUM(CASE WHEN is_tuntas = 1 THEN 1 ELSE 0 END) as modul_tuntas')
-                    ->selectRaw('MAX(updated_at) as aktivitas_progres_terakhir')
-                    ->groupBy('id_user')
-                    ->get()
-                    ->keyBy('id_user')
+                ->whereIn('id_user', $siswaIds)
+                ->select('id_user')
+                ->selectRaw('COUNT(*) as progres_count')
+                ->selectRaw('SUM(CASE WHEN is_tuntas = 1 THEN 1 ELSE 0 END) as modul_tuntas')
+                ->selectRaw('MAX(updated_at) as aktivitas_progres_terakhir')
+                ->groupBy('id_user')
+                ->get()
+                ->keyBy('id_user')
                 : collect();
             $hasilKuis = Schema::hasTable('hasilquizmodul')
                 ? HasilQuizModul::query()
-                    ->whereIn('id_user', $siswaIds)
-                    ->select('id_user')
-                    ->selectRaw('COUNT(*) as jumlah_kuis')
-                    ->selectRaw('AVG(CASE WHEN total_poin > 0 THEN poin_didapat * 100.0 / total_poin END) as rata_nilai')
-                    ->selectRaw('MAX(waktu_dapat) as aktivitas_kuis_terakhir')
-                    ->groupBy('id_user')
-                    ->get()
-                    ->keyBy('id_user')
+                ->whereIn('id_user', $siswaIds)
+                ->select('id_user')
+                ->selectRaw('COUNT(*) as jumlah_kuis')
+                ->selectRaw('AVG(CASE WHEN total_poin > 0 THEN poin_didapat * 100.0 / total_poin END) as rata_nilai')
+                ->selectRaw('MAX(waktu_dapat) as aktivitas_kuis_terakhir')
+                ->groupBy('id_user')
+                ->get()
+                ->keyBy('id_user')
                 : collect();
             $presensiSiswa = Schema::hasTable('presensi')
                 ? Presensi::query()
-                    ->whereIn('id_siswa', $siswaIds)
-                    ->select('id_siswa')
-                    ->selectRaw('COUNT(*) as jumlah_hadir')
-                    ->selectRaw('MAX(waktu_scan) as presensi_terakhir')
-                    ->groupBy('id_siswa')
-                    ->get()
-                    ->keyBy('id_siswa')
+                ->whereIn('id_siswa', $siswaIds)
+                ->select('id_siswa')
+                ->selectRaw('COUNT(*) as jumlah_hadir')
+                ->selectRaw('MAX(waktu_scan) as presensi_terakhir')
+                ->groupBy('id_siswa')
+                ->get()
+                ->keyBy('id_siswa')
                 : collect();
             $modulPerJenjang = Schema::hasTable('modul')
                 ? Modul::published()
-                    ->select('id_jenjang')
-                    ->selectRaw('COUNT(*) as jumlah')
-                    ->groupBy('id_jenjang')
-                    ->pluck('jumlah', 'id_jenjang')
+                ->select('id_jenjang')
+                ->selectRaw('COUNT(*) as jumlah')
+                ->groupBy('id_jenjang')
+                ->pluck('jumlah', 'id_jenjang')
                 : collect();
             $jumlahSemuaModul = Schema::hasTable('modul') ? (int) Modul::published()->count() : 0;
 
@@ -1196,7 +1196,7 @@ class SiswaController extends Controller
                     $progresSiswa->aktivitas_progres_terakhir ?? null,
                     $hasilSiswa->aktivitas_kuis_terakhir ?? null,
                     $presensi->presensi_terakhir ?? null,
-                ])->filter()->map(fn ($waktu) => Carbon::parse($waktu))->sort()->last();
+                ])->filter()->map(fn($waktu) => Carbon::parse($waktu))->sort()->last();
 
                 $perluPerhatian = null;
                 if (($siswa->status_akun ?? 'Aktif') === 'Nonaktif') {
@@ -1770,44 +1770,44 @@ class SiswaController extends Controller
     }
 
     public function updateProfile(Request $request)
-{
-    $user = $request->user();
+    {
+        $user = $request->user();
 
-    $validated = $request->validate([
-        'username' => [
-            'required',
-            'string',
-            'max:50',
-            Rule::unique('user', 'username')->ignore($user->id_user, 'id_user'),
-        ],
-        'nomor_hp'     => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
-        'kelas'        => ['nullable', 'string', 'max:50'],
-        'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
-        'asal_sekolah' => ['nullable', 'string', 'max:255'],
-        'foto_profil'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-        // 'nama', 'nisn', dan 'id_jenjang' sengaja dihapus dari validasi 
-        // karena bersifat readonly di view siswa dan tidak dikirim via form.
-    ]);
+        $validated = $request->validate([
+            'username' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('user', 'username')->ignore($user->id_user, 'id_user'),
+            ],
+            'nomor_hp'     => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]+$/'],
+            'kelas'        => ['nullable', 'string', 'max:50'],
+            'id_tingkat_kelas' => ['nullable', 'integer', 'exists:tingkat_kelas,id_tingkat'],
+            'asal_sekolah' => ['nullable', 'string', 'max:255'],
+            'foto_profil'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            // 'nama', 'nisn', dan 'id_jenjang' sengaja dihapus dari validasi 
+            // karena bersifat readonly di view siswa dan tidak dikirim via form.
+        ]);
 
-    $oldPhoto = $user->foto_profil;
+        $oldPhoto = $user->foto_profil;
 
-    // Isi atribut selain foto_profil
-    $user->fill(collect($validated)->except('foto_profil')->all());
+        // Isi atribut selain foto_profil
+        $user->fill(collect($validated)->except('foto_profil')->all());
 
-    // Handle upload foto profil jika ada berkas baru
-    if ($request->hasFile('foto_profil')) {
-        $user->foto_profil = $request->file('foto_profil')->store('profil-siswa', 'public');
+        // Handle upload foto profil jika ada berkas baru
+        if ($request->hasFile('foto_profil')) {
+            $user->foto_profil = $request->file('foto_profil')->store('profil-siswa', 'public');
+        }
+
+        $user->save();
+
+        // Hapus foto profil lama jika ada foto baru yang berhasil diunggah
+        if ($oldPhoto && $request->hasFile('foto_profil')) {
+            Storage::disk('public')->delete($oldPhoto);
+        }
+
+        return redirect()->route('siswa.profil')->with('success', 'Profil berhasil diperbarui.');
     }
-
-    $user->save();
-
-    // Hapus foto profil lama jika ada foto baru yang berhasil diunggah
-    if ($oldPhoto && $request->hasFile('foto_profil')) {
-        Storage::disk('public')->delete($oldPhoto);
-    }
-
-    return redirect()->route('siswa.profil')->with('success', 'Profil berhasil diperbarui.');
-}
 
     public function updateHeroTheme(Request $request)
     {
@@ -1934,6 +1934,7 @@ class SiswaController extends Controller
     }
 
     // Export Data Siswa ke CSV / Excel (Native, Ringan & Tanpa Dependency)
+
     public function exportDataSiswa(Request $request)
     {
         $filters = $request->only([
@@ -1943,22 +1944,29 @@ class SiswaController extends Controller
         ]);
 
         $export = new SiswaExport($filters);
+
         $fileName = 'data_siswa_arrava_' . now()->format('Y-m-d') . '.csv';
 
         return response()->streamDownload(function () use ($export) {
             $handle = fopen('php://output', 'w');
 
-            // Tulis UTF-8 BOM agar Microsoft Excel langsung membaca aksen & teks dengan rapi
+            // UTF-8 BOM untuk kompatibilitas Excel
             fputs($handle, "\xEF\xBB\xBF");
 
-            // Tulis Header Kolom
-            fputcsv($handle, $export->headings());
+            // Meminta Excel menggunakan titik koma sebagai delimiter
+            fputs($handle, "sep=;\r\n");
 
-            // Tulis Data Baris per Baris dengan Chunking agar hemat RAM
+            // Header kolom
+            fputcsv($handle, $export->headings(), ';', '"', '');
+
+            // Data siswa per 250 baris
             $no = 1;
+
             $export->query()->chunk(250, function ($siswaList) use ($handle, $export, &$no) {
                 foreach ($siswaList as $siswa) {
-                    fputcsv($handle, $export->map($siswa, $no++));
+                    $row = $export->map($siswa, $no++);
+
+                    fputcsv($handle, $row, ';', '"', '');
                 }
             });
 
