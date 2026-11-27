@@ -25,6 +25,7 @@ class EnsureStudentActive
 
             return response()->json([
                 'success' => false,
+                'code' => 'session_revoked',
                 'message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.',
             ], 403);
         }
