@@ -567,7 +567,7 @@ class PresensiQrTest extends TestCase
             ->assertDontSee('Buat Sesi');
     }
 
-    public function test_halaman_presensi_guru_memisahkan_presensi_dan_pelaporan_harian(): void
+    public function test_halaman_presensi_guru_menggabungkan_presensi_pelaporan_dan_absen_mentor(): void
     {
         ['guru' => $guru, 'kelas' => $kelas] = $this->skenario();
 
@@ -575,8 +575,12 @@ class PresensiQrTest extends TestCase
             ->assertOk()
             ->assertSee('data-presensi-tab="presensi"', false)
             ->assertSee('data-presensi-tab="pelaporan"', false)
+            ->assertSee('data-presensi-tab="mentor"', false)
             ->assertSee('data-presensi-panel="presensi"', false)
             ->assertSee('data-presensi-panel="pelaporan"', false)
+            ->assertSee('data-presensi-panel="mentor"', false)
+            ->assertSee('id="attendance-app"', false)
+            ->assertSee('name="return_to" value="presensi"', false)
             ->assertSee('aria-current="page"', false)
             ->assertDontSee('Overview')
             ->assertSee('Pelaporan Harian Guru')
@@ -591,6 +595,12 @@ class PresensiQrTest extends TestCase
             ->assertOk()
             ->assertSee('Pelaporan Harian Guru')
             ->assertSee('Belum dilaporkan');
+
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['tab' => 'mentor']))
+            ->assertOk()
+            ->assertSee('data-presensi-tab="mentor"', false)
+            ->assertSee('Absen Mentor')
+            ->assertSee('id="attendance-app"', false);
 
         $this->actingAs($guru)->get(route('guru.presensi.index', ['tab' => 'guru']))
             ->assertOk()

@@ -141,5 +141,8 @@ if (root) {
 
     btnMulai.addEventListener('click', mulai);
     btnStop.addEventListener('click', berhenti);
+    window.addEventListener('presensi-tab-change', (event) => {
+        if (event.detail !== 'mentor') berhenti();
+    });
     window.addEventListener('pagehide', () => scanner?.destroy());
 }

@@ -80,6 +80,7 @@ class PresensiController extends Controller
         $activeTab = $user->isGuru()
             ? match ($requestedTab) {
                 'pelaporan', 'guru' => 'pelaporan',
+                'mentor', 'absen-mentor' => 'mentor',
                 'presensi', 'siswa' => 'presensi',
                 default => 'presensi',
             }

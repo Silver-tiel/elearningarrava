@@ -257,6 +257,21 @@ class AttendanceMentorTest extends TestCase
         $this->assertSame(1, AttendanceRecord::count());
     }
 
+    public function test_check_in_dari_tab_presensi_kembali_ke_tab_absen_mentor(): void
+    {
+        $guru = $this->guru();
+        $sesi = $this->sesi();
+
+        $this->actingAs($guru)->post(route('attendance.check-in'), [
+            'token' => $sesi->token,
+            'return_to' => 'presensi',
+        ])
+            ->assertRedirect(route('guru.presensi.index', ['tab' => 'mentor']))
+            ->assertSessionHas('success');
+
+        $this->assertSame(1, AttendanceRecord::count());
+    }
+
     public function test_tautan_penuh_hasil_scan_juga_diterima(): void
     {
         $guru = $this->guru();

@@ -57,7 +57,11 @@ class AttendanceCheckInController extends Controller
                 return response()->json(['success' => false, 'reason' => $e->reason, 'message' => $e->getMessage()], $e->httpStatus());
             }
 
-            return redirect()->route('attendance.scan')->with('error', $e->getMessage());
+            $redirect = $request->input('return_to') === 'presensi'
+                ? redirect()->route('guru.presensi.index', ['tab' => 'mentor'])
+                : redirect()->route('attendance.scan');
+
+            return $redirect->with('error', $e->getMessage());
         }
 
         $pesan = 'Check-in berhasil. Status: ' . ($record->status === 'terlambat' ? 'Terlambat' : 'Hadir')
@@ -72,6 +76,10 @@ class AttendanceCheckInController extends Controller
             ]);
         }
 
-        return redirect()->route('attendance.scan')->with('success', $pesan);
+        $redirect = $request->input('return_to') === 'presensi'
+            ? redirect()->route('guru.presensi.index', ['tab' => 'mentor'])
+            : redirect()->route('attendance.scan');
+
+        return $redirect->with('success', $pesan);
     }
 }

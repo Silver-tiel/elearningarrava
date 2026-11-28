@@ -40,6 +40,7 @@
             @foreach([
                 ['key' => 'presensi', 'label' => 'Presensi'],
                 ['key' => 'pelaporan', 'label' => 'Pelaporan Harian'],
+                ['key' => 'mentor', 'label' => 'Absen Mentor'],
             ] as $menu)
                 <a
                     href="{{ route('guru.presensi.index', ['tab' => $menu['key']]) }}"
@@ -62,6 +63,13 @@
                 <p class="mt-1 text-sm font-medium text-[#72839E]">Lengkapi laporan berdasarkan sesi presensi yang Anda ampu.</p>
             </div>
             @include('guru.laporan-harian._list', ['laporanSesi' => $laporanSesi])
+        </section>
+
+        <section
+            data-presensi-panel="mentor"
+            @if($activeTab !== 'mentor') hidden style="display: none" @endif
+        >
+            @include('attendance._scanner', ['embedded' => true])
         </section>
     @endif
 
@@ -714,6 +722,7 @@
                 panel.hidden = !isActive;
                 panel.style.display = isActive ? '' : 'none';
             });
+            window.dispatchEvent(new CustomEvent('presensi-tab-change', { detail: tabName }));
 
             if (updateHistory) {
                 const url = new URL(selectedTab.href, window.location.href);
@@ -734,7 +743,7 @@
 
         window.addEventListener('popstate', () => {
             const requestedTab = new URL(window.location.href).searchParams.get('tab');
-            const tabName = requestedTab === 'pelaporan' ? 'pelaporan' : 'presensi';
+            const tabName = ['pelaporan', 'mentor'].includes(requestedTab) ? requestedTab : 'presensi';
             showTab(tabName, false);
         });
     })();
