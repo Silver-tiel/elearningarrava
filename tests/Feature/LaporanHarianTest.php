@@ -142,7 +142,7 @@ class LaporanHarianTest extends TestCase
                 'waktu_selesai' => '09:30',
                 'id_siswa_bintang' => $siswa->id_user,
             ])
-            ->assertRedirect(route('guru.laporan-harian.index'));
+            ->assertRedirect(route('guru.presensi.index', ['tab' => 'pelaporan']));
 
         $this->assertDatabaseHas('laporan_harian', [
             'id_sesi' => $sesi->id_sesi,
@@ -156,6 +156,15 @@ class LaporanHarianTest extends TestCase
             'id_siswa' => $siswa->id_user,
             'is_bintang' => true,
         ]);
+    }
+
+    public function test_halaman_laporan_harian_diarahkan_ke_tab_guru_presensi(): void
+    {
+        $guru = $this->buatUser(2, 'Guru Satu');
+
+        $this->actingAs($guru)
+            ->get(route('guru.laporan-harian.index'))
+            ->assertRedirect(route('guru.presensi.index', ['tab' => 'pelaporan']));
     }
 
     public function test_guru_tidak_dapat_melaporkan_kelas_yang_tidak_ditugaskan(): void

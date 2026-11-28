@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('header')
-<a href="{{ route('guru.laporan-harian.index') }}" class="text-sm font-semibold text-sky-700">← Pelaporan Harian</a>
+<a href="{{ route('guru.presensi.index', ['tab' => 'pelaporan']) }}" class="text-sm font-semibold text-sky-700">← Pelaporan Harian</a>
 @endsection
 
 @section('content')

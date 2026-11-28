@@ -14,22 +14,9 @@ use Illuminate\Validation\Rule;
 
 class LaporanHarianController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $kelasIds = $request->user()->kelasDiampu()->select('kelas.id_kelas');
-        $sesi = SesiPresensi::with([
-            'kelas.jenjang',
-            'laporanHarian.mapel',
-            'laporanHarian.guru',
-            'presensi',
-        ])
-            ->whereIn('id_kelas', $kelasIds)
-            ->orderByDesc('tanggal')
-            ->orderByDesc('id_sesi')
-            ->paginate(20)
-            ->withQueryString();
-
-        return view('guru.laporan-harian.index', compact('sesi'));
+        return redirect()->route('guru.presensi.index', ['tab' => 'pelaporan']);
     }
 
     public function edit(Request $request, int $id)
@@ -102,7 +89,7 @@ class LaporanHarianController extends Controller
                 ->update(['is_bintang' => true]);
         });
 
-        return redirect()->route('guru.laporan-harian.index')
+        return redirect()->route('guru.presensi.index', ['tab' => 'pelaporan'])
             ->with('success', 'Laporan harian dan siswa bintang berhasil disimpan.');
     }
 

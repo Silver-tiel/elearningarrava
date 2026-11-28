@@ -82,6 +82,23 @@ class PresensiQrTest extends TestCase
             $table->timestamps();
             $table->unique(['id_sesi', 'id_siswa']);
         });
+        Schema::create('mapel', function (Blueprint $table) {
+            $table->increments('id_mapel');
+            $table->string('nama_mapel');
+            $table->unsignedInteger('id_jenjang')->nullable();
+            $table->timestamps();
+        });
+        Schema::create('laporan_harian', function (Blueprint $table) {
+            $table->increments('id_laporan');
+            $table->unsignedInteger('id_sesi')->unique();
+            $table->unsignedInteger('id_guru');
+            $table->unsignedInteger('id_mapel');
+            $table->time('waktu_mulai');
+            $table->time('waktu_selesai');
+            $table->date('kelas_berlaku_dari')->nullable();
+            $table->date('kelas_berlaku_sampai')->nullable();
+            $table->timestamps();
+        });
         Schema::create('log_pemindaian', function (Blueprint $table) {
             $table->increments('id_log');
             $table->unsignedInteger('id_sesi')->nullable();
@@ -529,7 +546,7 @@ class PresensiQrTest extends TestCase
         ]);
     }
 
-    public function test_halaman_presensi_menampilkan_kelas_hari_ini_dan_riwayat_minggu_ini(): void
+    public function test_halaman_presensi_siswa_menampilkan_kelas_hari_ini_dan_riwayat_minggu_ini(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-11-04 10:00:00')); // Rabu; minggu ini mulai Senin 2 Nov
         ['guru' => $guru, 'kelas' => $kelas] = $this->skenario();
@@ -539,7 +556,7 @@ class PresensiQrTest extends TestCase
         $this->sesiLama($kelas, $guru, 'Sesi Dua Minggu Lalu', '2026-10-15');
         $this->sesiLama($kelas, $guru, 'Sesi Terlalu Lama', '2026-09-20');
 
-        $this->actingAs($guru)->get(route('guru.presensi.index'))
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['tab' => 'presensi']))
             ->assertOk()
             ->assertSee('Kelas hari ini')
             ->assertSee('Kelas X – Matematika')
@@ -548,6 +565,37 @@ class PresensiQrTest extends TestCase
             ->assertDontSee('Sesi Dua Minggu Lalu')
             ->assertDontSee('Sesi Terlalu Lama')
             ->assertDontSee('Buat Sesi');
+    }
+
+    public function test_halaman_presensi_guru_memisahkan_presensi_dan_pelaporan_harian(): void
+    {
+        ['guru' => $guru, 'kelas' => $kelas] = $this->skenario();
+
+        $this->actingAs($guru)->get(route('guru.presensi.index'))
+            ->assertOk()
+            ->assertSee('data-presensi-tab="presensi"', false)
+            ->assertSee('data-presensi-tab="pelaporan"', false)
+            ->assertSee('data-presensi-panel="presensi"', false)
+            ->assertSee('data-presensi-panel="pelaporan"', false)
+            ->assertSee('aria-current="page"', false)
+            ->assertDontSee('Overview')
+            ->assertSee('Pelaporan Harian Guru')
+            ->assertSee('data-no-page-loader', false);
+
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['tab' => 'presensi']))
+            ->assertOk()
+            ->assertSee('Presensi Kelas')
+            ->assertSee($kelas->nama);
+
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['tab' => 'pelaporan']))
+            ->assertOk()
+            ->assertSee('Pelaporan Harian Guru')
+            ->assertSee('Belum dilaporkan');
+
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['tab' => 'guru']))
+            ->assertOk()
+            ->assertSee('data-presensi-tab="pelaporan"', false)
+            ->assertSee('aria-current="page"', false);
     }
 
     public function test_riwayat_satu_bulan_dan_filter_hari(): void
@@ -560,21 +608,21 @@ class PresensiQrTest extends TestCase
         $this->sesiLama($kelas, $guru, 'Sesi Kamis Lama', '2026-10-15');     // Kamis
         $this->sesiLama($kelas, $guru, 'Sesi Terlalu Lama', '2026-09-20');   // > 30 hari
 
-        $this->actingAs($guru)->get(route('guru.presensi.index', ['rentang' => 'bulan']))
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['rentang' => 'bulan', 'tab' => 'presensi']))
             ->assertOk()
             ->assertSee('Sesi Senin Ini')
             ->assertSee('Sesi Selasa Lalu')
             ->assertSee('Sesi Kamis Lama')
             ->assertDontSee('Sesi Terlalu Lama');
 
-        $this->actingAs($guru)->get(route('guru.presensi.index', ['rentang' => 'bulan', 'hari' => 4]))
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['rentang' => 'bulan', 'hari' => 4, 'tab' => 'presensi']))
             ->assertOk()
             ->assertSee('Sesi Kamis Lama')
             ->assertDontSee('Sesi Senin Ini')
             ->assertDontSee('Sesi Selasa Lalu');
 
         // Filter hari pada tampilan minggu ini.
-        $this->actingAs($guru)->get(route('guru.presensi.index', ['hari' => 2]))
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['hari' => 2, 'tab' => 'presensi']))
             ->assertOk()
             ->assertDontSee('Sesi Senin Ini')
             ->assertSee('Tidak ada riwayat');
@@ -585,7 +633,7 @@ class PresensiQrTest extends TestCase
         ['guru' => $guru] = $this->skenario();
         Kelas::create(['nama' => 'Kelas Rahasia Lain', 'id_jenjang' => 1, 'aktif' => true]);
 
-        $this->actingAs($guru)->get(route('guru.presensi.index'))
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['tab' => 'presensi']))
             ->assertOk()
             ->assertDontSee('Kelas Rahasia Lain');
     }
@@ -597,7 +645,7 @@ class PresensiQrTest extends TestCase
         $kelas->guru()->attach($guru->id_user);
         $this->assertSame(0, SesiPresensi::count());
 
-        $this->actingAs($guru)->get(route('guru.presensi.index'))->assertOk()->assertSee('Kelas Otomatis');
+        $this->actingAs($guru)->get(route('guru.presensi.index', ['tab' => 'presensi']))->assertOk()->assertSee('Kelas Otomatis');
 
         $this->assertSame(1, SesiPresensi::where('id_kelas', $kelas->id_kelas)->count());
     }

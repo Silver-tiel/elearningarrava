@@ -196,7 +196,7 @@
                     </div>
                 </a>
 
-                @php $actPresensi = request()->is('guru/presensi*'); @endphp
+                @php $actPresensi = request()->is('guru/presensi*') || request()->is('guru/laporan-harian*'); @endphp
                 <!-- Presensi -->
                 <a href="{{ route('guru.presensi.index') }}"
                     class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition {{ $actPresensi ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
@@ -213,19 +213,6 @@
                         </div>
                     </div>
                 </a>
-                @if($idTipe === 2)
-                    @php $actLaporanHarianGuru = request()->is('guru/laporan-harian*'); @endphp
-                    <a href="{{ route('guru.laporan-harian.index') }}"
-                        class="sidebar-menu-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition {{ $actLaporanHarianGuru ? 'bg-[#DDF3FF] text-[#007FBE] font-black border border-[#B2E7FC] shadow-[0_2px_0_#B2E7FC] is-active' : 'text-[#465673] hover:bg-[#F0F6FF] hover:text-[#007FBE] font-bold' }}"
-                        data-active="{{ $actLaporanHarianGuru ? 'true' : 'false' }}">
-                        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5h6m-6 4h6m-6 4h6m-6 4h6M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" />
-                        </svg>
-                        <span class="truncate">Pelaporan Harian</span>
-                    </a>
-                @endif
-
                 @if($idTipe == 1)
                     @php $actAbsensiMentor = request()->is('admin/attendance*'); @endphp
                     <!-- Absensi Mentor (admin) -->

@@ -102,6 +102,7 @@
         document.addEventListener('click', function (e) {
             const link = e.target.closest('a');
             if (!link) return;
+            if (link.hasAttribute('data-no-page-loader')) return;
 
             // Abaikan jika modifier keys ditekan (buka tab baru)
             if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;

@@ -17,6 +17,7 @@
      * @var array<int, string> $namaHari
      */
     $hariIniStr = now()->toDateString();
+    $isGuruDashboard = auth()->user()->isGuru();
     $sessionSummaryPerDate = [];
     foreach ($riwayatPerTanggal as $tgl => $sesiList) {
         $sessionSummaryPerDate[$tgl] = [
@@ -31,9 +32,45 @@
         'kelas' => $sesiHariIni->map(fn($s) => $s->kelas?->nama ?? '-')->values()->all(),
     ];
 @endphp
-<div class="p-4 sm:p-8 max-w-7xl pb-24">
+<div class="mx-auto w-full max-w-7xl p-4 pb-24 sm:p-8">
     @include('guru.presensi._flash')
 
+    @if(auth()->user()->isGuru())
+        <nav aria-label="Tampilan presensi" class="mb-6 flex flex-wrap gap-2 rounded-2xl border-2 border-[#DCEFFF] bg-white p-2 shadow-[0_4px_0_#B2E7FC]">
+            @foreach([
+                ['key' => 'presensi', 'label' => 'Presensi'],
+                ['key' => 'pelaporan', 'label' => 'Pelaporan Harian'],
+            ] as $menu)
+                <a
+                    href="{{ route('guru.presensi.index', ['tab' => $menu['key']]) }}"
+                    data-presensi-tab="{{ $menu['key'] }}"
+                    data-no-page-loader
+                    aria-current="{{ $activeTab === $menu['key'] ? 'page' : 'false' }}"
+                    class="flex-1 rounded-xl border px-4 py-3 transition sm:flex-none {{ $activeTab === $menu['key'] ? 'border-[#007FBE] bg-[#DDF3FF] text-[#007FBE] shadow-[0_2px_0_#B2E7FC]' : 'border-transparent text-[#465673] hover:border-[#DCEFFF] hover:bg-[#F0F6FF]' }}"
+                >
+                    <span class="block text-sm font-black">{{ $menu['label'] }}</span>
+                </a>
+            @endforeach
+        </nav>
+
+        <section
+            data-presensi-panel="pelaporan"
+            @if($activeTab !== 'pelaporan') hidden style="display: none" @endif
+        >
+            <div class="mb-4">
+                <h3 class="text-xl font-heading font-black text-[#082765]">Pelaporan Harian Guru</h3>
+                <p class="mt-1 text-sm font-medium text-[#72839E]">Lengkapi laporan berdasarkan sesi presensi yang Anda ampu.</p>
+            </div>
+            @include('guru.laporan-harian._list', ['laporanSesi' => $laporanSesi])
+        </section>
+    @endif
+
+    @if(auth()->user()->isGuru())
+        <section
+            data-presensi-panel="presensi"
+            @if($activeTab !== 'presensi') hidden style="display: none" @endif
+        >
+    @endif
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {{-- ============ KOLOM KIRI: DAFTAR KELAS & RIWAYAT PRESENSI ============ --}}
         <div class="lg:col-span-7 xl:col-span-8 min-w-0">
@@ -119,20 +156,20 @@
                         </p>
                     </div>
                     @if($rentang === 'minggu')
-                        <a href="{{ route('guru.presensi.index', ['rentang' => 'bulan', 'hari' => $hari]) }}"
+                        <a href="{{ route('guru.presensi.index', ['rentang' => 'bulan', 'hari' => $hari, 'tab' => $isGuruDashboard ? 'presensi' : null]) }}"
                            class="h-9 px-3.5 inline-flex items-center rounded-xl border-2 border-[#B2E7FC] bg-white hover:bg-[#F0F6FF] text-[#007FBE] text-xs font-bold shadow-[0_2px_0_#B2E7FC] active:translate-y-0.5 transition">Tampilkan riwayat 1 bulan</a>
                     @else
-                        <a href="{{ route('guru.presensi.index', ['hari' => $hari]) }}"
+                        <a href="{{ route('guru.presensi.index', ['hari' => $hari, 'tab' => $isGuruDashboard ? 'presensi' : null]) }}"
                            class="h-9 px-3.5 inline-flex items-center rounded-xl border-2 border-[#B2E7FC] bg-white hover:bg-[#F0F6FF] text-[#007FBE] text-xs font-bold shadow-[0_2px_0_#B2E7FC] active:translate-y-0.5 transition">Kembali ke minggu ini</a>
                     @endif
                 </div>
 
                 <nav aria-label="Filter hari" class="flex flex-wrap gap-2 mb-4">
-                    <a href="{{ route('guru.presensi.index', ['rentang' => $rentang === 'bulan' ? 'bulan' : null]) }}"
+                    <a href="{{ route('guru.presensi.index', ['rentang' => $rentang === 'bulan' ? 'bulan' : null, 'tab' => $isGuruDashboard ? 'presensi' : null]) }}"
                        @if($hari === null) aria-current="page" @endif
                        class="h-9 px-4 inline-flex items-center rounded-xl text-xs transition {{ $hari === null ? 'bg-[#007FBE] text-white font-black shadow-[0_2px_0_#005580]' : 'bg-white text-[#465673] font-bold border-2 border-[#DCEFFF] hover:border-[#007FBE] hover:text-[#007FBE] shadow-[0_2px_0_#DCEFFF]' }}">Semua</a>
                     @foreach($namaHari as $angka => $nama)
-                        <a href="{{ route('guru.presensi.index', ['rentang' => $rentang === 'bulan' ? 'bulan' : null, 'hari' => $angka]) }}"
+                        <a href="{{ route('guru.presensi.index', ['rentang' => $rentang === 'bulan' ? 'bulan' : null, 'hari' => $angka, 'tab' => $isGuruDashboard ? 'presensi' : null]) }}"
                            @if($hari === $angka) aria-current="page" @endif
                            class="h-9 px-4 inline-flex items-center rounded-xl text-xs transition {{ $hari === $angka ? 'bg-[#007FBE] text-white font-black shadow-[0_2px_0_#005580]' : 'bg-white text-[#465673] font-bold border-2 border-[#DCEFFF] hover:border-[#007FBE] hover:text-[#007FBE] shadow-[0_2px_0_#DCEFFF]' }}">{{ $nama }}</a>
                     @endforeach
@@ -313,6 +350,9 @@
 
         </div>
     </div>
+    @if(auth()->user()->isGuru())
+        </section>
+    @endif
 </div>
 
 {{-- ========================================== --}}
@@ -650,7 +690,54 @@
             container.classList.add('hidden');
         }, 300);
     }
+
+    (() => {
+        const tabs = Array.from(document.querySelectorAll('[data-presensi-tab]'));
+        const panels = Array.from(document.querySelectorAll('[data-presensi-panel]'));
+        if (tabs.length === 0 || panels.length === 0) return;
+
+        const activeTabClasses = 'border-[#007FBE] bg-[#DDF3FF] text-[#007FBE] shadow-[0_2px_0_#B2E7FC]';
+        const inactiveTabClasses = 'border-transparent text-[#465673] hover:border-[#DCEFFF] hover:bg-[#F0F6FF]';
+
+        const showTab = (tabName, updateHistory = true) => {
+            const selectedTab = tabs.find((tab) => tab.dataset.presensiTab === tabName);
+            if (!selectedTab) return;
+
+            tabs.forEach((tab) => {
+                const isActive = tab === selectedTab;
+                tab.setAttribute('aria-current', isActive ? 'page' : 'false');
+                tab.className = `flex-1 rounded-xl border px-4 py-3 transition sm:flex-none ${isActive ? activeTabClasses : inactiveTabClasses}`;
+            });
+
+            panels.forEach((panel) => {
+                const isActive = panel.dataset.presensiPanel === tabName;
+                panel.hidden = !isActive;
+                panel.style.display = isActive ? '' : 'none';
+            });
+
+            if (updateHistory) {
+                const url = new URL(selectedTab.href, window.location.href);
+                window.history.pushState({ presensiTab: tabName }, '', url);
+            }
+        };
+
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('[data-presensi-tab]');
+            if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+
+            const tabName = link.dataset.presensiTab;
+            if (!tabs.some((tab) => tab.dataset.presensiTab === tabName)) return;
+
+            event.preventDefault();
+            showTab(tabName);
+        });
+
+        window.addEventListener('popstate', () => {
+            const requestedTab = new URL(window.location.href).searchParams.get('tab');
+            const tabName = requestedTab === 'pelaporan' ? 'pelaporan' : 'presensi';
+            showTab(tabName, false);
+        });
+    })();
 </script>
 
 @endsection
-

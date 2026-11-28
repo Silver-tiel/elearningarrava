@@ -42,7 +42,7 @@ class PresensiController extends Controller
             SesiPresensi::pastikanUntuk($kelas, now(), $user->id_user);
         }
 
-        $dasar = fn () => SesiPresensi::with('kelas')
+        $dasar = fn () => SesiPresensi::with(['kelas', 'laporanHarian'])
             ->withCount('presensi')
             ->whereIn('id_kelas', $semuaKelas->pluck('id_kelas'));
 
@@ -76,6 +76,31 @@ class PresensiController extends Controller
         }
 
         $riwayatPerTanggal = $riwayat->groupBy(fn (SesiPresensi $s) => $s->tanggal->toDateString());
+        $requestedTab = $request->query('tab');
+        $activeTab = $user->isGuru()
+            ? match ($requestedTab) {
+                'pelaporan', 'guru' => 'pelaporan',
+                'presensi', 'siswa' => 'presensi',
+                default => 'presensi',
+            }
+            : null;
+
+        $laporanSesi = null;
+        if ($user->isGuru()) {
+            $kelasIds = $user->kelasDiampu()->select('kelas.id_kelas');
+            $laporanSesi = SesiPresensi::with([
+                'kelas.jenjang',
+                'laporanHarian.mapel',
+                'laporanHarian.guru',
+                'presensi',
+            ])
+                ->whereIn('id_kelas', $kelasIds)
+                ->orderByDesc('tanggal')
+                ->orderByDesc('id_sesi')
+                ->paginate(20, ['*'], 'laporan_page')
+                ->withQueryString();
+        }
+
         // Ambil data jenjang untuk dropdown
         $jenjangs = \App\Models\Jenjang::orderBy('nama_tipe')->get();
 
@@ -91,6 +116,8 @@ class PresensiController extends Controller
             'semuaKelas' => $semuaKelas,
             'jenjangs' => $jenjangs,
             'gurus' => $gurus,
+            'activeTab' => $activeTab,
+            'laporanSesi' => $laporanSesi,
         ]);
     }
 
